@@ -1,0 +1,6 @@
+﻿{
+  'name': '@helixcrm/api',
+  'version': '0.1.0',
+  'private': true,
+  'description': 'HelixCRM Backend API'
+}

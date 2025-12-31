@@ -1,0 +1,11 @@
+﻿{
+  "name": "helixcrm",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "docker:up": "docker-compose -f docker/docker-compose.yml up -d",
+    "docker:down": "docker-compose -f docker/docker-compose.yml down"
+  },
+  "devDependencies": {},
+  "packageManager": "npm@9.6.7"
+}
