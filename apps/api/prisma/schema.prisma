@@ -1,0 +1,151 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Organization {
+  id       String @id @default(uuid())
+  name     String @unique
+  slug     String @unique
+  status   String @default("active")
+  settings Json?
+
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  User      User[]
+  Contact   Contact[]
+  Account   Account[]
+  Activity  Activity[]
+  AuditLog  AuditLog[]
+
+  @@map("organizations")
+}
+
+model User {
+  id           String  @id @default(uuid())
+  email        String  @unique
+  firstName    String?
+  lastName     String?
+  passwordHash String
+  role         String  @default("user")
+  isActive     Boolean @default(true)
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  lastLoginAt DateTime?
+  Activity    Activity[]
+  AuditLog    AuditLog[]
+
+  @@index([organizationId, email])
+  @@map("users")
+}
+
+model Contact {
+  id         String  @id @default(uuid())
+  firstName  String
+  lastName   String
+  email      String?
+  phone      String?
+  title      String?
+  department String?
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  accountId String?
+  account   Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([organizationId, email])
+  @@index([organizationId, accountId])
+  @@map("contacts")
+}
+
+model Account {
+  id       String  @id @default(uuid())
+  name     String
+  industry String?
+  website  String?
+  phone    String?
+  email    String?
+  address  String?
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  metadata Json?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  Contact   Contact[]
+
+  @@index([organizationId])
+  @@index([organizationId, name])
+  @@map("accounts")
+}
+
+model Activity {
+  id          String  @id @default(uuid())
+  type        String
+  title       String
+  description String?
+  status      String  @default("pending")
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  relatedToId   String?
+  relatedToType String?
+
+  scheduledAt DateTime?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([organizationId])
+  @@index([organizationId, userId])
+  @@index([organizationId, type])
+  @@index([organizationId, relatedToId, relatedToType])
+  @@map("activities")
+}
+
+model AuditLog {
+  id       String  @id @default(uuid())
+  action   String
+  entity   String
+  entityId String?
+
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  before Json?
+  after  Json?
+
+  ipAddress String?
+  userAgent String?
+
+  createdAt DateTime @default(now())
+
+  @@index([organizationId])
+  @@index([entity, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
