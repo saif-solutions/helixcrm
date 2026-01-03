@@ -1,6 +1,6 @@
 ﻿{
-  'name': '@helixcrm/web',
-  'version': '0.1.0',
-  'private': true,
-  'description': 'HelixCRM Frontend'
+  "name": "@helixcrm/web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "HelixCRM Frontend"
 }

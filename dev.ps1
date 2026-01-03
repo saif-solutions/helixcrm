@@ -62,6 +62,19 @@ function Invoke-DbMigrate {
     }
 }
 
+
+function Invoke-DbSeed {
+    Write-Host "Seeding database with test data..." -ForegroundColor Cyan
+    if (Test-Path apps\api) {
+        cd apps\api
+        npx ts-node scripts/seed.ts
+        cd ..\..
+        Write-Host "Database seeded!" -ForegroundColor Green
+    } else {
+        Write-Host "API directory not found. Run setup first." -ForegroundColor Red
+    }
+}
+
 # Execute command
 switch ($Command) {
     "setup" { Invoke-Setup }
@@ -76,3 +89,4 @@ switch ($Command) {
         Show-Help
     }
 }
+

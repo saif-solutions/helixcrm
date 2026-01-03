@@ -1,19 +1,24 @@
-{
+﻿{
   "name": "helixcrm",
   "version": "0.1.0",
   "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
   "scripts": {
-    "dev": "npx turbo dev",
-    "build": "npx turbo build",
-    "test": "npx turbo test",
-    "lint": "npx turbo lint",
+    "api:dev": "cd apps/api && npm run start:dev",
+    "build": "turbo build",
+    "test": "turbo test",
+    "lint": "turbo lint",
+    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "docker:up": "docker-compose -f docker/docker-compose.yml up -d",
     "docker:down": "docker-compose -f docker/docker-compose.yml down"
   },
   "devDependencies": {
-    "prettier": "^3.7.4",
-    "turbo": "^1.13.4",
-    "typescript": "^5.9.3"
+    "turbo": "^1.10.16",
+    "prettier": "^3.0.0",
+    "typescript": "^5.1.6"
   },
   "packageManager": "npm@9.6.7",
   "engines": {
