@@ -26,14 +26,14 @@ model Organization {
 }
 
 model User {
-  id           String  @id @default(uuid())
-  email        String  @unique
-  firstName    String?
-  lastName     String?
-  passwordHash String
-  role         String  @default("user")
-  isActive     Boolean @default(true)
-
+  id             String   @id @default(uuid())
+  email          String   @unique
+  firstName      String?
+  lastName       String?
+  passwordHash   String
+  role           String   @default("user")
+  isActive       Boolean  @default(true)
+  tokenVersion   Int      @default(1)  // ADD THIS LINE
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
@@ -149,3 +149,4 @@ model AuditLog {
   @@index([createdAt])
   @@map("audit_logs")
 }
+
