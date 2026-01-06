@@ -1,24 +1,32 @@
-// File: apps/api/src/shared/logging/logger.service.ts
-import { Injectable, LoggerService } from '@nestjs/common';
-import * as winston from 'winston';
+﻿import { Injectable, LoggerService } from "@nestjs/common";
+import * as winston from "winston";
 
 @Injectable()
 export class AppLogger implements LoggerService {
   private logger: winston.Logger;
-  
+
   constructor() {
+    // Use centralized log directory at project root
+    const logDir = process.env.LOG_DIR || "../../logs/api";
+    
     this.logger = winston.createLogger({
-      level: 'info',
+      level: process.env.LOG_LEVEL || "info",
       format: winston.format.combine(
         winston.format.timestamp(),
         winston.format.json(),
       ),
       transports: [
         new winston.transports.Console(),
-        new winston.transports.File({ filename: 'logs/combined.log' }),
         new winston.transports.File({ 
-          filename: 'logs/error.log', 
-          level: 'error' 
+          filename: `${logDir}/combined.log`,
+          maxsize: 5242880, // 5MB
+          maxFiles: 5,
+        }),
+        new winston.transports.File({
+          filename: `${logDir}/error.log`,
+          level: "error",
+          maxsize: 5242880,
+          maxFiles: 5,
         }),
       ],
     });

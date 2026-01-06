@@ -1,9 +1,11 @@
 ﻿import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 const Contacts: React.FC = () => {
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchContacts();
@@ -13,8 +15,22 @@ const Contacts: React.FC = () => {
     try {
       const response = await axios.get("http://localhost:3000/contacts");
       setContacts(response.data);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to fetch contacts:", error);
+      
+      // Handle 401 Unauthorized
+      if (error.response?.status === 401) {
+        console.log("Session expired, redirecting to login");
+        // Clear local storage
+        localStorage.removeItem("helixcrm_token");
+        localStorage.removeItem("helixcrm_user");
+        // Redirect to login
+        navigate("/login");
+        return;
+      }
+      
+      // For other errors, show a message but stay on page
+      alert("Failed to load contacts. Please try again.");
     } finally {
       setLoading(false);
     }
