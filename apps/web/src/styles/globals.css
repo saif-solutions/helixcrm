@@ -1,0 +1,110 @@
+/* Import fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code&display=swap');
+
+/* Custom CSS Variables */
+:root {
+  /* Primary colors */
+  --color-primary-50: #eff6ff;
+  --color-primary-500: #3b82f6;
+  --color-primary-900: #1e3a8a;
+  
+  /* Neutral colors */
+  --color-neutral-50: #f9fafb;
+  --color-neutral-500: #6b7280;
+  --color-neutral-900: #111827;
+  
+  /* Semantic colors */
+  --color-success-500: #22c55e;
+  --color-error-500: #ef4444;
+  --color-warning-500: #f59e0b;
+  --color-info-500: #06b6d4;
+}
+
+/* Base styles */
+html {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: var(--color-neutral-50);
+  color: var(--color-neutral-900);
+}
+
+/* Custom utility classes */
+.card {
+  background-color: white;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+}
+
+/* Scrollbar styling */
+.scrollbar-thin {
+  scrollbar-width: thin;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background-color: #f3f4f6;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: #9ca3af;
+  border-radius: 9999px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background-color: #6b7280;
+}
+
+/* Animation utilities */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideInFromTop {
+  from {
+    transform: translateY(-10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInFromBottom {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.fade-in {
+  animation: fadeIn 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.slide-in-from-top {
+  animation: slideInFromTop 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.slide-in-from-bottom {
+  animation: slideInFromBottom 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
