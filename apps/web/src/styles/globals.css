@@ -8,12 +8,12 @@
   --color-primary-50: #eff6ff;
   --color-primary-500: #3b82f6;
   --color-primary-900: #1e3a8a;
-  
+
   /* Neutral colors */
   --color-neutral-50: #f9fafb;
   --color-neutral-500: #6b7280;
   --color-neutral-900: #111827;
-  
+
   /* Semantic colors */
   --color-success-500: #22c55e;
   --color-error-500: #ef4444;
@@ -31,6 +31,49 @@ html {
 body {
   background-color: var(--color-neutral-50);
   color: var(--color-neutral-900);
+  margin: 0;
+  padding: 0;
+}
+
+/* SVG Styling - CRITICAL FIX */
+svg {
+  display: inline-block;
+  vertical-align: middle;
+  max-width: 100%;
+  height: auto;
+}
+
+/* Prevent SVG from taking full page size */
+svg:not([width]):not([height]) {
+  width: 1em;
+  height: 1em;
+}
+
+/* Specific SVG icon sizing for common icon libraries */
+svg.icon-sm {
+  width: 1rem;
+  height: 1rem;
+}
+
+svg.icon-md {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+svg.icon-lg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+svg.icon-xl {
+  width: 2rem;
+  height: 2rem;
+}
+
+/* Heroicons specific fix */
+svg[class*="heroicon"] {
+  width: 1em;
+  height: 1em;
 }
 
 /* Custom utility classes */
@@ -40,6 +83,26 @@ body {
   border: 1px solid #e5e7eb;
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
   padding: 1.5rem;
+}
+
+/* Reset box sizing */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+/* Reset margins and padding */
+h1, h2, h3, h4, h5, h6, p, figure, blockquote, dl, dd {
+  margin: 0;
+}
+
+/* Reset button styles */
+button {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+  outline: inherit;
 }
 
 /* Scrollbar styling */
@@ -107,4 +170,9 @@ body {
 
 .slide-in-from-bottom {
   animation: slideInFromBottom 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Toast z-index */
+.z-toast {
+  z-index: 9999;
 }

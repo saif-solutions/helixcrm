@@ -8,43 +8,79 @@ datasource db {
 }
 
 model Organization {
-  id       String @id @default(uuid())
-  name     String @unique
-  slug     String @unique
-  status   String @default("active")
+  id       String   @id @default(uuid())
+  name     String   @unique
+  slug     String   @unique
+  status   String   @default("active")
   settings Json?
 
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  User      User[]
-  Contact   Contact[]
-  Account   Account[]
-  Activity  Activity[]
-  AuditLog  AuditLog[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  User               User[]
+  Contact            Contact[]
+  Account            Account[]
+  Activity           Activity[]
+  AuditLog           AuditLog[]
+  PasswordResetToken PasswordResetToken[]
 
   @@map("organizations")
 }
 
 model User {
-  id             String   @id @default(uuid())
-  email          String   @unique
-  firstName      String?
-  lastName       String?
-  passwordHash   String
-  role           String   @default("user")
-  isActive       Boolean  @default(true)
-  tokenVersion   Int      @default(1)  // ADD THIS LINE
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  id                   String   @id @default(uuid())
+  email                String   @unique
+  firstName            String?
+  lastName             String?
+  passwordHash         String
+  role                 String   @default("user")
+  isActive             Boolean  @default(true)
+  tokenVersion         Int      @default(1)
+  emailVerified        Boolean  @default(false)
+  lastPasswordResetAt  DateTime?
+  failedLoginAttempts  Int      @default(0)
+  lockedUntil          DateTime?
+  deletedAt            DateTime?
+  organizationId       String
+  organization         Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
   lastLoginAt DateTime?
-  Activity    Activity[]
-  AuditLog    AuditLog[]
+  
+  PasswordResetToken PasswordResetToken[]
+  Activity           Activity[]
+  AuditLog           AuditLog[]
 
   @@index([organizationId, email])
+  @@index([deletedAt])
+  @@index([emailVerified])
+  @@index([lockedUntil])
   @@map("users")
+}
+
+model PasswordResetToken {
+  id             String   @id @default(uuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  email          String
+  tokenHash      String   @db.VarChar(255)
+  ipAddress      String?
+  userAgent      String?
+  usedAt         DateTime?
+  expiresAt      DateTime
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([userId])
+  @@index([organizationId])
+  @@index([email])
+  @@index([expiresAt])
+  @@index([usedAt])
+  @@unique([userId, tokenHash])
+  @@map("password_reset_tokens")
 }
 
 model Contact {
@@ -149,4 +185,3 @@ model AuditLog {
   @@index([createdAt])
   @@map("audit_logs")
 }
-
