@@ -13,8 +13,6 @@
  * - Pagination (20 items per page)
  * - Basic filtering/search
  * - Empty state handling
- * - Create/Edit form with validation
- * - Delete confirmation with warning
  */
 import React, { useState, useEffect, ChangeEvent } from 'react';
 import { useAuth } from '../hooks/useAuth';
@@ -23,9 +21,6 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../components/ui/Table';
-import { Modal } from '../components/ui/Modal';
-import { ConfirmationModal } from '../components/ui/ConfirmationModal';
-import { ContactForm } from '../components/contacts/ContactForm';
 import { Plus, Search, Loader2 } from 'lucide-react';
 
 interface Contact {
@@ -39,11 +34,9 @@ interface Contact {
   updatedAt: string;
 }
 
-type FormMode = 'create' | 'edit';
-
 export const ContactsPage: React.FC = () => {
   const { user, token } = useAuth();
-  const { success, error, info } = useToast();
+  const { success: _success, error, info } = useToast();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -51,19 +44,8 @@ export const ContactsPage: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const itemsPerPage = 20;
 
-  // Form state
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [formMode, setFormMode] = useState<FormMode>('create');
-  const [editingContact, setEditingContact] = useState<Contact | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Delete state
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [contactToDelete, setContactToDelete] = useState<Contact | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
-
   // DEVELOPMENT MODE: Mock data for testing
-  const _isDevelopment = true; // Always true for now to test
+  const isDevelopment = true; // Always true for now to test
   const developmentToken = 'dev-mock-token';
   const developmentUser = {
     id: 'dev-user-id',
@@ -81,6 +63,8 @@ export const ContactsPage: React.FC = () => {
   // Fetch contacts from API
   const fetchContacts = async () => {
     console.log('í´ fetchContacts called');
+    console.log('   effectiveToken:', !!effectiveToken);
+    console.log('   effectiveUser:', !!effectiveUser);
     
     if (!effectiveToken || !effectiveUser) {
       console.log('âŒ No token/user, showing error');
@@ -162,108 +146,6 @@ export const ContactsPage: React.FC = () => {
     }
   };
 
-  // Form Handlers
-  const handleCreateContact = () => {
-    setFormMode('create');
-    setEditingContact(null);
-    setIsFormOpen(true);
-  };
-
-  const handleEditContact = (contact: Contact) => {
-    setFormMode('edit');
-    setEditingContact(contact);
-    setIsFormOpen(true);
-  };
-
-  const handleDeleteClick = (contact: Contact) => {
-    setContactToDelete(contact);
-    setIsDeleteModalOpen(true);
-  };
-
-  const handleDeleteConfirm = async () => {
-    if (!contactToDelete) return;
-
-    setIsDeleting(true);
-    console.log('í·‘ï¸ Deleting contact:', contactToDelete.id);
-
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Remove contact from state
-      setContacts(prev => prev.filter(contact => contact.id !== contactToDelete.id));
-      
-      success(`Contact "${contactToDelete.firstName} ${contactToDelete.lastName}" deleted successfully`);
-      
-      // Close modal and reset
-      setIsDeleteModalOpen(false);
-      setContactToDelete(null);
-      
-    } catch (err) {
-      console.error('Delete error:', err);
-      error('Failed to delete contact. Please try again.');
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  const handleDeleteCancel = () => {
-    setIsDeleteModalOpen(false);
-    setContactToDelete(null);
-  };
-
-  const handleFormSubmit = async (formData: any) => {
-    setIsSubmitting(true);
-    console.log('í³ Form submission:', formData);
-
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      if (formMode === 'create') {
-        // Create new contact
-        const newContact: Contact = {
-          id: Date.now().toString(),
-          ...formData,
-          organizationId: effectiveUser?.organizationId || 'dev-org-id',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        };
-
-        setContacts(prev => [newContact, ...prev]);
-        success('Contact created successfully');
-      } else {
-        // Update existing contact
-        if (!editingContact) return;
-
-        const updatedContact: Contact = {
-          ...editingContact,
-          ...formData,
-          updatedAt: new Date().toISOString()
-        };
-
-        setContacts(prev => 
-          prev.map(contact => 
-            contact.id === editingContact.id ? updatedContact : contact
-          )
-        );
-        success('Contact updated successfully');
-      }
-
-      setIsFormOpen(false);
-    } catch (err) {
-      console.error('Form submission error:', err);
-      error('Failed to save contact. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleFormCancel = () => {
-    setIsFormOpen(false);
-    setEditingContact(null);
-  };
-
   // Initial fetch
   useEffect(() => {
     console.log('í´„ useEffect triggered, fetching contacts');
@@ -281,6 +163,18 @@ export const ContactsPage: React.FC = () => {
 
     return () => clearTimeout(timer);
   }, [searchTerm]);
+
+  const handleCreateContact = () => {
+    info('Create contact functionality will be implemented in Task 2');
+  };
+
+  const handleEditContact = (contactId: string) => {
+    info(`Edit contact ${contactId} will be implemented in Task 2`);
+  };
+
+  const handleDeleteContact = (contactId: string) => {
+    info(`Delete contact ${contactId} will be implemented in Task 3`);
+  };
 
   const handleSearchChange = (e: ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
@@ -315,34 +209,6 @@ export const ContactsPage: React.FC = () => {
   console.log('í³± Rendering contacts table with', contacts.length, 'contacts');
   return (
     <div className="container mx-auto px-4 py-8">
-      {/* Contact Form Modal */}
-      <Modal
-        isOpen={isFormOpen}
-        onClose={handleFormCancel}
-        size="lg"
-      >
-        <ContactForm
-          mode={formMode}
-          contact={editingContact || undefined}
-          onSubmit={handleFormSubmit}
-          onCancel={handleFormCancel}
-          isLoading={isSubmitting}
-        />
-      </Modal>
-
-      {/* Delete Confirmation Modal */}
-      <ConfirmationModal
-        isOpen={isDeleteModalOpen}
-        onClose={handleDeleteCancel}
-        onConfirm={handleDeleteConfirm}
-        title="Delete Contact"
-        description={`Are you sure you want to delete "${contactToDelete?.firstName} ${contactToDelete?.lastName}"? This action cannot be undone.`}
-        confirmText="Delete Contact"
-        cancelText="Cancel"
-        variant="destructive"
-        isLoading={isDeleting}
-      />
-
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
@@ -420,14 +286,14 @@ export const ContactsPage: React.FC = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleEditContact(contact)}
+                        onClick={() => handleEditContact(contact.id)}
                       >
                         Edit
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleDeleteClick(contact)}
+                        onClick={() => handleDeleteContact(contact.id)}
                       >
                         Delete
                       </Button>
