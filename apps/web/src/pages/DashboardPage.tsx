@@ -4,7 +4,7 @@ import { useToast } from '../components/feedback/ToastProvider';
 import { LoadingSpinner } from '../components/feedback/LoadingSpinner';
 
 const DashboardPage: React.FC = () => {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading] = useState(false);
   const { success, info } = useToast();
 
   const handleLogout = () => {
