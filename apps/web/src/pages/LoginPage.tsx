@@ -99,8 +99,8 @@ const LoginPage: React.FC = () => {
       const successData = data as LoginResponse;
       
       // Store token and user data
-      localStorage.setItem('access_token', successData.access_token);
-      localStorage.setItem('user', JSON.stringify(successData.user));
+      localStorage.setItem('helix_token', successData.access_token);
+      localStorage.setItem('helix_user', JSON.stringify(successData.user));
       
       // Extract token version from JWT payload (simplified for MVP)
       // In production, you would decode the JWT to get tokenVersion
@@ -178,8 +178,8 @@ const LoginPage: React.FC = () => {
       const successData = data as LoginResponse;
       
       // Store token and user data
-      localStorage.setItem('access_token', successData.access_token);
-      localStorage.setItem('user', JSON.stringify(successData.user));
+      localStorage.setItem('helix_token', successData.access_token);
+      localStorage.setItem('helix_user', JSON.stringify(successData.user));
       
       // Extract token version from JWT payload
       const tokenVersion = successData.user.tokenVersion || 1;

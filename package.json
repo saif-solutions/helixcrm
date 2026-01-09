@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "helixcrm",
   "version": "0.1.0",
   "private": true,
@@ -16,12 +16,18 @@
     "docker:down": "docker-compose -f docker/docker-compose.yml down"
   },
   "devDependencies": {
-    "turbo": "^1.10.16",
     "prettier": "^3.0.0",
+    "turbo": "^1.10.16",
     "typescript": "^5.1.6"
   },
   "packageManager": "npm@9.6.7",
   "engines": {
     "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "rxjs": "7.8.2"
+  },
+  "resolutions": {
+    "rxjs": "7.8.2"
   }
 }

@@ -1,7 +1,7 @@
 /**
  * Contact Form Component
  * Handles creating and editing contacts with validation
- * 
+ *
  * HELIX Requirements:
  * - Multi-tenant (organizationId auto-set)
  * - Validation with clear errors
@@ -12,15 +12,14 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '../ui/Card';
-import { X, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
-// Simple interface for form data
+// Simple interface for form data - matches API DTO
 interface ContactFormData {
   firstName: string;
   lastName: string;
   email: string;
   phone?: string;
-  organizationId?: string;
 }
 
 interface ContactFormProps {
@@ -79,193 +78,181 @@ export const ContactForm: React.FC<ContactFormProps> = ({
   onCancel,
   isLoading = false,
 }) => {
-  const [formData, setFormData] = useState<ContactFormData>(
-    contact || {
-      firstName: '',
-      lastName: '',
-      email: '',
-      phone: '',
-      organizationId: '',
-    }
-  );
+  const [formData, setFormData] = useState<ContactFormData>({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+  });
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [formError, setFormError] = useState<string | null>(null);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
-  // Update form when contact data changes
+  // Initialize form with contact data if editing
   useEffect(() => {
     if (contact) {
-      setFormData(contact);
+      setFormData({
+        firstName: contact.firstName || '',
+        lastName: contact.lastName || '',
+        email: contact.email || '',
+        phone: contact.phone || '',
+      });
     }
   }, [contact]);
 
-  const handleInputChange = (field: keyof ContactFormData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const handleChange = (field: keyof ContactFormData) => (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: e.target.value,
+    }));
     
     // Clear error when user starts typing
     if (errors[field]) {
-      setErrors(prev => {
-        const newErrors = { ...prev };
-        delete newErrors[field];
-        return newErrors;
-      });
+      setErrors((prev) => ({
+        ...prev,
+        [field]: '',
+      }));
     }
   };
 
-  const handleBlur = (field: keyof ContactFormData) => {
-    setTouched(prev => ({ ...prev, [field]: true }));
+  const handleBlur = (field: keyof ContactFormData) => () => {
+    setTouched((prev) => ({
+      ...prev,
+      [field]: true,
+    }));
+
+    // Validate field on blur
     
-    // Validate single field
-    const validation = validateForm(formData);
+    const validation = validateForm({ ...formData });
     if (validation.errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: validation.errors[field] }));
+      setErrors((prev) => ({
+        ...prev,
+        [field]: validation.errors[field],
+      }));
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setFormError(null);
-
+    
     const validation = validateForm(formData);
     setErrors(validation.errors);
-
+    
+    // Mark all fields as touched for error display
+    const allTouched = Object.keys(formData).reduce((acc, key) => {
+      acc[key] = true;
+      return acc;
+    }, {} as Record<string, boolean>);
+    setTouched(allTouched);
+    
     if (!validation.isValid) {
-      // Mark all fields as touched to show errors
-      setTouched({
-        firstName: true,
-        lastName: true,
-        email: true,
-        phone: true,
-      });
       return;
     }
-
-    try {
-      await onSubmit(formData);
-    } catch (error) {
-      console.error('Form submission error:', error);
-      setFormError(
-        error instanceof Error 
-          ? error.message 
-          : 'Failed to save contact. Please try again.'
-      );
-    }
+    
+    // Clean up phone field if empty
+    const submitData = {
+      ...formData,
+      phone: formData.phone?.trim() || undefined,
+    };
+    
+    await onSubmit(submitData);
   };
 
-  const title = mode === 'create' ? 'Add New Contact' : 'Edit Contact';
-  const submitText = mode === 'create' ? 'Create Contact' : 'Save Changes';
-  const isValid = validateForm(formData).isValid;
+  const getFieldError = (field: keyof ContactFormData) => {
+    return touched[field] ? errors[field] : '';
+  };
 
   return (
-    <Card className="w-full max-w-2xl mx-auto">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-        <CardTitle className="text-xl font-semibold">{title}</CardTitle>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onCancel}
-          disabled={isLoading}
-          className="h-8 w-8"
-        >
-          <X className="h-4 w-4" />
-        </Button>
-      </CardHeader>
-
-      <form onSubmit={handleSubmit}>
-        <CardContent className="space-y-6">
-          {/* Form Error Display */}
-          {formError && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-              <p className="text-sm text-red-800">{formError}</p>
+    <form onSubmit={handleSubmit}>
+      <Card className="border-0 shadow-none">
+        <CardHeader className="px-0 pt-0">
+          <CardTitle className="text-lg font-semibold">
+            {mode === 'create' ? 'Add New Contact' : 'Edit Contact'}
+          </CardTitle>
+        </CardHeader>
+        
+        <CardContent className="px-0 space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
+                First Name *
+              </label>
+              <Input
+                id="firstName"
+                value={formData.firstName}
+                onChange={handleChange('firstName')}
+                onBlur={handleBlur('firstName')}
+                placeholder="John"
+                className={getFieldError('firstName') ? 'border-red-500' : ''}
+                disabled={isLoading}
+              />
+              {getFieldError('firstName') && (
+                <p className="mt-1 text-sm text-red-600">{getFieldError('firstName')}</p>
+              )}
             </div>
-          )}
-
-          {/* First Name */}
-          <div className="space-y-2">
-            <label htmlFor="firstName" className="text-sm font-medium text-gray-700">
-              First Name *
-            </label>
-            <Input
-              id="firstName"
-              placeholder="John"
-              value={formData.firstName}
-              onChange={(e) => handleInputChange('firstName', e.target.value)}
-              onBlur={() => handleBlur('firstName')}
-              error={!!errors.firstName && touched.firstName}
-              disabled={isLoading}
-            />
-            {errors.firstName && touched.firstName && (
-              <p className="text-sm text-red-600">{errors.firstName}</p>
-            )}
+            
+            <div>
+              <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
+                Last Name *
+              </label>
+              <Input
+                id="lastName"
+                value={formData.lastName}
+                onChange={handleChange('lastName')}
+                onBlur={handleBlur('lastName')}
+                placeholder="Doe"
+                className={getFieldError('lastName') ? 'border-red-500' : ''}
+                disabled={isLoading}
+              />
+              {getFieldError('lastName') && (
+                <p className="mt-1 text-sm text-red-600">{getFieldError('lastName')}</p>
+              )}
+            </div>
           </div>
-
-          {/* Last Name */}
-          <div className="space-y-2">
-            <label htmlFor="lastName" className="text-sm font-medium text-gray-700">
-              Last Name *
-            </label>
-            <Input
-              id="lastName"
-              placeholder="Doe"
-              value={formData.lastName}
-              onChange={(e) => handleInputChange('lastName', e.target.value)}
-              onBlur={() => handleBlur('lastName')}
-              error={!!errors.lastName && touched.lastName}
-              disabled={isLoading}
-            />
-            {errors.lastName && touched.lastName && (
-              <p className="text-sm text-red-600">{errors.lastName}</p>
-            )}
-          </div>
-
-          {/* Email */}
-          <div className="space-y-2">
-            <label htmlFor="email" className="text-sm font-medium text-gray-700">
-              Email *
+          
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+              Email Address *
             </label>
             <Input
               id="email"
               type="email"
-              placeholder="john.doe@example.com"
               value={formData.email}
-              onChange={(e) => handleInputChange('email', e.target.value)}
-              onBlur={() => handleBlur('email')}
-              error={!!errors.email && touched.email}
+              onChange={handleChange('email')}
+              onBlur={handleBlur('email')}
+              placeholder="john.doe@example.com"
+              className={getFieldError('email') ? 'border-red-500' : ''}
               disabled={isLoading}
             />
-            {errors.email && touched.email && (
-              <p className="text-sm text-red-600">{errors.email}</p>
+            {getFieldError('email') && (
+              <p className="mt-1 text-sm text-red-600">{getFieldError('email')}</p>
             )}
           </div>
-
-          {/* Phone */}
-          <div className="space-y-2">
-            <label htmlFor="phone" className="text-sm font-medium text-gray-700">
-              Phone Number
+          
+          <div>
+            <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+              Phone Number (Optional)
             </label>
             <Input
               id="phone"
-              type="tel"
-              placeholder="+1 (555) 123-4567"
               value={formData.phone || ''}
-              onChange={(e) => handleInputChange('phone', e.target.value)}
-              onBlur={() => handleBlur('phone')}
-              error={!!errors.phone && touched.phone}
+              onChange={handleChange('phone')}
+              onBlur={handleBlur('phone')}
+              placeholder="+1 (555) 123-4567"
+              className={getFieldError('phone') ? 'border-red-500' : ''}
               disabled={isLoading}
             />
-            {errors.phone && touched.phone && (
-              <p className="text-sm text-red-600">{errors.phone}</p>
+            {getFieldError('phone') && (
+              <p className="mt-1 text-sm text-red-600">{getFieldError('phone')}</p>
             )}
-            <p className="text-xs text-gray-500">
-              Optional. Include country code for international numbers.
+            <p className="mt-1 text-xs text-gray-500">
+              Include country code for international numbers
             </p>
           </div>
-
-          {/* Organization ID (hidden, auto-set) */}
-          <input type="hidden" value={formData.organizationId || ''} />
         </CardContent>
-
-        <CardFooter className="flex justify-end space-x-3 border-t px-6 py-4">
+        
+        <CardFooter className="px-0 pb-0 flex justify-end space-x-2">
           <Button
             type="button"
             variant="outline"
@@ -276,20 +263,19 @@ export const ContactForm: React.FC<ContactFormProps> = ({
           </Button>
           <Button
             type="submit"
-            disabled={isLoading || !isValid}
-            loading={isLoading}
+            disabled={isLoading}
           >
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Saving...
+                {mode === 'create' ? 'Creating...' : 'Saving...'}
               </>
             ) : (
-              submitText
+              mode === 'create' ? 'Create Contact' : 'Save Changes'
             )}
           </Button>
         </CardFooter>
-      </form>
-    </Card>
+      </Card>
+    </form>
   );
 };

@@ -1,3 +1,9 @@
+#!/bin/bash
+echo "í´ MINIMAL TEST COMPONENT"
+echo "========================"
+
+# Create a minimal test component
+cat > apps/web/src/pages/TestPage.tsx << 'TEST'
 import React from 'react';
 import { useAuth } from '../hooks/useAuth';
 
@@ -18,3 +24,11 @@ export const TestPage: React.FC = () => {
     </div>
   );
 };
+TEST
+
+echo "âœ… Created TestPage.tsx"
+echo "Add route in App.tsx:"
+echo "  <Route path=\"/test\" element={<TestPage />} />"
+echo "Then visit http://localhost:5173/test"
+echo ""
+echo "This isolates the hook issue from ContactsPage complexity."

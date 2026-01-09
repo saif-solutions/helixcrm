@@ -7,7 +7,7 @@ import { AppService } from "./app.service";
 import { HealthController } from "./health.controller";
 import { PrismaModule } from "./shared/prisma/prisma.module";
 import { AuthModule } from "./modules/auth/auth.module";
-// import { ContactsModule } from "./modules/contacts/contacts.module"; // Temporarily disabled
+import { ContactsModule } from "./modules/contacts/contacts.module";
 import { LoggingModule } from "./shared/logging/logging.module";
 import { RequestLoggerInterceptor } from "./shared/logging/request-logger.interceptor";
 
@@ -49,7 +49,7 @@ import { RequestLoggerInterceptor } from "./shared/logging/request-logger.interc
     
     // Feature modules
     AuthModule,
-    // ContactsModule, // Temporarily disabled to focus on password reset
+ContactsModule,
     
     // Infrastructure modules
     LoggingModule,

@@ -1,0 +1,30 @@
+--- a/apps/web/src/pages/ContactsPage.tsx
++++ b/apps/web/src/pages/ContactsPage.tsx
+@@ -60,6 +60,7 @@ export const ContactsPage: React.FC = () => {
+   // Fetch contacts from REAL API - FIXED: Stable dependencies
+   const fetchContacts = useCallback(async () => {
+     console.log('í³ž fetchContacts called');
++    console.log('í´‘ Token available:', !!getAuthToken());
++    console.log('í±¤ User available:', !!user);
+     
+     const authToken = getAuthToken();
+     if (!authToken || !user) {
+@@ -73,13 +74,17 @@ export const ContactsPage: React.FC = () => {
+     
+     try {
+       console.log('í´ Fetching contacts with auth token');
++      console.log('í¼ Making API call to contacts service...');
+       const contactsData = await contactsService.getAll();
+       console.log('âœ… Contacts loaded from API:', contactsData.length);
+       
+       setContacts(contactsData);
+       setFilteredContacts(contactsData);
+       
+-      if (contactsData.length === 0) {
++      if (contactsData.length > 0) {
++        console.log('í³‹ Sample contact:', contactsData[0]);
++      } else {
++        console.log('í³­ No contacts found in database');
+         info('No contacts found', 'Create your first contact to get started');
+       }
+ 
