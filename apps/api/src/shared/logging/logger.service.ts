@@ -1,5 +1,7 @@
-﻿import { Injectable, LoggerService } from "@nestjs/common";
+import { Injectable, LoggerService } from "@nestjs/common";
 import * as winston from "winston";
+import * as fs from "fs";
+import * as path from "path";
 
 @Injectable()
 export class AppLogger implements LoggerService {
@@ -7,8 +9,13 @@ export class AppLogger implements LoggerService {
 
   constructor() {
     // Use centralized log directory at project root
-    const logDir = process.env.LOG_DIR || "../../logs/api";
+    const logDir = path.join(__dirname, "../../../../logs/api");
     
+    // Create log directory if it doesn't exist
+    if (!fs.existsSync(logDir)) {
+      fs.mkdirSync(logDir, { recursive: true });
+    }
+
     this.logger = winston.createLogger({
       level: process.env.LOG_LEVEL || "info",
       format: winston.format.combine(
@@ -16,14 +23,19 @@ export class AppLogger implements LoggerService {
         winston.format.json(),
       ),
       transports: [
-        new winston.transports.Console(),
-        new winston.transports.File({ 
-          filename: `${logDir}/combined.log`,
+        new winston.transports.Console({
+          format: winston.format.combine(
+            winston.format.colorize(),
+            winston.format.simple()
+          )
+        }),
+        new winston.transports.File({
+          filename: path.join(logDir, "combined.log"),
           maxsize: 5242880, // 5MB
           maxFiles: 5,
         }),
         new winston.transports.File({
-          filename: `${logDir}/error.log`,
+          filename: path.join(logDir, "error.log"),
           level: "error",
           maxsize: 5242880,
           maxFiles: 5,

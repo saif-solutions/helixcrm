@@ -3,18 +3,19 @@ import { Injectable, NestInterceptor, ExecutionContext, CallHandler } from '@nes
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { AppLogger } from './logger.service';
+import { RequestWithId } from '../types/request-with-id';
 
 @Injectable()
 export class RequestLoggerInterceptor implements NestInterceptor {
   constructor(private logger: AppLogger) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> | Promise<Observable<any>> {
-    const request = context.switchToHttp().getRequest();
+    const request = context.switchToHttp().getRequest<RequestWithId>();
     const response = context.switchToHttp().getResponse();
-    
-    const requestId = Date.now().toString(36) + Math.random().toString(36).substr(2);
+
+    const requestId = request.requestId || 'interceptor-missing';
     const startTime = Date.now();
-    
+
     // Log request start
     this.logger.log('Request started', {
       requestId,

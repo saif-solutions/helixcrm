@@ -1,0 +1,38 @@
+import { NestFactory } from "@nestjs/core";
+import { AppModule } from "./app.module";
+import helmet from 'helmet';
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+
+  // ==================== SECURITY HEADERS ====================
+  // Apply Helmet security headers with safe defaults
+  app.use(helmet({
+    // Disable contentSecurityPolicy for now to avoid breaking frontend
+    // We'll configure it properly in Phase 1 workstream B
+    contentSecurityPolicy: false,
+    
+    // Enable other security headers
+    crossOriginEmbedderPolicy: false, // Disable for development
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  }));
+
+  // ==================== CORS CONFIGURATION ====================
+  // Enable CORS for frontend development
+  app.enableCors({
+    origin: "http://localhost:5173", // Vite default port
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization", "Accept", "X-Organization-Id"],
+  });
+
+  // ==================== GLOBAL PREFIX ====================
+  // Add API version prefix (Phase 1 requirement)
+  app.setGlobalPrefix('api/v1');
+
+  await app.listen(process.env.PORT ?? 3001);
+  console.log(`Ì∫Ä Application is running on: ${await app.getUrl()}`);
+  console.log(`Ì≥ù API Base URL: ${await app.getUrl()}/api/v1`);
+  console.log(`Ì¥í Security headers: Enabled (Helmet.js)`);
+}
+bootstrap();

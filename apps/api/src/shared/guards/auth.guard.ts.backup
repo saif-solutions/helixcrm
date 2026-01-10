@@ -1,4 +1,4 @@
-import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from "@nestjs/common";
+﻿import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { PrismaService } from "../prisma/prisma.service";
 
@@ -52,18 +52,10 @@ export class AuthGuard implements CanActivate {
   }
 
   private extractToken(request: any): string | null {
-    // 1. First check cookies (new secure method)
-    if (request.cookies?.access_token) {
-      return request.cookies.access_token;
-    }
-
-    // 2. Fall back to Authorization header (backward compatibility)
     const authHeader = request.headers.authorization;
-    if (authHeader) {
-      const [type, token] = authHeader.split(" ");
-      return type === "Bearer" ? token : null;
-    }
+    if (!authHeader) return null;
 
-    return null;
+    const [type, token] = authHeader.split(" ");
+    return type === "Bearer" ? token : null;
   }
 }

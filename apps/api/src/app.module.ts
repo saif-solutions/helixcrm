@@ -1,4 +1,4 @@
-﻿import { Module } from "@nestjs/common";
+import { MiddlewareConsumer, Module, NestModule, RequestMethod } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { APP_INTERCEPTOR } from "@nestjs/core";
 import { ThrottlerModule } from "@nestjs/throttler";
@@ -10,6 +10,8 @@ import { AuthModule } from "./modules/auth/auth.module";
 import { ContactsModule } from "./modules/contacts/contacts.module";
 import { LoggingModule } from "./shared/logging/logging.module";
 import { RequestLoggerInterceptor } from "./shared/logging/request-logger.interceptor";
+import { RequestContextMiddleware } from "./shared/middleware/request-context.middleware";
+import { CsrfMiddleware } from "./shared/security/csrf.middleware";
 
 @Module({
   imports: [
@@ -19,7 +21,7 @@ import { RequestLoggerInterceptor } from "./shared/logging/request-logger.interc
       envFilePath: ['.env', '.env.local', '.env.development'],
       expandVariables: true,
     }),
-    
+
     // Rate limiting
     ThrottlerModule.forRoot([
       {
@@ -43,14 +45,14 @@ import { RequestLoggerInterceptor } from "./shared/logging/request-logger.interc
         limit: 5, // 5 reset attempts per hour
       },
     ]),
-    
+
     // Database
     PrismaModule,
-    
+
     // Feature modules
     AuthModule,
 ContactsModule,
-    
+
     // Infrastructure modules
     LoggingModule,
   ],
@@ -65,4 +67,27 @@ ContactsModule,
     },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    // Apply RequestContextMiddleware to ALL routes first
+    consumer
+      .apply(RequestContextMiddleware)
+      .forRoutes({ path: '*', method: RequestMethod.ALL });
+
+    // Apply CSRF middleware to most routes (excludes safe methods and auth endpoints)
+    consumer
+      .apply(CsrfMiddleware)
+      .exclude(
+        { path: 'api/v1/auth/login', method: RequestMethod.ALL },
+        { path: 'api/v1/auth/register', method: RequestMethod.ALL },
+        { path: 'api/v1/auth/refresh', method: RequestMethod.ALL },
+        { path: 'api/v1/auth/logout', method: RequestMethod.ALL },
+        { path: 'api/v1/health', method: RequestMethod.ALL },
+        { path: 'api/v1/auth/(.*)', method: RequestMethod.GET }, // Allow GET to auth
+        { path: 'api/v1/(.*)', method: RequestMethod.GET }, // Allow all GET requests
+        { path: 'api/v1/(.*)', method: RequestMethod.HEAD },
+        { path: 'api/v1/(.*)', method: RequestMethod.OPTIONS }
+      )
+      .forRoutes({ path: '*', method: RequestMethod.ALL });
+  }
+}

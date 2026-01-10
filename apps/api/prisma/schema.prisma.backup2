@@ -1,0 +1,181 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Organization {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  isActive  Boolean  @default(true)
+  deletedAt DateTime?
+
+  users    User[]
+  contacts Contact[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("organizations")
+}
+
+model User {
+  id                   String   @id @default(uuid())
+  email                String   @unique
+  firstName            String?
+  lastName             String?
+  passwordHash         String
+  role                 String   @default("user")
+  isActive             Boolean  @default(true)
+  tokenVersion         Int      @default(1)
+  emailVerified        Boolean  @default(false)
+  lastPasswordResetAt  DateTime?
+  failedLoginAttempts  Int      @default(0)
+  lockedUntil          DateTime?
+  deletedAt            DateTime?
+  refreshToken         String?  // NEW: For refresh token storage
+  organizationId       String
+  organization         Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  lastLoginAt DateTime?
+
+  PasswordResetToken PasswordResetToken[]
+  ActivityCreated    Activity[]           @relation("ActivityCreatedBy")
+  ActivityAssigned   Activity[]           @relation("ActivityAssignedTo")
+  AuditLog           AuditLog[]
+
+  @@index([organizationId, email])
+  @@index([deletedAt])
+  @@index([emailVerified])
+  @@index([lockedUntil])
+  @@index([refreshToken]) // NEW: Index for refresh token lookup
+  @@map("users")
+}
+
+model Contact {
+  id             String   @id @default(uuid())
+  firstName      String
+  lastName       String
+  email          String?
+  phone          String?
+  title          String?
+  department     String?
+  company        String?
+  address        String?
+  city           String?
+  state          String?
+  postalCode     String?
+  country        String?
+  notes          String?
+  dateOfBirth    DateTime?
+  anniversary    DateTime?
+  tags           String[] // Stored as text array in PostgreSQL
+  customFields   Json?    // For flexible additional fields
+
+  isActive       Boolean  @default(true)
+  deletedAt      DateTime?
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  createdById    String
+  createdBy      User     @relation("ContactCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+
+  updatedById    String?
+  updatedBy      User?    @relation("ContactUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  assignedToId   String?
+  assignedTo     User?    @relation("ContactAssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([email])
+  @@index([deletedAt])
+  @@index([assignedToId])
+  @@map("contacts")
+}
+
+model Activity {
+  id             String   @id @default(uuid())
+  type           String   // "call", "email", "meeting", "note", "task"
+  title          String
+  description    String?
+  dueDate        DateTime?
+  completedAt    DateTime?
+  priority       String?  // "low", "medium", "high", "critical"
+  status         String   @default("pending") // "pending", "in-progress", "completed", "cancelled"
+
+  contactId      String?
+  contact        Contact? @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  createdById    String
+  createdBy      User     @relation("ActivityCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+
+  assignedToId   String?
+  assignedTo     User?    @relation("ActivityAssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([contactId])
+  @@index([assignedToId])
+  @@index([dueDate])
+  @@index([status])
+  @@map("activities")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  usedAt    DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([token])
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("password_reset_tokens")
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  action      String   // "CREATE", "UPDATE", "DELETE", "LOGIN", "LOGOUT", "PASSWORD_RESET"
+  entity      String   // "User", "Contact", "Organization", etc.
+  entityId    String?
+  changes     Json?    // { before: {...}, after: {...} }
+  ipAddress   String?
+  userAgent   String?
+
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([action])
+  @@index([entity])
+  @@index([createdAt])
+  @@map("audit_logs")
+}

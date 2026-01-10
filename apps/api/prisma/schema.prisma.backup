@@ -41,7 +41,6 @@ model User {
   failedLoginAttempts  Int      @default(0)
   lockedUntil          DateTime?
   deletedAt            DateTime?
-  refreshToken         String?  // NEW: For refresh token storage
   organizationId       String
   organization         Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
@@ -57,7 +56,6 @@ model User {
   @@index([deletedAt])
   @@index([emailVerified])
   @@index([lockedUntil])
-  @@index([refreshToken]) // NEW: Index for refresh token lookup
   @@map("users")
 }
 

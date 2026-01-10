@@ -8,7 +8,7 @@ import { AppLogger } from './logger.service';
 export class RequestLoggerInterceptor implements NestInterceptor {
   constructor(private logger: AppLogger) {}
 
-  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+  intercept(context: ExecutionContext, next: CallHandler): Observable<any> | Promise<Observable<any>> {
     const request = context.switchToHttp().getRequest();
     const response = context.switchToHttp().getResponse();
     
