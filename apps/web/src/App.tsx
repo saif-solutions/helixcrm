@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ErrorBoundary } from './components/feedback/ErrorBoundary';
 import { ToastProvider } from './components/feedback/ToastProvider';
-import { AuthProvider } from './hooks/useAuth';
+import { AuthProvider, useAuth } from './hooks/useAuth';
 import LoginPage from './pages/LoginPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
@@ -9,33 +9,24 @@ import DashboardPage from './pages/DashboardPage';
 import { ContactsPage } from './pages/ContactsPage';
 import './styles/globals.css';
 
-// Protected Route component
+// Protected Route component - updated for cookie-based auth
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  // Debug: Check what tokens exist
-  const localStorageToken = localStorage.getItem('helix_token');
-  const sessionStorageToken = sessionStorage.getItem('helix_token');
-  const token = localStorageToken || sessionStorageToken;
+  const { user, isLoading } = useAuth();
   
-  console.log('��� ProtectedRoute check:', {
-    hasLocalStorageToken: !!localStorageToken,
-    hasSessionStorageToken: !!sessionStorageToken,
-    hasToken: !!token,
-    tokenLength: token?.length
-  });
-  
-  // TEMPORARY: For development, allow access without token to test pages
-  const isDevelopment = import.meta.env.MODE === 'development';
-  if (!token && isDevelopment) {
-    console.warn('⚠️ Development mode: Allowing access without token for testing');
-    return <>{children}</>;
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-lg">Loading...</div>
+      </div>
+    );
   }
   
-  if (!token) {
-    console.log('❌ No token found, redirecting to login');
+  if (!user) {
+    console.log('❌ No user found, redirecting to login');
     return <Navigate to="/login" replace />;
   }
   
-  console.log('✅ Token found, allowing access');
+  console.log('✅ User authenticated:', user.email);
   return <>{children}</>;
 };
 
