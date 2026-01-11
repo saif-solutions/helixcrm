@@ -8,9 +8,10 @@ import {
   UseGuards,
   Res,
   Req,
-  Get
+  Get,
+  BadRequestException
 } from "@nestjs/common";
-import type { Response, Request } from 'express'; // Import as type
+import type { Response, Request } from 'express';
 import { Throttle } from "@nestjs/throttler";
 import { AuthService } from "./auth.service";
 import { AuthGuard } from "../../shared/guards/auth.guard";
@@ -21,13 +22,66 @@ export class AuthController {
 
   @Get("csrf-token")
   @HttpCode(HttpStatus.OK)
-  getCsrfToken(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    // CSRF token is automatically generated and attached to req.csrfToken()
-    // by the csurf middleware when this endpoint is hit
-    return {
-      csrfToken: (req as any).csrfToken ? (req as any).csrfToken() : 'development-mode',
-      timestamp: new Date().toISOString(),
-    };
+  getCsrfToken(@Req() req: Request) {
+    try {
+      // Check if CSRF middleware ran and attached the function
+      if (typeof (req as any).csrfToken !== 'function') {
+        throw new BadRequestException({
+          message: 'CSRF middleware not properly configured',
+          details: 'The CSRF middleware did not run for this endpoint',
+          code: 'CSRF_MIDDLEWARE_MISSING',
+          timestamp: new Date().toISOString(),
+          path: '/api/v1/auth/csrf-token',
+        });
+      }
+      
+      // Generate the CSRF token
+      const csrfToken = (req as any).csrfToken();
+      
+      // Validate the token
+      if (!csrfToken || typeof csrfToken !== 'string' || csrfToken.length < 10) {
+        throw new BadRequestException({
+          message: 'Invalid CSRF token generated',
+          details: 'Generated token is invalid or too short',
+          code: 'INVALID_CSRF_TOKEN',
+          timestamp: new Date().toISOString(),
+          path: '/api/v1/auth/csrf-token',
+        });
+      }
+      
+      // CRITICAL: Ensure we never return 'development-mode'
+      if (csrfToken === 'development-mode') {
+        throw new BadRequestException({
+          message: 'CSRF configuration error',
+          details: 'CSRF is still in development mode. Check middleware configuration.',
+          code: 'CSRF_DEVELOPMENT_MODE_ERROR',
+          timestamp: new Date().toISOString(),
+          path: '/api/v1/auth/csrf-token',
+        });
+      }
+      
+      return {
+        csrfToken,
+        timestamp: new Date().toISOString(),
+        expiresIn: 'Session',
+        note: 'Include this token in X-CSRF-Token header for state-changing requests (POST, PUT, DELETE, PATCH)'
+      };
+    } catch (error) {
+      // If it's already a BadRequestException, re-throw it
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      
+      // Otherwise, wrap in a BadRequestException with proper structure
+      throw new BadRequestException({
+        message: 'CSRF token generation failed',
+        error: error.message,
+        details: 'An unexpected error occurred while generating CSRF token',
+        code: 'CSRF_GENERATION_ERROR',
+        timestamp: new Date().toISOString(),
+        path: '/api/v1/auth/csrf-token',
+      });
+    }
   }
 
   @Post("login")

@@ -1,7 +1,7 @@
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
 import helmet from 'helmet';
-import cookieParser from 'cookie-parser'; // Default import
+import * as cookieParser from 'cookie-parser';
 import { GlobalExceptionFilter } from "./shared/exceptions/global-exception.filter";
 import { NotFoundExceptionFilter } from "./shared/exceptions/not-found-exception.filter";
 
@@ -61,13 +61,13 @@ async function bootstrap() {
   app.setGlobalPrefix('api/v1');
 
   await app.listen(process.env.PORT ?? 3001);
-  console.log(`Ì∫Ä Application is running on: ${await app.getUrl()}`);
-  console.log(`Ì≥ù API Base URL: ${await app.getUrl()}/api/v1`);
-  console.log(`Ì¥í Security headers: Enabled (Helmet.js)`);
-  console.log(`ÌΩ™ Cookie parser: Enabled (httpOnly cookies)`);
-  console.log(`Ìª°Ô∏è  CSRF protection: Enabled`);
+  console.log(`ÔøΩÔøΩÔøΩ Application is running on: ${await app.getUrl()}`);
+  console.log(`ÔøΩÔøΩÔøΩ API Base URL: ${await app.getUrl()}/api/v1`);
+  console.log(`ÔøΩÔøΩÔøΩ Security headers: Enabled (Helmet.js)`);
+  console.log(`ÔøΩÔøΩÔøΩ Cookie parser: Enabled (httpOnly cookies)`);
+  console.log(`ÔøΩÔøΩÔøΩÔ∏è  CSRF protection: Enabled`);
   console.log(`‚ö†Ô∏è  Global exception filters: Enabled`);
-  console.log(`Ì¥Ñ Request context middleware: Enabled`);
-  console.log(`Ì¥ë Cryptographically strong request IDs: Enabled`);
+  console.log(`ÔøΩÔøΩÔøΩ Request context middleware: Enabled`);
+  console.log(`ÔøΩÔøΩÔøΩ Cryptographically strong request IDs: Enabled`);
 }
 bootstrap();

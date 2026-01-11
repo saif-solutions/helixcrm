@@ -9,7 +9,7 @@ import DashboardPage from './pages/DashboardPage';
 import { ContactsPage } from './pages/ContactsPage';
 import './styles/globals.css';
 
-// Protected Route component - updated for cookie-based auth
+// Protected Route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, isLoading } = useAuth();
   

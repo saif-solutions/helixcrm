@@ -51,7 +51,7 @@ import { CsrfMiddleware } from "./shared/security/csrf.middleware";
 
     // Feature modules
     AuthModule,
-ContactsModule,
+    ContactsModule,
 
     // Infrastructure modules
     LoggingModule,
@@ -74,20 +74,10 @@ export class AppModule implements NestModule {
       .apply(RequestContextMiddleware)
       .forRoutes({ path: '*', method: RequestMethod.ALL });
 
-    // Apply CSRF middleware to most routes (excludes safe methods and auth endpoints)
+    // Apply CSRF middleware to ALL routes
+    // The CsrfMiddleware itself handles which paths/methods to skip
     consumer
       .apply(CsrfMiddleware)
-      .exclude(
-        { path: 'api/v1/auth/login', method: RequestMethod.ALL },
-        { path: 'api/v1/auth/register', method: RequestMethod.ALL },
-        { path: 'api/v1/auth/refresh', method: RequestMethod.ALL },
-        { path: 'api/v1/auth/logout', method: RequestMethod.ALL },
-        { path: 'api/v1/health', method: RequestMethod.ALL },
-        { path: 'api/v1/auth/(.*)', method: RequestMethod.GET }, // Allow GET to auth
-        { path: 'api/v1/(.*)', method: RequestMethod.GET }, // Allow all GET requests
-        { path: 'api/v1/(.*)', method: RequestMethod.HEAD },
-        { path: 'api/v1/(.*)', method: RequestMethod.OPTIONS }
-      )
       .forRoutes({ path: '*', method: RequestMethod.ALL });
   }
 }

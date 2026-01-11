@@ -1,25 +1,51 @@
 import { CookieOptions } from 'express';
+import SecurityConfig from '../../config/security.config';
 
+/**
+ * @deprecated Use SecurityConfig.cookies instead
+ * Keeping for backward compatibility during transition
+ */
 export const getCookieOptions = (): CookieOptions => {
-  const isProduction = process.env.NODE_ENV === 'production';
-  
-  return {
-    httpOnly: true, // Prevent XSS - JavaScript cannot access
-    secure: isProduction, // Only send over HTTPS in production
-    sameSite: isProduction ? 'strict' : 'lax', // CSRF protection
-    maxAge: 15 * 60 * 1000, // 15 minutes in milliseconds (matches JWT expiry)
-    path: '/', // Available on all paths
-  };
+  return SecurityConfig.cookies.accessToken();
 };
 
+/**
+ * @deprecated Use SecurityConfig.cookies instead
+ * Keeping for backward compatibility during transition
+ */
 export const getRefreshCookieOptions = (): CookieOptions => {
-  const isProduction = process.env.NODE_ENV === 'production';
+  return SecurityConfig.cookies.refreshToken();
+};
+
+/**
+ * Helper to clear cookies with proper options
+ */
+export const clearAuthCookies = (res: any): void => {
+  res.clearCookie('access_token', SecurityConfig.cookies.accessToken());
+  res.clearCookie('refresh_token', SecurityConfig.cookies.refreshToken());
+  res.clearCookie('_csrf', SecurityConfig.cookies.csrfToken());
+};
+
+/**
+ * Validate cookie security in production
+ */
+export const validateCookieSecurity = (): string[] => {
+  const warnings: string[] = [];
   
-  return {
-    httpOnly: true,
-    secure: isProduction,
-    sameSite: isProduction ? 'strict' : 'lax',
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    path: '/api/v1/auth/refresh', // Only sent to refresh endpoint
-  };
+  if (SecurityConfig.isProduction) {
+    const accessOpts = SecurityConfig.cookies.accessToken();
+    if (!accessOpts.secure) {
+      warnings.push('Access token cookie is not secure in production');
+    }
+    if (accessOpts.sameSite !== 'strict') {
+      warnings.push('Access token cookie SameSite is not strict in production');
+    }
+    
+    const refreshOpts = SecurityConfig.cookies.refreshToken();
+    if (!refreshOpts.secure) {
+      warnings.push('Refresh token cookie is not secure in production');
+    }
+  }
+  
+  return warnings;
 };

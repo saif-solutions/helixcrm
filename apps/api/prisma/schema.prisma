@@ -41,7 +41,12 @@ model User {
   failedLoginAttempts  Int      @default(0)
   lockedUntil          DateTime?
   deletedAt            DateTime?
-  refreshToken         String?  // NEW: For refresh token storage
+  
+  // REFRESH TOKEN SECURITY ENHANCEMENTS:
+  refreshTokenHash     String?  @db.VarChar(255) // Hashed refresh token (for security)
+  refreshTokenVersion  String?  @db.VarChar(255) // Version binding for replay detection ← ADDED
+  refreshTokenIssuedAt DateTime?                 // When the current refresh token was issued
+  
   organizationId       String
   organization         Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
@@ -57,7 +62,9 @@ model User {
   @@index([deletedAt])
   @@index([emailVerified])
   @@index([lockedUntil])
-  @@index([refreshToken]) // NEW: Index for refresh token lookup
+  @@index([refreshTokenHash])        // Index for hashed token lookup
+  @@index([refreshTokenVersion])     // For replay detection lookup ← ADDED
+  @@index([refreshTokenIssuedAt])    // For token expiration management
   @@map("users")
 }
 
@@ -88,7 +95,7 @@ model PasswordResetToken {
 model Contact {
   id         String  @id @default(uuid())
   firstName  String
-  lastName   String
+  lastName  String
   email      String?
   phone      String?
   title      String?

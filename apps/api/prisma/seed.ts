@@ -4,7 +4,7 @@ import * as bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('í¼± Starting database seed...');
+  console.log('ðŸŒ± Starting database seed with enhanced security...');
 
   // Create test organization
   const organization = await prisma.organization.upsert({
@@ -25,14 +25,14 @@ async function main() {
       email: 'user@helixcrm.test',
       firstName: 'Regular',
       lastName: 'User',
-      password: 'User123!', // Secure password
+      password: 'User123!',
       role: 'user',
     },
     {
       email: 'admin@helixcrm.test',
       firstName: 'Admin',
       lastName: 'User',
-      password: 'Admin123!', // Secure password
+      password: 'Admin123!',
       role: 'admin',
     },
   ];
@@ -47,8 +47,9 @@ async function main() {
         firstName: userData.firstName,
         lastName: userData.lastName,
         role: userData.role,
-        tokenVersion: 1, // Ensure token version
-        refreshToken: null, // Clear any existing refresh token
+        tokenVersion: 1,
+        refreshTokenHash: null, // No active refresh tokens initially
+        refreshTokenIssuedAt: null,
       },
       create: {
         email: userData.email,
@@ -60,14 +61,23 @@ async function main() {
         isActive: true,
         emailVerified: true,
         tokenVersion: 1,
+        refreshTokenHash: null,
+        refreshTokenIssuedAt: null,
       },
     });
 
     console.log(`âœ… User created: ${user.email} (${user.role})`);
   }
 
-  console.log('\ní¾‰ Database seed completed!');
-  console.log('\n=== TEST CREDENTIALS ===');
+  console.log('\nðŸŽ‰ Database seed completed with enhanced security!');
+  console.log('\n=== ENHANCED SECURITY FEATURES ===');
+  console.log('âœ“ Refresh tokens are now hashed in database');
+  console.log('âœ“ Token rotation enabled on refresh');
+  console.log('âœ“ Centralized security configuration');
+  console.log('âœ“ Production-ready cookie settings');
+  console.log('===================================\n');
+  
+  console.log('=== TEST CREDENTIALS ===');
   console.log('Admin:');
   console.log('  Email: admin@helixcrm.test');
   console.log('  Password: Admin123!');
