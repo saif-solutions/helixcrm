@@ -11,6 +11,7 @@ import { TenantGuard } from "../../shared/guards/tenant.guard";
   imports: [
     PrismaModule,
     LoggingModule,
+    // Keep JWT import for AuthGuard dependency
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'default-secret-change-in-production',
       signOptions: { expiresIn: '15m' },

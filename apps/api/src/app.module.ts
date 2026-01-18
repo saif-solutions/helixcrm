@@ -8,6 +8,7 @@ import { HealthController } from "./health.controller";
 import { PrismaModule } from "./shared/prisma/prisma.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { ContactsModule } from "./modules/contacts/contacts.module";
+import { LeadsModule } from "./modules/leads/leads.module"; // NEW import
 import { LoggingModule } from "./shared/logging/logging.module";
 import { RequestLoggerInterceptor } from "./shared/logging/request-logger.interceptor";
 import { RequestContextMiddleware } from "./shared/middleware/request-context.middleware";
@@ -52,6 +53,7 @@ import { CsrfMiddleware } from "./shared/security/csrf.middleware";
     // Feature modules
     AuthModule,
     ContactsModule,
+    LeadsModule, // NEW module added
 
     // Infrastructure modules
     LoggingModule,

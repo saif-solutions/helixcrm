@@ -12,13 +12,7 @@ ComponentName/
 ├── ComponentName.test.tsx      # Unit tests
 ├── ComponentName.stories.tsx   # Storybook documentation
 └── index.ts                    # Barrel exports
-2.2 4‑File Structure (Minimum for New Components)
-text
-ComponentName/
-├── ComponentName.tsx           # Main component logic
-├── ComponentName.types.ts      # TypeScript interfaces/types
-├── ComponentName.styles.ts     # Styling and design tokens
-└── index.ts                    # Barrel exports
+
 3. File Specifications
 3.1 ComponentName.tsx – Main Component File
 Purpose: Contains the component implementation logic only.
@@ -490,6 +484,191 @@ Grid system based
 Responsive breakpoints
 
 Slot‑based content
+
+## 5. MVP Component Specification
+
+### 5.1 Minimum Viable Component Library
+For any HELIX CRM deployment to be considered "Enterprise Ready," the following 25 components MUST be implemented and compliant with all standards:
+
+#### 5.1.1 Core Atoms (11 Required)
+| Component | Priority | Status | Owner | Required By |
+|-----------|----------|--------|-------|-------------|
+| Avatar | High | ✅ Production Ready | Design System Team | MVP |
+| Badge | High | ✅ Production Ready | Design System Team | MVP |
+| Button | Critical | ✅ Production Ready | Design System Team | MVP |
+| Icon | High | ✅ Production Ready | Design System Team | MVP |
+| Input | Critical | ✅ Production Ready | Design System Team | MVP |
+| Typography | High | ✅ Production Ready | Design System Team | MVP |
+| **Select** | Critical | 🔄 In Development | Frontend Team | MVP |
+| **Checkbox** | High | 🔄 In Development | Frontend Team | MVP |
+| **RadioGroup** | Medium | ⏳ Planned | Frontend Team | MVP |
+| **Textarea** | Medium | ⏳ Planned | Frontend Team | MVP |
+| **Separator** | Low | ⏳ Planned | Frontend Team | MVP |
+
+#### 5.1.2 Core Molecules (8 Required)
+| Component | Priority | Status | Owner | Required By |
+|-----------|----------|--------|-------|-------------|
+| Alert | High | ✅ Production Ready | Design System Team | MVP |
+| Card | High | ✅ Production Ready | Design System Team | MVP |
+| FormField | Critical | ✅ Production Ready | Design System Team | MVP |
+| **Dialog** | Critical | 🔄 In Development | Frontend Team | MVP |
+| **Dropdown** | High | 🔄 In Development | Frontend Team | MVP |
+| **Tooltip** | Medium | ⏳ Planned | Frontend Team | MVP |
+| **Toast** | Medium | ⏳ Planned | Frontend Team | MVP |
+| **Table** | Medium | ⏳ Planned | Frontend Team | MVP |
+
+#### 5.1.3 Core Organisms (4 Required)
+| Component | Priority | Status | Owner | Required By |
+|-----------|----------|--------|-------|-------------|
+| DataGrid | Critical | ✅ Production Ready | Frontend Team | MVP |
+| **Kanban** | Critical | 🔄 In Development | Frontend Team | MVP |
+| **Sidebar** | High | 🔄 In Development | Frontend Team | MVP |
+| **Header** | High | ⏳ Planned | Frontend Team | MVP |
+
+#### 5.1.4 Layout Templates (2 Required)
+| Component | Priority | Status | Owner | Required By |
+|-----------|----------|--------|-------|-------------|
+| **DashboardLayout** | High | 🔄 In Development | Frontend Team | MVP |
+| **PageLayout** | High | ⏳ Planned | Frontend Team | MVP |
+
+### 5.2 Component Development Phasing
+
+#### Phase 1: Foundation (Week 1-2)
+- Kanban (CRM Pipeline)
+- Select (Forms & Filters)
+- Dialog (Edit/Create Modals)
+- Sidebar (Navigation)
+
+#### Phase 2: Enhancement (Week 3-4)
+- Checkbox (Form Inputs)
+- Dropdown (User Menus)
+- Toast (Notifications)
+- DashboardLayout (App Structure)
+
+#### Phase 3: Polish (Week 5-6)
+- PageLayout (Page Consistency)
+- Textarea (Multi-line Input)
+- RadioGroup (Choice Inputs)
+- Tooltip (Help Text)
+
+#### Phase 4: Completion (Week 7-8)
+- Table (Simple Lists)
+- Separator (Visual Polish)
+- Header (Top Navigation)
+- Switch (Toggle Inputs)
+
+### 5.3 MVP Compliance Requirements
+
+For a component to be considered "MVP Ready," it MUST satisfy:
+
+#### 5.3.1 File Structure
+- ✅ 6-file structure complete
+- ✅ TypeScript strict mode
+- ✅ No inline styles/types
+
+#### 5.3.2 Quality Standards
+- ✅ 80%+ test coverage
+- ✅ Accessibility compliance (WCAG 2.1 AA)
+- ✅ Storybook documentation
+- ✅ Forward ref support
+
+#### 5.3.3 Performance Requirements
+- ✅ Initial render < 50ms
+- ✅ Bundle size < 5KB (atom), < 15KB (molecule), < 30KB (organism)
+- ✅ Memory usage < 10MB per instance
+
+### 5.4 Component Dependencies
+
+#### Critical Path Dependencies:
+1. **Select** → Required for FormField completion
+2. **Dialog** → Required for Edit/Create workflows
+3. **Kanban** → Required for CRM Pipeline view
+4. **Sidebar** → Required for application navigation
+
+#### Optional Dependencies (Can Delay):
+1. Tooltip → Can use native `title` attribute temporarily
+2. Separator → Can use CSS borders
+3. Switch → Can use Checkbox styled as toggle
+4. Table → Can use DataGrid for all lists
+
+### 5.5 MVP Screen Coverage
+
+With these 25 components, the following screens MUST be fully functional:
+
+#### Core CRM Screens:
+1. **Dashboard** - DashboardLayout, Header, Sidebar, Card, DataGrid
+2. **Contacts** - PageLayout, DataGrid, Dialog, FormField, Button
+3. **Pipeline** - Kanban, Card, Badge, Avatar, Dialog
+4. **Settings** - Card, FormField, Checkbox, RadioGroup, Button
+
+#### Supporting Features:
+5. **Authentication** - Input, Button, FormField, Alert
+6. **Navigation** - Sidebar, Header, Dropdown, Button
+7. **Notifications** - Toast, Alert, Badge
+8. **Forms** - FormField, Input, Select, Checkbox, Textarea
+
+### 5.6 Exception Process
+
+#### Allowable Exceptions:
+1. **Temporary Native Elements**: HTML native elements may be used temporarily if:
+   - Component is in development
+   - Does not break accessibility
+   - Will be replaced within one sprint
+   - Documented in component backlog
+
+2. **Third-party Libraries**: External libraries may be used for:
+   - Charts/Visualizations (D3, Recharts)
+   - Rich Text Editing (Tiptap, ProseMirror)
+   - PDF Generation (PDFKit)
+   - Date/Time utilities (date-fns)
+
+#### Non-negotiable Requirements:
+1. ❌ NO external UI component libraries (Material-UI, Ant Design, etc.)
+2. ❌ NO breaking of accessibility standards
+3. ❌ NO reduction in test coverage below 80%
+4. ❌ NO compromise on security requirements
+
+### 5.7 Governance & Approval
+
+#### MVP Component Approval Process:
+1. **Development** → Engineer implements component
+2. **Code Review** → Peer review against standards
+3. **Testing** → 80%+ coverage, accessibility tests
+4. **Design Review** → Design team validates implementation
+5. **Documentation** → Storybook stories complete
+6. **Approval** → Component owner signs off
+7. **Integration** → Added to component library
+
+#### Status Tracking:
+- ✅ **Production Ready**: All standards met, deployed
+- 🔄 **In Development**: Currently being implemented
+- ⏳ **Planned**: Approved for development, not started
+- 📋 **Backlog**: Proposed, not yet approved
+- 🚫 **Deprecated**: Being phased out
+
+### 5.8 Success Metrics
+
+#### MVP Completion Metrics:
+| Metric | Target | Current (2024-01) | Status |
+|--------|--------|-------------------|--------|
+| Components Complete | 25/25 | 10/25 | 40% |
+| Test Coverage | ≥ 80% | 100% (completed) | ✅ |
+| Accessibility | WCAG 2.1 AA | WCAG 2.1 AA | ✅ |
+| Performance | < 50ms render | < 30ms | ✅ |
+| Documentation | 100% | 100% (completed) | ✅ |
+
+#### Phase Completion Gates:
+- **Gate 1** (15/25 components): Basic CRM functionality
+- **Gate 2** (20/25 components): Professional UX
+- **Gate 3** (25/25 components): Enterprise Ready
+
+---
+
+**Last Updated**: $(date +%Y-%m-%d)
+**Next Review**: $(date -d "+1 month" +%Y-%m-%d)
+**Approved By**: Architecture Review Board
+**Effective Date**: $(date +%Y-%m-%d)
+
 
 5. Accessibility Standards
 Required for All Interactive Components:
@@ -1018,3 +1197,38 @@ Apply test IDs to the outermost interactive element
 Document test IDs in component documentation
 
 Use helper functions in test files
+
+
+
+## 21. MVP Component Requirements (Phase 1)
+
+For Phase 1 completion, these 25 components must be production-ready:
+
+| Component | Category | Priority | Status | Owner |
+|-----------|----------|----------|--------|-------|
+| Avatar | Atom | High | ✅ Done | Design System |
+| Badge | Atom | High | ✅ Done | Design System |
+| Button | Atom | Critical | ✅ Done | Design System |
+| Icon | Atom | High | ✅ Done | Design System |
+| Input | Atom | Critical | ✅ Done | Design System |
+| Typography | Atom | High | ✅ Done | Design System |
+| Select | Atom | Critical | 🚧 Next | Frontend Team |
+| Checkbox | Atom | High | 📋 Planned | Frontend Team |
+| RadioGroup | Atom | Medium | 📋 Planned | Frontend Team |
+| Textarea | Atom | Medium | 📋 Planned | Frontend Team |
+| Alert | Molecule | High | ✅ Done | Design System |
+| Card | Molecule | High | ✅ Done | Design System |
+| FormField | Molecule | Critical | ✅ Done | Design System |
+| Dialog | Molecule | Critical | 🚧 Next | Frontend Team |
+| Dropdown | Molecule | High | 📋 Planned | Frontend Team |
+| Tooltip | Molecule | Medium | 📋 Planned | Frontend Team |
+| Toast | Molecule | Medium | 📋 Planned | Frontend Team |
+| DataGrid | Organism | Critical | ✅ Done | Frontend Team |
+| Kanban | Organism | Critical | 🚧 Next | Frontend Team |
+| Sidebar | Organism | High | 📋 Planned | Frontend Team |
+| Header | Organism | High | 📋 Planned | Frontend Team |
+| DashboardLayout | Template | High | 📋 Planned | Frontend Team |
+| PageLayout | Template | High | 📋 Planned | Frontend Team |
+
+**Current Progress: 10/25 (40%) Complete**
+**Target Completion: $(date -d "+6 weeks" +%Y-%m-%d)**

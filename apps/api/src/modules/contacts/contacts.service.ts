@@ -3,6 +3,13 @@ import { PrismaService } from "../../shared/prisma/prisma.service";
 import { AppLogger } from "../../shared/logging/logger.service";
 import { UpdateContactDto } from "./dto/update-contact.dto";
 
+interface FindAllOptions {
+  organizationId: string;
+  page?: number;
+  limit?: number;
+  search?: string;
+}
+
 @Injectable()
 export class ContactsService {
   constructor(
@@ -13,15 +20,13 @@ export class ContactsService {
   async create(data: any) {
     try {
       const contact = await this.prisma.contact.create({
-        data: {
-          ...data,
-          // ✅ organizationId is REQUIRED here
-        },
+        data,
       });
 
       this.logger.log("Contact created", {
         contactId: contact.id,
         organizationId: data.organizationId,
+        event: 'contact_created',
       });
 
       return contact;
@@ -33,18 +38,59 @@ export class ContactsService {
     }
   }
 
-  async findAll(organizationId: string) {
-    // ✅ Application-level tenant enforcement
-    return this.prisma.contact.findMany({
-      where: { organizationId },
-    });
+  async findAll({ organizationId, page = 1, limit = 20, search }: FindAllOptions) {
+    const skip = (page - 1) * limit;
+    const take = limit;
+
+    // Build where clause with tenant isolation
+    const where: any = { 
+      organizationId,
+    };
+
+    // Add search filter if provided
+    if (search) {
+      where.OR = [
+        { firstName: { contains: search, mode: 'insensitive' } },
+        { lastName: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+        { phone: { contains: search, mode: 'insensitive' } },
+        { company: { contains: search, mode: 'insensitive' } }, // Include new company field
+      ];
+    }
+
+    try {
+      const [contacts, total] = await Promise.all([
+        this.prisma.contact.findMany({
+          where,
+          skip,
+          take,
+          orderBy: { createdAt: 'desc' },
+        }),
+        this.prisma.contact.count({ where }),
+      ]);
+
+      return {
+        data: contacts,
+        meta: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit),
+        },
+      };
+    } catch (error) {
+      this.logger.error("Failed to fetch contacts", error.stack, {
+        organizationId,
+      });
+      throw error;
+    }
   }
 
   async findOne(id: string, organizationId: string) {
     const contact = await this.prisma.contact.findFirst({
       where: {
         id,
-        organizationId, // ✅ Application-level tenant enforcement
+        organizationId,
       },
     });
 
@@ -68,6 +114,7 @@ export class ContactsService {
       this.logger.log("Contact updated", {
         contactId: contact.id,
         organizationId,
+        event: 'contact_updated',
       });
 
       return contact;
@@ -92,6 +139,7 @@ export class ContactsService {
       this.logger.log("Contact deleted", {
         contactId: contact.id,
         organizationId,
+        event: 'contact_deleted',
       });
 
       return contact;
