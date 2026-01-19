@@ -1,5 +1,5 @@
 // apps/web/src/pages/LeadsPage.tsx
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useApiQuery } from '../providers/QueryProvider';
 import { useToast } from '../components/feedback/ToastProvider';
@@ -8,86 +8,84 @@ import { Button } from '../components/atoms/Button';
 import { Input } from '../components/atoms/Input';
 import { EmptyState } from '../components/feedback/EmptyState';
 import { LoadingSpinner } from '../components/feedback/LoadingSpinner';
-import { Plus, Search, Filter, Download, MoreVertical } from 'lucide-react';
-import { Lead, LeadStatus } from '../lib/types/api.types';
+import { useDebouncedValue } from '../hooks/useDebouncedValue';
+import { leadsService } from '../services/leads.service';
+import { LeadStatus } from '../lib/types/api.types';
+import { 
+  Plus, 
+  Search, 
+  Filter, 
+  Download, 
+  MoreVertical,
+  ChevronLeft,
+  ChevronRight,
+  BarChart3
+} from 'lucide-react';
 
-// Mock data for now - will be replaced with API call
-const mockLeads: Lead[] = [
-  {
-    id: '1',
-    name: 'John Smith',
-    email: 'john@example.com',
-    phone: '+1 (555) 123-4567',
-    status: 'new',
-    organizationId: 'org-123',
-    createdAt: '2024-01-15T10:30:00Z',
-    updatedAt: '2024-01-15T10:30:00Z',
-  },
-  {
-    id: '2',
-    name: 'Sarah Johnson',
-    email: 'sarah@company.com',
-    phone: '+1 (555) 987-6543',
-    status: 'contacted',
-    organizationId: 'org-123',
-    createdAt: '2024-01-14T14:20:00Z',
-    updatedAt: '2024-01-15T09:15:00Z',
-  },
-  {
-    id: '3',
-    name: 'Michael Chen',
-    email: 'michael@tech.io',
-    phone: '+1 (555) 456-7890',
-    status: 'qualified',
-    organizationId: 'org-123',
-    createdAt: '2024-01-12T11:45:00Z',
-    updatedAt: '2024-01-14T16:30:00Z',
-  },
+const statusOptions: { value: LeadStatus | 'all'; label: string; color: string; bgColor: string }[] = [
+  { value: 'all', label: 'All Leads', color: 'text-gray-800', bgColor: 'bg-gray-100' },
+  { value: 'new', label: 'New', color: 'text-blue-800', bgColor: 'bg-blue-100' },
+  { value: 'contacted', label: 'Contacted', color: 'text-yellow-800', bgColor: 'bg-yellow-100' },
+  { value: 'qualified', label: 'Qualified', color: 'text-green-800', bgColor: 'bg-green-100' },
 ];
 
-const statusOptions: { value: LeadStatus; label: string; color: string }[] = [
-  { value: 'new', label: 'New', color: 'bg-blue-100 text-blue-800' },
-  { value: 'contacted', label: 'Contacted', color: 'bg-yellow-100 text-yellow-800' },
-  { value: 'qualified', label: 'Qualified', color: 'bg-green-100 text-green-800' },
-];
+const ITEMS_PER_PAGE = 20;
 
 const LeadsPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<LeadStatus | 'all'>('all');
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
   
-  const { success } = useToast();
+  // Debounce search term
+  const debouncedSearchTerm = useDebouncedValue(searchTerm, 300);
   
-  // This will be replaced with real API call
+  const { success, error: showError } = useToast();
   
-  const { data: leads = mockLeads, isLoading } = useApiQuery(
-    ['leads', searchTerm, selectedStatus, currentPage.toString()],
-    async () => {
-      // TODO: Replace with real API call
-      await new Promise(resolve => setTimeout(resolve, 500));
-      return mockLeads;
+  // Fetch leads from API
+    const { 
+    data: leadsResponse, 
+    isLoading, 
+    error,
+    isFetching 
+  } = useApiQuery(
+    ['leads', currentPage.toString(), debouncedSearchTerm, selectedStatus], // FIX: currentPage.toString()
+    () => leadsService.getLeads({
+      page: currentPage,
+      limit: ITEMS_PER_PAGE,
+      search: debouncedSearchTerm || undefined,
+      status: selectedStatus !== 'all' ? selectedStatus : undefined,
+    }),
+    { 
+      placeholderData: (previousData) => previousData,
+      staleTime: 30 * 1000, // 30 seconds
     }
   );
   
-  // Filter leads based on search and status
-  const filteredLeads = leads.filter(lead => {
-    const matchesSearch = 
-      searchTerm === '' ||
-      lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      lead.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      lead.phone?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = selectedStatus === 'all' || lead.status === selectedStatus;
-    
-    return matchesSearch && matchesStatus;
-  });
+  // Fetch lead stats from API
+  const { data: leadStats, isLoading: isLoadingStats } = useApiQuery(
+    ['lead-stats'],
+    () => leadsService.getLeadStats(),
+    {
+      refetchOnWindowFocus: false,
+      staleTime: 2 * 60 * 1000, // 2 minutes
+    }
+  );
   
-  // Calculate pagination
-  const totalPages = Math.ceil(filteredLeads.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedLeads = filteredLeads.slice(startIndex, endIndex);
+  // Handle API errors
+  React.useEffect(() => {
+    if (error) {
+      showError('Failed to load leads', error instanceof Error ? error.message : 'Please try again');
+    }
+  }, [error, showError]);
+  
+  const leads = leadsResponse?.data || [];
+  const meta = leadsResponse?.meta;
+  const totalLeads = meta?.total || 0;
+  const totalPages = meta?.totalPages || 1;
+  
+  // Calculate showing range
+  const showingStart = totalLeads > 0 ? ((currentPage - 1) * ITEMS_PER_PAGE) + 1 : 0;
+  const showingEnd = Math.min(currentPage * ITEMS_PER_PAGE, totalLeads);
   
   const handleExport = () => {
     success('Export Started', 'Your leads export will begin shortly');
@@ -102,12 +100,74 @@ const LeadsPage: React.FC = () => {
     });
   };
   
-  if (isLoading) {
+  const formatDateTime = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+  
+  // Generate pagination range
+  const paginationRange = useMemo(() => {
+    const delta = 2;
+    const range: (number | string)[] = [];
+    const rangeWithDots: (number | string)[] = [];
+    
+    range.push(1);
+    
+    for (let i = currentPage - delta; i <= currentPage + delta; i++) {
+      if (i > 1 && i < totalPages) {
+        range.push(i);
+      }
+    }
+    
+    if (totalPages > 1) {
+      range.push(totalPages);
+    }
+    
+    // Sort and deduplicate
+    const sortedRange = [...new Set(range)].sort((a, b) => Number(a) - Number(b));
+    
+    let prev = 0;
+    for (const i of sortedRange) {
+      if (typeof i === 'number') {
+        if (i - prev === 2) {
+          rangeWithDots.push(prev + 1);
+        } else if (i - prev !== 1) {
+          rangeWithDots.push('...');
+        }
+        rangeWithDots.push(i);
+        prev = i;
+      }
+    }
+    
+    return rangeWithDots;
+  }, [currentPage, totalPages]);
+  
+  // Show loading state
+  if (isLoading && !leads.length) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-center h-64">
           <LoadingSpinner size="lg" />
         </div>
+      </div>
+    );
+  }
+  
+  // Show error state
+  if (error && !leads.length) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <EmptyState
+          title="Failed to load leads"
+          message="There was an error loading your leads. Please try again."
+          actionLabel="Retry"
+          onAction={() => window.location.reload()}
+        />
       </div>
     );
   }
@@ -119,7 +179,7 @@ const LeadsPage: React.FC = () => {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Leads</h1>
           <p className="text-gray-600">
-            Manage and track your potential customers
+            {totalLeads} lead{totalLeads !== 1 ? 's' : ''} in your pipeline
           </p>
         </div>
         
@@ -128,6 +188,7 @@ const LeadsPage: React.FC = () => {
             variant="outline"
             leftIcon={<Download className="w-4 h-4" />}
             onClick={handleExport}
+            disabled={totalLeads === 0}
           >
             Export
           </Button>
@@ -140,18 +201,33 @@ const LeadsPage: React.FC = () => {
       </div>
       
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         {statusOptions.map((status) => {
-          const count = leads.filter(lead => lead.status === status.value).length;
+          const count = status.value === 'all' 
+            ? leadStats?.total || 0
+            : leadStats?.byStatus?.[status.value as LeadStatus] || 0;
+          
+          const isLoading = isLoadingStats;
+          
           return (
-            <Card key={status.value} className="p-4">
+            <Card key={status.value} className="p-4 hover:shadow-md transition-shadow duration-200">
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500">{status.label}</p>
-                  <p className="text-2xl font-bold text-gray-900">{count}</p>
+                <div className="min-w-0">
+                  <p className="text-sm text-gray-500 truncate">{status.label}</p>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">
+                    {isLoading ? '...' : count.toLocaleString()}
+                  </p>
+                  {status.value === 'all' && leadStats && leadStats.conversionRate > 0 && (
+                    <div className="flex items-center mt-2">
+                      <BarChart3 className="w-3 h-3 text-gray-400 mr-1" />
+                      <p className="text-xs text-gray-500">
+                        {leadStats.conversionRate.toFixed(1)}% conversion
+                      </p>
+                    </div>
+                  )}
                 </div>
-                <div className={`px-2 py-1 rounded-full text-xs font-medium ${status.color}`}>
-                  {count}
+                <div className={`px-2 py-1 rounded-full text-xs font-medium ${status.bgColor} ${status.color} min-w-[2rem] flex justify-center`}>
+                  {isLoading ? '...' : count}
                 </div>
               </div>
             </Card>
@@ -171,9 +247,17 @@ const LeadsPage: React.FC = () => {
                   placeholder="Search leads by name, email, or phone..."
                   className="pl-10"
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setCurrentPage(1); // Reset to first page when search changes
+                  }}
                 />
               </div>
+              {debouncedSearchTerm !== searchTerm && searchTerm && (
+                <p className="text-xs text-gray-500 mt-1 pl-2">
+                  Searching for: "{searchTerm}"
+                </p>
+              )}
             </div>
             
             <div className="flex gap-2">
@@ -181,10 +265,12 @@ const LeadsPage: React.FC = () => {
                 <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <select
                   value={selectedStatus}
-                  onChange={(e) => setSelectedStatus(e.target.value as LeadStatus | 'all')}
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent appearance-none bg-white"
+                  onChange={(e) => {
+                    setSelectedStatus(e.target.value as LeadStatus | 'all');
+                    setCurrentPage(1); // Reset to first page when filter changes
+                  }}
+                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent appearance-none bg-white min-w-[140px]"
                 >
-                  <option value="all">All Status</option>
                   {statusOptions.map((status) => (
                     <option key={status.value} value={status.value}>
                       {status.label}
@@ -194,12 +280,39 @@ const LeadsPage: React.FC = () => {
               </div>
             </div>
           </div>
+          
+          {/* Active filters indicator */}
+          {(debouncedSearchTerm || selectedStatus !== 'all') && (
+            <div className="flex items-center gap-2 mt-3">
+              <span className="text-xs font-medium text-gray-500">Active filters:</span>
+              {debouncedSearchTerm && (
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-50 text-blue-700">
+                  Search: "{debouncedSearchTerm}"
+                </span>
+              )}
+              {selectedStatus !== 'all' && (
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-50 text-blue-700">
+                  Status: {statusOptions.find(s => s.value === selectedStatus)?.label}
+                </span>
+              )}
+              <button
+                onClick={() => {
+                  setSearchTerm('');
+                  setSelectedStatus('all');
+                  setCurrentPage(1);
+                }}
+                className="text-xs text-gray-500 hover:text-gray-700"
+              >
+                Clear all
+              </button>
+            </div>
+          )}
         </div>
       </Card>
       
       {/* Leads Table */}
       <Card>
-        {filteredLeads.length === 0 ? (
+        {leads.length === 0 ? (
           <EmptyState
             title={searchTerm || selectedStatus !== 'all' ? "No matching leads" : "No leads yet"}
             message={
@@ -216,49 +329,81 @@ const LeadsPage: React.FC = () => {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900">Name</th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900">Contact</th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900">Status</th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900">Created</th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900">Actions</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 min-w-[180px]">Name</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 min-w-[200px]">Contact</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 min-w-[120px]">Status</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 min-w-[140px]">Created</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 min-w-[120px]">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {paginatedLeads.map((lead) => {
+                  {leads.map((lead) => {
                     const statusConfig = statusOptions.find(s => s.value === lead.status);
                     return (
-                      <tr key={lead.id} className="border-b border-gray-100 hover:bg-gray-50">
+                      <tr key={lead.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors duration-150">
                         <td className="py-3 px-4">
-                          <div>
-                            <div className="font-medium text-gray-900">{lead.name}</div>
+                          <div className="flex items-center">
+                            <div className="flex-shrink-0 w-8 h-8 bg-primary-50 rounded-full flex items-center justify-center text-primary-700 font-medium mr-3">
+                              {lead.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="font-medium text-gray-900 truncate" title={lead.name}>
+                                {lead.name}
+                              </div>
+                              <div className="text-xs text-gray-500 truncate" title={lead.id}>
+                                ID: {lead.id.substring(0, 8)}...
+                              </div>
+                            </div>
                           </div>
                         </td>
                         <td className="py-3 px-4">
                           <div className="space-y-1">
                             {lead.email && (
-                              <div className="text-sm text-gray-600">{lead.email}</div>
+                              <div className="text-sm text-gray-600 truncate" title={lead.email}>
+                                ✉️ {lead.email}
+                              </div>
                             )}
                             {lead.phone && (
-                              <div className="text-sm text-gray-600">{lead.phone}</div>
+                              <div className="text-sm text-gray-600 truncate" title={lead.phone}>
+                                📞 {lead.phone}
+                              </div>
+                            )}
+                            {!lead.email && !lead.phone && (
+                              <div className="text-sm text-gray-400 italic">
+                                No contact info
+                              </div>
                             )}
                           </div>
                         </td>
                         <td className="py-3 px-4">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusConfig?.color}`}>
+                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${statusConfig?.bgColor} ${statusConfig?.color}`}>
                             {statusConfig?.label}
                           </span>
                         </td>
-                        <td className="py-3 px-4 text-sm text-gray-600">
-                          {formatDate(lead.createdAt)}
+                        <td className="py-3 px-4">
+                          <div className="text-sm text-gray-600" title={formatDateTime(lead.createdAt)}>
+                            {formatDate(lead.createdAt)}
+                          </div>
+                          <div className="text-xs text-gray-400">
+                            {new Date(lead.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </div>
                         </td>
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-2">
                             <Link to={`/leads/${lead.id}/edit`}>
-                              <Button variant="ghost" size="sm">
+                              <Button variant="ghost" size="sm" className="text-gray-600 hover:text-primary-600">
                                 Edit
                               </Button>
                             </Link>
-                            <Button variant="ghost" size="sm" className="text-gray-400">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="text-gray-400 hover:text-gray-600"
+                              onClick={() => {
+                                // TODO: Implement more actions dropdown
+                                console.log('More actions for:', lead.id);
+                              }}
+                            >
                               <MoreVertical className="w-4 h-4" />
                             </Button>
                           </div>
@@ -272,57 +417,81 @@ const LeadsPage: React.FC = () => {
             
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-between p-4 border-t">
-                <div className="text-sm text-gray-700">
-                  Showing {startIndex + 1} to {Math.min(endIndex, filteredLeads.length)} of {filteredLeads.length} leads
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border-t">
+                <div className="text-sm text-gray-700 mb-4 sm:mb-0">
+                  Showing <span className="font-medium">{showingStart}</span> to <span className="font-medium">{showingEnd}</span> of{' '}
+                  <span className="font-medium">{totalLeads.toLocaleString()}</span> leads
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center justify-center sm:justify-end gap-1">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
+                    className="px-2"
                   >
-                    Previous
+                    <ChevronLeft className="w-4 h-4" />
                   </Button>
-                  <div className="flex items-center gap-1">
-                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                      let pageNum = i + 1;
-                      if (totalPages > 5 && currentPage > 3) {
-                        pageNum = currentPage - 2 + i;
-                        if (pageNum > totalPages) pageNum = totalPages - 4 + i;
+                  
+                  <div className="flex items-center">
+                    {paginationRange.map((pageNumber, index) => {
+                      if (pageNumber === '...') {
+                        return (
+                          <span key={`dots-${index}`} className="px-2 py-1 text-gray-400">
+                            ...
+                          </span>
+                        );
                       }
-                      if (pageNum < 1 || pageNum > totalPages) return null;
                       
                       return (
                         <button
-                          key={pageNum}
-                          onClick={() => setCurrentPage(pageNum)}
-                          className={`w-8 h-8 rounded-md text-sm font-medium ${
-                            currentPage === pageNum
+                          key={pageNumber}
+                          onClick={() => setCurrentPage(pageNumber as number)}
+                          className={`w-8 h-8 mx-0.5 rounded-md text-sm font-medium transition-colors ${
+                            currentPage === pageNumber
                               ? 'bg-primary-600 text-white'
                               : 'text-gray-700 hover:bg-gray-100'
                           }`}
                         >
-                          {pageNum}
+                          {pageNumber}
                         </button>
                       );
                     })}
                   </div>
+                  
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
+                    className="px-2"
                   >
-                    Next
+                    <ChevronRight className="w-4 h-4" />
                   </Button>
                 </div>
+              </div>
+            )}
+            
+            {/* Loading indicator when fetching new data */}
+            {isFetching && (
+              <div className="absolute inset-0 bg-white bg-opacity-50 flex items-center justify-center pointer-events-none">
+                <LoadingSpinner size="md" />
               </div>
             )}
           </>
         )}
       </Card>
+      
+      {/* Help Text */}
+      <div className="mt-6 text-sm text-gray-600">
+        <p className="font-medium mb-1">Tips:</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>Use search to find leads by name, email, or phone number</li>
+          <li>Filter by status to focus on specific lead stages</li>
+          <li>Click on a lead to view and edit details</li>
+          <li>Export data for external analysis</li>
+        </ul>
+      </div>
     </div>
   );
 };

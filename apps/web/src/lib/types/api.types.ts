@@ -110,3 +110,10 @@ export type ApiError = {
   timestamp?: string;
   path?: string;
 };
+
+export interface PaginationMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};

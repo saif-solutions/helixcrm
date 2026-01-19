@@ -1,6 +1,7 @@
 // apps/web/src/services/api.ts
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
-// Remove problematic import, we'll handle toast differently
+import { useAuthStore } from '../stores/auth.store';
+import { mapBackendErrorToMessage } from '../lib/utils/auth-error-mapper';
 
 // Base URL from environment
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api/v1';
@@ -29,13 +30,6 @@ export interface PaginatedResponse<T> {
     totalPages: number;
   };
 }
-
-// Toast helper (deferred to component layer)
-const showErrorToast = (title: string, message: string) => {
-  // We'll import toast from a hook later
-  console.error(`${title}: ${message}`);
-  // Toast will be shown via useToast hook in components
-};
 
 // CSRF Token Manager
 class CsrfTokenManager {
@@ -141,8 +135,8 @@ api.interceptors.response.use(
       // CSRF retry guard
       (originalRequest as any)._csrfRetryCount = ((originalRequest as any)._csrfRetryCount || 0) + 1;
       if ((originalRequest as any)._csrfRetryCount > 1) {
-        console.error('CSRF retry limit exceeded, redirecting to login');
-        window.location.href = '/login';
+        console.error('CSRF retry limit exceeded, setting session expired');
+        useAuthStore.getState().setSessionExpired(true);
         return Promise.reject(error);
       }
       
@@ -153,8 +147,8 @@ api.interceptors.response.use(
         // Retry the original request
         return api(originalRequest);
       } catch (refreshError) {
-        // Can't refresh token - redirect to login
-        window.location.href = '/login';
+        // Can't refresh token - set session expired
+        useAuthStore.getState().setSessionExpired(true);
         return Promise.reject(refreshError);
       }
     }
@@ -168,19 +162,18 @@ api.interceptors.response.use(
         await api.post('/auth/refresh');
         return api(originalRequest);
       } catch (refreshError) {
-        // Refresh failed - silent logout (PM's recommendation)
-        // We'll handle logout in the component layer
-        console.error('Session refresh failed, redirecting to login');
-        window.location.href = '/login';
+        // Refresh failed - set session expired
+        useAuthStore.getState().setSessionExpired(true);
         return Promise.reject(refreshError);
       }
     }
 
-    // Handle other errors
+    // Handle other errors with proper mapping
+    const mappedError = mapBackendErrorToMessage(error);
     const apiError: ApiError = {
       status: error.response?.status || 0,
-      message: error.response?.data?.message || error.message || 'Network error',
-      code: error.response?.data?.code,
+      message: mappedError.message,
+      code: mappedError.code || error.response?.data?.code,
       timestamp: error.response?.data?.timestamp,
       path: error.response?.data?.path,
       requestId,
@@ -194,11 +187,6 @@ api.interceptors.response.use(
       path: apiError.path,
       timestamp: apiError.timestamp,
     });
-
-    // Show toast for user-facing errors (deferred to component layer)
-    if (apiError.status >= 400 && apiError.status !== 401 && apiError.status !== 403) {
-      showErrorToast('Request Failed', apiError.message);
-    }
 
     return Promise.reject(apiError);
   }

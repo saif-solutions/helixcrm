@@ -1,11 +1,10 @@
-// VERSION: 1.0.0 - FIXED HOOK ERROR - 20260108142355
+// VERSION: 1.0.0 - FIXED TYPE ERRORS - 2026-01-19
 /**
- * Contacts List Page - CLEAN VERSION
+ * Contacts List Page - UPDATED FOR NEW ARCHITECTURE
  * 
  * HELIX CRM - Multi-tenant Contacts Management
  */
 import React, { useState, useEffect, ChangeEvent, useCallback } from 'react';
-import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../components/feedback/ToastProvider';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -18,22 +17,14 @@ import { LoadingSpinner } from '../components/feedback/LoadingSpinner';
 import { EmptyState } from '../components/feedback/EmptyState';
 import { Plus, Search, Loader2 } from 'lucide-react';
 import { contactsService } from '../services/contacts.service';
+import { Contact as ApiContact } from '../lib/types/api.types';
 
-interface Contact {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone?: string;
-  organizationId: string;
-  createdAt: string;
-  updatedAt: string;
-}
+// Use the imported Contact type from api.types
+type Contact = ApiContact;
 
 type FormMode = 'create' | 'edit';
 
 export const ContactsPage: React.FC = () => {
-  const { user, token } = useAuth();
   const { success, error: showError, info } = useToast();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [filteredContacts, setFilteredContacts] = useState<Contact[]>([]);
@@ -54,27 +45,15 @@ export const ContactsPage: React.FC = () => {
   const [contactToDelete, setContactToDelete] = useState<Contact | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Get auth token for API calls
-  const getAuthToken = useCallback(() => {
-    return token || localStorage.getItem('helix_token') || sessionStorage.getItem('helix_token');
-  }, [token]);
-
   // Fetch contacts from REAL API
   const fetchContacts = useCallback(async () => {
-    console.log('í³ž fetchContacts called');
+    console.log('ðŸ“‹ fetchContacts called');
     
-    const authToken = getAuthToken();
-    if (!authToken || !user) {
-      console.log('âŒ No token/user, showing error');
-      showError('Authentication required', 'Please log in to view contacts');
-      return;
-    }
-
-    console.log('âœ… Starting fetch from REAL API...');
+    console.log('ðŸš€ Starting fetch from REAL API...');
     setLoading(true);
     
     try {
-      console.log('í´ Fetching contacts with auth token');
+      console.log('ðŸ“ž Fetching contacts via service');
       const contactsData = await contactsService.getAll();
       console.log('âœ… Contacts loaded from API:', contactsData.length);
       
@@ -95,11 +74,11 @@ export const ContactsPage: React.FC = () => {
       console.log('âœ… Setting loading to false');
       setLoading(false);
     }
-  }, [getAuthToken, user, showError, info]);
+  }, [showError, info]);
 
   // Initial fetch - Only fetch once on mount
   useEffect(() => {
-    console.log('í´ƒ Initial fetch on mount');
+    console.log('ðŸ” Initial fetch on mount');
     fetchContacts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -111,7 +90,7 @@ export const ContactsPage: React.FC = () => {
     } else {
       const filtered = contacts.filter(contact =>
         `${contact.firstName} ${contact.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        contact.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (contact.email && contact.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (contact.phone && contact.phone.toLowerCase().includes(searchTerm.toLowerCase()))
       );
       setFilteredContacts(filtered);
@@ -156,7 +135,7 @@ export const ContactsPage: React.FC = () => {
     if (!contactToDelete) return;
 
     setIsDeleting(true);
-    console.log('í·‘ï¸ Deleting contact:', contactToDelete.id);
+    console.log('ðŸ—‘ï¸ Deleting contact:', contactToDelete.id);
 
     try {
       await contactsService.delete(contactToDelete.id);
@@ -192,7 +171,7 @@ export const ContactsPage: React.FC = () => {
 
   const handleFormSubmit = async (formData: any) => {
     setIsSubmitting(true);
-    console.log('í³ Form submission:', formData);
+    console.log('ðŸ“ Form submission:', formData);
 
     try {
       if (formMode === 'create') {
@@ -256,7 +235,7 @@ export const ContactsPage: React.FC = () => {
     });
   };
 
-  console.log('í³Š ContactsPage render, loading:', loading, 'contacts:', contacts.length, 'filtered:', filteredContacts.length);
+  console.log('ðŸ”„ ContactsPage render, loading:', loading, 'contacts:', contacts.length, 'filtered:', filteredContacts.length);
 
   if (loading && contacts.length === 0) {
     console.log('â³ Rendering loading state');
@@ -282,7 +261,7 @@ export const ContactsPage: React.FC = () => {
     );
   }
 
-  console.log('í³‹ Rendering contacts table with', filteredContacts.length, 'contacts');
+  console.log('ðŸ“Š Rendering contacts table with', filteredContacts.length, 'contacts');
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Contact Form Modal */}
@@ -292,12 +271,15 @@ export const ContactsPage: React.FC = () => {
         size="lg"
       >
         <ContactForm
-          mode={formMode}
-          contact={editingContact || undefined}
-          onSubmit={handleFormSubmit}
-          onCancel={handleFormCancel}
-          isLoading={isSubmitting}
-        />
+  mode={formMode}
+  contact={editingContact ? {
+    ...editingContact,
+    email: editingContact.email || '', // Convert undefined to empty string
+  } : undefined}
+  onSubmit={handleFormSubmit}
+  onCancel={handleFormCancel}
+  isLoading={isSubmitting}
+/>
       </Modal>
 
       {/* Delete Confirmation Modal */}
@@ -372,7 +354,7 @@ export const ContactsPage: React.FC = () => {
                       <TableCell className="font-medium">
                         {contact.firstName} {contact.lastName}
                       </TableCell>
-                      <TableCell>{contact.email}</TableCell>
+                      <TableCell>{contact.email || 'â€”'}</TableCell>
                       <TableCell>{contact.phone || 'â€”'}</TableCell>
                       <TableCell>{formatDate(contact.createdAt)}</TableCell>
                       <TableCell className="text-right space-x-2">

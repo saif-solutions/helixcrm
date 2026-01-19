@@ -5,9 +5,11 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useToast } from '../../components/feedback/ToastProvider';
+import { useQueryClient } from '../../providers/QueryProvider';
 import { Card } from '../../components/molecules/Card';
 import { Button } from '../../components/atoms/Button';
 import { Input } from '../../components/atoms/Input';
+import { leadsService } from '../../services/leads.service';
 import { ArrowLeft, Save } from 'lucide-react';
 
 // Zod schema for lead validation
@@ -33,6 +35,7 @@ const NewLeadPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
   const { success, error } = useToast();
+  const queryClient = useQueryClient();
   
   const {
     register,
@@ -54,24 +57,42 @@ const NewLeadPage: React.FC = () => {
     setIsSubmitting(true);
     
     try {
-      // TODO: Replace with real API call
-      console.log('Creating lead:', data);
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Clean up empty strings for optional fields
+      const leadData = {
+        ...data,
+        email: data.email?.trim() || undefined,
+        phone: data.phone?.trim() || undefined,
+      };
       
-      success('Lead Created', `${data.name} has been added to your leads`);
+      console.log('Creating lead:', leadData);
+      const createdLead = await leadsService.createLead(leadData);
+      
+      // Invalidate leads queries to refresh the list
+      queryClient.invalidateQueries({ queryKey: ['leads'] });
+      
+      success('Lead Created', `${createdLead.name} has been added to your leads`);
       navigate('/leads');
-    } catch (err) {
-      error('Creation Failed', 'Failed to create lead. Please try again.');
+    } catch (err: any) {
+      console.error('Failed to create lead:', err);
+      
+      // Handle specific error cases
+      if (err.status === 400) {
+        error('Validation Error', 'Please check your input and try again');
+      } else if (err.status === 403) {
+        error('Permission Denied', 'You do not have permission to create leads');
+      } else {
+        error('Creation Failed', err.message || 'Failed to create lead. Please try again.');
+      }
     } finally {
       setIsSubmitting(false);
     }
   };
   
-const statusOptions: { value: 'new' | 'contacted' | 'qualified'; label: string; color: string }[] = [
-  { value: 'new', label: 'New', color: 'text-blue-600 bg-blue-50 border-blue-200' },
-  { value: 'contacted', label: 'Contacted', color: 'text-yellow-600 bg-yellow-50 border-yellow-200' },
-  { value: 'qualified', label: 'Qualified', color: 'text-green-600 bg-green-50 border-green-200' },
-];
+  const statusOptions: { value: 'new' | 'contacted' | 'qualified'; label: string; color: string }[] = [
+    { value: 'new', label: 'New', color: 'text-blue-600 bg-blue-50 border-blue-200' },
+    { value: 'contacted', label: 'Contacted', color: 'text-yellow-600 bg-yellow-50 border-yellow-200' },
+    { value: 'qualified', label: 'Qualified', color: 'text-green-600 bg-green-50 border-green-200' },
+  ];
   
   const selectedStatus = watch('status');
   
@@ -149,6 +170,9 @@ const statusOptions: { value: 'new' | 'contacted' | 'qualified'; label: string; 
                   error={errors.email?.message}
                   {...register('email')}
                 />
+                <p className="mt-1 text-xs text-gray-500">
+                  Optional - but recommended for better engagement
+                </p>
               </div>
               
               {/* Phone */}
@@ -163,6 +187,9 @@ const statusOptions: { value: 'new' | 'contacted' | 'qualified'; label: string; 
                   error={errors.phone?.message}
                   {...register('phone')}
                 />
+                <p className="mt-1 text-xs text-gray-500">
+                  Optional - include country code
+                </p>
               </div>
               
               {/* Notes (optional for future) */}
@@ -185,8 +212,13 @@ const statusOptions: { value: 'new' | 'contacted' | 'qualified'; label: string; 
                     Cancel
                   </Button>
                 </Link>
-                <Button type="submit" loading={isSubmitting} leftIcon={<Save className="w-4 h-4" />}>
-                  Create Lead
+                <Button 
+                  type="submit" 
+                  loading={isSubmitting} 
+                  leftIcon={<Save className="w-4 h-4" />}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? 'Creating...' : 'Create Lead'}
                 </Button>
               </div>
             </div>
@@ -198,6 +230,9 @@ const statusOptions: { value: 'new' | 'contacted' | 'qualified'; label: string; 
           <p>
             <span className="font-medium">Tip:</span> Complete as much information as possible to help your 
             team effectively follow up with this lead.
+          </p>
+          <p className="mt-1">
+            <span className="font-medium">Note:</span> Leads are automatically assigned to your organization.
           </p>
         </div>
       </div>
