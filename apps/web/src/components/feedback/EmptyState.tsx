@@ -1,6 +1,6 @@
 import React from 'react';
-import { Button } from '../ui/Button';
-import { Card } from '../ui/Card';
+import { Button } from '../atoms/Button';
+import { Card } from '../molecules/Card';
 import { Search } from 'lucide-react';
 
 interface EmptyStateProps {

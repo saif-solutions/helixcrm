@@ -1,3 +1,5 @@
+//D:\Projects-In-Hand\helixcrm\apps\api\src\shared\security\csrf.middleware.ts
+
 import { Injectable, NestMiddleware, Logger } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 import * as csurf from 'csurf';

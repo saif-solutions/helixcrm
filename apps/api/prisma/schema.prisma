@@ -13,6 +13,13 @@ enum LeadStatus {
   qualified
 }
 
+enum DealStatus {
+  open
+  won
+  lost
+}
+
+// ==================== CORE MODELS ====================
 model Organization {
   id       String   @id @default(uuid())
   name     String   @unique
@@ -23,68 +30,23 @@ model Organization {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
+  // Core relations
   User               User[]
   Contact            Contact[]
   Account            Account[]
   Activity           Activity[]
   AuditLog           AuditLog[]
   PasswordResetToken PasswordResetToken[]
-  Lead               Lead[]           // ADD THIS LINE for the new relation
+  Lead               Lead[]
+  
+  // Phase 3 relations
+  Deal               Deal[]
+  Pipeline           Pipeline[]
+  Role               Role[]
+  UserRole           UserRole[]
 
   @@map("organizations")
 }
-
-model Lead {
-  id            String     @id @default(uuid())
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  
-  name          String
-  email         String?
-  phone         String?
-  status        LeadStatus @default(new) // Using enum instead of string
-  
-  metadata      Json?    // For future flexibility
-  
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  
-  @@index([organizationId])
-  @@index([organizationId, email])
-  @@index([organizationId, status])
-  @@index([organizationId, createdAt])
-  @@map("leads")
-}
-
-model Contact {
-  id         String  @id @default(uuid())
-  firstName  String
-  lastName   String   // Fixed: capital N
-  email      String?
-  phone      String?
-  title      String?
-  department String?
-  
-  // Add new optional fields (ADDITIVE)
-  company    String?  // NEW field for company name
-  metadata   Json?    // NEW field for flexible metadata
-
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  accountId String?    // KEEP existing relation
-  account   Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([organizationId])
-  @@index([organizationId, email])
-  @@index([organizationId, accountId])
-  @@index([organizationId, company]) // NEW index for company
-  @@map("contacts")
-}
-
 
 model User {
   id                   String   @id @default(uuid())
@@ -102,9 +64,9 @@ model User {
   deletedAt            DateTime?
   
   // REFRESH TOKEN SECURITY ENHANCEMENTS:
-  refreshTokenHash     String?  @db.VarChar(255) // Hashed refresh token (for security)
-  refreshTokenVersion  String?  @db.VarChar(255) // Version binding for replay detection ← ADDED
-  refreshTokenIssuedAt DateTime?                 // When the current refresh token was issued
+  refreshTokenHash     String?  @db.VarChar(255)
+  refreshTokenVersion  String?  @db.VarChar(255)
+  refreshTokenIssuedAt DateTime?
   
   organizationId       String
   organization         Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -113,45 +75,77 @@ model User {
   updatedAt   DateTime @updatedAt
   lastLoginAt DateTime?
   
+  // Core relations
   PasswordResetToken PasswordResetToken[]
   Activity           Activity[]
   AuditLog           AuditLog[]
+  
+  // Phase 3 relations
+  OwnedDeals         Deal[]              @relation("DealOwner")
+  ChangedStageHistory DealStageHistory[] @relation("StageHistoryChanger")
+  UserRoles          UserRole[]
 
   @@index([organizationId, email])
   @@index([deletedAt])
   @@index([emailVerified])
   @@index([lockedUntil])
-  @@index([refreshTokenHash])        // Index for hashed token lookup
-  @@index([refreshTokenVersion])     // For replay detection lookup ← ADDED
-  @@index([refreshTokenIssuedAt])    // For token expiration management
+  @@index([refreshTokenHash])
+  @@index([refreshTokenVersion])
+  @@index([refreshTokenIssuedAt])
   @@map("users")
 }
 
-model PasswordResetToken {
-  id             String   @id @default(uuid())
-  userId         String
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+model Contact {
+  id         String  @id @default(uuid())
+  firstName  String
+  lastName   String
+  email      String?
+  phone      String?
+  title      String?
+  department String?
+  company    String?
+  metadata   Json?
+
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  email          String
-  tokenHash      String   @db.VarChar(255)
-  ipAddress      String?
-  userAgent      String?
-  usedAt         DateTime?
-  expiresAt      DateTime
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
 
-  @@index([userId])
+  accountId String?
+  account   Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Phase 3 relations
+  deals      Deal[]   // Added opposite relation
+
   @@index([organizationId])
-  @@index([email])
-  @@index([expiresAt])
-  @@index([usedAt])
-  @@unique([userId, tokenHash])
-  @@map("password_reset_tokens")
+  @@index([organizationId, email])
+  @@index([organizationId, accountId])
+  @@index([organizationId, company])
+  @@map("contacts")
 }
 
-
+model Lead {
+  id            String     @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  name          String
+  email         String?
+  phone         String?
+  status        LeadStatus @default(new)
+  
+  metadata      Json?
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@index([organizationId])
+  @@index([organizationId, email])
+  @@index([organizationId, status])
+  @@index([organizationId, createdAt])
+  @@map("leads")
+}
 
 model Account {
   id       String  @id @default(uuid())
@@ -169,7 +163,12 @@ model Account {
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+  
+  // Core relations
   Contact   Contact[]
+  
+  // Phase 3 relations
+  deals     Deal[]    // Added opposite relation
 
   @@index([organizationId])
   @@index([organizationId, name])
@@ -218,6 +217,9 @@ model AuditLog {
 
   before Json?
   after  Json?
+  diff   Json?
+  correlationId String?
+  severity      String  @default("info")
 
   ipAddress String?
   userAgent String?
@@ -227,5 +229,206 @@ model AuditLog {
   @@index([organizationId])
   @@index([entity, entityId])
   @@index([createdAt])
+  @@index([correlationId])
+  @@index([severity])
   @@map("audit_logs")
+}
+
+model PasswordResetToken {
+  id             String   @id @default(uuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  email          String
+  tokenHash      String   @db.VarChar(255)
+  ipAddress      String?
+  userAgent      String?
+  usedAt         DateTime?
+  expiresAt      DateTime
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([userId])
+  @@index([organizationId])
+  @@index([email])
+  @@index([expiresAt])
+  @@index([usedAt])
+  @@unique([userId, tokenHash])
+  @@map("password_reset_tokens")
+}
+
+// ==================== DEALS MODELS ====================
+model Deal {
+  id                  String      @id @default(uuid())
+  organizationId      String
+  organization        Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  name                String
+  amount              Decimal     @db.Decimal(10, 2)
+  currency            String      @default("USD")
+  status              DealStatus  @default(open)
+  probability         Int         @default(0)
+  expectedCloseDate   DateTime?
+  
+  pipelineId          String
+  pipeline            Pipeline    @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  
+  stageId             String
+  stage               PipelineStage @relation(fields: [stageId], references: [id], onDelete: Cascade)
+  
+  contactId           String?
+  contact             Contact?    @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  
+  accountId           String?
+  account             Account?    @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  
+  ownerUserId         String
+  owner               User        @relation(fields: [ownerUserId], references: [id], onDelete: Cascade, name: "DealOwner")
+  
+  metadata            Json?
+  deletedAt           DateTime?
+  
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+  
+  stageHistory        DealStageHistory[]
+
+  @@index([organizationId])
+  @@index([organizationId, pipelineId])
+  @@index([organizationId, stageId])
+  @@index([organizationId, ownerUserId])
+  @@index([organizationId, status])
+  @@index([organizationId, expectedCloseDate])
+  @@index([organizationId, deletedAt])
+  @@unique([organizationId, pipelineId, name])
+  @@map("deals")
+}
+
+model Pipeline {
+  id              String    @id @default(uuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  name            String
+  description     String?
+  isDefault       Boolean   @default(false)
+  
+  stages          PipelineStage[]
+  deals           Deal[]
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  @@index([organizationId])
+  @@unique([organizationId, name])
+  @@map("pipelines")
+}
+
+model PipelineStage {
+  id              String    @id @default(uuid())
+  pipelineId      String
+  pipeline        Pipeline  @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  
+  name            String
+  description     String?
+  order           Int
+  probability     Int       @default(0)
+  
+  deals           Deal[]
+  fromStageHistory DealStageHistory[] @relation("fromStage")
+  toStageHistory   DealStageHistory[] @relation("toStage")
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  @@unique([pipelineId, order])
+  @@index([pipelineId])
+  @@map("pipeline_stages")
+}
+
+model DealStageHistory {
+  id              String    @id @default(uuid())
+  dealId          String
+  deal            Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  
+  fromStageId     String?
+  fromStage       PipelineStage? @relation(fields: [fromStageId], references: [id], name: "fromStage")
+  
+  toStageId       String
+  toStage         PipelineStage  @relation(fields: [toStageId], references: [id], name: "toStage")
+  
+  changedByUserId String
+  changedBy       User      @relation(fields: [changedByUserId], references: [id], onDelete: Cascade, name: "StageHistoryChanger")
+  
+  changedAt       DateTime  @default(now())
+  
+  @@index([dealId])
+  @@index([changedByUserId])
+  @@index([changedAt])
+  @@map("deal_stage_history")
+}
+
+// ==================== RBAC MODELS ====================
+model Role {
+  id              String        @id @default(uuid())
+  organizationId  String
+  organization    Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  name            String
+  description     String?
+  isSystem        Boolean       @default(false)
+  
+  permissions     RolePermission[]
+  userRoles       UserRole[]
+  
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  
+  @@unique([organizationId, name])
+  @@index([organizationId])
+  @@map("roles")
+}
+
+model Permission {
+  id              String        @id @default(uuid())
+  code            String        @unique
+  name            String
+  description     String?
+  module          String
+  
+  roles           RolePermission[]
+  
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  @@map("permissions")
+}
+
+model RolePermission {
+  id            String      @id @default(uuid())
+  roleId        String
+  role          Role        @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permissionId  String
+  permission    Permission  @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  createdAt     DateTime    @default(now())
+  
+  @@unique([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model UserRole {
+  id            String      @id @default(uuid())
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roleId        String
+  role          Role        @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  organizationId String
+  organization  Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt     DateTime    @default(now())
+  
+  @@unique([userId, roleId, organizationId])
+  @@index([userId])
+  @@index([roleId])
+  @@index([organizationId])
+  @@map("user_roles")
 }

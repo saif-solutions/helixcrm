@@ -1,35 +1,32 @@
-// Location: apps/web/src/pages/LoginPage.tsx
-// Changes: Fixed toast import and removed unused variable
-
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Eye, EyeOff } from 'lucide-react';
 import { Button } from '../components/atoms/Button';
+import { Input } from '../components/atoms/Input';
 import { useAuthStore } from '../stores/auth.store';
 import { useToast } from '../components/feedback/ToastProvider';
 import { SessionExpiredModal } from '../components/auth/SessionExpiredModal';
-import { loginSchema, LoginFormData } from '../lib/validation/auth.schema';
-import { mapBackendErrorToMessage, getFieldError } from '../lib/utils/auth-error-mapper';
+import { loginSchema, LoginFormData } from '../lib/schemas/auth.schema';
+import { mapBackendErrorToFormErrors } from '../lib/utils/auth-error-mapper';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
-  const { login, isLoading, sessionExpired, clearSessionExpired } = useAuthStore();
-  const { success: showSuccessToast, error: showErrorToast } = useToast();
+  const { login, isLoading, sessionExpired, clearSessionExpired, authError } = useAuthStore();
+  const { error: showErrorToast } = useToast();
   
-  const [showPassword, setShowPassword] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [backendError, setBackendError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = React.useState(false);
+  const [backendFieldErrors, setBackendFieldErrors] = React.useState<Record<string, string>>({});
 
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting: isFormSubmitting },
+    formState: { errors, isSubmitting },
     setError,
     setFocus,
     clearErrors,
-    reset
+    reset,
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -40,77 +37,72 @@ const LoginPage: React.FC = () => {
     mode: 'onBlur',
   });
 
-  // Focus first invalid field on submit
+  // Focus first invalid field
   useEffect(() => {
-    if (Object.keys(errors).length > 0) {
-      const firstError = Object.keys(errors)[0] as keyof LoginFormData;
+    const firstError = Object.keys(errors)[0] as keyof LoginFormData;
+    if (firstError) {
       setFocus(firstError);
     }
   }, [errors, setFocus]);
 
-  // Handle session expiration modal
+  // Handle backend field errors
+  useEffect(() => {
+    Object.entries(backendFieldErrors).forEach(([field, message]) => {
+      setError(field as keyof LoginFormData, {
+        type: 'manual',
+        message,
+      });
+    });
+  }, [backendFieldErrors, setError]);
+
   const handleCloseSessionModal = () => {
     clearSessionExpired();
     navigate('/login', { replace: true });
   };
 
   const onSubmit = async (data: LoginFormData) => {
-    setBackendError(null);
     clearErrors();
-    setIsSubmitting(true);
-
+    setBackendFieldErrors({});
+    
     try {
       await login(data);
-      showSuccessToast('Login successful!', 'Welcome back to HelixCRM');
       navigate('/dashboard', { replace: true });
     } catch (error: any) {
-      console.error('Login error:', error);
+      const formErrors = mapBackendErrorToFormErrors(error);
       
-      // Map backend error to user-friendly message
-      const mappedError = mapBackendErrorToMessage(error);
-      setBackendError(mappedError.message);
-      
-      // Set field-specific errors
-      const fieldError = getFieldError(error, 'email');
-      if (fieldError) {
-        setError('email', { type: 'manual', message: fieldError });
+      // Set field errors
+      if (formErrors.fieldErrors) {
+        setBackendFieldErrors(formErrors.fieldErrors);
       }
       
-      const passwordError = getFieldError(error, 'password');
-      if (passwordError) {
-        setError('password', { type: 'manual', message: passwordError });
+      // Show toast for non-field errors
+      if (formErrors.formError && !formErrors.fieldErrors) {
+        showErrorToast('Login Failed', formErrors.formError);
       }
-      
-      // Show toast for general errors
-      if (!fieldError && !passwordError) {
-        showErrorToast('Login Failed', mappedError.message);
-      }
-      
-      // Preserve email field value by not resetting the form
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
   const handleDemoCredentials = (email: string, password: string) => {
     reset({ email, password, rememberMe: false });
-    setBackendError(null);
     clearErrors();
+    setBackendFieldErrors({});
   };
+
+  const isSubmittingForm = isSubmitting || isLoading;
 
   return (
     <>
       <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full space-y-8">
           <div>
-            <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+            <h1 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
               Sign in to your account
-            </h2>
+            </h1>
             <p className="mt-2 text-center text-sm text-gray-600">
               Or{' '}
               <button
                 onClick={() => navigate('/register')}
-                className="font-medium text-blue-600 hover:text-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                className="font-medium text-blue-600 hover:text-blue-500 focus:outline-none focus:ring-2 focus:ring-offset-2"
                 aria-label="Navigate to registration page"
               >
                 request a demo
@@ -119,7 +111,8 @@ const LoginPage: React.FC = () => {
           </div>
           
           <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)} noValidate>
-            {backendError && (
+            {/* Global Error Banner */}
+            {authError && (
               <div 
                 className="rounded-md bg-red-50 p-4"
                 role="alert"
@@ -132,7 +125,7 @@ const LoginPage: React.FC = () => {
                     </svg>
                   </div>
                   <div className="ml-3">
-                    <p className="text-sm font-medium text-red-800">{backendError}</p>
+                    <p className="text-sm font-medium text-red-800">{authError}</p>
                   </div>
                 </div>
               </div>
@@ -145,25 +138,15 @@ const LoginPage: React.FC = () => {
                   Email Address *
                 </label>
                 <div className="mt-1 relative">
-                  <input
+                  <Input
                     id="email"
                     type="email"
                     autoComplete="email"
+                    disabled={isSubmittingForm}
                     aria-describedby={errors.email ? 'email-error' : undefined}
                     aria-invalid={errors.email ? 'true' : 'false'}
-                    className={`block w-full px-3 py-2 border ${
-                      errors.email ? 'border-red-300 text-red-900 placeholder-red-300' : 'border-gray-300'
-                    } rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed`}
-                    disabled={isSubmitting || isLoading}
                     {...register('email')}
                   />
-                  {errors.email && (
-                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                      <svg className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                  )}
                 </div>
                 {errors.email && (
                   <p id="email-error" className="mt-2 text-sm text-red-600" role="alert">
@@ -178,25 +161,21 @@ const LoginPage: React.FC = () => {
                   Password *
                 </label>
                 <div className="mt-1 relative">
-                  <input
+                  <Input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
                     autoComplete="current-password"
+                    disabled={isSubmittingForm}
                     aria-describedby={errors.password ? 'password-error' : undefined}
                     aria-invalid={errors.password ? 'true' : 'false'}
-                    className={`block w-full px-3 py-2 border ${
-                      errors.password ? 'border-red-300 text-red-900 placeholder-red-300' : 'border-gray-300'
-                    } rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed`}
-                    disabled={isSubmitting || isLoading}
                     {...register('password')}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-md"
-                    disabled={isSubmitting || isLoading}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    disabled={isSubmittingForm}
                     aria-label={showPassword ? 'Hide password' : 'Show password'}
-                    aria-controls="password"
                   >
                     {showPassword ? (
                       <EyeOff className="h-5 w-5 text-gray-400" />
@@ -212,47 +191,44 @@ const LoginPage: React.FC = () => {
                 )}
               </div>
               
-              {/* Remember Me & Forgot Password */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <input
-                    id="rememberMe"
-                    type="checkbox"
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                    disabled={isSubmitting || isLoading}
-                    {...register('rememberMe')}
-                  />
-                  <label htmlFor="rememberMe" className="ml-2 block text-sm text-gray-900">
-                    Remember me
-                  </label>
-                </div>
-                
-                <div className="text-sm">
-                  <button
-                    type="button"
-                    onClick={() => navigate('/forgot-password')}
-                    className="font-medium text-blue-600 hover:text-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                    disabled={isSubmitting || isLoading}
-                    aria-label="Navigate to forgot password page"
-                  >
-                    Forgot your password?
-                  </button>
-                </div>
+              {/* Remember Me */}
+              <div className="flex items-center">
+                <input
+                  id="rememberMe"
+                  type="checkbox"
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  disabled={isSubmittingForm}
+                  {...register('rememberMe')}
+                />
+                <label htmlFor="rememberMe" className="ml-2 block text-sm text-gray-900">
+                  Remember me
+                </label>
               </div>
             </div>
             
-            <div>
+            <div className="flex flex-col space-y-3">
               <Button
                 type="submit"
                 variant="primary"
                 size="lg"
-                className="w-full justify-center"
-                disabled={isSubmitting || isLoading || isFormSubmitting}
-                loading={isSubmitting || isLoading}
+                fullWidth
+                loading={isSubmittingForm}
+                disabled={isSubmittingForm}
                 aria-label="Sign in to your account"
               >
-                {isSubmitting || isLoading ? 'Signing in...' : 'Sign in'}
+                Sign in
               </Button>
+              
+              <div className="text-center text-sm">
+                <button
+                  type="button"
+                  onClick={() => navigate('/forgot-password')}
+                  className="font-medium text-blue-600 hover:text-blue-500"
+                  disabled={isSubmittingForm}
+                >
+                  Forgot your password?
+                </button>
+              </div>
             </div>
           </form>
           
@@ -262,18 +238,16 @@ const LoginPage: React.FC = () => {
               Demo credentials:{' '}
               <button
                 onClick={() => handleDemoCredentials('admin@helixcrm.test', 'Admin123!')}
-                className="font-medium text-blue-600 hover:text-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                disabled={isSubmitting || isLoading}
-                aria-label="Use admin demo credentials"
+                className="font-medium text-blue-600 hover:text-blue-500"
+                disabled={isSubmittingForm}
               >
                 Admin
               </button>{' '}
               |{' '}
               <button
                 onClick={() => handleDemoCredentials('user@helixcrm.test', 'User123!')}
-                className="font-medium text-blue-600 hover:text-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                disabled={isSubmitting || isLoading}
-                aria-label="Use user demo credentials"
+                className="font-medium text-blue-600 hover:text-blue-500"
+                disabled={isSubmittingForm}
               >
                 User
               </button>
@@ -282,7 +256,6 @@ const LoginPage: React.FC = () => {
         </div>
       </div>
       
-      {/* Session Expired Modal */}
       <SessionExpiredModal
         isOpen={sessionExpired}
         onClose={handleCloseSessionModal}

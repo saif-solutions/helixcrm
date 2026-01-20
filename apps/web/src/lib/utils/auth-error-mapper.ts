@@ -2,9 +2,9 @@ import { AxiosError } from 'axios';
 
 export type BackendErrorCode = 
   | 'INVALID_CREDENTIALS'
-  | 'USER_NOT_FOUND'
   | 'EMAIL_EXISTS'
   | 'ACCOUNT_LOCKED'
+  | 'SESSION_EXPIRED'
   | 'INVALID_CSRF_TOKEN'
   | 'CSRF_EXPIRED'
   | 'TOKEN_EXPIRED'
@@ -16,6 +16,7 @@ export type BackendErrorCode =
 export interface BackendErrorResponse {
   code?: BackendErrorCode;
   message?: string;
+  field?: string;
   errors?: Record<string, string[]>;
 }
 
@@ -25,11 +26,27 @@ export interface AuthError {
   field?: string;
 }
 
-export const mapBackendErrorToMessage = (
+export interface MappedErrors {
+  fieldErrors?: Record<string, string>;
+  formError?: string;
+}
+
+const ERROR_MAP: Record<string, string> = {
+  'INVALID_CREDENTIALS': 'Incorrect email or password',
+  'EMAIL_EXISTS': 'Email already registered',
+  'ACCOUNT_LOCKED': 'Account temporarily locked. Please try again later.',
+  'SESSION_EXPIRED': 'Your session has expired. Please log in again.',
+  'INVALID_CSRF_TOKEN': 'Security token expired. Please try again.',
+  'CSRF_EXPIRED': 'Security token expired. Please try again.',
+  'TOKEN_EXPIRED': 'Your session has expired. Please log in again.',
+  'NETWORK_ERROR': 'Network issue. Please check your connection and try again.',
+  'VALIDATION_ERROR': 'Please check your input and try again.',
+};
+
+export const mapBackendErrorToAuthError = (
   error: unknown,
   field?: string
 ): AuthError => {
-  // Handle non-Axios errors
   if (!(error instanceof AxiosError)) {
     return {
       message: 'An unexpected error occurred. Please try again.',
@@ -38,62 +55,62 @@ export const mapBackendErrorToMessage = (
     };
   }
 
-  // Handle network connectivity issues
   if (!error.response) {
     return {
-      message: 'Network error. Please check your connection and try again.',
+      message: ERROR_MAP.NETWORK_ERROR,
       code: 'NETWORK_ERROR',
       field
     };
   }
 
   const responseData = error.response.data as BackendErrorResponse;
-  const errorCode = responseData.code;
-  const backendMessage = responseData.message || 'An error occurred';
+  const errorCode = responseData.code || 'UNKNOWN_ERROR';
+  const backendMessage = responseData.message || error.message || 'An error occurred';
 
-  // Map specific error codes to user-friendly messages
-  const errorMap: Record<string, string> = {
-    'INVALID_CREDENTIALS': 'Email or password is incorrect',
-    'USER_NOT_FOUND': 'Account does not exist',
-    'EMAIL_EXISTS': 'Email already registered',
-    'ACCOUNT_LOCKED': 'Account temporarily locked. Please try again later.',
-    'INVALID_CSRF_TOKEN': 'Session expired, please retry',
-    'CSRF_EXPIRED': 'Session expired, please retry',
-    'TOKEN_EXPIRED': 'Session expired, please login again',
-    'VALIDATION_ERROR': 'Please check your input and try again'
-  };
-
-  const message = errorMap[errorCode || ''] || backendMessage;
+  const message = ERROR_MAP[errorCode] || backendMessage;
 
   return {
     message,
     code: errorCode,
-    field
+    field: responseData.field || field
   };
 };
 
-export const getFieldError = (
+export const mapBackendErrorToFormErrors = (
+  error: unknown
+): MappedErrors => {
+  const result: MappedErrors = {};
+  
+  if (!(error instanceof AxiosError) || !error.response) {
+    result.formError = 'An unexpected error occurred. Please try again.';
+    return result;
+  }
+
+  const responseData = error.response.data as BackendErrorResponse;
+  
+  // Handle field-specific errors
+  if (responseData.errors) {
+    result.fieldErrors = {};
+    Object.entries(responseData.errors).forEach(([field, messages]) => {
+      if (messages && messages.length > 0) {
+        result.fieldErrors![field] = messages[0];
+      }
+    });
+  }
+  
+  // Handle general form error
+  const authError = mapBackendErrorToAuthError(error);
+  if (!result.fieldErrors || Object.keys(result.fieldErrors).length === 0) {
+    result.formError = authError.message;
+  }
+  
+  return result;
+};
+
+export const getFieldErrorMessage = (
   error: unknown,
   fieldName: string
 ): string | undefined => {
-  if (error instanceof AxiosError) {
-    const responseData = error.response?.data as BackendErrorResponse;
-    
-    // Check for field-specific errors in the response
-    if (responseData?.errors?.[fieldName]) {
-      return responseData.errors[fieldName][0];
-    }
-    
-    // Map specific error codes to fields
-    if (responseData?.code === 'EMAIL_EXISTS' && fieldName === 'email') {
-      return 'Email already registered';
-    }
-    
-    if (responseData?.code === 'INVALID_CREDENTIALS') {
-      if (fieldName === 'email') return 'Email or password is incorrect';
-      if (fieldName === 'password') return 'Email or password is incorrect';
-    }
-  }
-  
-  return undefined;
+  const formErrors = mapBackendErrorToFormErrors(error);
+  return formErrors.fieldErrors?.[fieldName];
 };

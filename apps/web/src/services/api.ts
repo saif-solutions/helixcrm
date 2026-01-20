@@ -1,7 +1,14 @@
 // apps/web/src/services/api.ts
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 import { useAuthStore } from '../stores/auth.store';
-import { mapBackendErrorToMessage } from '../lib/utils/auth-error-mapper';
+import { mapBackendErrorToAuthError } from '../lib/utils/auth-error-mapper';
+
+interface RetryableRequestConfig extends InternalAxiosRequestConfig {
+  _retry?: boolean;
+  _csrfRetryCount?: number;
+  _requestId?: string;
+  _abortController?: AbortController;
+}
 
 // Base URL from environment
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api/v1';
@@ -112,7 +119,7 @@ api.interceptors.request.use(
     }
 
     // Store request ID for error handling
-    (config as any)._requestId = requestId;
+    (config as RetryableRequestConfig)._requestId = requestId;
 
     return config;
   },
@@ -122,19 +129,24 @@ api.interceptors.request.use(
 );
 
 // Response interceptor
+// Response interceptor
 api.interceptors.response.use(
-  (response: AxiosResponse) => {
-    return response;
-  },
+  (response: AxiosResponse) => response,
   async (error) => {
-    const originalRequest = error.config;
-    const requestId = (originalRequest as any)?._requestId || 'unknown';
+    const originalRequest = error.config as RetryableRequestConfig;
+    const requestId = originalRequest?._requestId || 'unknown';
     
-    // CSRF token expired (403) - with retry guard (PM's recommendation)
+    // Prevent refresh loop on refresh endpoint itself
+    if (originalRequest.url?.includes('/auth/refresh')) {
+      useAuthStore.getState().setSessionExpired(true);
+      return Promise.reject(error);
+    }
+    
+    // CSRF token expired (403) - with retry guard
     if (error.response?.status === 403 && error.response?.data?.code === 'INVALID_CSRF_TOKEN') {
-      // CSRF retry guard
-      (originalRequest as any)._csrfRetryCount = ((originalRequest as any)._csrfRetryCount || 0) + 1;
-      if ((originalRequest as any)._csrfRetryCount > 1) {
+      // CSRF retry guard - prevent infinite loops
+      originalRequest._csrfRetryCount = (originalRequest._csrfRetryCount || 0) + 1;
+      if (originalRequest._csrfRetryCount > 1) {
         console.error('CSRF retry limit exceeded, setting session expired');
         useAuthStore.getState().setSessionExpired(true);
         return Promise.reject(error);
@@ -154,22 +166,34 @@ api.interceptors.response.use(
     }
 
     // Authentication error (401)
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (error.response?.status === 401) {
+      // Prevent infinite retry loops
+      if (originalRequest._retry) {
+        // Already retried once, mark session expired
+        useAuthStore.getState().setSessionExpired(true);
+        return Promise.reject(error);
+      }
+      
+      // Check if session is already marked expired
+      const authStore = useAuthStore.getState();
+      if (authStore.sessionExpired) {
+        return Promise.reject(error);
+      }
+      
       originalRequest._retry = true;
       
-      // Try to refresh access token via /auth/refresh
       try {
         await api.post('/auth/refresh');
         return api(originalRequest);
       } catch (refreshError) {
-        // Refresh failed - set session expired
-        useAuthStore.getState().setSessionExpired(true);
+        // Refresh failed - session expired
+        authStore.setSessionExpired(true);
         return Promise.reject(refreshError);
       }
     }
 
-    // Handle other errors with proper mapping
-    const mappedError = mapBackendErrorToMessage(error);
+    // Map error for consistent handling
+    const mappedError = mapBackendErrorToAuthError(error);
     const apiError: ApiError = {
       status: error.response?.status || 0,
       message: mappedError.message,
@@ -179,13 +203,11 @@ api.interceptors.response.use(
       requestId,
     };
 
-    // Log error for debugging
     console.error('API Error:', {
       requestId,
       status: apiError.status,
       message: apiError.message,
       path: apiError.path,
-      timestamp: apiError.timestamp,
     });
 
     return Promise.reject(apiError);

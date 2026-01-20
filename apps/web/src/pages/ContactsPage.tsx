@@ -1,17 +1,25 @@
-// VERSION: 1.0.0 - FIXED TYPE ERRORS - 2026-01-19
+// VERSION: 2.0.0 - PHASE 2A COMPLIANT - 2026-01-20
 /**
- * Contacts List Page - UPDATED FOR NEW ARCHITECTURE
+ * Contacts List Page - ENTERPRISE-GRADE WITH PHASE 2A FIXES
  * 
  * HELIX CRM - Multi-tenant Contacts Management
+ * 
+ * Phase 2A Fixes Applied:
+ * ✅ Uses ConfirmationDialog (not ConfirmationModal)
+ * ✅ Button variant="danger" (not "destructive")
+ * ✅ Proper Modal component imports
+ * ✅ Loading states with aria-busy
+ * ✅ Accessible error handling
+ * ✅ TypeScript strict compliance
  */
 import React, { useState, useEffect, ChangeEvent, useCallback } from 'react';
 import { useToast } from '../components/feedback/ToastProvider';
-import { Card } from '../components/ui/Card';
-import { Button } from '../components/ui/Button';
-import { Input } from '../components/ui/Input';
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../components/ui/Table';
-import { Modal } from '../components/ui/Modal';
-import { ConfirmationModal } from '../components/ui/ConfirmationModal';
+import { Card } from '../components/molecules/Card';
+import { Button } from '../components/atoms/Button';
+import { Input } from '../components/atoms/Input';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../components/atoms/Table';
+import { Modal } from '../components/feedback/Modal';
+import { ConfirmationDialog } from '../components/feedback/ConfirmationDialog';
 import { ContactForm } from '../components/contacts/ContactForm';
 import { LoadingSpinner } from '../components/feedback/LoadingSpinner';
 import { EmptyState } from '../components/feedback/EmptyState';
@@ -41,7 +49,7 @@ export const ContactsPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Delete state
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [contactToDelete, setContactToDelete] = useState<Contact | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -128,7 +136,7 @@ export const ContactsPage: React.FC = () => {
 
   const handleDeleteClick = (contact: Contact) => {
     setContactToDelete(contact);
-    setIsDeleteModalOpen(true);
+    setIsDeleteDialogOpen(true);
   };
 
   const handleDeleteConfirm = async () => {
@@ -149,8 +157,8 @@ export const ContactsPage: React.FC = () => {
         `${contactToDelete.firstName} ${contactToDelete.lastName} has been removed from your contacts`
       );
       
-      // Close modal and reset
-      setIsDeleteModalOpen(false);
+      // Close dialog and reset
+      setIsDeleteDialogOpen(false);
       setContactToDelete(null);
       
     } catch (err) {
@@ -165,7 +173,7 @@ export const ContactsPage: React.FC = () => {
   };
 
   const handleDeleteCancel = () => {
-    setIsDeleteModalOpen(false);
+    setIsDeleteDialogOpen(false);
     setContactToDelete(null);
   };
 
@@ -246,7 +254,7 @@ export const ContactsPage: React.FC = () => {
             <h1 className="text-2xl font-bold text-gray-900">Contacts</h1>
             <p className="text-gray-600">Manage your organization's contacts</p>
           </div>
-          <Button disabled>
+          <Button disabled aria-busy="true">
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             Loading...
           </Button>
@@ -269,29 +277,29 @@ export const ContactsPage: React.FC = () => {
         isOpen={isFormOpen}
         onClose={handleFormCancel}
         size="lg"
+        title={formMode === 'create' ? 'Add New Contact' : 'Edit Contact'}
       >
         <ContactForm
-  mode={formMode}
-  contact={editingContact ? {
-    ...editingContact,
-    email: editingContact.email || '', // Convert undefined to empty string
-  } : undefined}
-  onSubmit={handleFormSubmit}
-  onCancel={handleFormCancel}
-  isLoading={isSubmitting}
-/>
+          mode={formMode}
+          contact={editingContact ? {
+            ...editingContact,
+            email: editingContact.email || '', // Convert undefined to empty string
+          } : undefined}
+          onSubmit={handleFormSubmit}
+          onCancel={handleFormCancel}
+          isLoading={isSubmitting}
+        />
       </Modal>
 
-      {/* Delete Confirmation Modal */}
-      <ConfirmationModal
-        isOpen={isDeleteModalOpen}
+      {/* Delete Confirmation Dialog - PHASE 2A FIXED */}
+      <ConfirmationDialog
+        isOpen={isDeleteDialogOpen}
         onClose={handleDeleteCancel}
         onConfirm={handleDeleteConfirm}
         title="Delete Contact"
-        description={`Are you sure you want to delete "${contactToDelete?.firstName} ${contactToDelete?.lastName}"? This action cannot be undone.`}
+        message={`Are you sure you want to delete "${contactToDelete?.firstName} ${contactToDelete?.lastName}"? This action cannot be undone.`}
         confirmText={isDeleting ? "Deleting..." : "Delete Contact"}
         cancelText="Cancel"
-        variant="destructive"
         isLoading={isDeleting}
       />
 
@@ -304,8 +312,12 @@ export const ContactsPage: React.FC = () => {
             {searchTerm && ` for "${searchTerm}"`}
           </p>
         </div>
-        <Button onClick={handleCreateContact}>
-          <Plus className="mr-2 h-4 w-4" />
+        <Button 
+          onClick={handleCreateContact}
+          leftIcon={<Plus className="h-4 w-4" />}
+          variant="primary"
+          aria-label="Add new contact"
+        >
           Add Contact
         </Button>
       </div>
@@ -321,6 +333,7 @@ export const ContactsPage: React.FC = () => {
               className="pl-10"
               value={searchTerm}
               onChange={handleSearchChange}
+              aria-label="Search contacts"
             />
           </div>
         </div>
@@ -359,16 +372,18 @@ export const ContactsPage: React.FC = () => {
                       <TableCell>{formatDate(contact.createdAt)}</TableCell>
                       <TableCell className="text-right space-x-2">
                         <Button
-                          variant="outline"
+                          variant="secondary"
                           size="sm"
                           onClick={() => handleEditContact(contact)}
+                          aria-label={`Edit ${contact.firstName} ${contact.lastName}`}
                         >
                           Edit
                         </Button>
                         <Button
-                          variant="destructive"
+                          variant="danger"
                           size="sm"
                           onClick={() => handleDeleteClick(contact)}
+                          aria-label={`Delete ${contact.firstName} ${contact.lastName}`}
                         >
                           Delete
                         </Button>
@@ -387,10 +402,11 @@ export const ContactsPage: React.FC = () => {
                 </div>
                 <div className="flex space-x-2">
                   <Button
-                    variant="outline"
+                    variant="secondary"
                     size="sm"
                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
+                    aria-label="Previous page"
                   >
                     Previous
                   </Button>
@@ -398,10 +414,11 @@ export const ContactsPage: React.FC = () => {
                     Page {currentPage} of {totalPages}
                   </div>
                   <Button
-                    variant="outline"
+                    variant="secondary"
                     size="sm"
                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
+                    aria-label="Next page"
                   >
                     Next
                   </Button>
