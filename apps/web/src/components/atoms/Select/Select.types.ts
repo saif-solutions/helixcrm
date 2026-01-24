@@ -43,13 +43,7 @@ export interface SelectOptionGroup {
 /**
  * Visual variants
  */
-export type SelectVariant = 
-  | 'primary' 
-  | 'secondary' 
-  | 'outline' 
-  | 'ghost' 
-  | 'filled' 
-  | 'minimal';
+export type SelectVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'filled' | 'minimal';
 
 /**
  * Size variants
@@ -63,15 +57,16 @@ export type SelectSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 /**
  * Main Select component props
  */
-export interface SelectProps 
-  extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onChange' | 'value' | 'defaultValue'> {
-  
+export interface SelectProps extends Omit<
+  React.HTMLAttributes<HTMLDivElement>,
+  'onChange' | 'value' | 'defaultValue'
+> {
   // Core properties
   options: SelectOption[];
   value?: SelectValue;
   defaultValue?: SelectValue;
   onChange?: (value: SelectValue, option: SelectOption | SelectOption[] | undefined) => void;
-  
+
   // Visual properties
   variant?: SelectVariant;
   size?: SelectSize;
@@ -87,43 +82,40 @@ export interface SelectProps
   helperText?: string;
   required?: boolean;
   icon?: React.ReactNode;
-  
+
   // Dropdown properties
   maxMenuHeight?: string | number;
   minMenuWidth?: string | number;
   position?: 'top' | 'bottom' | 'auto';
   matchWidth?: boolean;
   ungroupedLabel?: string;
-  
+
   // Virtualization properties
   virtualizationThreshold?: number;
   virtualize?: boolean;
-  
+
   // Custom rendering
   renderOption?: (
     option: SelectOption,
     state: { isSelected: boolean; isFocused: boolean; isDisabled: boolean }
   ) => React.ReactNode;
-  
-  renderValue?: (
-    selected: SelectOption[],
-    displayText: string
-  ) => React.ReactNode;
-  
+
+  renderValue?: (selected: SelectOption[], displayText: string) => React.ReactNode;
+
   // Styling
   className?: string;
   menuClassName?: string;
   optionClassName?: string;
-  
+
   // Testing & analytics
   'data-testid'?: string;
   'data-analytics'?: string;
   'data-cy'?: string;
-  
+
   // Form attributes
   name?: string;
   form?: string;
-  
+
   // Accessibility
   ariaLabel?: string;
   ariaDescribedBy?: string;
@@ -175,15 +167,15 @@ export interface SelectContextValue {
 /**
  * Keyboard navigation key types with default actions
  */
-export type SelectKeyboardKey = 
-  | 'ArrowUp'    // Move focus up
-  | 'ArrowDown'  // Move focus down
-  | 'Enter'      // Select focused option
-  | 'Escape'     // Close dropdown
-  | 'Tab'        // Close dropdown and move focus
-  | 'Space'      // Toggle dropdown / select
-  | 'Home'       // Move to first option
-  | 'End';       // Move to last option
+export type SelectKeyboardKey =
+  | 'ArrowUp' // Move focus up
+  | 'ArrowDown' // Move focus down
+  | 'Enter' // Select focused option
+  | 'Escape' // Close dropdown
+  | 'Tab' // Close dropdown and move focus
+  | 'Space' // Toggle dropdown / select
+  | 'Home' // Move to first option
+  | 'End'; // Move to last option
 
 /**
  * Controlled vs uncontrolled mode
@@ -218,16 +210,13 @@ export interface SelectAccessibilityProps {
  * Value & Selection Utilities
  */
 
-export function isOptionSelected(
-  option: SelectOption,
-  selectedValue?: SelectValue
-): boolean {
+export function isOptionSelected(option: SelectOption, selectedValue?: SelectValue): boolean {
   if (!selectedValue) return false;
-  
+
   if (Array.isArray(selectedValue)) {
-    return selectedValue.some(val => val === option.value);
+    return selectedValue.some((val) => val === option.value);
   }
-  
+
   return option.value === selectedValue;
 }
 
@@ -236,12 +225,12 @@ export function getSelectedOptions(
   options: SelectOption[]
 ): SelectOption | SelectOption[] | undefined {
   if (!value) return undefined;
-  
+
   if (Array.isArray(value)) {
-    return options.filter(option => value.some(v => v === option.value));
+    return options.filter((option) => value.some((v) => v === option.value));
   }
-  
-  return options.find(option => option.value === value);
+
+  return options.find((option) => option.value === value);
 }
 
 /**
@@ -254,7 +243,10 @@ export function isArrayValue(value: any): value is (string | number)[] {
 /**
  * Keyboard event handler mapping
  */
-export type SelectKeyboardHandlers = Record<SelectKeyboardKey, (event: React.KeyboardEvent) => void>;
+export type SelectKeyboardHandlers = Record<
+  SelectKeyboardKey,
+  (event: React.KeyboardEvent) => void
+>;
 
 export function validateControlledUsage(
   value?: SelectValue,
@@ -263,11 +255,11 @@ export function validateControlledUsage(
   if (value !== undefined && defaultValue !== undefined) {
     console.error(
       '⚠️ Select Warning: Both `value` (controlled) and `defaultValue` (uncontrolled) provided. ' +
-      'Select will use controlled mode. Remove `defaultValue` to suppress this warning.'
+        'Select will use controlled mode. Remove `defaultValue` to suppress this warning.'
     );
     return 'controlled';
   }
-  
+
   return value !== undefined ? 'controlled' : 'uncontrolled';
 }
 
@@ -280,13 +272,13 @@ export function getDisplayText(
   placeholder: string = 'Select an option'
 ): string {
   if (!selected) return placeholder;
-  
+
   if (Array.isArray(selected)) {
     if (selected.length === 0) return placeholder;
     if (selected.length === 1) return selected[0].label;
     return `${selected.length} selected`;
   }
-  
+
   return selected.label;
 }
 
@@ -302,23 +294,21 @@ export function getCombinedDisplayText(
  * Option Filtering & Grouping Utilities
  */
 
-export function filterOptionsByQuery(
-  options: SelectOption[],
-  query: string
-): SelectOption[] {
+export function filterOptionsByQuery(options: SelectOption[], query: string): SelectOption[] {
   if (!query.trim()) return options;
-  
+
   const lowerQuery = query.toLowerCase();
-  return options.filter(option => 
-    option.label.toLowerCase().includes(lowerQuery) ||
-    (option.description && option.description.toLowerCase().includes(lowerQuery)) ||
-    String(option.value).toLowerCase().includes(lowerQuery)
+  return options.filter(
+    (option) =>
+      option.label.toLowerCase().includes(lowerQuery) ||
+      (option.description && option.description.toLowerCase().includes(lowerQuery)) ||
+      String(option.value).toLowerCase().includes(lowerQuery)
   );
 }
 
 export function createMemoizedFilter() {
   let cache: { query: string; options: SelectOption[]; result: SelectOption[] } | null = null;
-  
+
   return function memoizedFilterOptionsByQuery(
     options: SelectOption[],
     query: string
@@ -326,7 +316,7 @@ export function createMemoizedFilter() {
     if (cache && cache.query === query && cache.options === options) {
       return cache.result;
     }
-    
+
     const result = filterOptionsByQuery(options, query);
     cache = { query, options, result };
     return result;
@@ -338,28 +328,28 @@ export function groupOptions(
   ungroupedLabel: string = 'Other'
 ): SelectOptionGroup[] {
   const groups: Record<string, SelectOptionGroup> = {};
-  
-  options.forEach(option => {
+
+  options.forEach((option) => {
     const groupName = option.group || 'ungrouped';
-    
+
     if (!groups[groupName]) {
       groups[groupName] = {
         label: option.group || ungroupedLabel,
         options: [],
         disabled: false,
         role: 'group',
-        ariaLabel: `${option.group || ungroupedLabel} group`
+        ariaLabel: `${option.group || ungroupedLabel} group`,
       };
     }
-    
+
     groups[groupName].options.push(option);
   });
-  
+
   // Calculate group disabled state
-  Object.values(groups).forEach(group => {
-    group.disabled = group.options.every(opt => opt.disabled);
+  Object.values(groups).forEach((group) => {
+    group.disabled = group.options.every((opt) => opt.disabled);
   });
-  
+
   return Object.values(groups);
 }
 
@@ -380,12 +370,8 @@ export function shouldVirtualize(
  * Testing & Accessibility Utilities
  */
 
-export function getOptionTestId(
-  option: SelectOption,
-  prefix: string = 'select-option'
-): string {
-  return option['data-testid'] || 
-    `${prefix}-${option.value}`.replace(/\s+/g, '-').toLowerCase();
+export function getOptionTestId(option: SelectOption, prefix: string = 'select-option'): string {
+  return option['data-testid'] || `${prefix}-${option.value}`.replace(/\s+/g, '-').toLowerCase();
 }
 
 export function generateAriaAttributes(
@@ -409,26 +395,22 @@ export function generateAriaAttributes(
  * Validation Utilities
  */
 
-export function isValidValue(
-  value: SelectValue,
-  options: SelectOption[]
-): boolean {
+export function isValidValue(value: SelectValue, options: SelectOption[]): boolean {
   if (Array.isArray(value)) {
-    return value.every(v => options.some(opt => opt.value === v));
+    return value.every((v) => options.some((opt) => opt.value === v));
   }
-  
-  return options.some(opt => opt.value === value);
+
+  return options.some((opt) => opt.value === value);
 }
 
 /**
  * Factory Functions
  */
 
-export function createSelectOption(
-  overrides: Partial<SelectOption> = {}
-): SelectOption {
-  const value = overrides.value || `option-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-  
+export function createSelectOption(overrides: Partial<SelectOption> = {}): SelectOption {
+  const value =
+    overrides.value || `option-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
   return {
     value,
     label: 'New Option',
@@ -468,7 +450,7 @@ export function normalizeSelectedOptions(
  */
 export function valueToStringArray(value: SelectValue | undefined): string[] {
   if (!value) return [];
-  if (Array.isArray(value)) return value.map(v => String(v));
+  if (Array.isArray(value)) return value.map((v) => String(v));
   return [String(value)];
 }
 
@@ -489,12 +471,12 @@ export function areValuesEqual(
 ): boolean {
   if (value1 === value2) return true;
   if (!value1 || !value2) return false;
-  
+
   const arr1 = valueToStringArray(value1);
   const arr2 = valueToStringArray(value2);
-  
+
   if (arr1.length !== arr2.length) return false;
-  
+
   return arr1.every((val, index) => val === arr2[index]);
 }
 
@@ -505,7 +487,7 @@ export function findOptionByValue(
   options: SelectOption[],
   value: string | number
 ): SelectOption | undefined {
-  return options.find(option => option.value === value);
+  return options.find((option) => option.value === value);
 }
 
 /**
@@ -516,12 +498,10 @@ export function validateAndFilterValues(
   options: SelectOption[]
 ): SelectValue {
   if (!values) return Array.isArray(values) ? [] : '';
-  
+
   if (Array.isArray(values)) {
-    return values.filter(val => 
-      options.some(option => option.value === val)
-    );
+    return values.filter((val) => options.some((option) => option.value === val));
   }
-  
-  return options.some(option => option.value === values) ? values : '';
+
+  return options.some((option) => option.value === values) ? values : '';
 }

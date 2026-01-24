@@ -5,59 +5,59 @@ import * as React from 'react';
  * Main Card component props with comprehensive JSDoc
  */
 export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
-  /** 
+  /**
    * Card variant style
    * @default 'default'
    */
   variant?: CardVariant;
-  
-  /** 
+
+  /**
    * Card size
    * @default 'md'
    */
   size?: CardSize;
-  
-  /** 
+
+  /**
    * Whether card is hoverable (adds hover effects)
    */
   hoverable?: boolean;
-  
-  /** 
+
+  /**
    * Whether card is clickable (adds cursor and role)
    */
   clickable?: boolean;
-  
-  /** 
+
+  /**
    * Custom class name for content area
    */
   contentClassName?: string;
-  
-  /** 
+
+  /**
    * Card title (optional - displayed in header)
    */
   title?: string;
-  
-  /** 
+
+  /**
    * Card subtitle (optional - displayed under title)
    */
   subtitle?: string;
-  
-  /** 
+
+  /**
    * Custom header content (overrides title/subtitle)
    */
   header?: React.ReactNode;
-  
-  /** 
+
+  /**
    * Custom footer content
    */
   footer?: React.ReactNode;
-  
-  /** 
+
+  /**
    * Card image configuration
    */
   image?: CardImage;
-  
-  /** 
+
+  /**
    * Card actions (buttons, links, etc.)
    */
   actions?: React.ReactNode;

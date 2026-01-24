@@ -59,33 +59,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     checkAuth();
   }, []);
 
-  const login = useCallback(async (email: string, password: string) => {
-    setIsLoading(true);
-    try {
-      const response = await fetch(`${API_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
+  const login = useCallback(
+    async (email: string, password: string) => {
+      setIsLoading(true);
+      try {
+        const response = await fetch(`${API_URL}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        });
 
-      const data = await response.json();
+        const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.message || 'Login failed');
+        if (!response.ok) {
+          throw new Error(data.message || 'Login failed');
+        }
+
+        localStorage.setItem('token', data.token);
+        setUser(data.user);
+
+        success('Login successful', 'Welcome back!');
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Login failed';
+        error('Login failed', message);
+        throw err;
+      } finally {
+        setIsLoading(false);
       }
-
-      localStorage.setItem('token', data.token);
-      setUser(data.user);
-      
-      success('Login successful', 'Welcome back!');
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Login failed';
-      error('Login failed', message);
-      throw err;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [success, error]);
+    },
+    [success, error]
+  );
 
   const logout = useCallback(async () => {
     setIsLoading(true);
@@ -109,33 +112,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [success]);
 
-  const register = useCallback(async (email: string, password: string, organizationName: string) => {
-    setIsLoading(true);
-    try {
-      const response = await fetch(`${API_URL}/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, organizationName }),
-      });
+  const register = useCallback(
+    async (email: string, password: string, organizationName: string) => {
+      setIsLoading(true);
+      try {
+        const response = await fetch(`${API_URL}/auth/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password, organizationName }),
+        });
 
-      const data = await response.json();
+        const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.message || 'Registration failed');
+        if (!response.ok) {
+          throw new Error(data.message || 'Registration failed');
+        }
+
+        localStorage.setItem('token', data.token);
+        setUser(data.user);
+
+        success('Registration successful', 'Welcome to HelixCRM!');
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Registration failed';
+        error('Registration failed', message);
+        throw err;
+      } finally {
+        setIsLoading(false);
       }
-
-      localStorage.setItem('token', data.token);
-      setUser(data.user);
-      
-      success('Registration successful', 'Welcome to HelixCRM!');
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Registration failed';
-      error('Registration failed', message);
-      throw err;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [success, error]);
+    },
+    [success, error]
+  );
 
   return (
     <AuthContext.Provider value={{ user, isLoading, login, logout, register }}>

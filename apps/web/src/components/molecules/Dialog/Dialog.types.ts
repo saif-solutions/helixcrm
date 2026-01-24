@@ -13,23 +13,53 @@ export type DialogSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'fullscreen';
 /**
  * Dialog visual variants
  */
-export type DialogVariant = 'default' | 'alert' | 'confirm' | 'form' | 'success' | 'error' | 'warning';
+export type DialogVariant =
+  | 'default'
+  | 'alert'
+  | 'confirm'
+  | 'form'
+  | 'success'
+  | 'error'
+  | 'warning';
 
 /**
  * Dialog position on screen
  */
-export type DialogPosition = 'center' | 'top' | 'bottom' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+export type DialogPosition =
+  | 'center'
+  | 'top'
+  | 'bottom'
+  | 'left'
+  | 'right'
+  | 'top-left'
+  | 'top-right'
+  | 'bottom-left'
+  | 'bottom-right';
 
 /**
  * Animation types for dialog entry/exit
  */
-export type DialogAnimation = 'fade' | 'slide' | 'scale' | 'none' | 'slide-up' | 'slide-down' | 'slide-left' | 'slide-right' | 'shake';
+export type DialogAnimation =
+  | 'fade'
+  | 'slide'
+  | 'scale'
+  | 'none'
+  | 'slide-up'
+  | 'slide-down'
+  | 'slide-left'
+  | 'slide-right'
+  | 'shake';
 
 /**
  * Animation phase for callbacks
  */
-export type AnimationPhase = 'enter' | 'enter-active' | 'exit' | 'exit-active' | 'entered' | 'exited';
-
+export type AnimationPhase =
+  | 'enter'
+  | 'enter-active'
+  | 'exit'
+  | 'exit-active'
+  | 'entered'
+  | 'exited';
 
 /**
  * Action button configuration with enhanced analytics support
@@ -98,13 +128,13 @@ export interface DialogProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 
   // Core properties
   open: boolean;
   onClose: (event?: DialogEvent) => void;
-  
+
   // Content properties
   title?: string;
   description?: string;
   children?: React.ReactNode;
   icon?: React.ReactNode;
-  
+
   // Visual properties
   variant?: DialogVariant;
   size?: DialogSize;
@@ -115,7 +145,7 @@ export interface DialogProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 
   overlayOpacity?: number;
   overlayBlur?: boolean;
   overlayColor?: string;
-  
+
   // Header/Footer properties
   header?: DialogHeaderProps | boolean;
   footer?: DialogFooterProps | boolean;
@@ -123,7 +153,7 @@ export interface DialogProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 
   closeOnOverlayClick?: boolean;
   closeOnInteractOutside?: boolean;
   closeOnEscape?: boolean;
-  
+
   // Behavior properties
   preventScroll?: boolean;
   lockFocus?: boolean;
@@ -131,47 +161,47 @@ export interface DialogProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 
   initialFocusRef?: React.RefObject<HTMLElement | null>;
   returnFocusRef?: React.RefObject<HTMLElement | null>; // FIXED: Allow null
   persistent?: boolean;
-  
+
   // Enhanced: Nested dialog support
   nested?: boolean;
   nestedLevel?: number;
-  
+
   // Enhanced: Interaction callbacks
   onInteractOutside?: (event: DialogEvent) => void;
-  
+
   // FIXED: Custom animation callbacks that don't conflict with React's native handlers
   onDialogAnimationStart?: (phase: AnimationPhase) => void;
   onDialogAnimationEnd?: (phase: AnimationPhase) => void;
   onOpenComplete?: () => void;
   onCloseComplete?: () => void;
-  
+
   // Enhanced: Custom rendering
   renderHeader?: (props: DialogHeaderComponentProps) => React.ReactNode;
   renderFooter?: (actions: DialogAction[], defaultRender: () => React.ReactNode) => React.ReactNode;
   renderOverlay?: (props: React.HTMLAttributes<HTMLDivElement>) => React.ReactNode;
-  
+
   // Transition properties
   transitionDuration?: number;
   transitionTimingFunction?: string;
   unmountOnExit?: boolean;
-  
+
   // Portal properties
   portal?: boolean;
   portalContainer?: HTMLElement | null;
   portalClassName?: string;
-  
+
   // Styling
   className?: string;
   contentClassName?: string;
   headerClassName?: string;
   bodyClassName?: string;
   footerClassName?: string;
-  
+
   // Testing & analytics
   'data-testid'?: string;
   'data-analytics'?: string;
   'data-cy'?: string;
-  
+
   // Accessibility
   ariaLabel?: string;
   ariaLabelledby?: string;
@@ -219,33 +249,33 @@ export interface DialogContextValue {
   // Core state
   isOpen: boolean;
   onClose: (event?: DialogEvent) => void;
-  
+
   // Visual properties
   variant: DialogVariant;
   size: DialogSize;
   position: DialogPosition;
-  
+
   // IDs for accessibility
   dialogId: string;
   headerId: string;
   bodyId: string;
   footerId?: string;
   closeButtonId: string;
-  
+
   // Enhanced: Focus management
   initialFocusRef: React.RefObject<HTMLElement> | null;
   returnFocusRef: React.RefObject<HTMLElement> | null;
-  
+
   // Enhanced: Testing utilities
   getTestId: (element: string) => string;
-  
+
   // Enhanced: Nested dialog support
   isNested: boolean;
   nestedLevel: number;
-  
+
   // Enhanced: Animation control
   animationPhase: AnimationPhase;
-  
+
   // Enhanced: Persistent dialog feedback
   showPersistentFeedback: boolean;
 }
@@ -257,15 +287,15 @@ export interface DialogContextValue {
 /**
  * Keyboard navigation key types
  */
-export type DialogKeyboardKey = 
-  | 'Escape'     // Close dialog
-  | 'Tab'        // Cycle focus
-  | 'Shift+Tab'  // Reverse cycle focus
-  | 'Enter'      // Trigger primary action
-  | 'Space'      // Trigger focused action
-  | 'ArrowUp'    // Navigate up (for form dialogs)
-  | 'ArrowDown'  // Navigate down (for form dialogs)
-  | 'ArrowLeft'  // Navigate left (for tabbed dialogs)
+export type DialogKeyboardKey =
+  | 'Escape' // Close dialog
+  | 'Tab' // Cycle focus
+  | 'Shift+Tab' // Reverse cycle focus
+  | 'Enter' // Trigger primary action
+  | 'Space' // Trigger focused action
+  | 'ArrowUp' // Navigate up (for form dialogs)
+  | 'ArrowDown' // Navigate down (for form dialogs)
+  | 'ArrowLeft' // Navigate left (for tabbed dialogs)
   | 'ArrowRight'; // Navigate right (for tabbed dialogs)
 
 /**
@@ -278,12 +308,12 @@ export interface FocusTrapConfig {
   escapeDeactivates?: boolean;
   clickOutsideDeactivates?: boolean;
   fallbackFocus?: HTMLElement | (() => HTMLElement);
-  
+
   // Enhanced: Custom focus handling
   onActivate?: () => void;
   onDeactivate?: () => void;
   checkCanFocusTrap?: (container: HTMLElement) => boolean;
-  
+
   // Enhanced: Nested dialog support
   isNested?: boolean;
   parentContainer?: HTMLElement;
@@ -319,10 +349,10 @@ export interface DialogAccessibilityProps {
   ariaLive?: 'polite' | 'assertive' | 'off';
   ariaBusy?: boolean;
   ariaAtomic?: boolean;
-  
+
   // Enhanced: Screen reader announcements
   ariaRelevant?: 'additions' | 'removals' | 'text' | 'all';
-  
+
   // Enhanced: For nested dialogs
   ariaOwns?: string;
   ariaHaspopup?: 'dialog' | 'menu' | 'listbox' | 'tree' | 'grid';
@@ -357,11 +387,31 @@ export function isValidDialogVariant(variant: string): variant is DialogVariant 
 }
 
 export function isValidDialogPosition(position: string): position is DialogPosition {
-  return ['center', 'top', 'bottom', 'left', 'right', 'top-left', 'top-right', 'bottom-left', 'bottom-right'].includes(position);
+  return [
+    'center',
+    'top',
+    'bottom',
+    'left',
+    'right',
+    'top-left',
+    'top-right',
+    'bottom-left',
+    'bottom-right',
+  ].includes(position);
 }
 
 export function isValidDialogAnimation(animation: string): animation is DialogAnimation {
-  return ['fade', 'slide', 'scale', 'none', 'slide-up', 'slide-down', 'slide-left', 'slide-right', 'shake'].includes(animation);
+  return [
+    'fade',
+    'slide',
+    'scale',
+    'none',
+    'slide-up',
+    'slide-down',
+    'slide-left',
+    'slide-right',
+    'shake',
+  ].includes(animation);
 }
 
 /**
@@ -383,11 +433,11 @@ export function getFocusableElements(container: HTMLElement): HTMLElement[] {
     'video[controls]:not([tabindex="-1"])',
     '[role="button"]:not([tabindex="-1"])',
   ].join(',');
-  
+
   const elements = Array.from(container.querySelectorAll(focusableSelectors)) as HTMLElement[];
-  
+
   // Filter out hidden elements and elements with aria-hidden
-  return elements.filter(el => {
+  return elements.filter((el) => {
     const style = window.getComputedStyle(el);
     return (
       style.display !== 'none' &&
@@ -408,16 +458,16 @@ export function trapFocus(
   }
 ): boolean {
   if (event.key !== 'Tab') return true;
-  
+
   const firstElement = focusableElements[0];
   const lastElement = focusableElements[focusableElements.length - 1];
-  
+
   // Handle nested dialogs
   if (config?.nested && event.shiftKey && document.activeElement === firstElement) {
     // Allow shift+tab to move to parent dialog
     return true;
   }
-  
+
   if (!event.shiftKey && document.activeElement === lastElement) {
     event.preventDefault();
     firstElement?.focus();
@@ -427,7 +477,7 @@ export function trapFocus(
     lastElement?.focus();
     return false;
   }
-  
+
   return true;
 }
 
@@ -444,7 +494,7 @@ export function preventBodyScroll(shouldPrevent: boolean): ScrollLockResult {
   const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
   const body = document.body;
   const scrollY = window.scrollY;
-  
+
   if (shouldPrevent) {
     // Save current styles
     const originalPaddingRight = body.style.paddingRight;
@@ -452,14 +502,14 @@ export function preventBodyScroll(shouldPrevent: boolean): ScrollLockResult {
     const originalPosition = body.style.position;
     const originalTop = body.style.top;
     const originalWidth = body.style.width;
-    
+
     // Apply scroll lock with scrollbar compensation
     body.style.paddingRight = `${scrollbarWidth}px`;
     body.style.overflow = 'hidden';
     body.style.position = 'fixed';
     body.style.top = `-${scrollY}px`;
     body.style.width = '100%';
-    
+
     return {
       unlock: () => {
         // Restore original styles
@@ -473,7 +523,7 @@ export function preventBodyScroll(shouldPrevent: boolean): ScrollLockResult {
       scrollbarWidth,
     };
   }
-  
+
   return {
     unlock: () => {},
     scrollbarWidth: 0,
@@ -489,56 +539,52 @@ export interface AriaHiddenElements {
   originalAttributes: Map<HTMLElement, string | null>;
 }
 
-export function hideBackgroundContent(
-  config: AriaHiddenConfig = {}
-): AriaHiddenElements {
+export function hideBackgroundContent(config: AriaHiddenConfig = {}): AriaHiddenElements {
   const {
     enabled = true,
     rootSelector = 'body',
     excludeSelectors = ['[role="dialog"]', '[role="alertdialog"]', '[data-dialog-root]'],
     preserveAttributes = true,
   } = config;
-  
+
   if (!enabled) {
     return { elements: [], originalAttributes: new Map() };
   }
-  
+
   const root = document.querySelector(rootSelector);
   if (!root) {
     return { elements: [], originalAttributes: new Map() };
   }
-  
+
   const allElements = Array.from(root.querySelectorAll('*')) as HTMLElement[];
   const excludePattern = excludeSelectors.join(',');
-  const excludedElements = excludePattern 
-    ? Array.from(root.querySelectorAll(excludePattern)) 
-    : [];
-  
-  const elementsToHide = allElements.filter(el => {
+  const excludedElements = excludePattern ? Array.from(root.querySelectorAll(excludePattern)) : [];
+
+  const elementsToHide = allElements.filter((el) => {
     // Skip excluded elements
     if (excludedElements.includes(el)) return false;
-    
+
     // Skip dialog containers
     if (el.closest('[role="dialog"], [role="alertdialog"]')) return false;
-    
+
     // Skip already hidden elements
     if (el.getAttribute('aria-hidden') === 'true') return false;
-    
+
     return true;
   });
-  
+
   const originalAttributes = new Map<HTMLElement, string | null>();
-  
-  elementsToHide.forEach(el => {
+
+  elementsToHide.forEach((el) => {
     if (preserveAttributes) {
       originalAttributes.set(el, el.getAttribute('aria-hidden'));
     }
     el.setAttribute('aria-hidden', 'true');
     el.setAttribute('data-dialog-hidden', 'true');
   });
-  
+
   config.onHide?.(elementsToHide);
-  
+
   return { elements: elementsToHide, originalAttributes };
 }
 
@@ -547,11 +593,11 @@ export function restoreBackgroundContent(
   config: AriaHiddenConfig = {}
 ): void {
   const { preserveAttributes = true } = config;
-  
-  hiddenElements.elements.forEach(el => {
+
+  hiddenElements.elements.forEach((el) => {
     if (preserveAttributes) {
       const originalValue = hiddenElements.originalAttributes.get(el);
-      
+
       // If originalValue is null or undefined, remove the attribute
       if (originalValue === null || originalValue === undefined) {
         el.removeAttribute('aria-hidden');
@@ -564,7 +610,7 @@ export function restoreBackgroundContent(
     }
     el.removeAttribute('data-dialog-hidden');
   });
-  
+
   config.onRestore?.(hiddenElements.elements);
 }
 
@@ -579,10 +625,10 @@ export function getPortalContainer(
   if (container && container instanceof HTMLElement) {
     return container;
   }
-  
+
   const zIndex = 9999 + nestedLevel * 10;
   const portalId = `dialog-portal-root-${nestedLevel}`;
-  
+
   let portalRoot = document.getElementById(portalId);
   if (!portalRoot) {
     portalRoot = document.createElement('div');
@@ -595,7 +641,7 @@ export function getPortalContainer(
     portalRoot.setAttribute('data-dialog-nested-level', nestedLevel.toString());
     document.body.appendChild(portalRoot);
   }
-  
+
   return portalRoot;
 }
 
@@ -609,7 +655,7 @@ export function getAnimationClasses(
   isShaking: boolean = false
 ): string {
   const baseClasses = 'transition-all duration-300 ease-in-out';
-  
+
   const animationClasses: Record<DialogAnimation, { enter: string; exit: string }> = {
     fade: {
       enter: 'opacity-100',
@@ -648,13 +694,13 @@ export function getAnimationClasses(
       exit: '',
     },
   };
-  
+
   const classes = animationClasses[animation] || animationClasses.fade;
-  
+
   if (isShaking && animation === 'shake') {
     return `${baseClasses} animate-shake`;
   }
-  
+
   return `${baseClasses} ${isEntering ? classes.enter : classes.exit}`;
 }
 
@@ -671,7 +717,7 @@ export function getSizeClasses(size: DialogSize): string {
     xl: 'max-w-4xl w-full',
     fullscreen: 'max-w-[95vw] max-h-[95vh] w-[95vw] h-[95vh]',
   };
-  
+
   return sizeClasses[size] || sizeClasses.md;
 }
 
@@ -687,7 +733,7 @@ export function getPositionClasses(position: DialogPosition): string {
     'bottom-left': 'bottom-4 left-4',
     'bottom-right': 'bottom-4 right-4',
   };
-  
+
   return positionClasses[position] || positionClasses.center;
 }
 
@@ -701,12 +747,15 @@ export function getVariantClasses(variant: DialogVariant): {
   icon: string;
   overlay: string;
 } {
-  const variantMap: Record<DialogVariant, { 
-    container: string; 
-    header: string; 
-    icon: string;
-    overlay: string;
-  }> = {
+  const variantMap: Record<
+    DialogVariant,
+    {
+      container: string;
+      header: string;
+      icon: string;
+      overlay: string;
+    }
+  > = {
     default: {
       container: 'bg-white dark:bg-gray-800 shadow-2xl',
       header: 'text-gray-900 dark:text-gray-100',
@@ -750,7 +799,7 @@ export function getVariantClasses(variant: DialogVariant): {
       overlay: 'bg-black/50',
     },
   };
-  
+
   return variantMap[variant] || variantMap.default;
 }
 
@@ -758,17 +807,23 @@ export function getVariantClasses(variant: DialogVariant): {
  * Action Button Utilities - Enhanced with analytics
  */
 
-export function getActionVariantClasses(
-  variant: DialogAction['variant'] = 'primary'
-): string {
-  const variantClasses: Record<string, string> = { // Change Record type to string, string
-    primary: 'bg-primary-600 hover:bg-primary-700 text-white focus:ring-2 focus:ring-primary-500 focus:ring-offset-2',
-    secondary: 'bg-gray-200 hover:bg-gray-300 text-gray-900 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100',
-    outline: 'border border-primary-600 text-primary-600 hover:bg-primary-50 focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:border-primary-400 dark:text-primary-400 dark:hover:bg-primary-900/20',
-    ghost: 'text-gray-700 hover:bg-gray-100 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:text-gray-300 dark:hover:bg-gray-800',
-    error: 'bg-error-600 hover:bg-error-700 text-white focus:ring-2 focus:ring-error-500 focus:ring-offset-2',
-    success: 'bg-success-600 hover:bg-success-700 text-white focus:ring-2 focus:ring-success-500 focus:ring-offset-2',
-    warning: 'bg-warning-600 hover:bg-warning-700 text-white focus:ring-2 focus:ring-warning-500 focus:ring-offset-2',
+export function getActionVariantClasses(variant: DialogAction['variant'] = 'primary'): string {
+  const variantClasses: Record<string, string> = {
+    // Change Record type to string, string
+    primary:
+      'bg-primary-600 hover:bg-primary-700 text-white focus:ring-2 focus:ring-primary-500 focus:ring-offset-2',
+    secondary:
+      'bg-gray-200 hover:bg-gray-300 text-gray-900 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100',
+    outline:
+      'border border-primary-600 text-primary-600 hover:bg-primary-50 focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:border-primary-400 dark:text-primary-400 dark:hover:bg-primary-900/20',
+    ghost:
+      'text-gray-700 hover:bg-gray-100 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:text-gray-300 dark:hover:bg-gray-800',
+    error:
+      'bg-error-600 hover:bg-error-700 text-white focus:ring-2 focus:ring-error-500 focus:ring-offset-2',
+    success:
+      'bg-success-600 hover:bg-success-700 text-white focus:ring-2 focus:ring-success-500 focus:ring-offset-2',
+    warning:
+      'bg-warning-600 hover:bg-warning-700 text-white focus:ring-2 focus:ring-warning-500 focus:ring-offset-2',
   };
 
   // Force the value to a string and provide a fallback
@@ -777,20 +832,26 @@ export function getActionVariantClasses(
   return variantClasses[lookupKey];
 }
 
-
 /**
  * Test ID Generation - Enhanced for nested dialogs
  */
 
 export function getDialogTestId(
   testId?: string,
-  element: 'container' | 'overlay' | 'header' | 'body' | 'footer' | 'close-button' | 'action' = 'container',
+  element:
+    | 'container'
+    | 'overlay'
+    | 'header'
+    | 'body'
+    | 'footer'
+    | 'close-button'
+    | 'action' = 'container',
   nestedLevel: number = 0,
   actionId?: string
 ): string {
   const base = testId || 'dialog';
   const nestedSuffix = nestedLevel > 0 ? `-nested-${nestedLevel}` : '';
-  
+
   switch (element) {
     case 'overlay':
       return `${base}${nestedSuffix}-overlay`;
@@ -803,7 +864,9 @@ export function getDialogTestId(
     case 'close-button':
       return `${base}${nestedSuffix}-close-button`;
     case 'action':
-      return actionId ? `${base}${nestedSuffix}-action-${actionId}` : `${base}${nestedSuffix}-action`;
+      return actionId
+        ? `${base}${nestedSuffix}-action-${actionId}`
+        : `${base}${nestedSuffix}-action`;
     default:
       return `${base}${nestedSuffix}`;
   }
@@ -824,7 +887,7 @@ export function generateDialogIds(prefix: string = 'dialog'): {
   const randomStr = Math.random().toString(36);
   const random = randomStr.slice(2, 11); // Explicitly get the string first
   const unique = `${timestamp}-${random}`;
-  
+
   return {
     dialogId: `${prefix}-${unique}`,
     headerId: `${prefix}-header-${unique}`,
@@ -834,7 +897,6 @@ export function generateDialogIds(prefix: string = 'dialog'): {
   };
 }
 
-
 /* ============================================================================
  * 7.1 Enhanced Event Types & Utilities
  * ========================================================================== */
@@ -843,11 +905,7 @@ export function generateDialogIds(prefix: string = 'dialog'): {
  * Unified dialog event type for consistent event handling
  * Supports both React synthetic events and native DOM events
  */
-export type DialogEvent = 
-  | React.MouseEvent 
-  | React.KeyboardEvent 
-  | MouseEvent 
-  | KeyboardEvent;
+export type DialogEvent = React.MouseEvent | React.KeyboardEvent | MouseEvent | KeyboardEvent;
 
 /**
  * Type guard for React mouse events
@@ -888,7 +946,7 @@ export function normalizeDialogEvent(event?: DialogEvent): {
   event: DialogEvent;
 } | null {
   if (!event) return null;
-  
+
   if (isReactMouseEvent(event) || isDomMouseEvent(event)) {
     return {
       type: 'mouse',
@@ -897,7 +955,7 @@ export function normalizeDialogEvent(event?: DialogEvent): {
       event,
     };
   }
-  
+
   if (isReactKeyboardEvent(event) || isDomKeyboardEvent(event)) {
     return {
       type: 'keyboard',
@@ -906,7 +964,7 @@ export function normalizeDialogEvent(event?: DialogEvent): {
       event,
     };
   }
-  
+
   // Fallback for TypeScript (should never happen)
   return {
     type: 'key' in event ? 'keyboard' : 'mouse',
@@ -921,7 +979,10 @@ export function normalizeDialogEvent(event?: DialogEvent): {
  */
 
 export function generateDialogAriaAttributes(
-  props: Pick<DialogProps, 'ariaLabel' | 'ariaLabelledby' | 'ariaDescribedby' | 'role' | 'modal' | 'variant'>,
+  props: Pick<
+    DialogProps,
+    'ariaLabel' | 'ariaLabelledby' | 'ariaDescribedby' | 'role' | 'modal' | 'variant'
+  >,
   ids: {
     dialogId: string;
     headerId?: string;
@@ -933,7 +994,7 @@ export function generateDialogAriaAttributes(
 ): DialogAccessibilityProps {
   const isAlertDialog = props.variant === 'alert' || props.variant === 'confirm';
   const role = props.role || (isAlertDialog ? 'alertdialog' : 'dialog');
-  
+
   // Smart aria-labelledby: Use provided, or header, or generate fallback
   let ariaLabelledby = props.ariaLabelledby;
   if (!ariaLabelledby && ids.headerId && hasHeader) {
@@ -942,7 +1003,7 @@ export function generateDialogAriaAttributes(
     // If no label or labelledby, create a fallback for screen readers
     ariaLabelledby = `${ids.dialogId}-label`;
   }
-  
+
   // Smart aria-describedby
   let ariaDescribedby = props.ariaDescribedby;
   if (!ariaDescribedby && ids.bodyId && hasBody) {
@@ -950,7 +1011,7 @@ export function generateDialogAriaAttributes(
   } else if (!ariaDescribedby && ids.footerId) {
     ariaDescribedby = ids.footerId;
   }
-  
+
   return {
     role,
     modal: props.modal !== undefined ? props.modal : true,
@@ -971,7 +1032,7 @@ export function generateDialogAriaAttributes(
 export function createDialogAction(overrides: Partial<DialogAction> = {}): DialogAction {
   const randomStr = Math.random().toString(36);
   const id = overrides.id || `action-${Date.now()}-${randomStr.slice(2, 9)}`;
-  
+
   return {
     id,
     label: 'Action',
@@ -991,73 +1052,73 @@ export function createDefaultDialogActions(
 ): DialogAction[] {
   const actions: Record<string, DialogAction[]> = {
     alert: [
-      createDialogAction({ 
+      createDialogAction({
         id: 'alert-ok',
-        label: 'OK', 
-        variant: 'primary', 
+        label: 'OK',
+        variant: 'primary',
         autoFocus: true,
-        'data-analytics': 'dialog:alert:ok'
+        'data-analytics': 'dialog:alert:ok',
       }),
     ],
     confirm: [
-      createDialogAction({ 
+      createDialogAction({
         id: 'confirm-cancel',
-        label: 'Cancel', 
+        label: 'Cancel',
         variant: 'secondary',
-        'data-analytics': 'dialog:confirm:cancel'
+        'data-analytics': 'dialog:confirm:cancel',
       }),
-      createDialogAction({ 
+      createDialogAction({
         id: 'confirm-ok',
-        label: 'Confirm', 
-        variant: 'primary', 
+        label: 'Confirm',
+        variant: 'primary',
         autoFocus: true,
-        'data-analytics': 'dialog:confirm:ok'
+        'data-analytics': 'dialog:confirm:ok',
       }),
     ],
     default: [
-      createDialogAction({ 
+      createDialogAction({
         id: 'default-cancel',
-        label: 'Cancel', 
+        label: 'Cancel',
         variant: 'secondary',
-        'data-analytics': 'dialog:default:cancel'
+        'data-analytics': 'dialog:default:cancel',
       }),
-      createDialogAction({ 
+      createDialogAction({
         id: 'default-save',
-        label: 'Save', 
-        variant: 'primary', 
+        label: 'Save',
+        variant: 'primary',
         autoFocus: true,
-        'data-analytics': 'dialog:default:save'
+        'data-analytics': 'dialog:default:save',
       }),
     ],
     success: [
-      createDialogAction({ 
+      createDialogAction({
         id: 'success-ok',
-        label: 'OK', 
-        variant: 'success', 
+        label: 'OK',
+        variant: 'success',
         autoFocus: true,
-        'data-analytics': 'dialog:success:ok'
+        'data-analytics': 'dialog:success:ok',
       }),
     ],
     error: [
-      createDialogAction({ 
+      createDialogAction({
         id: 'error-dismiss',
-        label: 'Dismiss', 
-        variant: 'error', 
+        label: 'Dismiss',
+        variant: 'error',
         autoFocus: true,
-        'data-analytics': 'dialog:error:dismiss'
+        'data-analytics': 'dialog:error:dismiss',
       }),
     ],
     warning: [
-      createDialogAction({ 
+      createDialogAction({
         id: 'warning-acknowledge',
-        label: 'Acknowledge', 
-        variant: 'warning', 
+        label: 'Acknowledge',
+        variant: 'warning',
         autoFocus: true,
-        'data-analytics': 'dialog:warning:acknowledge'
+        'data-analytics': 'dialog:warning:acknowledge',
       }),
     ],
   };
-  
+
   return actions[type] || actions.default;
 }
 
@@ -1073,21 +1134,21 @@ export function validateDialogProps(props: DialogProps): {
   const warnings: string[] = [];
   const errors: string[] = [];
   const normalizedProps: Partial<DialogProps> = { ...props };
-  
+
   // Validate required props
   if (props.open === undefined) {
     errors.push('Dialog requires "open" prop');
   }
-  
+
   if (!props.onClose) {
     errors.push('Dialog requires "onClose" prop');
   }
-  
+
   // Validate content warnings
   if (!props.open && (props.title || props.description || props.children)) {
     warnings.push('Dialog content is provided but open is false. Content will not be visible.');
   }
-  
+
   // Validate persistent dialog behavior
   if (props.persistent) {
     if (props.closeOnEscape !== false) {
@@ -1095,30 +1156,38 @@ export function validateDialogProps(props: DialogProps): {
       normalizedProps.closeOnEscape = false;
     }
     if (props.closeOnOverlayClick !== false) {
-      warnings.push('Persistent dialog should have closeOnOverlayClick=false for consistent behavior');
+      warnings.push(
+        'Persistent dialog should have closeOnOverlayClick=false for consistent behavior'
+      );
       normalizedProps.closeOnOverlayClick = false;
     }
     if (props.closeOnInteractOutside !== false) {
-      warnings.push('Persistent dialog should have closeOnInteractOutside=false for consistent behavior');
+      warnings.push(
+        'Persistent dialog should have closeOnInteractOutside=false for consistent behavior'
+      );
       normalizedProps.closeOnInteractOutside = false;
     }
   }
-  
+
   // Validate animation props
   if (props.animation === 'none' && props.transitionDuration) {
-    warnings.push('transitionDuration is provided but animation is "none". Duration will be ignored.');
+    warnings.push(
+      'transitionDuration is provided but animation is "none". Duration will be ignored.'
+    );
   }
-  
+
   // Validate nested dialog configuration
   if (props.nested && props.preventScroll === false) {
-    warnings.push('Nested dialog with preventScroll=false may cause scroll issues. Consider enabling preventScroll.');
+    warnings.push(
+      'Nested dialog with preventScroll=false may cause scroll issues. Consider enabling preventScroll.'
+    );
   }
-  
+
   // Validate focus refs
   if (props.initialFocusRef && props.autoFocus) {
     warnings.push('Both initialFocusRef and autoFocus are provided. autoFocus will be ignored.');
   }
-  
+
   return { warnings, errors, normalizedProps };
 }
 
@@ -1129,7 +1198,10 @@ export function validateDialogProps(props: DialogProps): {
 /**
  * Dialog Header component props
  */
-export interface DialogHeaderComponentProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'title'> {
+export interface DialogHeaderComponentProps extends Omit<
+  React.HTMLAttributes<HTMLDivElement>,
+  'title'
+> {
   title?: string;
   description?: string;
   icon?: React.ReactNode;
@@ -1193,7 +1265,12 @@ export interface DialogEvents {
  * Dialog analytics event structure
  */
 export interface DialogAnalyticsEvent {
-  event: 'dialog_open' | 'dialog_close' | 'dialog_action_click' | 'dialog_escape' | 'dialog_outside_click';
+  event:
+    | 'dialog_open'
+    | 'dialog_close'
+    | 'dialog_action_click'
+    | 'dialog_escape'
+    | 'dialog_outside_click';
   dialogId: string;
   variant: DialogVariant;
   size: DialogSize;

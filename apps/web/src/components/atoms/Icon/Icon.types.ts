@@ -5,112 +5,112 @@ import * as React from 'react';
  * Main Icon component props with comprehensive JSDoc
  */
 export interface IconProps extends Omit<React.SVGProps<SVGSVGElement>, 'color' | 'size'> {
-  /** 
+  /**
    * Icon size
    * @default 'md'
    */
   size?: IconSize;
-  
-  /** 
+
+  /**
    * Icon color (Tailwind text color classes)
    * @default 'current'
    */
   color?: IconColor;
-  
-  /** 
+
+  /**
    * Whether the icon should spin (for loading states)
    * @default false
    */
   spin?: boolean;
-  
-  /** 
+
+  /**
    * Whether the icon should pulse (for attention)
    * @default false
    */
   pulse?: boolean;
-  
-  /** 
+
+  /**
    * Custom CSS class name
    */
   className?: string;
-  
-  /** 
+
+  /**
    * Icon SVG element (children). If provided, wraps the SVG with styling.
    */
   children?: React.ReactNode;
-  
-  /** 
+
+  /**
    * Accessibility label for screen readers
    * If not provided, aria-hidden="true" will be added
    */
   'aria-label'?: string;
-  
-  /** 
+
+  /**
    * Icon library name (for theming/system integration)
    */
   library?: 'heroicons' | 'lucide' | 'material' | 'custom';
-  
-  /** 
+
+  /**
    * Icon variant (filled, outline, dual-tone, etc.)
    */
   variant?: 'outline' | 'solid' | 'duotone' | 'twotone';
-  
-  /** 
+
+  /**
    * Icon weight (stroke width)
    */
   weight?: 'thin' | 'light' | 'regular' | 'medium' | 'bold';
-  
-  /** 
+
+  /**
    * Interactive icon (adds hover/focus states)
    */
   interactive?: boolean;
-  
-  /** 
+
+  /**
    * Badge count to display on icon (e.g., notification count)
    */
   badge?: number | string;
-  
-  /** 
+
+  /**
    * Badge color
    */
   badgeColor?: IconColor;
-  
-  /** 
+
+  /**
    * Badge position
    */
   badgePosition?: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left';
-  
-  /** 
+
+  /**
    * Tooltip text
    */
   tooltip?: string;
-  
-  /** 
+
+  /**
    * Tooltip position
    */
   tooltipPosition?: 'top' | 'right' | 'bottom' | 'left';
-  
-  /** 
+
+  /**
    * Loading state (shows spinner overlay)
    */
   loading?: boolean;
-  
-  /** 
+
+  /**
    * Disabled state
    */
   disabled?: boolean;
-  
-  /** 
+
+  /**
    * Flip direction
    */
   flip?: 'horizontal' | 'vertical' | 'both';
-  
-  /** 
+
+  /**
    * Rotate degrees
    */
   rotate?: 0 | 45 | 90 | 135 | 180 | 225 | 270 | 315;
-  
-  /** 
+
+  /**
    * Data attributes for testing/analytics
    */
   'data-testid'?: string;
@@ -126,15 +126,15 @@ export type IconSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl';
 /**
  * Icon color variants
  */
-export type IconColor = 
-  | 'current' 
-  | 'primary' 
-  | 'secondary' 
-  | 'success' 
-  | 'error' 
-  | 'warning' 
-  | 'info' 
-  | 'muted' 
+export type IconColor =
+  | 'current'
+  | 'primary'
+  | 'secondary'
+  | 'success'
+  | 'error'
+  | 'warning'
+  | 'info'
+  | 'muted'
   | 'white'
   | 'black'
   | 'gray'
@@ -253,7 +253,7 @@ export function getStatusIconColor(status: StatusIconProps['status']): IconColor
     info: 'info',
     neutral: 'muted',
   };
-  
+
   return colorMap[status];
 }
 
@@ -271,7 +271,7 @@ export function getIconDimensions(size: IconSize = 'md'): IconDimensions {
     '3xl': { width: 48, height: 48, strokeWidth: 3 },
     '4xl': { width: 64, height: 64, strokeWidth: 3 },
   };
-  
+
   return dimensions[size];
 }
 
@@ -281,16 +281,16 @@ export function getIconDimensions(size: IconSize = 'md'): IconDimensions {
 export interface IconAccessibilityProps {
   /** ARIA role for the icon */
   role?: 'img' | 'presentation';
-  
+
   /** ARIA label for screen readers (required for decorative icons) */
   'aria-label'?: string;
-  
+
   /** ARIA hidden for purely decorative icons */
   'aria-hidden'?: boolean | 'true' | 'false';
-  
+
   /** ARIA live region for dynamic icons */
   'aria-live'?: 'polite' | 'assertive' | 'off';
-  
+
   /** ARIA busy for loading states */
   'aria-busy'?: boolean;
 }
@@ -318,7 +318,7 @@ export function getIconAccessibilityProps(
       'aria-live': loading ? 'polite' : 'off',
     };
   }
-  
+
   return {
     role: 'presentation',
     'aria-hidden': true,
@@ -330,17 +330,17 @@ export function getIconAccessibilityProps(
  */
 export function getIconTransform(flip?: IconProps['flip'], rotate?: IconProps['rotate']): string {
   const transforms: string[] = [];
-  
+
   if (flip) {
     if (flip === 'horizontal') transforms.push('scaleX(-1)');
     if (flip === 'vertical') transforms.push('scaleY(-1)');
     if (flip === 'both') transforms.push('scale(-1)');
   }
-  
+
   if (rotate !== undefined) {
     transforms.push(`rotate(${rotate}deg)`);
   }
-  
+
   return transforms.join(' ') || 'none';
 }
 
@@ -358,7 +358,7 @@ export function getIconClassNames(
   variant?: IconProps['variant'] // This can be undefined
 ): string[] {
   const classes: string[] = [];
-  
+
   // Size classes
   const sizeClasses = {
     xs: 'w-3 h-3',
@@ -371,7 +371,7 @@ export function getIconClassNames(
     '4xl': 'w-16 h-16',
   };
   classes.push(sizeClasses[size]);
-  
+
   // Color classes - FIX: Add fallback for undefined color
   const colorClasses: Record<IconColor, string> = {
     current: 'text-current',
@@ -394,15 +394,15 @@ export function getIconClassNames(
     purple: 'text-purple-600',
     pink: 'text-pink-600',
   };
-  
+
   // FIX: Handle undefined color
   const colorClass = colorClasses[color] || colorClasses.current;
   classes.push(colorClass);
-  
+
   // Animation classes
   if (spin) classes.push('animate-spin');
   if (pulse) classes.push('animate-pulse');
-  
+
   // State classes
   if (interactive) {
     classes.push('cursor-pointer', 'hover:opacity-80', 'active:opacity-70');
@@ -410,7 +410,7 @@ export function getIconClassNames(
   if (disabled) {
     classes.push('opacity-40', 'cursor-not-allowed');
   }
-  
+
   // Variant-specific classes - FIX: Handle undefined variant
   if (variant === 'solid') {
     classes.push('fill-current');
@@ -423,7 +423,7 @@ export function getIconClassNames(
       classes.push('opacity-50');
     }
   }
-  
+
   return classes;
 }
 
@@ -435,7 +435,6 @@ export function isValidBadge(badge: IconProps['badge']): boolean {
   if (typeof badge === 'string') return badge.trim().length > 0;
   return false;
 }
-
 
 export interface IconContextValue {
   defaultSize?: IconSize;

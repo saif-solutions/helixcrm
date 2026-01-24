@@ -2,10 +2,10 @@
 
 /**
  * Dropdown Component Type Definitions
- * 
+ *
  * Enterprise-grade dropdown component types for HELIX CRM.
  * Follows HELIX CRM Component Standards v2.0.0.
- * 
+ *
  * @packageDocumentation
  * @module Components/Molecules/Dropdown
  * @version 2.0.0-beta.1
@@ -45,12 +45,7 @@ export interface DropdownGovernance {
 /**
  * Visual variant of dropdown trigger
  */
-export type DropdownVariant =
-  | 'primary'
-  | 'secondary'
-  | 'outline'
-  | 'ghost'
-  | 'destructive';
+export type DropdownVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'destructive';
 
 /**
  * Size variant following design system tokens
@@ -61,11 +56,18 @@ export type DropdownSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
  * Placement relative to trigger element
  */
 export type DropdownPlacement =
-  | 'top' | 'bottom' | 'left' | 'right'
-  | 'top-start' | 'top-end'
-  | 'bottom-start' | 'bottom-end'
-  | 'left-start' | 'left-end'
-  | 'right-start' | 'right-end';
+  | 'top'
+  | 'bottom'
+  | 'left'
+  | 'right'
+  | 'top-start'
+  | 'top-end'
+  | 'bottom-start'
+  | 'bottom-end'
+  | 'left-start'
+  | 'left-end'
+  | 'right-start'
+  | 'right-end';
 
 /**
  * Content alignment within placement
@@ -85,12 +87,7 @@ export type DropdownStrategy = 'absolute' | 'fixed';
 /**
  * Visual variant for dropdown items
  */
-export type DropdownItemVariant =
-  | 'default'
-  | 'destructive'
-  | 'success'
-  | 'warning'
-  | 'info';
+export type DropdownItemVariant = 'default' | 'destructive' | 'success' | 'warning' | 'info';
 
 // ============================================================================
 // 3. EVENT TYPES (Enterprise Event Normalization)
@@ -99,11 +96,7 @@ export type DropdownItemVariant =
 /**
  * Unified event type (React synthetic + native DOM)
  */
-export type DropdownEvent =
-  | React.MouseEvent
-  | React.KeyboardEvent
-  | MouseEvent
-  | KeyboardEvent;
+export type DropdownEvent = React.MouseEvent | React.KeyboardEvent | MouseEvent | KeyboardEvent;
 
 /**
  * Normalized dropdown event for consistent API
@@ -166,7 +159,7 @@ export interface DropdownGroup {
   items: DropdownItem[];
   /** Disable entire group */
   disabled?: boolean;
-  
+
   /** Test ID for automated testing */
   'data-testid'?: string;
 }
@@ -244,7 +237,7 @@ export interface DropdownContextValue {
 
 /**
  * Dropdown component reference with imperative methods
- * 
+ *
  * @example
  * ```tsx
  * const ref = useRef<DropdownRef>(null);
@@ -268,11 +261,11 @@ export interface DropdownRef {
 
 /**
  * Main Dropdown component props
- * 
+ *
  * @remarks
  * Comprehensive interface with 50+ enterprise features.
  * Follows HELIX CRM Molecule component standards.
- * 
+ *
  * @example
  * ```tsx
  * <Dropdown
@@ -285,14 +278,14 @@ export interface DropdownRef {
  * ```
  */
 export interface DropdownProps
-  extends DropdownAccessibilityProps,
+  extends
+    DropdownAccessibilityProps,
     Omit<
       React.HTMLAttributes<HTMLDivElement>,
       'children' | 'onChange' | 'title' | 'onSelect' | 'onClick'
     > {
-
   // ============ CORE PROPERTIES ============
-   // Add these missing props:
+  // Add these missing props:
   /** Show overlay backdrop */
   overlay?: boolean;
   /** Overlay custom class name */
@@ -303,23 +296,23 @@ export interface DropdownProps
   overlayBlur?: boolean;
   /** Overlay custom color */
   overlayColor?: string;
-  
+
   /** Whether to render trigger as child */
   triggerAsChild?: boolean;
   /** Trigger custom class name */
   triggerClassName?: string;
   /** Whether trigger is disabled */
   triggerDisabled?: boolean;
-  
+
   /** Content custom styles */
   contentStyle?: React.CSSProperties;
-  
+
   /** Portal custom class name */
   portalClassName?: string;
-  
+
   /** Animation types (fix this to match styles) */
   animation?: 'fade' | 'scale' | 'slide-up' | 'slide-down' | 'slide-left' | 'slide-right' | 'none';
-  
+
   /** Trigger element (required) */
   trigger: React.ReactNode;
 
@@ -328,14 +321,10 @@ export interface DropdownProps
   /** Default open state (uncontrolled) */
   defaultOpen?: boolean;
   /** Open state change handler */
-    onOpenChange?: (
-    open: boolean,
-    event?: Event,
-    meta?: NormalizedDropdownEvent
-  ) => void;
-  
+  onOpenChange?: (open: boolean, event?: Event, meta?: NormalizedDropdownEvent) => void;
+
   // ============ CONTENT PROPERTIES ============
-  
+
   /** Child components (compound pattern) */
   children?: React.ReactNode;
   /** Array of items (declarative API) */
@@ -344,9 +333,9 @@ export interface DropdownProps
   groups?: DropdownGroup[];
   /** Array of sections (complex menus) */
   sections?: DropdownSection[];
-  
+
   // ============ SELECTION PROPERTIES ============
-  
+
   /** Selected value (controlled) */
   value?: string;
   /** Default selected value (uncontrolled) */
@@ -355,9 +344,9 @@ export interface DropdownProps
   onChange?: (value: string, event?: DropdownEvent) => void;
   /** Close on item selection */
   closeOnSelect?: boolean;
-  
+
   // ============ VISUAL PROPERTIES ============
-  
+
   /** Visual variant */
   variant?: DropdownVariant;
   /** Size variant */
@@ -367,9 +356,9 @@ export interface DropdownProps
   /** Content alignment */
   align?: DropdownAlign;
   /** Animation type */
-  
+
   // ============ BEHAVIOR PROPERTIES ============
-  
+
   /** Disabled state */
   disabled?: boolean;
   /** Loading state */
@@ -390,9 +379,9 @@ export interface DropdownProps
   modal?: boolean;
   /** Persistent (won't auto-close) */
   persistent?: boolean;
-  
+
   // ============ POSITIONING PROPERTIES ============
-  
+
   /** Positioning strategy */
   strategy?: DropdownStrategy;
   /** Offset from trigger */
@@ -401,16 +390,16 @@ export interface DropdownProps
   collisionBoundary?: Element | Element[] | 'clippingAncestors';
   /** Collision padding */
   collisionPadding?: number;
-  
+
   // ============ PORTAL PROPERTIES ============
-  
+
   /** Render in portal */
   portal?: boolean;
   /** Portal container element */
   portalContainer?: HTMLElement | null;
-  
+
   // ============ STYLING PROPERTIES ============
-  
+
   /** Root class name */
   className?: string;
   /** Content container class name */
@@ -421,30 +410,30 @@ export interface DropdownProps
   minWidth?: string | number;
   /** Maximum width */
   maxWidth?: string | number;
-  
+
   // ============ ACCESSIBILITY PROPERTIES ============
-  
+
   /** ARIA role (separated to avoid conflict) */
   role?: 'menu' | 'listbox' | 'combobox';
-  
+
   // ============ ENTERPRISE PROPERTIES ============
-  
+
   /** Test ID for automated testing */
   'data-testid'?: string;
   /** Analytics tracking ID */
   'data-analytics'?: string;
   /** Cypress test ID */
   'data-cy'?: string;
-  
+
   /** Validation state */
   validationState?: 'valid' | 'invalid' | 'warning';
   /** Validation message */
   validationMessage?: string;
-  
+
   /** Component governance metadata */
   governance?: Partial<DropdownGovernance>;
 
-    /** Transition duration in milliseconds */
+  /** Transition duration in milliseconds */
   transitionDuration?: number;
   /** Transition timing function */
   transitionTimingFunction?: string;
@@ -497,8 +486,7 @@ export interface DropdownContentProps extends React.HTMLAttributes<HTMLDivElemen
 /**
  * Dropdown Item component props
  */
-export interface DropdownItemProps
-  extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onSelect'> {
+export interface DropdownItemProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onSelect'> {
   /** Visual variant */
   variant?: DropdownItemVariant;
   /** Disabled state */
@@ -514,10 +502,7 @@ export interface DropdownItemProps
   /** Icon position */
   iconPosition?: 'left' | 'right';
   /** Selection handler */
-  onSelect?: (
-    event?: Event,
-    meta?: NormalizedDropdownEvent
-  ) => void;
+  onSelect?: (event?: Event, meta?: NormalizedDropdownEvent) => void;
   /** Associated value */
   value?: string;
   /** Test ID */
@@ -722,10 +707,10 @@ export function isDomKeyboardEvent(event: unknown): event is KeyboardEvent {
  */
 export function normalizeDropdownEvent(event?: DropdownEvent): NormalizedDropdownEvent | null {
   if (!event) return null;
-  
+
   const isReact = 'nativeEvent' in event;
   const isMouse = isReactMouseEvent(event) || isDomMouseEvent(event);
-  
+
   return {
     type: isMouse ? 'mouse' : 'keyboard',
     isReactEvent: isReact,

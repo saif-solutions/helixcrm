@@ -1,9 +1,4 @@
-import {
-  DropdownProps,
-  DropdownPlacement,
-  DropdownSize,
-  DropdownVariant
-} from './Dropdown.types';
+import { DropdownProps, DropdownPlacement, DropdownSize, DropdownVariant } from './Dropdown.types';
 
 // ============================================================================
 // GOVERNANCE

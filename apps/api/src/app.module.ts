@@ -1,11 +1,10 @@
 import { MiddlewareConsumer, Module, NestModule, RequestMethod } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
-import { APP_INTERCEPTOR } from "@nestjs/core";
+import { APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
 import { ThrottlerModule } from "@nestjs/throttler";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
 import { HealthController } from "./health.controller";
-import { PrismaModule } from "./shared/prisma/prisma.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { ContactsModule } from "./modules/contacts/contacts.module";
 import { LeadsModule } from "./modules/leads/leads.module";
@@ -16,15 +15,25 @@ import { AuditLogModule } from './shared/audit-log/audit-log.module';
 import { RequestLoggerInterceptor } from "./shared/logging/request-logger.interceptor";
 import { RequestContextMiddleware } from "./shared/middleware/request-context.middleware";
 import { CsrfMiddleware } from "./shared/security/csrf.middleware";
+import { AuthGuard } from "./shared/guards/auth.guard";
+import { PermissionGuard } from "./shared/guards/permission.guard";
+import { RbacModule } from "./modules/rbac/rbac.module";
+import { SecurityModule } from "./shared/security/security.module";
+import { Reflector } from "@nestjs/core";
+import { DateRangeConstraint } from './shared/validators/date-range.validator';
+import { CurrencyCodeConstraint } from './shared/validators/currency-code.validator';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { DashboardModule } from "./modules/dashboard/dashboard.module";
 
 @Module({
   imports: [
-    // Configuration module (loads .env files)
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: ['.env', '.env.local', '.env.development'],
       expandVariables: true,
     }),
+
+    SecurityModule,
 
     // Rate limiting
     ThrottlerModule.forRoot([
@@ -50,28 +59,58 @@ import { CsrfMiddleware } from "./shared/security/csrf.middleware";
       },
     ]),
 
-    // Database
-    PrismaModule,
-
     // Feature modules
     AuthModule,
     ContactsModule,
     LeadsModule,
     PipelinesModule,
     DealsModule,
+    RbacModule,
+    DashboardModule,
+    
+    // ✅ FIXED: Analytics Module with conditional registration
+    // Check if Redis is available and exports are enabled
+    (process.env.REDIS_HOST && process.env.ANALYTICS_EXPORT_ENABLED !== 'false')
+      ? AnalyticsModule.registerWithExports()
+      : AnalyticsModule.register(),
 
     // Infrastructure modules
     LoggingModule,
-    AuditLogModule, // NEW: Added AuditLogModule
+    AuditLogModule,
   ],
   controllers: [AppController, HealthController],
   providers: [
     AppService,
     
+    // Core NestJS services needed by guards
+    Reflector,
+    
+    // Custom validators for dependency injection
+    DateRangeConstraint,
+    CurrencyCodeConstraint,
+    
+    // Guards - must be in providers for dependency injection to work
+    AuthGuard,
+    PermissionGuard,
+    
     // Global request logging
     {
       provide: APP_INTERCEPTOR,
       useClass: RequestLoggerInterceptor,
+    },
+    
+    // Global Auth Guard (runs first - authentication)
+    // IMPORTANT: useExisting uses the instance from providers with proper DI
+    {
+      provide: APP_GUARD,
+      useExisting: AuthGuard,
+    },
+    
+    // Global Permission Guard (runs second - authorization)
+    // IMPORTANT: useExisting uses the instance from providers with proper DI
+    {
+      provide: APP_GUARD,
+      useExisting: PermissionGuard,
     },
   ],
 })

@@ -19,29 +19,29 @@ import {
 
 /**
  * Enhanced Input component for text input fields with React Hook Form support.
- * 
+ *
  * Phase 2A Enhancements:
  * - ✅ Proper forwardRef implementation for React Hook Form
  * - ✅ aria-invalid attribute for accessibility
  * - ✅ Error state styling integration
  * - ✅ Helper text and error message support
  * - ✅ TypeScript strict compliance
- * 
+ *
  * @example
  * ```tsx
  * // With React Hook Form
  * const { register } = useForm();
  * <Input {...register('email')} />
- * 
+ *
  * // With error state
- * <Input 
- *   error="Email is required" 
- *   aria-invalid="true" 
- *   {...register('email')} 
+ * <Input
+ *   error="Email is required"
+ *   aria-invalid="true"
+ *   {...register('email')}
  * />
- * 
+ *
  * // With helper text
- * <Input 
+ * <Input
  *   helperText="Enter a valid email address"
  *   label="Email Address"
  *   required
@@ -74,12 +74,12 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
     // Use error variant if error message is provided
     const finalVariant = error ? 'error' : variant;
     const isInvalid = !!error || ariaInvalid === 'true';
-    
+
     // Generate ID if not provided
     const inputId = id || generateInputId();
     const helperId = helperText ? `${inputId}-helper` : undefined;
     const errorId = error ? `${inputId}-error` : undefined;
-    
+
     // Get accessibility attributes
     const accessibilityProps = getInputAccessibilityProps({
       error,
@@ -88,7 +88,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
       id: inputId,
       helperText,
     });
-    
+
     // Build CSS classes using utility functions
     const inputClassName = getInputClasses(finalVariant, size, {
       disabled,
@@ -101,27 +101,19 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
     });
 
     // Combine aria-describedby attributes
-    const describedByIds = [
-      ariaDescribedBy,
-      helperId,
-      errorId
-    ].filter(Boolean).join(' ') || undefined;
+    const describedByIds =
+      [ariaDescribedBy, helperId, errorId].filter(Boolean).join(' ') || undefined;
 
     // Create the input element with icon wrappers
     const inputElement = (
       <div className={getWrapperClasses(fullWidth, wrapperClassName)} data-testid="input-wrapper">
         {/* Left Icon */}
         {leftIcon && (
-          <div 
-            className={getIconContainerClasses('left')}
-            data-testid="input-left-icon"
-          >
-            <span className="text-gray-400 flex items-center justify-center">
-              {leftIcon}
-            </span>
+          <div className={getIconContainerClasses('left')} data-testid="input-left-icon">
+            <span className="text-gray-400 flex items-center justify-center">{leftIcon}</span>
           </div>
         )}
-        
+
         {/* Input Field */}
         <input
           ref={ref}
@@ -136,16 +128,11 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           {...accessibilityProps}
           {...props}
         />
-        
+
         {/* Right Icon */}
         {rightIcon && (
-          <div 
-            className={getIconContainerClasses('right')}
-            data-testid="input-right-icon"
-          >
-            <span className="text-gray-400 flex items-center justify-center">
-              {rightIcon}
-            </span>
+          <div className={getIconContainerClasses('right')} data-testid="input-right-icon">
+            <span className="text-gray-400 flex items-center justify-center">{rightIcon}</span>
           </div>
         )}
       </div>
@@ -156,7 +143,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
       return (
         <div className="space-y-1">
           {inputElement}
-          
+
           {/* Helper Text or Error Message */}
           {(helperText || error) && (
             <div className="space-y-1">
@@ -169,7 +156,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
                   {helperText}
                 </p>
               )}
-              
+
               {error && (
                 <p
                   id={errorId}
@@ -191,38 +178,27 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className={cn('space-y-1', fullWidth ? 'w-full' : undefined)}>
         {/* Label */}
-        <label
-          htmlFor={inputId}
-          className={getLabelClasses()}
-          data-testid="input-label"
-        >
+        <label htmlFor={inputId} className={getLabelClasses()} data-testid="input-label">
           {label}
           {required && (
-            <span 
-              className="text-error-500 ml-1"
-              aria-hidden="true"
-            >
+            <span className="text-error-500 ml-1" aria-hidden="true">
               *
             </span>
           )}
         </label>
-        
+
         {/* Input Element */}
         {inputElement}
-        
+
         {/* Helper Text or Error Message */}
         {(helperText || error) && (
           <div className="space-y-1">
             {helperText && !error && (
-              <p
-                id={helperId}
-                className={getHelperClasses(false)}
-                data-testid="input-helper-text"
-              >
+              <p id={helperId} className={getHelperClasses(false)} data-testid="input-helper-text">
                 {helperText}
               </p>
             )}
-            
+
             {error && (
               <p
                 id={errorId}
@@ -291,20 +267,14 @@ NumberInput.displayName = 'NumberInput';
  * FormInput - Convenience component specifically designed for forms
  * with built-in error handling for React Hook Form
  */
-export const FormInput = React.forwardRef<HTMLInputElement, InputProps & {
-  fieldError?: string;
-}>(
-  ({ fieldError, error: propError, ...props }, ref) => {
-    const error = fieldError || propError;
-    
-    return (
-      <Input
-        ref={ref}
-        error={error}
-        aria-invalid={!!error ? 'true' : 'false'}
-        {...props}
-      />
-    );
+export const FormInput = React.forwardRef<
+  HTMLInputElement,
+  InputProps & {
+    fieldError?: string;
   }
-);
+>(({ fieldError, error: propError, ...props }, ref) => {
+  const error = fieldError || propError;
+
+  return <Input ref={ref} error={error} aria-invalid={!!error ? 'true' : 'false'} {...props} />;
+});
 FormInput.displayName = 'FormInput';

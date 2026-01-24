@@ -1,5 +1,3 @@
-//D:\Projects-In-Hand\helixcrm\apps\api\src\modules\auth\auth.controller.ts
-
 import { 
   Controller, 
   Post, 
@@ -17,12 +15,14 @@ import type { Response, Request } from 'express';
 import { Throttle } from "@nestjs/throttler";
 import { AuthService } from "./auth.service";
 import { AuthGuard } from "../../shared/guards/auth.guard";
+import { Public } from "../../shared/decorators/require-permission.decorator";
 
 @Controller("auth")
 export class AuthController {
   constructor(private authService: AuthService) {}
 
   @Get("csrf-token")
+  @Public()
   @HttpCode(HttpStatus.OK)
   getCsrfToken(@Req() req: Request) {
     try {
@@ -87,6 +87,7 @@ export class AuthController {
   }
 
   @Post("login")
+  @Public()
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 attempts per minute
   async login(
@@ -117,6 +118,7 @@ export class AuthController {
   }
 
   @Post("refresh")
+  @Public()
   @HttpCode(HttpStatus.OK)
   async refreshToken(
     @Req() req: Request,
@@ -145,6 +147,7 @@ export class AuthController {
   }
 
   @Post("register")
+  @Public()
   @Throttle({ default: { limit: 3, ttl: 60000 } }) // 3 registrations per minute
   async register(
     @Body()

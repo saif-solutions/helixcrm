@@ -1,18 +1,18 @@
 // D:\Projects-In-Hand\helixcrm\apps\web\src\components\molecules\Card\index.ts
 
 // Re-export components
-export { 
-  Card, 
-  CardHeader, 
-  CardTitle, 
-  CardSubtitle, 
-  CardContent, 
-  CardFooter, 
-  CardActions 
+export {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardSubtitle,
+  CardContent,
+  CardFooter,
+  CardActions,
 } from './Card';
 
 // Re-export types
-export type { 
+export type {
   CardProps,
   CardRef,
   CardVariant,
@@ -25,7 +25,7 @@ export type {
   CardContentProps,
   CardFooterProps,
   CardActionsProps,
-  CardAccessibilityProps
+  CardAccessibilityProps,
 } from './Card.types';
 
 // Re-export type utilities
@@ -37,11 +37,11 @@ export {
   getCardRole,
   getCardTabIndex,
   getCardCursor,
-  shouldCardFocus
+  shouldCardFocus,
 } from './Card.types';
 
 // Re-export style utilities
-export { 
+export {
   cardTokens,
   cardClasses,
   getCardContainerClasses,
@@ -51,7 +51,7 @@ export {
   getCursorClass,
   getImageContainerClasses,
   getImageClasses,
-  defaultCardProps
+  defaultCardProps,
 } from './Card.styles';
 
 // Re-export style types

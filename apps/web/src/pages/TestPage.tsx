@@ -19,34 +19,28 @@ const TestPage: React.FC = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-6">Test Page</h1>
-      
+
       <Card className="p-6">
         <div className="space-y-4">
           <div>
             <h2 className="text-lg font-semibold mb-2">Authentication Info</h2>
-            <p className="text-sm text-gray-600">
-              User: {user?.email || 'Not logged in'}
-            </p>
-            <p className="text-sm text-gray-600">
-              Organization: {user?.organizationId || 'None'}
-            </p>
+            <p className="text-sm text-gray-600">User: {user?.email || 'Not logged in'}</p>
+            <p className="text-sm text-gray-600">Organization: {user?.organizationId || 'None'}</p>
           </div>
-          
+
           <div className="flex gap-2">
-            <Button onClick={handleTestClick}>
-              Test Authentication
-            </Button>
+            <Button onClick={handleTestClick}>Test Authentication</Button>
             <Button variant="outline" onClick={() => setMessage('')}>
               Clear
             </Button>
           </div>
-          
+
           {message && (
             <div className="p-4 bg-gray-100 rounded">
               <p className="text-sm">{message}</p>
             </div>
           )}
-          
+
           <div>
             <h3 className="font-medium mb-2">Test Input</h3>
             <Input

@@ -16,7 +16,6 @@ import {
   shouldVirtualize,
   normalizeSelectedOptions,
   valueToStringArray,
-  
 } from './Select.types';
 
 // Import split components
@@ -43,8 +42,8 @@ function useSelectValue(
   defaultValue: SelectValue | undefined,
   multiple: boolean
 ) {
-  const mode = React.useMemo(() => 
-    validateControlledUsage(controlledValue, defaultValue),
+  const mode = React.useMemo(
+    () => validateControlledUsage(controlledValue, defaultValue),
     [controlledValue, defaultValue]
   );
 
@@ -78,7 +77,7 @@ function useSelectState(initialOptions: SelectOption[]) {
   });
 
   const updateState = React.useCallback((updates: Partial<SelectState>) => {
-    setState(prev => ({ ...prev, ...updates }));
+    setState((prev) => ({ ...prev, ...updates }));
   }, []);
 
   return { state, updateState, setState };
@@ -97,126 +96,130 @@ function useKeyboardNavigation(
   onCloseDropdown: () => void,
   setState: React.Dispatch<React.SetStateAction<SelectState>>
 ) {
-const handleKeyDown = React.useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
-  if (disabled || loading) return;
+  const handleKeyDown = React.useCallback(
+    (event: React.KeyboardEvent<HTMLDivElement>) => {
+      if (disabled || loading) return;
 
-  const { filteredOptions } = state;
-  const key = event.key as SelectKeyboardKey;
+      const { filteredOptions } = state;
+      const key = event.key as SelectKeyboardKey;
 
-    // For searchable selects with open dropdown, only handle navigation keys
-  if (searchable && state.isOpen) {
-    // Allow navigation keys to be handled
-    if (['ArrowDown', 'ArrowUp', 'Enter', 'Escape', 'Tab', 'Space', 'Home', 'End'].includes(key)) {
-      // Continue with normal handling
-    } else {
-      // For other keys, let the search input handle them
-      return;
-    }
-  }
-
-
-    const actions: Record<SelectKeyboardKey, () => void> = {
-      ArrowDown: () => {
-        event.preventDefault();
-        if (!state.isOpen) {
-          onToggleDropdown();
-          // Set focused index to 0 when opening with arrow down
-          queueMicrotask(() => {
-            setState(prev => ({ 
-              ...prev, 
-              focusedIndex: 0 
-            }));
-          });
-        } else if (filteredOptions.length > 0) {
-          const nextIndex = state.focusedIndex < 0 ? 0 : (state.focusedIndex + 1) % filteredOptions.length;
-          setState(prev => ({ ...prev, focusedIndex: nextIndex }));
+      // For searchable selects with open dropdown, only handle navigation keys
+      if (searchable && state.isOpen) {
+        // Allow navigation keys to be handled
+        if (
+          ['ArrowDown', 'ArrowUp', 'Enter', 'Escape', 'Tab', 'Space', 'Home', 'End'].includes(key)
+        ) {
+          // Continue with normal handling
+        } else {
+          // For other keys, let the search input handle them
+          return;
         }
-      },
+      }
 
-      ArrowUp: () => {
-        event.preventDefault();
-        if (!state.isOpen) {
-          onToggleDropdown();
-          // Set focused index to last option when opening with arrow up
-          queueMicrotask(() => {
-            setState(prev => ({ 
-              ...prev, 
-              focusedIndex: filteredOptions.length > 0 ? filteredOptions.length - 1 : -1
-            }));
-          });
-        } else if (filteredOptions.length > 0) {
-          const prevIndex = state.focusedIndex <= 0 
-            ? filteredOptions.length - 1 
-            : state.focusedIndex - 1;
-          setState(prev => ({ ...prev, focusedIndex: prevIndex }));
-        }
-      },
+      const actions: Record<SelectKeyboardKey, () => void> = {
+        ArrowDown: () => {
+          event.preventDefault();
+          if (!state.isOpen) {
+            onToggleDropdown();
+            // Set focused index to 0 when opening with arrow down
+            queueMicrotask(() => {
+              setState((prev) => ({
+                ...prev,
+                focusedIndex: 0,
+              }));
+            });
+          } else if (filteredOptions.length > 0) {
+            const nextIndex =
+              state.focusedIndex < 0 ? 0 : (state.focusedIndex + 1) % filteredOptions.length;
+            setState((prev) => ({ ...prev, focusedIndex: nextIndex }));
+          }
+        },
 
-          Enter: () => {
-      event.preventDefault();
-      if (state.isOpen && state.focusedIndex >= 0) {
-        const option = filteredOptions[state.focusedIndex];
-        if (!option.disabled) {
-          onToggleOption(option);
-        }
-      } else {
-        onToggleDropdown();
+        ArrowUp: () => {
+          event.preventDefault();
+          if (!state.isOpen) {
+            onToggleDropdown();
+            // Set focused index to last option when opening with arrow up
+            queueMicrotask(() => {
+              setState((prev) => ({
+                ...prev,
+                focusedIndex: filteredOptions.length > 0 ? filteredOptions.length - 1 : -1,
+              }));
+            });
+          } else if (filteredOptions.length > 0) {
+            const prevIndex =
+              state.focusedIndex <= 0 ? filteredOptions.length - 1 : state.focusedIndex - 1;
+            setState((prev) => ({ ...prev, focusedIndex: prevIndex }));
+          }
+        },
+
+        Enter: () => {
+          event.preventDefault();
+          if (state.isOpen && state.focusedIndex >= 0) {
+            const option = filteredOptions[state.focusedIndex];
+            if (!option.disabled) {
+              onToggleOption(option);
+            }
+          } else {
+            onToggleDropdown();
+          }
+        },
+
+        Space: () => {
+          event.preventDefault();
+          if (state.isOpen && state.focusedIndex >= 0) {
+            const option = filteredOptions[state.focusedIndex];
+            if (!option.disabled) {
+              onToggleOption(option);
+            }
+          } else {
+            onToggleDropdown();
+          }
+        },
+
+        Escape: () => {
+          event.preventDefault();
+          onCloseDropdown();
+        },
+
+        Tab: () => {
+          // Allow natural tab flow, just close dropdown
+          if (state.isOpen) {
+            setState((prev) => ({ ...prev, isOpen: false }));
+          }
+        },
+
+        Home: () => {
+          event.preventDefault();
+          if (state.isOpen && filteredOptions.length > 0) {
+            setState((prev) => ({ ...prev, focusedIndex: 0 }));
+          }
+        },
+
+        End: () => {
+          event.preventDefault();
+          if (state.isOpen && filteredOptions.length > 0) {
+            const lastIndex = filteredOptions.length - 1;
+            setState((prev) => ({ ...prev, focusedIndex: lastIndex }));
+          }
+        },
+      };
+
+      if (actions[key]) {
+        actions[key]();
       }
     },
-
-      Space: () => {
-        event.preventDefault();
-        if (state.isOpen && state.focusedIndex >= 0) {
-          const option = filteredOptions[state.focusedIndex];
-          if (!option.disabled) {
-            onToggleOption(option);
-          }
-        } else {
-          onToggleDropdown();
-        }
-      },
-
-      Escape: () => {
-        event.preventDefault();
-        onCloseDropdown();
-      },
-
-      Tab: () => {
-        // Allow natural tab flow, just close dropdown
-        if (state.isOpen) {
-          setState(prev => ({ ...prev, isOpen: false }));
-        }
-      },
-
-      Home: () => {
-        event.preventDefault();
-        if (state.isOpen && filteredOptions.length > 0) {
-          setState(prev => ({ ...prev, focusedIndex: 0 }));
-        }
-      },
-
-      End: () => {
-        event.preventDefault();
-        if (state.isOpen && filteredOptions.length > 0) {
-          const lastIndex = filteredOptions.length - 1;
-          setState(prev => ({ ...prev, focusedIndex: lastIndex }));
-        }
-      },
-    };
-
-  if (actions[key]) {
-    actions[key]();
-  }
-}, [
-    state,
-    disabled,
-    loading,
-    searchable,
-    onToggleOption,
-    onToggleDropdown,
-    onCloseDropdown,
-    setState
-  ]);
+    [
+      state,
+      disabled,
+      loading,
+      searchable,
+      onToggleOption,
+      onToggleDropdown,
+      onCloseDropdown,
+      setState,
+    ]
+  );
 
   return handleKeyDown;
 }
@@ -240,9 +243,12 @@ function useClickOutside(
       const searchInput = searchInputRef.current;
 
       if (
-        container && !container.contains(event.target as Node) &&
-        menu && !menu.contains(event.target as Node) &&
-        searchInput && !searchInput.contains(event.target as Node)
+        container &&
+        !container.contains(event.target as Node) &&
+        menu &&
+        !menu.contains(event.target as Node) &&
+        searchInput &&
+        !searchInput.contains(event.target as Node)
       ) {
         onClose();
       }
@@ -255,8 +261,8 @@ function useClickOutside(
         const searchInput = searchInputRef.current;
         const activeElement = document.activeElement;
 
-        const isInComponent = 
-          (container && container.contains(activeElement)) || 
+        const isInComponent =
+          (container && container.contains(activeElement)) ||
           (menu && menu.contains(activeElement)) ||
           (searchInput && searchInput.contains(activeElement));
 
@@ -351,8 +357,8 @@ export const Select = React.memo(
     const { state, updateState, setState } = useSelectState(options);
 
     // Memoized values - use normalized selected options
-    const rawSelectedOptions = React.useMemo(() => 
-      getSelectedOptions(internalValue, options),
+    const rawSelectedOptions = React.useMemo(
+      () => getSelectedOptions(internalValue, options),
       [internalValue, options]
     );
 
@@ -363,25 +369,27 @@ export const Select = React.memo(
 
     const displayTextInfo = React.useMemo(() => {
       // If internalValue is empty (after clear), show placeholder
-      if (!internalValue || 
-          (Array.isArray(internalValue) && internalValue.length === 0) ||
-          internalValue === '') {
+      if (
+        !internalValue ||
+        (Array.isArray(internalValue) && internalValue.length === 0) ||
+        internalValue === ''
+      ) {
         return { text: placeholder, hasCustomRender: false };
       }
-      
+
       // Handle custom renderValue properly with normalized array
       if (renderValue && selectedOptions.length > 0) {
         const defaultDisplay = getCombinedDisplayText(selectedOptions, placeholder);
         // Pass normalized array and display text to renderValue
         const customRender = renderValue(selectedOptions, defaultDisplay.text);
         if (customRender) {
-          return { 
-            text: customRender, 
-            hasCustomRender: true 
+          return {
+            text: customRender,
+            hasCustomRender: true,
           };
         }
       }
-      
+
       return getCombinedDisplayText(selectedOptions, placeholder);
     }, [internalValue, selectedOptions, placeholder, renderValue]);
 
@@ -393,8 +401,8 @@ export const Select = React.memo(
 
     const memoizedFilter = React.useMemo(() => createMemoizedFilter(), []);
 
-    const enableVirtualization = React.useMemo(() => 
-      shouldVirtualize(options, virtualizationThreshold, virtualize),
+    const enableVirtualization = React.useMemo(
+      () => shouldVirtualize(options, virtualizationThreshold, virtualize),
       [options, virtualizationThreshold, virtualize]
     );
 
@@ -404,8 +412,8 @@ export const Select = React.memo(
       return Math.max(3, Math.floor(height / itemHeight / 2));
     }, []);
 
-    const overscan = React.useMemo(() => 
-      calculateOverscan(String(maxMenuHeight), getItemHeightBySize(size)),
+    const overscan = React.useMemo(
+      () => calculateOverscan(String(maxMenuHeight), getItemHeightBySize(size)),
       [maxMenuHeight, size, calculateOverscan]
     );
 
@@ -415,9 +423,9 @@ export const Select = React.memo(
         updateState({ filteredOptions: options });
         return;
       }
-      
+
       const filtered = memoizedFilter(options, state.searchQuery);
-      updateState({ 
+      updateState({
         filteredOptions: filtered,
         focusedIndex: filtered.length > 0 ? 0 : -1,
       });
@@ -435,70 +443,72 @@ export const Select = React.memo(
      * ========================================================================== */
 
     // Toggle option selection - FIXED: Added all necessary dependencies
-    const toggleOption = React.useCallback((option: SelectOption) => {
-      if (disabled || loading || option.disabled) return;
-      
-      if (multiple) {
-        const currentValues = Array.isArray(internalValue) ? internalValue : [];
-        const newValues = currentValues.includes(option.value)
-          ? currentValues.filter(v => v !== option.value)
-          : [...currentValues, option.value];
-        
-        // Update internal state
-        if (mode === 'uncontrolled') {
-          setInternalValue(newValues);
+    const toggleOption = React.useCallback(
+      (option: SelectOption) => {
+        if (disabled || loading || option.disabled) return;
+
+        if (multiple) {
+          const currentValues = Array.isArray(internalValue) ? internalValue : [];
+          const newValues = currentValues.includes(option.value)
+            ? currentValues.filter((v) => v !== option.value)
+            : [...currentValues, option.value];
+
+          // Update internal state
+          if (mode === 'uncontrolled') {
+            setInternalValue(newValues);
+          }
+
+          // Call onChange with selected options
+          const selected = getSelectedOptions(newValues, options);
+          onChange?.(newValues, selected);
+
+          // Update focusedIndex to the selected option
+          setState((prev) => ({
+            ...prev,
+            focusedIndex: prev.filteredOptions.findIndex((o) => o.value === option.value),
+          }));
+        } else {
+          const newValue = clearable && internalValue === option.value ? '' : option.value;
+
+          // Update internal state
+          if (mode === 'uncontrolled') {
+            setInternalValue(newValue);
+          }
+
+          // Call onChange with selected option
+          const selected = getSelectedOptions(newValue, options);
+          onChange?.(newValue, selected);
+
+          // Close dropdown for single select
+          setState((prev) => ({
+            ...prev,
+            isOpen: false,
+            searchQuery: '',
+            focusedIndex: -1,
+          }));
         }
-        
-        // Call onChange with selected options
-        const selected = getSelectedOptions(newValues, options);
-        onChange?.(newValues, selected);
-        
-        // Update focusedIndex to the selected option
-        setState(prev => ({ 
-          ...prev, 
-          focusedIndex: prev.filteredOptions.findIndex(o => o.value === option.value)
-        }));
-        
-      } else {
-        const newValue = clearable && internalValue === option.value ? '' : option.value;
-        
-        // Update internal state
-        if (mode === 'uncontrolled') {
-          setInternalValue(newValue);
-        }
-        
-        // Call onChange with selected option
-        const selected = getSelectedOptions(newValue, options);
-        onChange?.(newValue, selected);
-        
-        // Close dropdown for single select
-        setState(prev => ({
-          ...prev,
-          isOpen: false,
-          searchQuery: '',
-          focusedIndex: -1,
-        }));
-      }
-    }, [
-      multiple,
-      internalValue,
-      disabled,
-      loading,
-      clearable,
-      mode,
-      options,
-      onChange,
-      setInternalValue,
-      setState
-    ]);
-    
+      },
+      [
+        multiple,
+        internalValue,
+        disabled,
+        loading,
+        clearable,
+        mode,
+        options,
+        onChange,
+        setInternalValue,
+        setState,
+      ]
+    );
+
     // Toggle dropdown - FIXED: Simplified dependencies
     const toggleDropdown = React.useCallback(() => {
       if (disabled || loading) return;
-      
+
       const newIsOpen = !state.isOpen;
-      
-      updateState({ 
+
+      updateState({
         isOpen: newIsOpen,
         focusedIndex: newIsOpen ? -1 : -1, // Don't auto-focus first option
         searchQuery: newIsOpen ? state.searchQuery : '',
@@ -507,7 +517,7 @@ export const Select = React.memo(
 
     // Close dropdown - FIXED: Added all necessary dependencies
     const closeDropdown = React.useCallback(() => {
-      updateState({ 
+      updateState({
         isOpen: false,
         searchQuery: '',
         focusedIndex: -1,
@@ -515,36 +525,45 @@ export const Select = React.memo(
     }, [updateState]);
 
     // Clear selection - FIXED: Added all necessary dependencies
-    const handleClear = React.useCallback((event: React.MouseEvent) => {
-      event.stopPropagation();
-      if (disabled || loading) return;
-      
-      const newValue = multiple ? [] : '';
-      
-      // Update internal state
-      if (mode === 'uncontrolled') {
-        setInternalValue(newValue);
-      }
-      
-      // Call onChange with empty selection
-      onChange?.(newValue, undefined);
-      
-      // Don't close dropdown on clear
-    }, [disabled, loading, multiple, mode, setInternalValue, onChange]);
+    const handleClear = React.useCallback(
+      (event: React.MouseEvent) => {
+        event.stopPropagation();
+        if (disabled || loading) return;
+
+        const newValue = multiple ? [] : '';
+
+        // Update internal state
+        if (mode === 'uncontrolled') {
+          setInternalValue(newValue);
+        }
+
+        // Call onChange with empty selection
+        onChange?.(newValue, undefined);
+
+        // Don't close dropdown on clear
+      },
+      [disabled, loading, multiple, mode, setInternalValue, onChange]
+    );
 
     // Handle search input change
-    const handleSearchChange = React.useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-      updateState({ 
-        searchQuery: event.target.value,
-        isSearching: true,
-        focusedIndex: 0,
-      });
-    }, [updateState]);
+    const handleSearchChange = React.useCallback(
+      (event: React.ChangeEvent<HTMLInputElement>) => {
+        updateState({
+          searchQuery: event.target.value,
+          isSearching: true,
+          focusedIndex: 0,
+        });
+      },
+      [updateState]
+    );
 
     // Handle option focus
-    const handleOptionFocus = React.useCallback((index: number) => {
-      updateState({ focusedIndex: index });
-    }, [updateState]);
+    const handleOptionFocus = React.useCallback(
+      (index: number) => {
+        updateState({ focusedIndex: index });
+      },
+      [updateState]
+    );
 
     // Keyboard navigation
     const handleKeyDown = useKeyboardNavigation(
@@ -559,46 +578,50 @@ export const Select = React.memo(
     );
 
     // Combine keyboard handlers
-    const combinedHandleKeyDown = React.useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
-      handleKeyDown(event);
-      onKeyDown?.(event);
-    }, [handleKeyDown, onKeyDown]);
+    const combinedHandleKeyDown = React.useCallback(
+      (event: React.KeyboardEvent<HTMLDivElement>) => {
+        handleKeyDown(event);
+        onKeyDown?.(event);
+      },
+      [handleKeyDown, onKeyDown]
+    );
 
     // Focus management
-    const handleFocus = React.useCallback((event: React.FocusEvent<HTMLDivElement>) => {
-      onFocus?.(event);
-      if (!state.isOpen && state.filteredOptions.length > 0) {
-        updateState({ focusedIndex: 0 });
-      }
-    }, [onFocus, state.isOpen, state.filteredOptions.length, updateState]);
+    const handleFocus = React.useCallback(
+      (event: React.FocusEvent<HTMLDivElement>) => {
+        onFocus?.(event);
+        if (!state.isOpen && state.filteredOptions.length > 0) {
+          updateState({ focusedIndex: 0 });
+        }
+      },
+      [onFocus, state.isOpen, state.filteredOptions.length, updateState]
+    );
 
-    const handleBlur = React.useCallback((event: React.FocusEvent<HTMLDivElement>) => {
-      onBlur?.(event);
-    }, [onBlur]);
+    const handleBlur = React.useCallback(
+      (event: React.FocusEvent<HTMLDivElement>) => {
+        onBlur?.(event);
+      },
+      [onBlur]
+    );
 
     // Click outside detection
-    useClickOutside(
-      containerRef,
-      menuRef,
-      searchInputRef,
-      state.isOpen,
-      closeDropdown
-    );
+    useClickOutside(containerRef, menuRef, searchInputRef, state.isOpen, closeDropdown);
 
     /* ============================================================================
      * Render Logic
      * ========================================================================== */
 
     // Render tags for multi-select
-    const renderTags = multiple && selectedOptions.length > 0 ? (
-      <SelectTags
-        selectedOptions={selectedOptions}
-        disabled={disabled}
-        loading={loading}
-        testId={testId}
-        onRemove={toggleOption}
-      />
-    ) : null;
+    const renderTags =
+      multiple && selectedOptions.length > 0 ? (
+        <SelectTags
+          selectedOptions={selectedOptions}
+          disabled={disabled}
+          loading={loading}
+          testId={testId}
+          onRemove={toggleOption}
+        />
+      ) : null;
 
     // Combine refs
     React.useImperativeHandle(ref, () => {
@@ -609,34 +632,36 @@ export const Select = React.memo(
     });
 
     // Context value with onOptionSelect
-    const contextValue = React.useMemo(() => ({
-      variant,
-      size,
-      disabled,
-      multiple,
-      selectedValues: valueToStringArray(internalValue),
-      onOptionSelect: toggleOption,
-      ariaExpanded: state.isOpen,
-      ariaControls: `${testId}-menu`,
-      ariaActiveDescendant: ariaActiveDescendant,
-      getOptionTestId: (option: SelectOption) => 
-        `${testId}-option-${String(option.value)}`,
-    }), [
-      variant, 
-      size, 
-      disabled, 
-      multiple, 
-      internalValue, 
-      toggleOption, 
-      state.isOpen, 
-      testId, 
-      ariaActiveDescendant
-    ]);
+    const contextValue = React.useMemo(
+      () => ({
+        variant,
+        size,
+        disabled,
+        multiple,
+        selectedValues: valueToStringArray(internalValue),
+        onOptionSelect: toggleOption,
+        ariaExpanded: state.isOpen,
+        ariaControls: `${testId}-menu`,
+        ariaActiveDescendant: ariaActiveDescendant,
+        getOptionTestId: (option: SelectOption) => `${testId}-option-${String(option.value)}`,
+      }),
+      [
+        variant,
+        size,
+        disabled,
+        multiple,
+        internalValue,
+        toggleOption,
+        state.isOpen,
+        testId,
+        ariaActiveDescendant,
+      ]
+    );
 
     // Convert SelectValue to string | number | string[] for SelectMenu
     const selectedValueForMenu: string | number | string[] = React.useMemo(() => {
       if (Array.isArray(internalValue)) {
-        return internalValue.map(v => String(v));
+        return internalValue.map((v) => String(v));
       }
       return internalValue as string | number;
     }, [internalValue]);
@@ -644,16 +669,19 @@ export const Select = React.memo(
     // Safer hidden input value handling
     const hiddenInputValue = React.useMemo(() => {
       if (Array.isArray(internalValue)) {
-        return internalValue.filter(v => v != null).map(v => String(v)).join(',');
+        return internalValue
+          .filter((v) => v != null)
+          .map((v) => String(v))
+          .join(',');
       }
       return internalValue != null ? String(internalValue) : '';
     }, [internalValue]);
 
     return (
       <SelectProvider value={contextValue}>
-        <div 
+        <div
           ref={containerRef}
-          className="relative w-full" 
+          className="relative w-full"
           data-analytics={analyticsId}
           data-cy={cyId}
           {...divProps}
@@ -689,7 +717,7 @@ export const Select = React.memo(
             onFocus={handleFocus as any}
             onBlur={handleBlur as any}
           />
-          
+
           <SelectMenu
             isOpen={state.isOpen}
             options={options}
@@ -719,7 +747,7 @@ export const Select = React.memo(
             menuRef={menuRef}
             searchInputRef={searchInputRef}
           />
-          
+
           {/* Hidden form input with proper value format */}
           {name && (
             <input

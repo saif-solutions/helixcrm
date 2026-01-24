@@ -5,79 +5,79 @@ import * as React from 'react';
  * Main Avatar component props with comprehensive JSDoc
  */
 export interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
-  /** 
+  /**
    * Avatar size
    * @default 'md'
    */
   size?: AvatarSize;
-  
-  /** 
+
+  /**
    * Image source URL
    */
   src?: string;
-  
-  /** 
+
+  /**
    * Alternative text for the image (accessibility)
    * @default 'Avatar'
    */
   alt?: string;
-  
-  /** 
+
+  /**
    * Fallback text (initials) when no image is provided or image fails to load
    */
   fallback?: string;
-  
-  /** 
+
+  /**
    * Background color when using fallback (no image)
    * @default 'primary'
    */
   color?: AvatarColor;
-  
-  /** 
+
+  /**
    * Shape of the avatar
    * @default 'circle'
    */
   shape?: AvatarShape;
-  
-  /** 
+
+  /**
    * Status indicator to show user availability
    * @default 'none'
    */
   status?: AvatarStatus;
-  
-  /** 
+
+  /**
    * Position of the status indicator
    * @default 'bottom-right'
    */
   statusPosition?: StatusPosition;
-  
-  /** 
+
+  /**
    * Custom CSS class name for the image element
    */
   imageClassName?: string;
-  
-  /** 
+
+  /**
    * Custom CSS class name for the fallback element
    */
   fallbackClassName?: string;
-  
-  /** 
+
+  /**
    * Custom CSS class name for the status indicator
    */
   statusClassName?: string;
-  
-  /** 
+
+  /**
    * Data attribute for testing (testing-library)
    * @default 'avatar'
    */
   'data-testid'?: string;
-  
-  /** 
+
+  /**
    * Data attribute for analytics tracking
    */
   'data-analytics'?: string;
-  
-  /** 
+
+  /**
    * Data attribute for Cypress testing
    */
   'data-cy'?: string;
@@ -91,13 +91,13 @@ export type AvatarSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 /**
  * Avatar color variants (for fallback background)
  */
-export type AvatarColor = 
-  | 'primary' 
-  | 'secondary' 
-  | 'success' 
-  | 'error' 
-  | 'warning' 
-  | 'info' 
+export type AvatarColor =
+  | 'primary'
+  | 'secondary'
+  | 'success'
+  | 'error'
+  | 'warning'
+  | 'info'
   | 'gray';
 
 /**
@@ -165,17 +165,17 @@ export function hasAvatarStatus(props: Pick<AvatarProps, 'status'>): boolean {
  */
 export function getAvatarInitials(fallback?: string): string {
   if (!fallback) return '?';
-  
+
   // Clean and split the fallback text
   const words = fallback.trim().split(/\s+/);
-  
+
   // Extract first letters from first and last words
   if (words.length === 1) {
     return words[0].charAt(0).toUpperCase();
   } else if (words.length >= 2) {
     return (words[0].charAt(0) + words[words.length - 1].charAt(0)).toUpperCase();
   }
-  
+
   return '?';
 }
 
@@ -185,10 +185,10 @@ export function getAvatarInitials(fallback?: string): string {
 export interface AvatarAccessibilityProps {
   /** ARIA role for the avatar */
   role?: 'img';
-  
+
   /** ARIA label for the avatar */
   'aria-label'?: string;
-  
+
   /** ARIA description for the avatar */
   'aria-describedby'?: string;
 }

@@ -9,7 +9,7 @@ export const useSession = () => {
   const [lastActivity, setLastActivity] = useState<number>(Date.now());
   const [showWarning, setShowWarning] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(SESSION_TIMEOUT);
-  
+
   const { warning } = useToast();
   const navigate = useNavigate();
 
@@ -20,21 +20,24 @@ export const useSession = () => {
   }, []);
 
   // Logout function
-  const logout = useCallback((reason: 'timeout' | 'manual' | 'inactivity' = 'manual') => {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('token_version');
-    
-    if (reason === 'timeout') {
-      warning('Session expired', 'Your session has expired due to inactivity');
-      navigate('/login?session=expired');
-    } else if (reason === 'inactivity') {
-      warning('Logged out', 'You have been logged out due to prolonged inactivity');
-      navigate('/login');
-    } else {
-      navigate('/login?logout=true');
-    }
-  }, [navigate, warning]);
+  const logout = useCallback(
+    (reason: 'timeout' | 'manual' | 'inactivity' = 'manual') => {
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('token_version');
+
+      if (reason === 'timeout') {
+        warning('Session expired', 'Your session has expired due to inactivity');
+        navigate('/login?session=expired');
+      } else if (reason === 'inactivity') {
+        warning('Logged out', 'You have been logged out due to prolonged inactivity');
+        navigate('/login');
+      } else {
+        navigate('/login?logout=true');
+      }
+    },
+    [navigate, warning]
+  );
 
   // Check for multiple sessions
   const checkMultipleSessions = useCallback(() => {
@@ -50,15 +53,15 @@ export const useSession = () => {
   // Session timer effect
   useEffect(() => {
     const activityEvents = ['mousedown', 'keydown', 'scroll', 'touchstart'];
-    
+
     const handleActivity = () => updateActivity();
-    
-    activityEvents.forEach(event => {
+
+    activityEvents.forEach((event) => {
       window.addEventListener(event, handleActivity);
     });
-    
+
     return () => {
-      activityEvents.forEach(event => {
+      activityEvents.forEach((event) => {
         window.removeEventListener(event, handleActivity);
       });
     };
@@ -70,22 +73,25 @@ export const useSession = () => {
       const now = Date.now();
       const timeSinceLastActivity = now - lastActivity;
       const timeLeft = SESSION_TIMEOUT - timeSinceLastActivity;
-      
+
       setTimeRemaining(timeLeft);
-      
+
       // Show warning 1 minute before expiry
       if (timeLeft > 0 && timeLeft <= WARNING_TIME && !showWarning) {
         setShowWarning(true);
-        warning('Session about to expire', 'Your session will expire in 1 minute due to inactivity. Click anywhere to stay logged in.');
+        warning(
+          'Session about to expire',
+          'Your session will expire in 1 minute due to inactivity. Click anywhere to stay logged in.'
+        );
       }
-      
+
       // Logout when timeout reached
       if (timeLeft <= 0) {
         clearInterval(interval);
         logout('timeout');
       }
     }, 1000);
-    
+
     return () => clearInterval(interval);
   }, [lastActivity, logout, showWarning, warning]);
 
@@ -94,17 +100,17 @@ export const useSession = () => {
     const checkInterval = setInterval(() => {
       checkMultipleSessions();
     }, 30000); // Check every 30 seconds
-    
+
     return () => clearInterval(checkInterval);
   }, [checkMultipleSessions]);
 
   // Format time remaining
   const formatTimeRemaining = () => {
     if (timeRemaining <= 0) return 'Expired';
-    
+
     const minutes = Math.floor(timeRemaining / 60000);
     const seconds = Math.floor((timeRemaining % 60000) / 1000);
-    
+
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 

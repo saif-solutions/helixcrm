@@ -22,30 +22,35 @@ export class LeadsService {
     private logger: AppLogger,
   ) {}
 
-  async create(data: { organizationId: string } & CreateLeadDto) {
-    try {
-      const lead = await this.prisma.lead.create({
-        data: {
-          ...data,
-          status: data.status || PrismaLeadStatus.new,
-        },
-      });
+async create(data: { organizationId: string } & CreateLeadDto) {
+  try {
+    // Extract source from data and store in metadata
+    const { source, ...leadData } = data;
+    
+    const lead = await this.prisma.lead.create({
+      data: {
+        ...leadData,
+        status: leadData.status || PrismaLeadStatus.new,
+        metadata: source ? { source } : undefined,
+      },
+    });
 
-      this.logger.log("Lead created", {
-        leadId: lead.id,
-        organizationId: data.organizationId,
-        status: lead.status,
-        event: 'lead_created',
-      });
+    this.logger.log("Lead created", {
+      leadId: lead.id,
+      organizationId: data.organizationId,
+      status: lead.status,
+      source,
+      event: 'lead_created',
+    });
 
-      return lead;
-    } catch (error) {
-      this.logger.error("Failed to create lead", error.stack, {
-        organizationId: data.organizationId,
-      });
-      throw error;
-    }
+    return lead;
+  } catch (error) {
+    this.logger.error("Failed to create lead", error.stack, {
+      organizationId: data.organizationId,
+    });
+    throw error;
   }
+}
 
   async findAll({ 
     organizationId, 

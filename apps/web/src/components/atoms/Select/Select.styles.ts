@@ -8,59 +8,59 @@ import { SelectVariant, SelectSize } from './Select.types';
 export const selectTokens = {
   // Spacing tokens (in rem units - 4px base)
   spacing: {
-    xs: '0.25rem',    // 4px
-    sm: '0.5rem',     // 8px
-    md: '0.75rem',    // 12px
-    lg: '1rem',       // 16px
-    xl: '1.5rem',     // 24px
-    '2xl': '2rem',    // 32px
+    xs: '0.25rem', // 4px
+    sm: '0.5rem', // 8px
+    md: '0.75rem', // 12px
+    lg: '1rem', // 16px
+    xl: '1.5rem', // 24px
+    '2xl': '2rem', // 32px
   },
-  
+
   // Component dimensions - aligned with Tailwind spacing
   dimensions: {
     // Container heights (aligned with Tailwind h-* classes)
     height: {
-      xs: '1.75rem',   // 28px - h-7
-      sm: '2rem',      // 32px - h-8
-      md: '2.5rem',    // 40px - h-10
-      lg: '3rem',      // 48px - h-12
-      xl: '3.5rem',    // 56px - h-14
+      xs: '1.75rem', // 28px - h-7
+      sm: '2rem', // 32px - h-8
+      md: '2.5rem', // 40px - h-10
+      lg: '3rem', // 48px - h-12
+      xl: '3.5rem', // 56px - h-14
     },
-    
+
     // Container widths
     width: {
       min: '160px',
       max: '400px',
       full: '100%',
     },
-    
+
     // Icon sizes (aligned with Tailwind w-* classes)
     icon: {
-      xs: '0.75rem',  // 12px - w-3
-      sm: '1rem',     // 16px - w-4
-      md: '1.25rem',  // 20px - w-5
-      lg: '1.5rem',   // 24px - w-6
-      xl: '1.75rem',  // 28px - w-7
+      xs: '0.75rem', // 12px - w-3
+      sm: '1rem', // 16px - w-4
+      md: '1.25rem', // 20px - w-5
+      lg: '1.5rem', // 24px - w-6
+      xl: '1.75rem', // 28px - w-7
     },
-    
+
     // Dropdown menu
     menu: {
       maxHeight: '250px',
       minWidth: '100%',
       borderRadius: '0.375rem', // 6px
-      padding: '0.25rem',       // 4px - p-1
+      padding: '0.25rem', // 4px - p-1
     },
-    
+
     // Padding tokens (aligned with Tailwind p-* classes)
     padding: {
-      xs: '0.25rem',  // 4px - px-1
-      sm: '0.5rem',   // 8px - px-2
-      md: '0.75rem',  // 12px - px-3
-      lg: '1rem',     // 16px - px-4
-      xl: '1.5rem',   // 24px - px-6
+      xs: '0.25rem', // 4px - px-1
+      sm: '0.5rem', // 8px - px-2
+      md: '0.75rem', // 12px - px-3
+      lg: '1rem', // 16px - px-4
+      xl: '1.5rem', // 24px - px-6
     },
   },
-  
+
   // Color tokens (Tailwind palette)
   colors: {
     // Background colors
@@ -70,7 +70,7 @@ export const selectTokens = {
       error: 'bg-error-50 dark:bg-error-900/20',
       loading: 'bg-gray-50 dark:bg-gray-800/50',
     },
-    
+
     // Text colors
     text: {
       primary: 'text-gray-900 dark:text-gray-100',
@@ -80,7 +80,7 @@ export const selectTokens = {
       error: 'text-error-600 dark:text-error-400',
       success: 'text-success-600 dark:text-success-400',
     },
-    
+
     // Border colors
     border: {
       primary: 'border-gray-300 dark:border-gray-600',
@@ -89,7 +89,7 @@ export const selectTokens = {
       error: 'border-error-500 dark:border-error-400',
       disabled: 'border-gray-200 dark:border-gray-700',
     },
-    
+
     // Variant-specific colors
     variant: {
       primary: {
@@ -97,35 +97,40 @@ export const selectTokens = {
         border: 'border-gray-300 dark:border-gray-600',
         text: 'text-gray-900 dark:text-gray-100',
         hover: 'hover:bg-gray-50 dark:hover:bg-gray-700',
-        focus: 'focus:border-primary-500 focus:ring-primary-500 dark:focus:border-primary-400 dark:focus:ring-primary-400',
+        focus:
+          'focus:border-primary-500 focus:ring-primary-500 dark:focus:border-primary-400 dark:focus:ring-primary-400',
       },
       secondary: {
         background: 'bg-gray-50 dark:bg-gray-800',
         border: 'border-gray-200 dark:border-gray-700',
         text: 'text-gray-800 dark:text-gray-200',
         hover: 'hover:bg-gray-100 dark:hover:bg-gray-700',
-        focus: 'focus:border-gray-500 focus:ring-gray-500 dark:focus:border-gray-400 dark:focus:ring-gray-400',
+        focus:
+          'focus:border-gray-500 focus:ring-gray-500 dark:focus:border-gray-400 dark:focus:ring-gray-400',
       },
       outline: {
         background: 'bg-transparent',
         border: 'border-primary-500 dark:border-primary-400',
         text: 'text-primary-600 dark:text-primary-400',
         hover: 'hover:bg-primary-50 dark:hover:bg-primary-900/20',
-        focus: 'focus:border-primary-600 focus:ring-primary-600 dark:focus:border-primary-500 dark:focus:ring-primary-500',
+        focus:
+          'focus:border-primary-600 focus:ring-primary-600 dark:focus:border-primary-500 dark:focus:ring-primary-500',
       },
       ghost: {
         background: 'bg-transparent',
         border: 'border-transparent',
         text: 'text-gray-700 dark:text-gray-300',
         hover: 'hover:bg-gray-100 dark:hover:bg-gray-800',
-        focus: 'focus:border-gray-300 focus:ring-gray-300 dark:focus:border-gray-600 dark:focus:ring-gray-600',
+        focus:
+          'focus:border-gray-300 focus:ring-gray-300 dark:focus:border-gray-600 dark:focus:ring-gray-600',
       },
       filled: {
         background: 'bg-gray-100 dark:bg-gray-800',
         border: 'border-transparent',
         text: 'text-gray-800 dark:text-gray-200',
         hover: 'hover:bg-gray-200 dark:hover:bg-gray-700',
-        focus: 'focus:bg-white focus:border-primary-500 focus:ring-primary-500 dark:focus:bg-gray-800 dark:focus:border-primary-400 dark:focus:ring-primary-400',
+        focus:
+          'focus:bg-white focus:border-primary-500 focus:ring-primary-500 dark:focus:bg-gray-800 dark:focus:border-primary-400 dark:focus:ring-primary-400',
       },
       minimal: {
         background: 'bg-transparent',
@@ -135,7 +140,7 @@ export const selectTokens = {
         focus: 'focus:ring-1 focus:ring-gray-300 dark:focus:ring-gray-600',
       },
     },
-    
+
     // Option states
     option: {
       default: {
@@ -166,7 +171,7 @@ export const selectTokens = {
       },
     },
   },
-  
+
   // Typography tokens
   typography: {
     fontFamily: 'font-sans',
@@ -190,7 +195,7 @@ export const selectTokens = {
       xl: 'leading-8',
     },
   },
-  
+
   // Border radius tokens
   borderRadius: {
     none: 'rounded-none',
@@ -200,7 +205,7 @@ export const selectTokens = {
     xl: 'rounded-xl',
     full: 'rounded-full',
   },
-  
+
   // Shadow tokens
   shadow: {
     none: 'shadow-none',
@@ -210,7 +215,7 @@ export const selectTokens = {
     xl: 'shadow-xl',
     inner: 'shadow-inner',
   },
-  
+
   // Animation durations
   animation: {
     fast: 'duration-100',
@@ -218,7 +223,7 @@ export const selectTokens = {
     slow: 'duration-300',
     verySlow: 'duration-500',
   },
-  
+
   // Transition tokens
   transition: {
     all: 'transition-all',
@@ -226,7 +231,7 @@ export const selectTokens = {
     opacity: 'transition-opacity',
     transform: 'transition-transform',
   },
-  
+
   // Z-index layers
   zIndex: {
     base: 'z-0',
@@ -265,51 +270,51 @@ export const selectClasses = {
     'disabled:cursor-not-allowed',
     'disabled:opacity-50',
   ].join(' '),
-  
+
   // Size variants - using token-aligned classes
   size: {
     xs: [
-      'h-7',               // 1.75rem
-      'px-2',              // 0.5rem
-      'py-1',              // 0.25rem
+      'h-7', // 1.75rem
+      'px-2', // 0.5rem
+      'py-1', // 0.25rem
       'text-xs',
       'gap-1',
       'min-w-[160px]',
     ].join(' '),
     sm: [
-      'h-8',               // 2rem
-      'px-3',              // 0.75rem
-      'py-1.5',            // 0.375rem
+      'h-8', // 2rem
+      'px-3', // 0.75rem
+      'py-1.5', // 0.375rem
       'text-sm',
       'gap-1.5',
       'min-w-[180px]',
     ].join(' '),
     md: [
-      'h-10',              // 2.5rem
-      'px-4',              // 1rem
-      'py-2',              // 0.5rem
+      'h-10', // 2.5rem
+      'px-4', // 1rem
+      'py-2', // 0.5rem
       'text-base',
       'gap-2',
       'min-w-[200px]',
     ].join(' '),
     lg: [
-      'h-12',              // 3rem
-      'px-5',              // 1.25rem
-      'py-2.5',            // 0.625rem
+      'h-12', // 3rem
+      'px-5', // 1.25rem
+      'py-2.5', // 0.625rem
       'text-lg',
       'gap-2.5',
       'min-w-[220px]',
     ].join(' '),
     xl: [
-      'h-14',              // 3.5rem
-      'px-6',              // 1.5rem
-      'py-3',              // 0.75rem
+      'h-14', // 3.5rem
+      'px-6', // 1.5rem
+      'py-3', // 0.75rem
       'text-xl',
       'gap-3',
       'min-w-[240px]',
     ].join(' '),
   },
-  
+
   // Visual variants with type-safe access
   variant: {
     primary: [
@@ -391,20 +396,11 @@ export const selectClasses = {
       'dark:focus:ring-gray-600',
     ].join(' '),
   },
-  
+
   // State classes
   state: {
-    disabled: [
-      'opacity-60',
-      'cursor-not-allowed',
-      'pointer-events-none',
-      'select-none',
-    ].join(' '),
-    loading: [
-      'cursor-wait',
-      'opacity-70',
-      'select-none',
-    ].join(' '),
+    disabled: ['opacity-60', 'cursor-not-allowed', 'pointer-events-none', 'select-none'].join(' '),
+    loading: ['cursor-wait', 'opacity-70', 'select-none'].join(' '),
     error: [
       'border-error-500',
       'dark:border-error-400',
@@ -426,7 +422,7 @@ export const selectClasses = {
       'dark:ring-offset-gray-800',
     ].join(' '),
   },
-  
+
   // Dropdown menu classes
   menu: {
     base: [
@@ -458,7 +454,7 @@ export const selectClasses = {
       xl: 'text-xl',
     },
   },
-  
+
   // Option classes
   option: {
     base: [
@@ -472,12 +468,7 @@ export const selectClasses = {
       'focus:outline-none',
     ].join(' '),
     state: {
-      default: [
-        'text-gray-900',
-        'dark:text-gray-100',
-        'bg-white',
-        'dark:bg-gray-800',
-      ].join(' '),
+      default: ['text-gray-900', 'dark:text-gray-100', 'bg-white', 'dark:bg-gray-800'].join(' '),
       selected: [
         'bg-primary-50',
         'dark:bg-primary-900/30',
@@ -485,12 +476,7 @@ export const selectClasses = {
         'dark:text-primary-300',
         'font-medium',
       ].join(' '),
-      focused: [
-        'bg-gray-100',
-        'dark:bg-gray-700',
-        'text-gray-900',
-        'dark:text-gray-100',
-      ].join(' '),
+      focused: ['bg-gray-100', 'dark:bg-gray-700', 'text-gray-900', 'dark:text-gray-100'].join(' '),
       disabled: [
         'opacity-50',
         'cursor-not-allowed',
@@ -500,37 +486,13 @@ export const selectClasses = {
       ].join(' '),
     },
     // Option parts
-    content: [
-      'flex',
-      'items-center',
-      'justify-between',
-      'gap-2',
-    ].join(' '),
-    label: [
-      'block',
-      'truncate',
-    ].join(' '),
-    description: [
-      'block',
-      'text-xs',
-      'text-gray-500',
-      'dark:text-gray-400',
-      'truncate',
-    ].join(' '),
-    icon: [
-      'flex-shrink-0',
-      'w-4',
-      'h-4',
-    ].join(' '),
-    check: [
-      'flex-shrink-0',
-      'w-5',
-      'h-5',
-      'text-primary-600',
-      'dark:text-primary-400',
-    ].join(' '),
+    content: ['flex', 'items-center', 'justify-between', 'gap-2'].join(' '),
+    label: ['block', 'truncate'].join(' '),
+    description: ['block', 'text-xs', 'text-gray-500', 'dark:text-gray-400', 'truncate'].join(' '),
+    icon: ['flex-shrink-0', 'w-4', 'h-4'].join(' '),
+    check: ['flex-shrink-0', 'w-5', 'h-5', 'text-primary-600', 'dark:text-primary-400'].join(' '),
   },
-  
+
   // Option group classes
   optionGroup: {
     base: [
@@ -550,12 +512,9 @@ export const selectClasses = {
       'first:border-t-0',
       'cursor-default',
     ].join(' '),
-    disabled: [
-      'opacity-50',
-      'cursor-not-allowed',
-    ].join(' '),
+    disabled: ['opacity-50', 'cursor-not-allowed'].join(' '),
   },
-  
+
   // Loading indicator
   loading: {
     base: [
@@ -569,15 +528,9 @@ export const selectClasses = {
       'backdrop-blur-sm',
       'z-10',
     ].join(' '),
-    spinner: [
-      'animate-spin',
-      'w-5',
-      'h-5',
-      'text-primary-600',
-      'dark:text-primary-400',
-    ].join(' '),
+    spinner: ['animate-spin', 'w-5', 'h-5', 'text-primary-600', 'dark:text-primary-400'].join(' '),
   },
-  
+
   // Icon classes
   icon: {
     base: [
@@ -596,7 +549,7 @@ export const selectClasses = {
       xl: 'w-7 h-7',
     },
   },
-  
+
   // Clear button
   clear: {
     base: [
@@ -616,12 +569,9 @@ export const selectClasses = {
       'transition-colors',
       'duration-150',
     ].join(' '),
-    icon: [
-      'w-4',
-      'h-4',
-    ].join(' '),
+    icon: ['w-4', 'h-4'].join(' '),
   },
-  
+
   // Search input (for searchable select)
   search: {
     base: [
@@ -646,16 +596,10 @@ export const selectClasses = {
       'dark:placeholder:text-gray-500',
     ].join(' '),
   },
-  
+
   // Multi-select tags
   tags: {
-    container: [
-      'flex',
-      'flex-wrap',
-      'gap-1',
-      'flex-1',
-      'min-w-0',
-    ].join(' '),
+    container: ['flex', 'flex-wrap', 'gap-1', 'flex-1', 'min-w-0'].join(' '),
     tag: {
       base: [
         'inline-flex',
@@ -685,12 +629,10 @@ export const selectClasses = {
       ].join(' '),
     },
   },
-  
+
   // Accessibility
   accessibility: {
-    screenReaderOnly: [
-      'sr-only',
-    ].join(' '),
+    screenReaderOnly: ['sr-only'].join(' '),
     focusIndicator: [
       'focus:outline-none',
       'focus:ring-2',
@@ -698,20 +640,12 @@ export const selectClasses = {
       'dark:focus:ring-primary-400',
       'focus:ring-offset-2',
     ].join(' '),
-    reducedMotion: [
-      'motion-reduce:transition-none',
-      'motion-reduce:transform-none',
-    ].join(' '),
+    reducedMotion: ['motion-reduce:transition-none', 'motion-reduce:transform-none'].join(' '),
   },
-  
+
   // Utility classes
   utility: {
-    truncate: [
-      'truncate',
-      'overflow-hidden',
-      'text-ellipsis',
-      'whitespace-nowrap',
-    ].join(' '),
+    truncate: ['truncate', 'overflow-hidden', 'text-ellipsis', 'whitespace-nowrap'].join(' '),
     scrollbar: [
       'scrollbar-thin',
       'scrollbar-thumb-gray-300',
@@ -760,13 +694,13 @@ export function getSelectClasses(
     selectClasses.base,
     getSizeClass(size),
     getVariantClass(variant),
-    error ? selectClasses.state.error ?? '' : '',
-    disabled ? selectClasses.state.disabled ?? '' : '',
-    loading ? selectClasses.state.loading ?? '' : '',
-    isOpen ? selectClasses.state.open ?? '' : '',
+    error ? (selectClasses.state.error ?? '') : '',
+    disabled ? (selectClasses.state.disabled ?? '') : '',
+    loading ? (selectClasses.state.loading ?? '') : '',
+    isOpen ? (selectClasses.state.open ?? '') : '',
     className || '',
   ];
-  
+
   return classes.filter(Boolean).join(' ');
 }
 
@@ -779,7 +713,7 @@ export function getMenuClasses(
   className?: string
 ): string {
   const positionClass = selectClasses.menu.position[position] ?? selectClasses.menu.position.bottom;
-  
+
   const classes = [
     selectClasses.menu.base,
     positionClass,
@@ -787,7 +721,7 @@ export function getMenuClasses(
     selectClasses.utility.scrollbar,
     className || '',
   ];
-  
+
   return classes.filter(Boolean).join(' ');
 }
 
@@ -801,12 +735,10 @@ export function getOptionClasses(
   isDisabled: boolean = false,
   className?: string
 ): string {
-  const stateClass = isSelected 
-    ? getOptionStateClass('selected')
-    : getOptionStateClass('default');
-    
+  const stateClass = isSelected ? getOptionStateClass('selected') : getOptionStateClass('default');
+
   const sizePadding = getSizeClass(size);
-  
+
   const classes = [
     selectClasses.option.base,
     // Add size-specific classes
@@ -816,23 +748,20 @@ export function getOptionClasses(
     isDisabled ? getOptionStateClass('disabled') : '',
     className || '',
   ];
-  
-  return classes.filter(cls => cls && cls.trim()).join(' ');
+
+  return classes.filter((cls) => cls && cls.trim()).join(' ');
 }
 
 /**
  * Utility function to build option group classes
  */
-export function getOptionGroupClasses(
-  isDisabled: boolean = false,
-  className?: string
-): string {
+export function getOptionGroupClasses(isDisabled: boolean = false, className?: string): string {
   const classes = [
     selectClasses.optionGroup.base,
-    isDisabled ? selectClasses.optionGroup.disabled ?? '' : '',
+    isDisabled ? (selectClasses.optionGroup.disabled ?? '') : '',
     className || '',
   ];
-  
+
   return classes.filter(Boolean).join(' ');
 }
 
@@ -847,10 +776,10 @@ export function getIconClasses(
   const classes = [
     selectClasses.icon.base,
     getIconSizeClass(size),
-    isOpen ? selectClasses.icon.open ?? '' : '',
+    isOpen ? (selectClasses.icon.open ?? '') : '',
     className || '',
   ];
-  
+
   return classes.filter(Boolean).join(' ');
 }
 
@@ -858,11 +787,8 @@ export function getIconClasses(
  * Utility function to build loading spinner classes
  */
 export function getLoadingClasses(className?: string): string {
-  const classes = [
-    selectClasses.loading.base,
-    className || '',
-  ];
-  
+  const classes = [selectClasses.loading.base, className || ''];
+
   return classes.filter(Boolean).join(' ');
 }
 
@@ -870,12 +796,8 @@ export function getLoadingClasses(className?: string): string {
  * Utility function to build multi-select tag classes
  */
 export function getTagClasses(isRemovable: boolean = true, className?: string): string {
-  const classes = [
-    selectClasses.tags.tag.base,
-    isRemovable ? '' : 'pr-2',
-    className || '',
-  ];
-  
+  const classes = [selectClasses.tags.tag.base, isRemovable ? '' : 'pr-2', className || ''];
+
   return classes.filter(Boolean).join(' ');
 }
 
@@ -892,13 +814,13 @@ export function memoizedGetSelectClasses(
 ): () => string {
   let cache: string | null = null;
   let cacheKey = `${variant}-${size}-${error}-${disabled}-${loading}-${isOpen}`;
-  
+
   return () => {
     const newKey = `${variant}-${size}-${error}-${disabled}-${loading}-${isOpen}`;
     if (cache && cacheKey === newKey) {
       return cache;
     }
-    
+
     cache = getSelectClasses(variant, size, error, disabled, loading, isOpen);
     cacheKey = newKey;
     return cache;
@@ -928,11 +850,11 @@ export function getSelectAriaLabel(
   multiple: boolean = false
 ): string {
   if (label) return label;
-  
+
   if (multiple && selectedCount > 0) {
     return `${selectedCount} option${selectedCount > 1 ? 's' : ''} selected`;
   }
-  
+
   return placeholder || 'Select an option';
 }
 
@@ -945,12 +867,14 @@ export function getSelectTestId(
   value?: string | number
 ): string {
   const base = testId || 'select';
-  
+
   switch (element) {
     case 'menu':
       return `${base}-menu`;
     case 'option':
-      return value !== undefined ? `${base}-option-${String(value).replace(/\s+/g, '-').toLowerCase()}` : `${base}-option`;
+      return value !== undefined
+        ? `${base}-option-${String(value).replace(/\s+/g, '-').toLowerCase()}`
+        : `${base}-option`;
     case 'trigger':
       return `${base}-trigger`;
     default:
@@ -1006,6 +930,6 @@ export function getItemHeightBySize(size: SelectSize = 'md'): number {
     lg: 44,
     xl: 48,
   };
-  
+
   return heightMap[size] || heightMap.md;
 }

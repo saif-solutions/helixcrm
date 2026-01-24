@@ -2,13 +2,7 @@
 // ============================================================================
 // Re-export all components
 // ============================================================================
-export {
-  Avatar,
-  AvatarXS,
-  AvatarSM,
-  AvatarMD,
-  AvatarLG,
-} from './Avatar';
+export { Avatar, AvatarXS, AvatarSM, AvatarMD, AvatarLG } from './Avatar';
 
 // ============================================================================
 // Re-export all types
@@ -48,8 +42,4 @@ export {
 // ============================================================================
 // Re-export utility functions
 // ============================================================================
-export {
-  getAvatarInitials,
-  hasAvatarImage,
-  hasAvatarStatus,
-} from './Avatar.types';
+export { getAvatarInitials, hasAvatarImage, hasAvatarStatus } from './Avatar.types';

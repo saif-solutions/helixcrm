@@ -1,17 +1,11 @@
 // D:\Projects-In-Hand\helixcrm\apps\web\src\components\molecules\Alert\index.ts
 
 // Re-export components
-export { 
-  Alert, 
-  InfoAlert, 
-  SuccessAlert, 
-  ErrorAlert, 
-  WarningAlert 
-} from './Alert';
+export { Alert, InfoAlert, SuccessAlert, ErrorAlert, WarningAlert } from './Alert';
 
 // Re-export types
-export type { 
-  AlertProps, 
+export type {
+  AlertProps,
   AlertRef,
   AlertVariant,
   AlertSize,
@@ -21,7 +15,7 @@ export type {
   WarningAlertProps,
   AlertState,
   AlertDismissOptions,
-  AlertAccessibilityProps
+  AlertAccessibilityProps,
 } from './Alert.types';
 
 // Re-export type utilities
@@ -32,11 +26,11 @@ export {
   getAlertRole,
   getAlertAriaLive,
   getAlertIconSize,
-  shouldAlertAnnounce
+  shouldAlertAnnounce,
 } from './Alert.types';
 
 // Re-export style utilities
-export { 
+export {
   alertTokens,
   alertClasses,
   getAlertContainerClasses,
@@ -45,7 +39,7 @@ export {
   getAlertSizeDimensions,
   getDismissButtonClasses,
   hasAlertContent,
-  defaultAlertProps
+  defaultAlertProps,
 } from './Alert.styles';
 
 // Re-export style types

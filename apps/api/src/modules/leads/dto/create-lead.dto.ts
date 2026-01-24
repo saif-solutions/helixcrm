@@ -20,7 +20,12 @@ export class CreateLeadDto {
   @MaxLength(20, { message: 'Phone cannot exceed 20 characters' })
   phone?: string;
 
-  @IsOptional()
+  @IsNotEmpty({ message: 'Status is required' })
   @IsEnum(PrismaLeadStatus, { message: 'Status must be one of: new, contacted, qualified' })
-  status?: PrismaLeadStatus;
+  status: PrismaLeadStatus;
+
+  @IsOptional()
+  @IsString({ message: 'Source must be a string' })
+  @MaxLength(100, { message: 'Source cannot exceed 100 characters' })
+  source?: string;
 }

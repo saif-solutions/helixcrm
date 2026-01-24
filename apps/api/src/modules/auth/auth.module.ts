@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { JwtModule } from '@nestjs/jwt';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
@@ -9,11 +8,8 @@ import { PrismaModule } from '../../shared/prisma/prisma.module';
 
 @Module({
   imports: [
-    PrismaModule,
-    JwtModule.register({
-      secret: process.env.JWT_SECRET || 'default-secret-change-in-production',
-      signOptions: { expiresIn: '15m' },
-    }),
+    // PrismaModule is now globally available via SecurityModule
+    // JwtModule is now globally available via SecurityModule
     ThrottlerModule.forRoot([{
       ttl: 60000,
       limit: 10,
@@ -21,6 +17,6 @@ import { PrismaModule } from '../../shared/prisma/prisma.module';
   ],
   controllers: [AuthController, PasswordResetController],
   providers: [AuthService, PasswordResetService],
-  exports: [AuthService, PasswordResetService],
+  exports: [AuthService, PasswordResetService], // No JwtModule export needed
 })
 export class AuthModule {}

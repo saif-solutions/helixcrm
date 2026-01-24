@@ -1,0 +1,61 @@
+# Dependencies
+node_modules
+dist
+build
+coverage
+
+# Build outputs
+*.d.ts
+*.js
+*.mjs
+*.cjs
+
+# Storybook
+.storybook
+storybook-static
+
+# Test files
+__tests__
+__mocks__
+*.test.*
+*.spec.*
+
+# Configuration files (already formatted)
+.eslintrc.*
+.prettierrc
+tsconfig*.json
+vite.config.*
+tailwind.config.*
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime data
+.env
+.env.local
+.env.*.local
+
+# IDE/Editor
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Package lock
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Temporary folders
+temp
+tmp
+
+# Backup files
+*.bak

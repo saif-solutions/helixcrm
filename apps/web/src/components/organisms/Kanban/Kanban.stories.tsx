@@ -11,38 +11,39 @@ function calculateAnalyticsFromColumns(columns: any[]): KanbanAnalytics {
   const allCards = columns.flatMap((col: any) => col.cards);
   const cardsWithValue = allCards.filter((card: any) => (card.value || 0) > 0);
   const cardsWithDates = allCards.filter((card: any) => card.createdAt);
-  
+
   const totalValue = allCards.reduce((sum: number, card: any) => sum + (card.value || 0), 0);
   const weightedValue = allCards.reduce((sum: number, card: any) => {
     const probability = card.probability || 0;
     return sum + (card.value || 0) * (probability / 100);
   }, 0);
-  
-  const averageDealSize = cardsWithValue.length > 0 
-    ? cardsWithValue.reduce((sum: number, card: any) => sum + (card.value || 0), 0) / cardsWithValue.length
-    : 0;
-  
+
+  const averageDealSize =
+    cardsWithValue.length > 0
+      ? cardsWithValue.reduce((sum: number, card: any) => sum + (card.value || 0), 0) /
+        cardsWithValue.length
+      : 0;
+
   // Calculate days in pipeline (simplified)
   const now = new Date();
   const totalDays = cardsWithDates.reduce((sum: number, card: any) => {
-    const createdAt = card.createdAt instanceof Date 
-      ? card.createdAt 
-      : new Date(card.createdAt || now);
+    const createdAt =
+      card.createdAt instanceof Date ? card.createdAt : new Date(card.createdAt || now);
     if (isNaN(createdAt.getTime())) return sum;
     const diffDays = Math.floor((now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
     return sum + Math.max(0, diffDays);
   }, 0);
-  
-  const averageDaysInPipeline = cardsWithDates.length > 0 
-    ? Math.floor(totalDays / cardsWithDates.length) 
-    : 0;
-  
+
+  const averageDaysInPipeline =
+    cardsWithDates.length > 0 ? Math.floor(totalDays / cardsWithDates.length) : 0;
+
   // Win rate calculation (simplified - would need actual won/lost data)
-  const wonDeals = allCards.filter((card: any) => card.status === 'done' || card.probability === 100);
-  const winRate = cardsWithValue.length > 0 
-    ? Math.round((wonDeals.length / cardsWithValue.length) * 100)
-    : 0;
-  
+  const wonDeals = allCards.filter(
+    (card: any) => card.status === 'done' || card.probability === 100
+  );
+  const winRate =
+    cardsWithValue.length > 0 ? Math.round((wonDeals.length / cardsWithValue.length) * 100) : 0;
+
   return {
     totalValue,
     weightedValue,
@@ -59,7 +60,8 @@ const meta: Meta<typeof Kanban> = {
     layout: 'fullscreen',
     docs: {
       description: {
-        component: 'Enterprise Kanban board for CRM pipeline visualization with drag & drop, analytics, and CRM-specific features.',
+        component:
+          'Enterprise Kanban board for CRM pipeline visualization with drag & drop, analytics, and CRM-specific features.',
       },
     },
   },
@@ -264,7 +266,7 @@ const sampleCRMColumns = [
 ];
 
 // Create a lightweight version for performance
-const lightweightColumns = sampleCRMColumns.map(column => ({
+const lightweightColumns = sampleCRMColumns.map((column) => ({
   ...column,
   cards: column.cards.slice(0, 2), // Limit to 2 cards per column for performance
 }));
@@ -302,8 +304,10 @@ const edgeCaseColumns = [
         tags: [],
       }),
       createKanbanCard({
-        title: 'Very Long Title That Should Be Truncated in the Display Because It Exceeds the Maximum Width',
-        description: 'This is a very long description that should also be truncated to avoid breaking the card layout and maintain visual consistency across the board.',
+        title:
+          'Very Long Title That Should Be Truncated in the Display Because It Exceeds the Maximum Width',
+        description:
+          'This is a very long description that should also be truncated to avoid breaking the card layout and maintain visual consistency across the board.',
         value: 999999,
         probability: 99,
         tags: ['very-long-tag-name-that-also-needs-truncation', 'another-tag'],
@@ -357,7 +361,8 @@ export const WithAnalytics: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Kanban with dynamically calculated pipeline analytics showing total value, weighted pipeline, win rates, and other CRM metrics.',
+        story:
+          'Kanban with dynamically calculated pipeline analytics showing total value, weighted pipeline, win rates, and other CRM metrics.',
       },
     },
   },
@@ -386,7 +391,7 @@ export const Empty: Story = {
  */
 export const WithWipLimits: Story = {
   args: {
-    columns: lightweightColumns.map(col => ({
+    columns: lightweightColumns.map((col) => ({
       ...col,
       wipLimit: col.cards.length + 2, // Set WIP limit slightly above current count
     })),
@@ -458,7 +463,8 @@ export const CRMPipeline: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Complete CRM pipeline example with all enterprise features: deal tracking, probability, value, analytics, and drag & drop.',
+        story:
+          'Complete CRM pipeline example with all enterprise features: deal tracking, probability, value, analytics, and drag & drop.',
       },
     },
   },
@@ -477,7 +483,8 @@ export const EdgeCases: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Kanban board showing how edge cases are handled: missing values, invalid dates, long text truncation, and empty arrays.',
+        story:
+          'Kanban board showing how edge cases are handled: missing values, invalid dates, long text truncation, and empty arrays.',
       },
     },
   },
@@ -493,9 +500,9 @@ export const Accessibility: Story = {
   },
   render: (args) => {
     const [instructions, setInstructions] = React.useState('');
-    
+
     const handleKeyDown = (event: React.KeyboardEvent) => {
-      switch(event.key) {
+      switch (event.key) {
         case 'ArrowLeft':
           setInstructions('Focus moved left');
           break;
@@ -511,45 +518,52 @@ export const Accessibility: Story = {
           break;
       }
     };
-    
+
     return (
       <div>
-        <div style={{
-          padding: '16px',
-          marginBottom: '16px',
-          backgroundColor: '#f0f9ff',
-          border: '1px solid #bae6fd',
-          borderRadius: '8px',
-        }}>
+        <div
+          style={{
+            padding: '16px',
+            marginBottom: '16px',
+            backgroundColor: '#f0f9ff',
+            border: '1px solid #bae6fd',
+            borderRadius: '8px',
+          }}
+        >
           <h3 style={{ margin: '0 0 8px 0', color: '#0369a1' }}>Accessibility Demo</h3>
           <p style={{ margin: '0 0 8px 0', color: '#0c4a6e' }}>
-            Try keyboard navigation: Tab to focus cards, Arrow keys to navigate, Enter/Space to select, Escape to clear.
+            Try keyboard navigation: Tab to focus cards, Arrow keys to navigate, Enter/Space to
+            select, Escape to clear.
           </p>
-          <div style={{ 
-            padding: '8px', 
-            backgroundColor: 'white', 
-            borderRadius: '4px',
-            minHeight: '24px',
-            fontFamily: 'monospace',
-          }}>
+          <div
+            style={{
+              padding: '8px',
+              backgroundColor: 'white',
+              borderRadius: '4px',
+              minHeight: '24px',
+              fontFamily: 'monospace',
+            }}
+          >
             {instructions || 'Keyboard actions will appear here...'}
           </div>
         </div>
-        <Kanban 
+        <Kanban
           {...args}
           onCardClick={(card) => {
             setInstructions(`Card clicked: ${card.title}`);
           }}
           onKeyDown={handleKeyDown}
         />
-        <div style={{
-          marginTop: '16px',
-          padding: '16px',
-          backgroundColor: '#fefce8',
-          border: '1px solid #fde047',
-          borderRadius: '8px',
-          fontSize: '14px',
-        }}>
+        <div
+          style={{
+            marginTop: '16px',
+            padding: '16px',
+            backgroundColor: '#fefce8',
+            border: '1px solid #fde047',
+            borderRadius: '8px',
+            fontSize: '14px',
+          }}
+        >
           <h4 style={{ margin: '0 0 8px 0', color: '#713f12' }}>Accessibility Features</h4>
           <ul style={{ margin: 0, paddingLeft: '20px', color: '#713f12' }}>
             <li>All cards have proper ARIA labels with title, priority, and due date</li>
@@ -566,7 +580,8 @@ export const Accessibility: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Accessibility-focused Kanban demonstrating keyboard navigation, screen reader support, and proper ARIA attributes.',
+        story:
+          'Accessibility-focused Kanban demonstrating keyboard navigation, screen reader support, and proper ARIA attributes.',
       },
     },
     a11y: {
@@ -604,27 +619,29 @@ export const PropToggles: Story = {
   },
   render: (args) => {
     const [props, setProps] = React.useState(args);
-    
+
     const toggleProp = (propName: keyof typeof args) => {
-      setProps(prev => ({ ...prev, [propName]: !(prev as any)[propName] }));
+      setProps((prev) => ({ ...prev, [propName]: !(prev as any)[propName] }));
     };
-    
+
     return (
       <div style={{ display: 'flex', gap: '24px' }}>
         <div style={{ flex: 1 }}>
           <Kanban {...props} />
         </div>
-        
-        <div style={{
-          width: '300px',
-          padding: '20px',
-          backgroundColor: '#f8fafc',
-          border: '1px solid #e2e8f0',
-          borderRadius: '8px',
-          height: 'fit-content',
-        }}>
+
+        <div
+          style={{
+            width: '300px',
+            padding: '20px',
+            backgroundColor: '#f8fafc',
+            border: '1px solid #e2e8f0',
+            borderRadius: '8px',
+            height: 'fit-content',
+          }}
+        >
           <h3 style={{ margin: '0 0 16px 0', color: '#1e293b' }}>Prop Controls</h3>
-          
+
           {[
             { label: 'Show Card Value ($)', prop: 'showCardValue' },
             { label: 'Show Probability (%)', prop: 'showProbability' },
@@ -635,11 +652,11 @@ export const PropToggles: Story = {
             { label: 'Show Card Actions', prop: 'showCardActions' },
             { label: 'Show Analytics', prop: 'showAnalytics' },
           ].map(({ label, prop }) => (
-            <div 
-              key={prop} 
-              style={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
+            <div
+              key={prop}
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
                 alignItems: 'center',
                 marginBottom: '12px',
                 padding: '8px',
@@ -666,19 +683,29 @@ export const PropToggles: Story = {
               </button>
             </div>
           ))}
-          
-          <div style={{ 
-            marginTop: '20px', 
-            padding: '12px', 
-            backgroundColor: '#f0fdf4', 
-            border: '1px solid #86efac',
-            borderRadius: '6px',
-          }}>
-            <div style={{ fontSize: '12px', color: '#166534', fontWeight: 'bold', marginBottom: '4px' }}>
+
+          <div
+            style={{
+              marginTop: '20px',
+              padding: '12px',
+              backgroundColor: '#f0fdf4',
+              border: '1px solid #86efac',
+              borderRadius: '6px',
+            }}
+          >
+            <div
+              style={{
+                fontSize: '12px',
+                color: '#166534',
+                fontWeight: 'bold',
+                marginBottom: '4px',
+              }}
+            >
               Visual Feedback
             </div>
             <div style={{ fontSize: '11px', color: '#166534' }}>
-              Card borders highlight when props affect them. Try toggling options to see immediate visual changes.
+              Card borders highlight when props affect them. Try toggling options to see immediate
+              visual changes.
             </div>
           </div>
         </div>
@@ -688,7 +715,8 @@ export const PropToggles: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Interactive demo showing how each boolean prop affects the Kanban appearance and behavior. Toggle controls to see visual feedback.',
+        story:
+          'Interactive demo showing how each boolean prop affects the Kanban appearance and behavior. Toggle controls to see visual feedback.',
       },
     },
   },
@@ -705,7 +733,8 @@ export const Performance: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Performance-optimized Kanban with limited cards for Storybook performance. Uses React.memo and optimized rendering.',
+        story:
+          'Performance-optimized Kanban with limited cards for Storybook performance. Uses React.memo and optimized rendering.',
       },
     },
     performance: {
@@ -721,7 +750,7 @@ export const CustomCardRendering: Story = {
   args: {
     columns: lightweightColumns,
     renderCard: (card, column) => (
-      <div 
+      <div
         style={{
           padding: '12px',
           margin: '8px 0',
@@ -735,14 +764,16 @@ export const CustomCardRendering: Story = {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h4 style={{ margin: 0, color: '#1e293b' }}>{card.title}</h4>
           {card.value && (
-            <span style={{ 
-              backgroundColor: '#10b981', 
-              color: 'white', 
-              padding: '2px 8px', 
-              borderRadius: '12px',
-              fontSize: '12px',
-              fontWeight: 'bold',
-            }}>
+            <span
+              style={{
+                backgroundColor: '#10b981',
+                color: 'white',
+                padding: '2px 8px',
+                borderRadius: '12px',
+                fontSize: '12px',
+                fontWeight: 'bold',
+              }}
+            >
               ${card.value.toLocaleString()}
             </span>
           )}
@@ -754,8 +785,8 @@ export const CustomCardRendering: Story = {
         )}
         {card.tags && card.tags.length > 0 && (
           <div style={{ marginTop: '8px', display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-            {card.tags.map(tag => (
-              <span 
+            {card.tags.map((tag) => (
+              <span
                 key={tag}
                 style={{
                   backgroundColor: '#e2e8f0',
@@ -777,7 +808,8 @@ export const CustomCardRendering: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Kanban with custom card rendering using renderCard prop for complete control over card appearance.',
+        story:
+          'Kanban with custom card rendering using renderCard prop for complete control over card appearance.',
       },
     },
   },
@@ -790,16 +822,18 @@ export const CustomColumnHeaders: Story = {
   args: {
     columns: lightweightColumns,
     renderColumnHeader: (column) => (
-      <div style={{
-        padding: '12px',
-        backgroundColor: '#3b82f6',
-        color: 'white',
-        borderBottom: '2px solid #1d4ed8',
-        borderRadius: '8px 8px 0 0',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-      }}>
+      <div
+        style={{
+          padding: '12px',
+          backgroundColor: '#3b82f6',
+          color: 'white',
+          borderBottom: '2px solid #1d4ed8',
+          borderRadius: '8px 8px 0 0',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
         <div>
           <h3 style={{ margin: 0, fontSize: '16px' }}>{column.title}</h3>
           {column.description && (
@@ -808,13 +842,15 @@ export const CustomColumnHeaders: Story = {
             </p>
           )}
         </div>
-        <div style={{
-          backgroundColor: 'rgba(255, 255, 255, 0.2)',
-          borderRadius: '16px',
-          padding: '2px 8px',
-          fontSize: '12px',
-          fontWeight: 'bold',
-        }}>
+        <div
+          style={{
+            backgroundColor: 'rgba(255, 255, 255, 0.2)',
+            borderRadius: '16px',
+            padding: '2px 8px',
+            fontSize: '12px',
+            fontWeight: 'bold',
+          }}
+        >
           {column.cards.length} cards
         </div>
       </div>
@@ -838,21 +874,19 @@ export const CompoundComponents: Story = {
     // Example of using compound components pattern
     const CustomKanban = () => {
       const { columns, setColumns } = useKanban();
-      
+
       const handleAddCard = (columnId: string) => {
         const newCard = createKanbanCard({
           title: `New Card ${columns.flatMap((c: any) => c.cards).length + 1}`,
         });
-        
-        const updatedColumns = columns.map((col: any) => 
-          col.id === columnId
-            ? { ...col, cards: [...col.cards, newCard] }
-            : col
+
+        const updatedColumns = columns.map((col: any) =>
+          col.id === columnId ? { ...col, cards: [...col.cards, newCard] } : col
         );
-        
+
         setColumns(updatedColumns);
       };
-      
+
       return (
         <div style={{ padding: '20px', backgroundColor: '#f1f5f9' }}>
           <h2 style={{ marginBottom: '20px', color: '#1e293b' }}>Custom CRM Pipeline</h2>
@@ -865,18 +899,22 @@ export const CompoundComponents: Story = {
                   index={index}
                   style={{ minWidth: '300px' }}
                 >
-                  <div style={{ 
-                    padding: '16px', 
-                    backgroundColor: 'white', 
-                    borderRadius: '8px',
-                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                  }}>
-                    <div style={{ 
-                      display: 'flex', 
-                      justifyContent: 'space-between', 
-                      alignItems: 'center',
-                      marginBottom: '16px',
-                    }}>
+                  <div
+                    style={{
+                      padding: '16px',
+                      backgroundColor: 'white',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginBottom: '16px',
+                      }}
+                    >
                       <h3 style={{ margin: 0, color: '#334155' }}>{column.title}</h3>
                       <button
                         onClick={() => handleAddCard(column.id)}
@@ -893,7 +931,7 @@ export const CompoundComponents: Story = {
                         + Add
                       </button>
                     </div>
-                    
+
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       {column.cards.map((card: any, cardIndex: number) => (
                         <KanbanCardComponent
@@ -901,8 +939,8 @@ export const CompoundComponents: Story = {
                           card={card}
                           column={column}
                           index={cardIndex}
-                          style={{ 
-                            padding: '12px', 
+                          style={{
+                            padding: '12px',
                             backgroundColor: '#f8fafc',
                             border: '1px solid #e2e8f0',
                             borderRadius: '6px',
@@ -911,11 +949,13 @@ export const CompoundComponents: Story = {
                           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                             <span style={{ fontWeight: '500' }}>{card.title}</span>
                             {card.value && (
-                              <span style={{ 
-                                fontSize: '12px', 
-                                color: '#059669',
-                                fontWeight: 'bold',
-                              }}>
+                              <span
+                                style={{
+                                  fontSize: '12px',
+                                  color: '#059669',
+                                  fontWeight: 'bold',
+                                }}
+                              >
                                 ${card.value.toLocaleString()}
                               </span>
                             )}
@@ -931,13 +971,14 @@ export const CompoundComponents: Story = {
         </div>
       );
     };
-    
+
     return <CustomKanban />;
   },
   parameters: {
     docs: {
       description: {
-        story: 'Example using Kanban compound components (Kanban.Column, Kanban.Card) with custom layout and behavior.',
+        story:
+          'Example using Kanban compound components (Kanban.Column, Kanban.Card) with custom layout and behavior.',
       },
     },
   },
@@ -950,11 +991,11 @@ export const Interactive: Story = {
   render: () => {
     const [columns, setColumns] = React.useState(lightweightColumns);
     const analytics = React.useMemo(() => calculateAnalyticsFromColumns(columns), [columns]);
-    
+
     const handleChange = (newColumns: typeof columns) => {
       setColumns(newColumns);
     };
-    
+
     const handleAddColumn = () => {
       const newColumn = createKanbanColumn({
         title: `Stage ${columns.length + 1}`,
@@ -962,35 +1003,35 @@ export const Interactive: Story = {
       });
       setColumns([...columns, newColumn]);
     };
-    
-    const handleAddCard = (column: typeof columns[0]) => {
+
+    const handleAddCard = (column: (typeof columns)[0]) => {
       const newCard = createKanbanCard({
         title: `New Opportunity ${Date.now().toString().slice(-4)}`,
         value: Math.floor(Math.random() * 100000) + 10000,
         probability: Math.floor(Math.random() * 100),
       });
-      
-      const updatedColumns = columns.map(col => 
-        col.id === column.id
-          ? { ...col, cards: [...col.cards, newCard] }
-          : col
+
+      const updatedColumns = columns.map((col) =>
+        col.id === column.id ? { ...col, cards: [...col.cards, newCard] } : col
       );
-      
+
       setColumns(updatedColumns);
     };
-    
+
     return (
       <div style={{ padding: '24px', backgroundColor: '#f8fafc', minHeight: '100vh' }}>
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center',
-          marginBottom: '24px',
-          padding: '16px',
-          backgroundColor: 'white',
-          borderRadius: '12px',
-          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-        }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '24px',
+            padding: '16px',
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+          }}
+        >
           <div>
             <h1 style={{ margin: 0, color: '#1e293b' }}>CRM Pipeline</h1>
             <p style={{ margin: '8px 0 0 0', color: '#64748b' }}>
@@ -1004,7 +1045,7 @@ export const Interactive: Story = {
             <div style={{ fontSize: '14px', color: '#64748b' }}>Total Pipeline Value</div>
           </div>
         </div>
-        
+
         <Kanban
           columns={columns}
           onChange={handleChange}
@@ -1021,14 +1062,16 @@ export const Interactive: Story = {
           style={{ backgroundColor: 'white', borderRadius: '12px', padding: '16px' }}
           data-testid="kanban-interactive"
         />
-        
-        <div style={{ 
-          marginTop: '24px', 
-          padding: '16px', 
-          backgroundColor: 'white', 
-          borderRadius: '12px',
-          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-        }}>
+
+        <div
+          style={{
+            marginTop: '24px',
+            padding: '16px',
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+          }}
+        >
           <h3 style={{ margin: '0 0 16px 0', color: '#1e293b' }}>Pipeline Controls</h3>
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
             <button
@@ -1087,7 +1130,8 @@ export const Interactive: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Interactive Kanban example with state management, dynamic updates, and control panel. Uses performance-optimized columns.',
+        story:
+          'Interactive Kanban example with state management, dynamic updates, and control panel. Uses performance-optimized columns.',
       },
     },
   },
@@ -1141,7 +1185,8 @@ export const Playground: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Interactive playground with controls to test all Kanban features. Use Storybook controls panel to adjust props.',
+        story:
+          'Interactive playground with controls to test all Kanban features. Use Storybook controls panel to adjust props.',
       },
     },
   },

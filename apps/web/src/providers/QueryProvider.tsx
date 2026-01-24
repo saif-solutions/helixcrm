@@ -1,6 +1,12 @@
 // apps/web/src/providers/QueryProvider.tsx
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useQuery, useMutation, useQueryClient, UseQueryOptions, UseMutationOptions } from '@tanstack/react-query';
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  UseQueryOptions,
+  UseMutationOptions,
+} from '@tanstack/react-query';
 import React from 'react';
 
 // Create a client
@@ -51,7 +57,7 @@ export const useApiMutation = <T, V>(
   options?: Omit<UseMutationOptions<T, Error, V>, 'mutationFn'>
 ) => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn,
     onSuccess: () => {

@@ -28,7 +28,7 @@ export const useSelect = (): SelectContextType => {
   if (!context) {
     console.error(
       '❌ useSelect must be used within a Select component. ' +
-      'Make sure your component is wrapped with <SelectProvider> or inside a <Select> component.'
+        'Make sure your component is wrapped with <SelectProvider> or inside a <Select> component.'
     );
     throw new Error('useSelect must be used within a Select component');
   }
@@ -54,31 +54,27 @@ export const SelectProvider: React.FC<SelectProviderProps> = ({ value, children 
     }
   }, [value]);
 
-  return (
-    <SelectContext.Provider value={value}>
-      {children}
-    </SelectContext.Provider>
-  );
+  return <SelectContext.Provider value={value}>{children}</SelectContext.Provider>;
 };
 
 // ✅ FIXED: Helper hook for checking if option is selected
 export const useSelectOption = (option: SelectOption) => {
   const context = useSelect();
-  
+
   const isSelected = React.useMemo(() => {
     return context.selectedValues.includes(option.value);
   }, [context.selectedValues, option.value]);
-  
+
   const isDisabled = React.useMemo(() => {
     return context.disabled || option.disabled;
   }, [context.disabled, option.disabled]);
-  
+
   const handleSelect = React.useCallback(() => {
     if (!isDisabled) {
       context.onOptionSelect(option);
     }
   }, [context.onOptionSelect, option, isDisabled]);
-  
+
   return {
     isSelected,
     isDisabled,
@@ -94,27 +90,28 @@ export const useSelectOption = (option: SelectOption) => {
 // ✅ FIXED: Helper hook for getting selected values as options
 export const useSelectedOptions = (options: SelectOption[]) => {
   const context = useSelect();
-  
+
   const selectedOptions = React.useMemo(() => {
-    return options.filter(option => 
-      context.selectedValues.includes(option.value)
-    );
+    return options.filter((option) => context.selectedValues.includes(option.value));
   }, [options, context.selectedValues]);
-  
+
   return selectedOptions;
 };
 
 // ✅ FIXED: Helper hook for keyboard navigation context
 export const useSelectKeyboard = () => {
   const context = useSelect();
-  
-  const keyboardProps = React.useMemo(() => ({
-    role: 'listbox' as const,
-    'aria-multiselectable': context.multiple,
-    'aria-expanded': context.ariaExpanded,
-    'aria-activedescendant': context.ariaActiveDescendant,
-    'aria-controls': context.ariaControls,
-  }), [context]);
-  
+
+  const keyboardProps = React.useMemo(
+    () => ({
+      role: 'listbox' as const,
+      'aria-multiselectable': context.multiple,
+      'aria-expanded': context.ariaExpanded,
+      'aria-activedescendant': context.ariaActiveDescendant,
+      'aria-controls': context.ariaControls,
+    }),
+    [context]
+  );
+
   return keyboardProps;
 };

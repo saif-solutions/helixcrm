@@ -1,7 +1,5 @@
 // D:\Projects-In-Hand\helixcrm\apps\web\src\components\molecules\Dropdown\Dropdown.styles.ts
-import {
-  DropdownItemVariant,
-} from './Dropdown.types';
+import { DropdownItemVariant } from './Dropdown.types';
 
 /**
  * Animation phase mapping type
@@ -104,7 +102,7 @@ export const dropdownTokens: DropdownTokens = Object.freeze({
     '2xl': '2rem',
     '3xl': '3rem',
   },
-  
+
   dimensions: {
     width: {
       xs: '8rem',
@@ -115,7 +113,7 @@ export const dropdownTokens: DropdownTokens = Object.freeze({
       auto: 'auto',
       fit: 'fit-content',
     },
-    
+
     height: {
       auto: 'auto',
       xs: '2rem',
@@ -124,7 +122,7 @@ export const dropdownTokens: DropdownTokens = Object.freeze({
       lg: '3.5rem',
       xl: '4rem',
     },
-    
+
     padding: {
       none: '0',
       xs: '0.25rem',
@@ -134,7 +132,7 @@ export const dropdownTokens: DropdownTokens = Object.freeze({
       xl: '1.25rem',
       '2xl': '1.5rem',
     },
-    
+
     borderRadius: {
       none: '0',
       sm: '0.125rem',
@@ -144,7 +142,7 @@ export const dropdownTokens: DropdownTokens = Object.freeze({
       '2xl': '1rem',
       full: '9999px',
     },
-    
+
     icon: {
       xs: '0.75rem',
       sm: '1rem',
@@ -154,7 +152,7 @@ export const dropdownTokens: DropdownTokens = Object.freeze({
       '2xl': '2.5rem',
     },
   },
-  
+
   colors: {
     background: {
       primary: 'bg-white dark:bg-gray-800',
@@ -172,7 +170,7 @@ export const dropdownTokens: DropdownTokens = Object.freeze({
         info: 'bg-info-50 dark:bg-info-900/20',
       },
     },
-    
+
     text: {
       primary: 'text-gray-900 dark:text-gray-100',
       secondary: 'text-gray-600 dark:text-gray-400',
@@ -186,7 +184,7 @@ export const dropdownTokens: DropdownTokens = Object.freeze({
         info: 'text-info-700 dark:text-info-300',
       },
     },
-    
+
     border: {
       primary: 'border-gray-200 dark:border-gray-700',
       divider: 'border-gray-100 dark:border-gray-800',
@@ -202,7 +200,7 @@ export const dropdownTokens: DropdownTokens = Object.freeze({
         info: 'border-info-200 dark:border-info-800',
       },
     },
-    
+
     icon: {
       primary: 'text-gray-500 dark:text-gray-400',
       secondary: 'text-gray-400 dark:text-gray-500',
@@ -215,11 +213,13 @@ export const dropdownTokens: DropdownTokens = Object.freeze({
       },
       disabled: 'text-gray-300 dark:text-gray-600',
     },
-    
+
     action: {
       primary: 'bg-primary-600 hover:bg-primary-700 text-white',
-      secondary: 'bg-gray-200 hover:bg-gray-300 text-gray-900 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100',
-      outline: 'border border-primary-600 text-primary-600 hover:bg-primary-50 dark:border-primary-400 dark:text-primary-400 dark:hover:bg-primary-900/20',
+      secondary:
+        'bg-gray-200 hover:bg-gray-300 text-gray-900 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100',
+      outline:
+        'border border-primary-600 text-primary-600 hover:bg-primary-50 dark:border-primary-400 dark:text-primary-400 dark:hover:bg-primary-900/20',
       ghost: 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800',
       error: 'bg-error-600 hover:bg-error-700 text-white',
       success: 'bg-success-600 hover:bg-success-700 text-white',
@@ -243,7 +243,7 @@ export const dropdownTokens: DropdownTokens = Object.freeze({
       },
     },
   },
-  
+
   typography: {
     fontFamily: {
       sans: 'font-sans',
@@ -273,7 +273,7 @@ export const dropdownTokens: DropdownTokens = Object.freeze({
       loose: 'leading-loose',
     },
   },
-  
+
   shadow: {
     none: 'shadow-none',
     sm: 'shadow-sm',
@@ -284,7 +284,7 @@ export const dropdownTokens: DropdownTokens = Object.freeze({
     inner: 'shadow-inner',
     dropdown: 'shadow-[0_10px_38px_-10px_rgba(22,23,24,0.35),0_10px_20px_-15px_rgba(22,23,24,0.2)]',
   },
-  
+
   animation: {
     fast: 'duration-100',
     normal: 'duration-200',
@@ -292,7 +292,7 @@ export const dropdownTokens: DropdownTokens = Object.freeze({
     verySlow: 'duration-500',
     dropdown: 'duration-200',
   },
-  
+
   transition: {
     all: 'transition-all',
     colors: 'transition-colors',
@@ -300,7 +300,7 @@ export const dropdownTokens: DropdownTokens = Object.freeze({
     transform: 'transition-transform',
     shadow: 'transition-shadow',
   },
-  
+
   // CHANGED: Numeric zIndex tokens
   zIndex: {
     dropdown: 50,
@@ -313,7 +313,7 @@ export const dropdownTokens: DropdownTokens = Object.freeze({
       '5': 100,
     },
   },
-  
+
   backdrop: {
     none: 'backdrop-blur-none',
     sm: 'backdrop-blur-sm',
@@ -330,11 +330,11 @@ export const dropdownZIndexClasses = Object.freeze({
   dropdown: 'z-50',
   overlay: 'z-40',
   nested: {
-    '1': 'z-50',  // ✅ Valid
-    '2': 'z-50',  // ✅ Valid
-    '3': 'z-50',  // ✅ Valid
-    '4': 'z-50',  // ✅ Valid
-    '5': 'z-50',  // ✅ Valid
+    '1': 'z-50', // ✅ Valid
+    '2': 'z-50', // ✅ Valid
+    '3': 'z-50', // ✅ Valid
+    '4': 'z-50', // ✅ Valid
+    '5': 'z-50', // ✅ Valid
   },
 });
 
@@ -344,18 +344,18 @@ export const dropdownZIndexClasses = Object.freeze({
 export const dropdownClasses = Object.freeze({
   // Root container
   root: 'dropdown-root inline-block',
-  
+
   // Trigger classes
   trigger: {
     base: 'dropdown-trigger inline-flex items-center justify-center',
     disabled: 'opacity-50 cursor-not-allowed',
   },
-  
+
   // Portal container
   portal: {
     base: 'dropdown-portal',
   },
-  
+
   // Content wrapper
   content: {
     base: [
@@ -380,7 +380,7 @@ export const dropdownClasses = Object.freeze({
       auto: 'min-w-0',
     },
   },
-  
+
   // Item classes
   item: {
     base: [
@@ -423,7 +423,7 @@ export const dropdownClasses = Object.freeze({
       ].join(' '),
     },
     // Use token-based highlight colors
-    highlighted: (variant: DropdownItemVariant = 'default') => 
+    highlighted: (variant: DropdownItemVariant = 'default') =>
       `data-[highlighted]:${dropdownTokens.colors.action.hover[variant]}`,
     icon: {
       base: 'dropdown-item-icon mr-2 h-4 w-4',
@@ -437,7 +437,7 @@ export const dropdownClasses = Object.freeze({
     check: 'dropdown-item-check absolute left-2 flex h-3.5 w-3.5 items-center justify-center',
     indicator: 'dropdown-item-indicator',
   },
-  
+
   // Group classes
   group: {
     base: 'dropdown-group',
@@ -450,7 +450,7 @@ export const dropdownClasses = Object.freeze({
       'font-semibold',
     ].join(' '),
   },
-  
+
   // Separator classes
   separator: {
     base: [
@@ -461,7 +461,7 @@ export const dropdownClasses = Object.freeze({
       dropdownTokens.colors.border.divider,
     ].join(' '),
   },
-  
+
   // Label classes
   label: {
     base: [
@@ -473,7 +473,7 @@ export const dropdownClasses = Object.freeze({
       'font-semibold',
     ].join(' '),
   },
-  
+
   // Checkbox item classes
   checkboxItem: {
     base: [
@@ -504,7 +504,7 @@ export const dropdownClasses = Object.freeze({
       'justify-center',
     ].join(' '),
   },
-  
+
   // Radio item classes
   radioItem: {
     base: [
@@ -535,7 +535,7 @@ export const dropdownClasses = Object.freeze({
       'justify-center',
     ].join(' '),
   },
-  
+
   // Sub menu classes
   subMenu: {
     base: 'dropdown-sub-menu',
@@ -559,16 +559,12 @@ export const dropdownClasses = Object.freeze({
     ].join(' '),
     icon: 'dropdown-sub-menu-icon absolute right-2 h-4 w-4',
   },
-  
+
   // Arrow classes
   arrow: {
-    base: [
-      'dropdown-arrow',
-      'fill-white',
-      'dark:fill-gray-800',
-    ].join(' '),
+    base: ['dropdown-arrow', 'fill-white', 'dark:fill-gray-800'].join(' '),
   },
-  
+
   // Animation classes (CHANGED: Consistent with Dialog's hyphenated phase names)
   animation: {
     fade: {
@@ -613,10 +609,8 @@ export const dropdownClasses = Object.freeze({
       exit: '',
       'exit-active': '',
     },
-
-    
   },
-  
+
   // Accessibility classes
   accessibility: {
     screenReaderOnly: 'sr-only',
@@ -626,13 +620,8 @@ export const dropdownClasses = Object.freeze({
       'focus:ring-primary-500',
       'focus:ring-offset-2',
     ].join(' '),
-    reducedMotion: [
-      'motion-reduce:transition-none',
-      'motion-reduce:transform-none',
-    ].join(' '),
+    reducedMotion: ['motion-reduce:transition-none', 'motion-reduce:transform-none'].join(' '),
   },
-
-  
 });
 
 /**

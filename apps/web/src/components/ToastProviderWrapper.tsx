@@ -3,7 +3,7 @@
  * Wraps the ToastProvider around the app
  */
 import React from 'react';
-import { ToastProvider } from './ui/Toast';
+import { ToastProvider } from './feedback/ToastProvider';
 
 interface ToastProviderWrapperProps {
   children: React.ReactNode;

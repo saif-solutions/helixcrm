@@ -59,8 +59,21 @@ export interface KanbanCard {
   style?: React.CSSProperties;
 }
 
-export type KanbanSource = 'email' | 'web' | 'phone' | 'manual' | 'import' | 'integration' | 'referral';
-export type KanbanStage = 'lead' | 'qualified' | 'proposal' | 'negotiation' | 'closed-won' | 'closed-lost';
+export type KanbanSource =
+  | 'email'
+  | 'web'
+  | 'phone'
+  | 'manual'
+  | 'import'
+  | 'integration'
+  | 'referral';
+export type KanbanStage =
+  | 'lead'
+  | 'qualified'
+  | 'proposal'
+  | 'negotiation'
+  | 'closed-won'
+  | 'closed-lost';
 
 // Add this new interface for CRM pipeline analytics
 export interface KanbanAnalytics {
@@ -107,7 +120,12 @@ export interface KanbanProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 
   /** CRM-SPECIFIC: Show probability indicators */
   showProbability?: boolean;
   /** Callback when cards are reordered or moved */
-  onChange?: (columns: KanbanColumn[], movedCard?: KanbanCard, sourceColumn?: KanbanColumn, targetColumn?: KanbanColumn) => void;
+  onChange?: (
+    columns: KanbanColumn[],
+    movedCard?: KanbanCard,
+    sourceColumn?: KanbanColumn,
+    targetColumn?: KanbanColumn
+  ) => void;
   /** Callback when a card is clicked */
   onCardClick?: (card: KanbanCard, column: KanbanColumn, event: React.MouseEvent) => void;
   /** Callback when a column is clicked */
@@ -175,26 +193,24 @@ export function getProbabilityColor(probability?: number): KanbanColor {
  */
 export function getTimeSinceLastActivity(card: KanbanCard): string {
   if (!card.lastActivityAt) return 'No activity';
-  
-  const lastActivity = card.lastActivityAt instanceof Date 
-    ? card.lastActivityAt 
-    : new Date(card.lastActivityAt);
-  
+
+  const lastActivity =
+    card.lastActivityAt instanceof Date ? card.lastActivityAt : new Date(card.lastActivityAt);
+
   if (isNaN(lastActivity.getTime())) return 'Invalid date';
-  
+
   const now = new Date();
   const diffMs = now.getTime() - lastActivity.getTime();
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  
+
   if (diffDays === 0) return 'Today';
   if (diffDays === 1) return 'Yesterday';
   if (diffDays < 7) return `${diffDays} days ago`;
   if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
   if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
-  
+
   return `${Math.floor(diffDays / 365)} years ago`;
 }
-
 
 /**
  * Kanban Column - Represents a column in the Kanban board
@@ -250,7 +266,12 @@ export interface KanbanProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 
   /** Minimum column width */
   minColumnWidth?: string | number;
   /** Callback when cards are reordered or moved */
-  onChange?: (columns: KanbanColumn[], movedCard?: KanbanCard, sourceColumn?: KanbanColumn, targetColumn?: KanbanColumn) => void;
+  onChange?: (
+    columns: KanbanColumn[],
+    movedCard?: KanbanCard,
+    sourceColumn?: KanbanColumn,
+    targetColumn?: KanbanColumn
+  ) => void;
   /** Callback when a card is clicked */
   onCardClick?: (card: KanbanCard, column: KanbanColumn, event: React.MouseEvent) => void;
   /** Callback when a column is clicked */
@@ -366,7 +387,14 @@ export interface KanbanCardProps extends React.HTMLAttributes<HTMLDivElement> {
 /**
  * Utility types
  */
-export type KanbanColor = 'primary' | 'secondary' | 'success' | 'error' | 'warning' | 'info' | 'gray';
+export type KanbanColor =
+  | 'primary'
+  | 'secondary'
+  | 'success'
+  | 'error'
+  | 'warning'
+  | 'info'
+  | 'gray';
 export type KanbanPriority = 'low' | 'medium' | 'high' | 'critical';
 export type KanbanStatus = 'todo' | 'in-progress' | 'review' | 'done';
 
@@ -387,7 +415,7 @@ export function getKanbanColorClass(color?: KanbanColor): string {
     info: 'bg-info-50 border-info-200 text-info-800',
     gray: 'bg-gray-50 border-gray-200 text-gray-800',
   };
-  
+
   return color ? colorClasses[color] : colorClasses.gray;
 }
 
@@ -401,7 +429,7 @@ export function getPriorityColor(priority?: KanbanPriority): KanbanColor {
     high: 'error',
     critical: 'error',
   };
-  
+
   return priority ? priorityColors[priority] : 'gray';
 }
 
@@ -455,4 +483,3 @@ export function createKanbanColumn(overrides: Partial<KanbanColumn> = {}): Kanba
     ...overrides,
   };
 }
-

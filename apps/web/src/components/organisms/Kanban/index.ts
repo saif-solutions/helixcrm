@@ -2,12 +2,7 @@
 // Barrel exports for Kanban component
 
 // Re-export components
-export { 
-  Kanban, 
-  KanbanColumnComponent, 
-  KanbanCardComponent,
-  useKanban 
-} from './Kanban';
+export { Kanban, KanbanColumnComponent, KanbanCardComponent, useKanban } from './Kanban';
 
 // Re-export types
 export type {
@@ -54,7 +49,7 @@ export {
 } from './Kanban.styles';
 
 // Re-export stories for documentation
-export { 
+export {
   Default as KanbanStoryDefault,
   ReadOnly as KanbanStoryReadOnly,
   WithAnalytics as KanbanStoryWithAnalytics,

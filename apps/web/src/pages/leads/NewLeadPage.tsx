@@ -14,16 +14,19 @@ import { ArrowLeft, Save } from 'lucide-react';
 
 // Zod schema for lead validation
 const leadSchema = z.object({
-  name: z.string()
+  name: z
+    .string()
     .min(2, { message: 'Name must be at least 2 characters' })
     .max(100, { message: 'Name cannot exceed 100 characters' }),
-  email: z.string()
+  email: z
+    .string()
     .email({ message: 'Please enter a valid email address' })
     .optional()
     .or(z.literal('')),
-  phone: z.string()
+  phone: z
+    .string()
     .optional()
-    .refine(val => !val || /^[\d\s\-\+\(\)]+$/.test(val), {
+    .refine((val) => !val || /^[\d\s\-\+\(\)]+$/.test(val), {
       message: 'Please enter a valid phone number',
     }),
   status: z.enum(['new', 'contacted', 'qualified']).default('new'),
@@ -36,7 +39,7 @@ const NewLeadPage: React.FC = () => {
   const navigate = useNavigate();
   const { success, error } = useToast();
   const queryClient = useQueryClient();
-  
+
   const {
     register,
     handleSubmit,
@@ -52,10 +55,10 @@ const NewLeadPage: React.FC = () => {
       status: 'new',
     },
   });
-  
+
   const onSubmit = async (data: LeadFormData) => {
     setIsSubmitting(true);
-    
+
     try {
       // Clean up empty strings for optional fields
       const leadData = {
@@ -63,18 +66,18 @@ const NewLeadPage: React.FC = () => {
         email: data.email?.trim() || undefined,
         phone: data.phone?.trim() || undefined,
       };
-      
+
       console.log('Creating lead:', leadData);
       const createdLead = await leadsService.createLead(leadData);
-      
+
       // Invalidate leads queries to refresh the list
       queryClient.invalidateQueries({ queryKey: ['leads'] });
-      
+
       success('Lead Created', `${createdLead.name} has been added to your leads`);
       navigate('/leads');
     } catch (err: any) {
       console.error('Failed to create lead:', err);
-      
+
       // Handle specific error cases
       if (err.status === 400) {
         error('Validation Error', 'Please check your input and try again');
@@ -87,15 +90,27 @@ const NewLeadPage: React.FC = () => {
       setIsSubmitting(false);
     }
   };
-  
-  const statusOptions: { value: 'new' | 'contacted' | 'qualified'; label: string; color: string }[] = [
+
+  const statusOptions: {
+    value: 'new' | 'contacted' | 'qualified';
+    label: string;
+    color: string;
+  }[] = [
     { value: 'new', label: 'New', color: 'text-blue-600 bg-blue-50 border-blue-200' },
-    { value: 'contacted', label: 'Contacted', color: 'text-yellow-600 bg-yellow-50 border-yellow-200' },
-    { value: 'qualified', label: 'Qualified', color: 'text-green-600 bg-green-50 border-green-200' },
+    {
+      value: 'contacted',
+      label: 'Contacted',
+      color: 'text-yellow-600 bg-yellow-50 border-yellow-200',
+    },
+    {
+      value: 'qualified',
+      label: 'Qualified',
+      color: 'text-green-600 bg-green-50 border-green-200',
+    },
   ];
-  
+
   const selectedStatus = watch('status');
-  
+
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Header */}
@@ -113,16 +128,14 @@ const NewLeadPage: React.FC = () => {
           </div>
         </div>
       </div>
-      
+
       <div className="max-w-2xl mx-auto">
         <Card>
           <form onSubmit={handleSubmit(onSubmit)}>
             <div className="p-6 space-y-6">
               {/* Status Selector */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Status
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
                 <div className="flex gap-2">
                   {statusOptions.map((option) => (
                     <button
@@ -143,7 +156,7 @@ const NewLeadPage: React.FC = () => {
                   <p className="mt-1 text-sm text-red-600">{errors.status.message}</p>
                 )}
               </div>
-              
+
               {/* Name */}
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
@@ -157,7 +170,7 @@ const NewLeadPage: React.FC = () => {
                   {...register('name')}
                 />
               </div>
-              
+
               {/* Email */}
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
@@ -174,7 +187,7 @@ const NewLeadPage: React.FC = () => {
                   Optional - but recommended for better engagement
                 </p>
               </div>
-              
+
               {/* Phone */}
               <div>
                 <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
@@ -187,11 +200,9 @@ const NewLeadPage: React.FC = () => {
                   error={errors.phone?.message}
                   {...register('phone')}
                 />
-                <p className="mt-1 text-xs text-gray-500">
-                  Optional - include country code
-                </p>
+                <p className="mt-1 text-xs text-gray-500">Optional - include country code</p>
               </div>
-              
+
               {/* Notes (optional for future) */}
               <div>
                 <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
@@ -204,7 +215,7 @@ const NewLeadPage: React.FC = () => {
                   placeholder="Any additional information about this lead..."
                 />
               </div>
-              
+
               {/* Form Actions */}
               <div className="flex justify-end gap-3 pt-4 border-t">
                 <Link to="/leads">
@@ -212,9 +223,9 @@ const NewLeadPage: React.FC = () => {
                     Cancel
                   </Button>
                 </Link>
-                <Button 
-                  type="submit" 
-                  loading={isSubmitting} 
+                <Button
+                  type="submit"
+                  loading={isSubmitting}
                   leftIcon={<Save className="w-4 h-4" />}
                   disabled={isSubmitting}
                 >
@@ -224,15 +235,16 @@ const NewLeadPage: React.FC = () => {
             </div>
           </form>
         </Card>
-        
+
         {/* Help Text */}
         <div className="mt-6 text-sm text-gray-600">
           <p>
-            <span className="font-medium">Tip:</span> Complete as much information as possible to help your 
-            team effectively follow up with this lead.
+            <span className="font-medium">Tip:</span> Complete as much information as possible to
+            help your team effectively follow up with this lead.
           </p>
           <p className="mt-1">
-            <span className="font-medium">Note:</span> Leads are automatically assigned to your organization.
+            <span className="font-medium">Note:</span> Leads are automatically assigned to your
+            organization.
           </p>
         </div>
       </div>

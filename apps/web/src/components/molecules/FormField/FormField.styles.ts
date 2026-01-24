@@ -7,46 +7,46 @@ import { FormFieldVariant } from './FormField.types';
 export const formFieldTokens = {
   // Spacing tokens (in rem units)
   spacing: {
-    verticalGap: '0.5rem',      // 8px - gap between label and field in vertical layout
-    horizontalGap: '1rem',      // 16px - gap between label and field in horizontal layout
+    verticalGap: '0.5rem', // 8px - gap between label and field in vertical layout
+    horizontalGap: '1rem', // 16px - gap between label and field in horizontal layout
     labelMarginBottom: '0.25rem', // 4px - margin below label in vertical layout
-    helperMarginTop: '0.25rem',   // 4px - margin above helper/error text
-    groupGap: '1.5rem',         // 24px - gap between form field groups
-    fieldGap: '1rem',           // 16px - gap between form fields within a group
-    actionsGap: '0.75rem',      // 12px - gap between action buttons
+    helperMarginTop: '0.25rem', // 4px - margin above helper/error text
+    groupGap: '1.5rem', // 24px - gap between form field groups
+    fieldGap: '1rem', // 16px - gap between form fields within a group
+    actionsGap: '0.75rem', // 12px - gap between action buttons
   },
 
   // Sizing tokens
   sizing: {
-    labelWidth: '7.5rem',       // 120px - default label width for horizontal layout
-    labelWidthCompact: '6rem',  // 96px - compact label width
-    labelWidthWide: '10rem',    // 160px - wide label width
-    inputHeight: '2.5rem',      // 40px - standard input height
-    textareaMinHeight: '6rem',  // 96px - minimum textarea height
+    labelWidth: '7.5rem', // 120px - default label width for horizontal layout
+    labelWidthCompact: '6rem', // 96px - compact label width
+    labelWidthWide: '10rem', // 160px - wide label width
+    inputHeight: '2.5rem', // 40px - standard input height
+    textareaMinHeight: '6rem', // 96px - minimum textarea height
   },
 
   // Typography tokens
   typography: {
     label: {
-      fontSize: '0.875rem',     // 14px
+      fontSize: '0.875rem', // 14px
       fontWeight: '500',
       lineHeight: '1.25rem',
     },
     helper: {
-      fontSize: '0.75rem',      // 12px
+      fontSize: '0.75rem', // 12px
       lineHeight: '1rem',
     },
     error: {
-      fontSize: '0.75rem',      // 12px
+      fontSize: '0.75rem', // 12px
       lineHeight: '1rem',
     },
     groupTitle: {
-      fontSize: '1rem',         // 16px
+      fontSize: '1rem', // 16px
       fontWeight: '600',
       lineHeight: '1.5rem',
     },
     groupDescription: {
-      fontSize: '0.875rem',     // 14px
+      fontSize: '0.875rem', // 14px
       lineHeight: '1.25rem',
     },
   },
@@ -195,12 +195,9 @@ export const formFieldClasses = {
 /**
  * Utility function to get label color class based on variant and state
  */
-export function getLabelColorClass(
-  variant?: FormFieldVariant,
-  disabled?: boolean
-): string {
+export function getLabelColorClass(variant?: FormFieldVariant, disabled?: boolean): string {
   if (disabled) return formFieldClasses.label.disabled;
-  
+
   switch (variant) {
     case 'error':
       return formFieldClasses.label.error;
@@ -216,12 +213,9 @@ export function getLabelColorClass(
 /**
  * Utility function to get helper text color class based on variant and state
  */
-export function getHelperColorClass(
-  variant?: FormFieldVariant,
-  disabled?: boolean
-): string {
+export function getHelperColorClass(variant?: FormFieldVariant, disabled?: boolean): string {
   if (disabled) return formFieldClasses.helper.default;
-  
+
   switch (variant) {
     case 'error':
       return formFieldClasses.helper.error;
@@ -276,13 +270,13 @@ export function getWrapperClasses(
 ): string {
   const classes = [
     formFieldClasses.wrapper.base,
-    layout === 'horizontal' 
-      ? formFieldClasses.wrapper.horizontal 
+    layout === 'horizontal'
+      ? formFieldClasses.wrapper.horizontal
       : formFieldClasses.wrapper.vertical,
     disabled ? formFieldClasses.wrapper.disabled : '',
     className || '',
   ];
-  
+
   return classes.filter(Boolean).join(' ');
 }
 
@@ -303,7 +297,7 @@ export function getLabelClasses(
     layout === 'horizontal' ? formFieldClasses.label.horizontal : '',
     className || '',
   ];
-  
+
   return classes.filter(Boolean).join(' ');
 }
 
@@ -322,7 +316,7 @@ export function getHelperClasses(
     isError ? formFieldClasses.error.icon : '',
     className || '',
   ];
-  
+
   return classes.filter(Boolean).join(' ');
 }
 
@@ -340,7 +334,7 @@ export function getInputClasses(
     disabled ? formFieldClasses.input.disabled : '',
     className || '',
   ];
-  
+
   return classes.filter(Boolean).join(' ');
 }
 
@@ -358,7 +352,7 @@ export function getTextareaClasses(
     disabled ? 'bg-gray-50' : '',
     className || '',
   ];
-  
+
   return classes.filter(Boolean).join(' ');
 }
 
@@ -374,7 +368,7 @@ export function getFieldContainerClasses(
     layout === 'horizontal' ? formFieldClasses.fieldContainer.horizontal : '',
     className || '',
   ];
-  
+
   return classes.filter(Boolean).join(' ');
 }
 

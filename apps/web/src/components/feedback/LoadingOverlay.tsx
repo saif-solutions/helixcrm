@@ -7,8 +7,8 @@ export type LoadingOverlayProps = {
   transparent?: boolean;
 };
 
-export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ 
-  isLoading, 
+export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({
+  isLoading,
   message = 'Loading...',
   fullScreen = false,
   transparent = false,
@@ -30,7 +30,7 @@ export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({
   ].join(' ');
 
   return (
-    <div 
+    <div
       data-testid="loading-overlay"
       className={overlayClasses}
       role="status"
@@ -41,22 +41,27 @@ export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({
         <div className="relative">
           {/* Spinner */}
           <div className="h-12 w-12 rounded-full border-4 border-neutral-200 border-t-primary-500 animate-spin" />
-          
+
           {/* Optional inner spinner for dual ring effect */}
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-6 w-6 rounded-full border-2 border-transparent border-t-primary-300 animate-spin" />
         </div>
-        
-        {message && (
-          <p className="mt-4 text-sm font-medium text-neutral-700">
-            {message}
-          </p>
-        )}
-        
+
+        {message && <p className="mt-4 text-sm font-medium text-neutral-700">{message}</p>}
+
         {/* Optional progress indication dots */}
         <div className="mt-2 flex space-x-1">
-          <div className="h-2 w-2 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-          <div className="h-2 w-2 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-          <div className="h-2 w-2 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+          <div
+            className="h-2 w-2 bg-primary-500 rounded-full animate-bounce"
+            style={{ animationDelay: '0ms' }}
+          />
+          <div
+            className="h-2 w-2 bg-primary-500 rounded-full animate-bounce"
+            style={{ animationDelay: '150ms' }}
+          />
+          <div
+            className="h-2 w-2 bg-primary-500 rounded-full animate-bounce"
+            style={{ animationDelay: '300ms' }}
+          />
         </div>
       </div>
     </div>

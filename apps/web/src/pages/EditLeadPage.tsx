@@ -16,16 +16,19 @@ import { ArrowLeft, Save, Trash2, Calendar, Building } from 'lucide-react';
 
 // Zod schema for lead validation
 const leadSchema = z.object({
-  name: z.string()
+  name: z
+    .string()
     .min(2, { message: 'Name must be at least 2 characters' })
     .max(100, { message: 'Name cannot exceed 100 characters' }),
-  email: z.string()
+  email: z
+    .string()
     .email({ message: 'Please enter a valid email address' })
     .optional()
     .or(z.literal('')),
-  phone: z.string()
+  phone: z
+    .string()
     .optional()
-    .refine(val => !val || /^[\d\s\-\+\(\)]+$/.test(val), {
+    .refine((val) => !val || /^[\d\s\-\+\(\)]+$/.test(val), {
       message: 'Please enter a valid phone number',
     }),
   status: z.enum(['new', 'contacted', 'qualified']).default('new'),
@@ -39,10 +42,10 @@ const EditLeadPage: React.FC = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const navigate = useNavigate();
   const { success, error } = useToast();
-  
+
   // Fetch lead data using React Query
-  const { 
-    data: lead, 
+  const {
+    data: lead,
     isLoading: isLoadingLead,
     error: leadError,
   } = useApiQuery(
@@ -51,13 +54,13 @@ const EditLeadPage: React.FC = () => {
       if (!id) throw new Error('Lead ID is required');
       return leadsService.getLeadById(id);
     },
-    { 
+    {
       enabled: !!id,
       retry: 1,
       staleTime: 5 * 60 * 1000, // 5 minutes
     }
   );
-  
+
   // Mutation for updating lead
   const updateMutation = useApiMutation(
     (data: LeadFormData) => {
@@ -74,7 +77,7 @@ const EditLeadPage: React.FC = () => {
       },
     }
   );
-  
+
   // Mutation for deleting lead
   const deleteMutation = useApiMutation(
     () => {
@@ -91,7 +94,7 @@ const EditLeadPage: React.FC = () => {
       },
     }
   );
-  
+
   const {
     register,
     handleSubmit,
@@ -102,7 +105,7 @@ const EditLeadPage: React.FC = () => {
   } = useForm<LeadFormData>({
     resolver: zodResolver(leadSchema),
   });
-  
+
   // Reset form when lead data loads
   useEffect(() => {
     if (lead) {
@@ -114,10 +117,10 @@ const EditLeadPage: React.FC = () => {
       });
     }
   }, [lead, reset]);
-  
+
   const onSubmit = async (data: LeadFormData) => {
     if (!id) return;
-    
+
     setIsSubmitting(true);
     try {
       // Clean up empty strings for optional fields
@@ -126,37 +129,54 @@ const EditLeadPage: React.FC = () => {
         email: data.email?.trim() || undefined,
         phone: data.phone?.trim() || undefined,
       };
-      
+
       await updateMutation.mutateAsync(leadData);
     } finally {
       setIsSubmitting(false);
     }
   };
-  
-const handleDelete = async () => {
-  if (!id) return;
-  
-  if (!window.confirm('Are you sure you want to delete this lead? This action cannot be undone.')) {
-    return;
-  }
-  
-  setIsDeleting(true);
-  try {
-    // Fix: Pass undefined as variables to the mutation
-    await deleteMutation.mutateAsync(undefined as void);
-  } finally {
-    setIsDeleting(false);
-  }
-};
-  
-  const statusOptions: { value: 'new' | 'contacted' | 'qualified'; label: string; color: string; bgColor: string }[] = [
+
+  const handleDelete = async () => {
+    if (!id) return;
+
+    if (
+      !window.confirm('Are you sure you want to delete this lead? This action cannot be undone.')
+    ) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      // Fix: Pass undefined as variables to the mutation
+      await deleteMutation.mutateAsync(undefined as void);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const statusOptions: {
+    value: 'new' | 'contacted' | 'qualified';
+    label: string;
+    color: string;
+    bgColor: string;
+  }[] = [
     { value: 'new', label: 'New', color: 'text-blue-600', bgColor: 'bg-blue-50 border-blue-200' },
-    { value: 'contacted', label: 'Contacted', color: 'text-yellow-600', bgColor: 'bg-yellow-50 border-yellow-200' },
-    { value: 'qualified', label: 'Qualified', color: 'text-green-600', bgColor: 'bg-green-50 border-green-200' },
+    {
+      value: 'contacted',
+      label: 'Contacted',
+      color: 'text-yellow-600',
+      bgColor: 'bg-yellow-50 border-yellow-200',
+    },
+    {
+      value: 'qualified',
+      label: 'Qualified',
+      color: 'text-green-600',
+      bgColor: 'bg-green-50 border-green-200',
+    },
   ];
-  
+
   const selectedStatus = watch('status');
-  
+
   const formatDateTime = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
@@ -168,7 +188,7 @@ const handleDelete = async () => {
       minute: '2-digit',
     });
   };
-  
+
   // Show loading state
   if (isLoadingLead) {
     return (
@@ -180,7 +200,7 @@ const handleDelete = async () => {
       </div>
     );
   }
-  
+
   // Show error state
   if (leadError && !lead) {
     return (
@@ -194,7 +214,7 @@ const handleDelete = async () => {
       </div>
     );
   }
-  
+
   if (!lead) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -207,7 +227,7 @@ const handleDelete = async () => {
       </div>
     );
   }
-  
+
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Header */}
@@ -224,7 +244,7 @@ const handleDelete = async () => {
             <p className="text-gray-600">Update lead information and status</p>
           </div>
         </div>
-        
+
         <div className="flex gap-2">
           <Button
             variant="danger"
@@ -237,7 +257,7 @@ const handleDelete = async () => {
           </Button>
         </div>
       </div>
-      
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Lead Info Sidebar */}
         <div className="lg:col-span-1">
@@ -252,25 +272,29 @@ const handleDelete = async () => {
                     </div>
                     <div>
                       <div className="font-medium text-gray-900">{lead.name}</div>
-                      <div className="text-xs text-gray-500">Lead ID: {lead.id.substring(0, 8)}...</div>
+                      <div className="text-xs text-gray-500">
+                        Lead ID: {lead.id.substring(0, 8)}...
+                      </div>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center text-sm text-gray-600">
                     <Building className="w-4 h-4 mr-2 text-gray-400" />
                     <span>Organization: {lead.organizationId.substring(0, 8)}...</span>
                   </div>
-                  
+
                   <div className="flex items-center text-sm text-gray-600">
                     <Calendar className="w-4 h-4 mr-2 text-gray-400" />
                     <div>
                       <div>Created: {formatDateTime(lead.createdAt)}</div>
-                      <div className="text-xs text-gray-400">Last updated: {formatDateTime(lead.updatedAt)}</div>
+                      <div className="text-xs text-gray-400">
+                        Last updated: {formatDateTime(lead.updatedAt)}
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-              
+
               <div className="pt-4 border-t border-gray-200">
                 <h3 className="text-sm font-medium text-gray-500 mb-3">Current Status</h3>
                 <div className="flex flex-col gap-2">
@@ -284,7 +308,9 @@ const handleDelete = async () => {
                       }`}
                     >
                       <div className="flex items-center justify-between">
-                        <span className={`font-medium ${lead.status === option.value ? option.color : 'text-gray-600'}`}>
+                        <span
+                          className={`font-medium ${lead.status === option.value ? option.color : 'text-gray-600'}`}
+                        >
                           {option.label}
                         </span>
                         {lead.status === option.value && (
@@ -300,7 +326,7 @@ const handleDelete = async () => {
             </div>
           </Card>
         </div>
-        
+
         {/* Main Form */}
         <div className="lg:col-span-2">
           <Card>
@@ -331,7 +357,7 @@ const handleDelete = async () => {
                     <p className="mt-1 text-sm text-red-600">{errors.status.message}</p>
                   )}
                 </div>
-                
+
                 {/* Name */}
                 <div>
                   <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
@@ -345,7 +371,7 @@ const handleDelete = async () => {
                     {...register('name')}
                   />
                 </div>
-                
+
                 {/* Email */}
                 <div>
                   <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
@@ -362,7 +388,7 @@ const handleDelete = async () => {
                     We'll use this to send follow-up communications
                   </p>
                 </div>
-                
+
                 {/* Phone */}
                 <div>
                   <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
@@ -379,7 +405,7 @@ const handleDelete = async () => {
                     Include country code for international leads
                   </p>
                 </div>
-                
+
                 {/* Form Actions */}
                 <div className="flex justify-end gap-3 pt-4 border-t">
                   <Link to="/leads">
@@ -387,8 +413,8 @@ const handleDelete = async () => {
                       Cancel
                     </Button>
                   </Link>
-                  <Button 
-                    type="submit" 
+                  <Button
+                    type="submit"
                     loading={isSubmitting || updateMutation.isPending}
                     leftIcon={<Save className="w-4 h-4" />}
                     disabled={!isDirty || isSubmitting || updateMutation.isPending}
@@ -399,7 +425,7 @@ const handleDelete = async () => {
               </div>
             </form>
           </Card>
-          
+
           {/* Help Text */}
           <div className="mt-6 text-sm text-gray-600">
             <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">

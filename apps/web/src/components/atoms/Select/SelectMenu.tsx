@@ -1,17 +1,8 @@
 // D:\Projects-In-Hand\helixcrm\apps\web\src\components\atoms\Select\SelectMenu.tsx
 import * as React from 'react';
 import { cn } from '../../../lib/utils';
-import { 
-  SelectOption, 
-  SelectValue,
-  groupOptions,
-  SelectSize
-} from './Select.types';
-import { 
-  getMenuClasses, 
-  getOptionClasses,
-  getOptionGroupClasses
-} from './Select.styles';
+import { SelectOption, SelectValue, groupOptions, SelectSize } from './Select.types';
+import { getMenuClasses, getOptionClasses, getOptionGroupClasses } from './Select.styles';
 
 export interface SelectMenuProps {
   isOpen: boolean;
@@ -95,83 +86,95 @@ export const SelectMenu: React.FC<SelectMenuProps> = ({
   }, [enableVirtualization, filteredOptions, virtualizationThreshold, overscan]);
 
   // ✅ FIXED: Group options with proper memoization
-  const groupedOptions = React.useMemo(() => 
-    groupOptions(visibleOptions, ungroupedLabel),
+  const groupedOptions = React.useMemo(
+    () => groupOptions(visibleOptions, ungroupedLabel),
     [visibleOptions, ungroupedLabel]
   );
 
   // ✅ FIXED: Menu classes with proper memoization
-  const menuClasses = React.useMemo(() => 
-    getMenuClasses(size, position, menuClassName),
+  const menuClasses = React.useMemo(
+    () => getMenuClasses(size, position, menuClassName),
     [size, position, menuClassName]
   );
 
   // ✅ FIXED: Always defined hooks (no conditional hooks)
-  const getGroupClass = React.useMemo(() => 
-    getOptionGroupClasses(false, ''),
-    []
-  );
+  const getGroupClass = React.useMemo(() => getOptionGroupClasses(false, ''), []);
 
-  const searchInputClass = React.useMemo(() => 
-    cn(
-      'w-full bg-transparent border-none focus:outline-none focus:ring-0',
-      'placeholder:text-gray-400 dark:placeholder:text-gray-500 text-sm',
-      'px-0 py-0'
-    ),
+  const searchInputClass = React.useMemo(
+    () =>
+      cn(
+        'w-full bg-transparent border-none focus:outline-none focus:ring-0',
+        'placeholder:text-gray-400 dark:placeholder:text-gray-500 text-sm',
+        'px-0 py-0'
+      ),
     []
   );
 
   // ✅ FIXED: Helper function to check if option is selected with proper typing
-  const isSelected = React.useCallback((option: SelectOption): boolean => {
-    if (!selectedValue) return false;
-    
-    if (Array.isArray(selectedValue)) {
-      return selectedValue.some(val => String(val) === String(option.value));
-    }
-    
-    return String(selectedValue) === String(option.value);
-  }, [selectedValue]);
+  const isSelected = React.useCallback(
+    (option: SelectOption): boolean => {
+      if (!selectedValue) return false;
+
+      if (Array.isArray(selectedValue)) {
+        return selectedValue.some((val) => String(val) === String(option.value));
+      }
+
+      return String(selectedValue) === String(option.value);
+    },
+    [selectedValue]
+  );
 
   // ✅ FIXED: Handle option click with proper event handling and cleanup
-  const handleOptionClick = React.useCallback((option: SelectOption, event: React.MouseEvent) => {
-    event.preventDefault();
-    event.stopPropagation();
-    
-    if (!option.disabled && !disabled) {
-      onOptionClick(option);
-    }
-  }, [disabled, onOptionClick]);
+  const handleOptionClick = React.useCallback(
+    (option: SelectOption, event: React.MouseEvent) => {
+      event.preventDefault();
+      event.stopPropagation();
 
-  // ✅ FIXED: Handle option mouse enter with proper typing
-  const handleOptionMouseEnter = React.useCallback((index: number) => {
-    if (!disabled) {
-      onOptionFocus(index);
-    }
-  }, [disabled, onOptionFocus]);
-
-  // ✅ FIXED: Handle search input change
-  const handleSearchChange = React.useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    onSearchChange(event);
-  }, [onSearchChange]);
-
-  // ✅ FIXED: Handle search input key down for better UX
-const handleSearchKeyDown = React.useCallback((event: React.KeyboardEvent<HTMLInputElement>) => {
-  // For navigation keys, stop propagation and handle them in the parent
-  if (['ArrowDown', 'ArrowUp', 'Enter', 'Escape'].includes(event.key)) {
-    event.preventDefault();
-    event.stopPropagation();
-    
-    // If Enter is pressed and we have a focused option, select it
-    if (event.key === 'Enter' && focusedIndex >= 0 && filteredOptions[focusedIndex]) {
-      const option = filteredOptions[focusedIndex];
       if (!option.disabled && !disabled) {
         onOptionClick(option);
       }
-    }
-    // For other keys, let the parent handle them
-  }
-}, [focusedIndex, filteredOptions, disabled, onOptionClick]);
+    },
+    [disabled, onOptionClick]
+  );
 
+  // ✅ FIXED: Handle option mouse enter with proper typing
+  const handleOptionMouseEnter = React.useCallback(
+    (index: number) => {
+      if (!disabled) {
+        onOptionFocus(index);
+      }
+    },
+    [disabled, onOptionFocus]
+  );
+
+  // ✅ FIXED: Handle search input change
+  const handleSearchChange = React.useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      onSearchChange(event);
+    },
+    [onSearchChange]
+  );
+
+  // ✅ FIXED: Handle search input key down for better UX
+  const handleSearchKeyDown = React.useCallback(
+    (event: React.KeyboardEvent<HTMLInputElement>) => {
+      // For navigation keys, stop propagation and handle them in the parent
+      if (['ArrowDown', 'ArrowUp', 'Enter', 'Escape'].includes(event.key)) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        // If Enter is pressed and we have a focused option, select it
+        if (event.key === 'Enter' && focusedIndex >= 0 && filteredOptions[focusedIndex]) {
+          const option = filteredOptions[focusedIndex];
+          if (!option.disabled && !disabled) {
+            onOptionClick(option);
+          }
+        }
+        // For other keys, let the parent handle them
+      }
+    },
+    [focusedIndex, filteredOptions, disabled, onOptionClick]
+  );
 
   // Early return AFTER all hooks
   if (!isOpen) return null;
@@ -204,7 +207,7 @@ const handleSearchKeyDown = React.useCallback((event: React.KeyboardEvent<HTMLIn
     >
       {/* Search Input - Only show if searchable */}
       {searchable && (
-        <div 
+        <div
           className="w-full px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
           data-testid={`${testId}-search-container`}
         >
@@ -228,14 +231,14 @@ const handleSearchKeyDown = React.useCallback((event: React.KeyboardEvent<HTMLIn
       )}
 
       {/* Options Container */}
-      <div 
+      <div
         className="overflow-y-auto"
         style={{ maxHeight: 'calc(250px - 40px)' }} // Subtract search input height if present
         role="presentation"
         data-testid={`${testId}-options-container`}
       >
         {!hasOptions ? (
-          <div 
+          <div
             className="px-4 py-3 text-center text-gray-500 dark:text-gray-400 text-sm"
             data-testid={`${testId}-no-options`}
           >
@@ -260,7 +263,9 @@ const handleSearchKeyDown = React.useCallback((event: React.KeyboardEvent<HTMLIn
 
               {/* Group Options */}
               {group.options.map((option, index) => {
-                const absoluteIndex = filteredOptions.findIndex((opt: SelectOption) => opt.value === option.value);
+                const absoluteIndex = filteredOptions.findIndex(
+                  (opt: SelectOption) => opt.value === option.value
+                );
                 const isOptionSelected = isSelected(option);
                 const isOptionFocused = focusedIndex === absoluteIndex;
                 const isOptionDisabled = option.disabled || disabled;
@@ -304,7 +309,7 @@ const handleSearchKeyDown = React.useCallback((event: React.KeyboardEvent<HTMLIn
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
                             {option.icon && (
-                              <span 
+                              <span
                                 className="flex-shrink-0"
                                 data-testid={`${testId}-option-icon-${option.value}`}
                               >
@@ -312,11 +317,11 @@ const handleSearchKeyDown = React.useCallback((event: React.KeyboardEvent<HTMLIn
                               </span>
                             )}
                             <div className="min-w-0 flex-1">
-                              <div 
+                              <div
                                 className={cn(
                                   'block truncate',
-                                  isOptionSelected 
-                                    ? 'text-primary-700 dark:text-primary-300 font-medium' 
+                                  isOptionSelected
+                                    ? 'text-primary-700 dark:text-primary-300 font-medium'
                                     : 'text-gray-900 dark:text-gray-100',
                                   isOptionDisabled && 'opacity-50'
                                 )}
@@ -325,7 +330,7 @@ const handleSearchKeyDown = React.useCallback((event: React.KeyboardEvent<HTMLIn
                                 {option.label}
                               </div>
                               {option.description && (
-                                <div 
+                                <div
                                   className="block text-xs truncate mt-0.5"
                                   data-testid={`${testId}-option-description-${option.value}`}
                                 >
@@ -362,19 +367,19 @@ const handleSearchKeyDown = React.useCallback((event: React.KeyboardEvent<HTMLIn
                         )}
                         {!multiple && isOptionSelected && (
                           <div className="flex-shrink-0 ml-2">
-                            <svg 
-                              className="w-5 h-5 text-primary-600 dark:text-primary-400" 
-                              fill="none" 
-                              stroke="currentColor" 
+                            <svg
+                              className="w-5 h-5 text-primary-600 dark:text-primary-400"
+                              fill="none"
+                              stroke="currentColor"
                               viewBox="0 0 24 24"
                               aria-hidden="true"
                               data-testid={`${testId}-option-checkmark-${option.value}`}
                             >
-                              <path 
-                                strokeLinecap="round" 
-                                strokeLinejoin="round" 
-                                strokeWidth={2} 
-                                d="M5 13l4 4L19 7" 
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M5 13l4 4L19 7"
                               />
                             </svg>
                           </div>
@@ -390,7 +395,7 @@ const handleSearchKeyDown = React.useCallback((event: React.KeyboardEvent<HTMLIn
 
         {/* Virtualization Indicator - Only show if virtualization is enabled and we have more options */}
         {enableVirtualization && filteredOptions.length > visibleOptions.length && (
-          <div 
+          <div
             className="px-4 py-2 text-xs text-gray-500 dark:text-gray-400 text-center border-t border-gray-200 dark:border-gray-700"
             data-testid={`${testId}-virtualization-indicator`}
           >
@@ -404,7 +409,7 @@ const handleSearchKeyDown = React.useCallback((event: React.KeyboardEvent<HTMLIn
 
       {/* Loading State - If options are loading */}
       {filteredOptions.length === 0 && searchQuery && (
-        <div 
+        <div
           className="px-4 py-3 text-center text-gray-500 dark:text-gray-400 text-sm"
           data-testid={`${testId}-searching`}
         >

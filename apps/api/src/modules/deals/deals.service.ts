@@ -6,6 +6,7 @@ import { CreateDealDto } from "./dto/create-deal.dto";
 import { UpdateDealDto } from "./dto/update-deal.dto";
 import { MoveDealStageDto } from "./dto/move-deal-stage.dto";
 import { DealQueryDto } from "./dto/deal-query.dto";
+import { CreateDealSimpleDto } from "./dto/create-deal-simple.dto";
 
 @Injectable()
 export class DealsService {
@@ -14,6 +15,211 @@ export class DealsService {
     private logger: AppLogger,
     private auditLogService: AuditLogService,
   ) {}
+
+
+    private async getOrCreateDefaultPipeline(organizationId: string, userId: string) {
+    // Use transaction for atomic operation to prevent race conditions
+    return this.prisma.$transaction(async (tx) => {
+      // Try to find existing default pipeline
+      let pipeline = await tx.pipeline.findFirst({
+        where: {
+          organizationId,
+          isDefault: true,
+        },
+        include: {
+          stages: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
+        },
+      });
+
+      // If no default pipeline exists, create one with default stages
+      if (!pipeline) {
+        pipeline = await tx.pipeline.create({
+          data: {
+            name: 'Default Sales Pipeline',
+            description: 'Default pipeline created automatically for Phase 3.4 compatibility',
+            isDefault: true,
+            organizationId,
+            stages: {
+              create: [
+                { name: 'Qualification', order: 1, probability: 10 },
+                { name: 'Needs Analysis', order: 2, probability: 20 },
+                { name: 'Proposal', order: 3, probability: 50 },
+                { name: 'Negotiation', order: 4, probability: 75 },
+                { name: 'Closed Won', order: 5, probability: 100 },
+                { name: 'Closed Lost', order: 6, probability: 0 },
+              ],
+            },
+          },
+          include: {
+            stages: {
+              orderBy: {
+                order: 'asc',
+              },
+            },
+          },
+        });
+
+        // Log the creation but don't audit log system-created entities
+        this.logger.log("Default pipeline created for Phase 3.4 compatibility", {
+          pipelineId: pipeline.id,
+          organizationId,
+          userId,
+          event: 'default_pipeline_created',
+        });
+      }
+
+      return pipeline;
+    });
+  }
+
+    async createSimple(data: { 
+    organizationId: string; 
+    userId: string;
+  } & CreateDealSimpleDto) {
+    const { organizationId, userId, ...dealData } = data;
+
+    try {
+      // Get or create default pipeline with transaction safety
+      const defaultPipeline = await this.getOrCreateDefaultPipeline(organizationId, userId);
+
+      // Validate stage belongs to default pipeline AND organization
+      const stage = await this.prisma.pipelineStage.findFirst({
+        where: {
+          id: dealData.stageId,
+          pipelineId: defaultPipeline.id,
+          pipeline: {
+            organizationId, // Extra security: ensure stage's pipeline belongs to org
+          },
+        },
+      });
+
+      if (!stage) {
+        throw new BadRequestException(`Stage ${dealData.stageId} not found in organization's default pipeline`);
+      }
+
+      // Set owner to current user if not provided
+      const ownerUserId = dealData.ownerUserId || userId;
+
+      // Check for duplicate deal title in same pipeline (case-insensitive)
+      const existingDeal = await this.prisma.deal.findFirst({
+        where: {
+          organizationId,
+          pipelineId: defaultPipeline.id,
+          name: {
+            equals: dealData.title,
+            mode: 'insensitive',
+          },
+          deletedAt: null,
+        },
+      });
+
+      if (existingDeal) {
+        throw new ConflictException(`Deal with title "${dealData.title}" already exists in this pipeline`);
+      }
+
+      // Create the deal with Phase 3.4 field mapping
+      const deal = await this.prisma.deal.create({
+        data: {
+          name: dealData.title, // Phase 3.4: title → name
+          amount: dealData.value, // Phase 3.4: value → amount
+          pipelineId: defaultPipeline.id,
+          stageId: dealData.stageId,
+          ownerUserId,
+          organizationId,
+          contactId: dealData.contactId,
+          accountId: dealData.accountId,
+          currency: dealData.currency || 'USD',
+          probability: stage.probability,
+          status: 'open' as any, // Cast to any for Prisma enum
+        },
+        include: {
+          pipeline: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          stage: {
+            select: {
+              id: true,
+              name: true,
+              order: true,
+              probability: true,
+            },
+          },
+          contact: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+          account: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          owner: {
+            select: {
+              id: true,
+              email: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
+      });
+
+      // Audit logging
+      await this.auditLogService.logEvent({
+        action: 'deal.created',
+        entity: 'Deal',
+        entityId: deal.id,
+        organizationId,
+        userId,
+        after: deal,
+        severity: 'info',
+        metadata: {
+          createdVia: 'phase3.4_simple_api',
+          source: 'phase_3_4_compatibility_layer',
+        },
+      });
+
+      this.logger.log("Deal created via Phase 3.4 simple API", {
+        dealId: deal.id,
+        organizationId,
+        userId,
+        event: 'deal_created_simple',
+      });
+
+      // Return with Phase 3.4 field names for backward compatibility
+      const response = {
+        ...deal,
+        title: deal.name,
+        value: Number(deal.amount), // Convert Decimal to number
+      };
+      
+      // Remove original name/amount to avoid confusion
+      delete (response as any).name;
+      delete (response as any).amount;
+
+      return response;
+    } catch (error) {
+      this.logger.error("Failed to create deal via Phase 3.4 simple API", error.stack, {
+        organizationId,
+        userId,
+        dealTitle: dealData.title,
+        stageId: dealData.stageId,
+      });
+      throw error;
+    }
+  }
 
   // ==================== CRUD METHODS ====================
 

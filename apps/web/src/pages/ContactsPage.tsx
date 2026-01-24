@@ -1,34 +1,37 @@
-// VERSION: 2.0.0 - PHASE 2A COMPLIANT - 2026-01-20
+// VERSION: 3.5.0 - PHASE 3.5 COMPLIANT - 2026-01-25
 /**
- * Contacts List Page - ENTERPRISE-GRADE WITH PHASE 2A FIXES
- * 
+ * Contacts List Page - ENTERPRISE-GRADE WITH PHASE 3.5 API INTEGRATION
+ *
  * HELIX CRM - Multi-tenant Contacts Management
- * 
- * Phase 2A Fixes Applied:
- * ✅ Uses ConfirmationDialog (not ConfirmationModal)
- * ✅ Button variant="danger" (not "destructive")
- * ✅ Proper Modal component imports
- * ✅ Loading states with aria-busy
- * ✅ Accessible error handling
- * ✅ TypeScript strict compliance
+ *
+ * Phase 3.5 Updates:
+ * ✅ Uses ContactsAPI from Phase 3.4 backend
+ * ✅ Proper TypeScript types from crm.types.ts
+ * ✅ Enhanced error handling with Phase 3.4 API errors
+ * ✅ React Query integration for mutations
  */
 import React, { useState, useEffect, ChangeEvent, useCallback } from 'react';
 import { useToast } from '../components/feedback/ToastProvider';
+import { useApiMutation } from '../providers/QueryProvider';
 import { Card } from '../components/molecules/Card';
 import { Button } from '../components/atoms/Button';
 import { Input } from '../components/atoms/Input';
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../components/atoms/Table';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '../components/atoms/Table';
 import { Modal } from '../components/feedback/Modal';
 import { ConfirmationDialog } from '../components/feedback/ConfirmationDialog';
 import { ContactForm } from '../components/contacts/ContactForm';
 import { LoadingSpinner } from '../components/feedback/LoadingSpinner';
 import { EmptyState } from '../components/feedback/EmptyState';
 import { Plus, Search, Loader2 } from 'lucide-react';
-import { contactsService } from '../services/contacts.service';
-import { Contact as ApiContact } from '../lib/types/api.types';
-
-// Use the imported Contact type from api.types
-type Contact = ApiContact;
+import { ContactsAPI } from '../services/api';
+import type { Contact, CreateContactDto, UpdateContactDto } from '../lib/types/crm.types';
 
 type FormMode = 'create' | 'edit';
 
@@ -40,79 +43,134 @@ export const ContactsPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalContacts, setTotalContacts] = useState(0);
   const itemsPerPage = 20;
 
   // Form state
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<FormMode>('create');
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Delete state
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [contactToDelete, setContactToDelete] = useState<Contact | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
 
-  // Fetch contacts from REAL API
+  // Phase 3.4: Create contact mutation
+  const createContactMutation = useApiMutation(
+    (data: CreateContactDto) => ContactsAPI.create(data),
+    {
+      onSuccess: (newContact) => {
+        success(
+          'Contact Created',
+          `${newContact.firstName} ${newContact.lastName} has been added to your contacts`
+        );
+        setIsFormOpen(false);
+        fetchContacts(); // Refresh the list
+      },
+      onError: (error: any) => {
+        showError('Create Failed', error.message || 'Failed to create contact');
+      },
+    }
+  );
+
+  // Phase 3.4: Update contact mutation
+  const updateContactMutation = useApiMutation(
+    ({ id, data }: { id: string; data: UpdateContactDto }) => ContactsAPI.update(id, data),
+    {
+      onSuccess: (updatedContact) => {
+        success(
+          'Contact Updated',
+          `${updatedContact.firstName} ${updatedContact.lastName} has been updated`
+        );
+        setIsFormOpen(false);
+        setEditingContact(null);
+        fetchContacts(); // Refresh the list
+      },
+      onError: (error: any) => {
+        showError('Update Failed', error.message || 'Failed to update contact');
+      },
+    }
+  );
+
+  // Phase 3.4: Delete contact mutation
+  const deleteContactMutation = useApiMutation((id: string) => ContactsAPI.delete(id), {
+    onSuccess: () => {
+      if (contactToDelete) {
+        success(
+          'Contact Deleted',
+          `${contactToDelete.firstName} ${contactToDelete.lastName} has been removed from your contacts`
+        );
+      }
+      setIsDeleteDialogOpen(false);
+      setContactToDelete(null);
+      fetchContacts(); // Refresh the list
+    },
+    onError: (error: any) => {
+      showError('Delete Failed', error.message || 'Failed to delete contact');
+    },
+  });
+
+  // Fetch contacts from Phase 3.4 API
   const fetchContacts = useCallback(async () => {
-    console.log('📋 fetchContacts called');
-    
-    console.log('🚀 Starting fetch from REAL API...');
+    console.log('📋 fetchContacts called for Phase 3.4 API');
+
     setLoading(true);
-    
+
     try {
-      console.log('📞 Fetching contacts via service');
-      const contactsData = await contactsService.getAll();
-      console.log('✅ Contacts loaded from API:', contactsData.length);
-      
-      setContacts(contactsData);
-      setFilteredContacts(contactsData);
-      
-      if (contactsData.length === 0) {
+      const skip = (currentPage - 1) * itemsPerPage;
+      console.log('📞 Fetching contacts via Phase 3.4 API, skip:', skip, 'take:', itemsPerPage);
+
+      const response = await ContactsAPI.list(skip, itemsPerPage);
+      console.log('✅ Contacts loaded from Phase 3.4 API:', response.data.length);
+
+      setContacts(response.data);
+      setFilteredContacts(response.data);
+      setTotalContacts(response.meta.total);
+      setTotalPages(response.meta.totalPages);
+
+      if (response.data.length === 0) {
         info('No contacts found', 'Create your first contact to get started');
       }
-
-    } catch (err) {
+    } catch (err: any) {
       console.error('❌ Error in fetchContacts:', err);
       showError(
-        'Failed to load contacts', 
-        err instanceof Error ? err.message : 'Please check your connection and try again'
+        'Failed to load contacts',
+        err?.message || 'Please check your connection and try again'
       );
     } finally {
       console.log('✅ Setting loading to false');
       setLoading(false);
     }
-  }, [showError, info]);
+  }, [currentPage, showError, info]);
 
-  // Initial fetch - Only fetch once on mount
+  // Initial fetch and on page change
   useEffect(() => {
-    console.log('🔍 Initial fetch on mount');
+    console.log('🔍 Fetching contacts for page:', currentPage);
     fetchContacts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [currentPage]);
 
   // Filter contacts based on search term
   useEffect(() => {
     if (!searchTerm.trim()) {
       setFilteredContacts(contacts);
+      setTotalPages(Math.ceil(contacts.length / itemsPerPage));
     } else {
-      const filtered = contacts.filter(contact =>
-        `${contact.firstName} ${contact.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (contact.email && contact.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (contact.phone && contact.phone.toLowerCase().includes(searchTerm.toLowerCase()))
+      const filtered = contacts.filter(
+        (contact) =>
+          `${contact.firstName} ${contact.lastName}`
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          (contact.email && contact.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (contact.phone && contact.phone.toLowerCase().includes(searchTerm.toLowerCase()))
       );
       setFilteredContacts(filtered);
+      setTotalPages(Math.ceil(filtered.length / itemsPerPage));
     }
-    
+
     // Reset to page 1 when search changes
     setCurrentPage(1);
   }, [contacts, searchTerm]);
-
-  // Calculate pagination
-  useEffect(() => {
-    const totalFiltered = filteredContacts.length;
-    setTotalPages(Math.ceil(totalFiltered / itemsPerPage));
-  }, [filteredContacts]);
 
   // Get current page contacts
   const getCurrentPageContacts = () => {
@@ -142,34 +200,7 @@ export const ContactsPage: React.FC = () => {
   const handleDeleteConfirm = async () => {
     if (!contactToDelete) return;
 
-    setIsDeleting(true);
-    console.log('🗑️ Deleting contact:', contactToDelete.id);
-
-    try {
-      await contactsService.delete(contactToDelete.id);
-      
-      // Remove contact from state
-      setContacts(prev => prev.filter(contact => contact.id !== contactToDelete.id));
-      setFilteredContacts(prev => prev.filter(contact => contact.id !== contactToDelete.id));
-      
-      success(
-        'Contact deleted', 
-        `${contactToDelete.firstName} ${contactToDelete.lastName} has been removed from your contacts`
-      );
-      
-      // Close dialog and reset
-      setIsDeleteDialogOpen(false);
-      setContactToDelete(null);
-      
-    } catch (err) {
-      console.error('Delete error:', err);
-      showError(
-        'Failed to delete contact', 
-        err instanceof Error ? err.message : 'Please try again'
-      );
-    } finally {
-      setIsDeleting(false);
-    }
+    deleteContactMutation.mutate(contactToDelete.id);
   };
 
   const handleDeleteCancel = () => {
@@ -177,52 +208,12 @@ export const ContactsPage: React.FC = () => {
     setContactToDelete(null);
   };
 
-  const handleFormSubmit = async (formData: any) => {
-    setIsSubmitting(true);
-    console.log('📝 Form submission:', formData);
-
-    try {
-      if (formMode === 'create') {
-        // Create new contact via API
-        const newContact = await contactsService.create(formData);
-        console.log('✅ Contact created:', newContact);
-        
-        // Add to state
-        setContacts(prev => [newContact, ...prev]);
-        setFilteredContacts(prev => [newContact, ...prev]);
-        
-        success('Contact created', `${formData.firstName} ${formData.lastName} has been added to your contacts`);
-      } else {
-        // Update existing contact via API
-        if (!editingContact) return;
-
-        const updatedContact = await contactsService.update(editingContact.id, formData);
-        console.log('✅ Contact updated:', updatedContact);
-        
-        // Update in state
-        setContacts(prev => 
-          prev.map(contact => 
-            contact.id === editingContact.id ? updatedContact : contact
-          )
-        );
-        setFilteredContacts(prev =>
-          prev.map(contact =>
-            contact.id === editingContact.id ? updatedContact : contact
-          )
-        );
-        
-        success('Contact updated', `${formData.firstName} ${formData.lastName} has been updated`);
-      }
-
-      setIsFormOpen(false);
-    } catch (err) {
-      console.error('Form submission error:', err);
-      showError(
-        formMode === 'create' ? 'Failed to create contact' : 'Failed to update contact',
-        err instanceof Error ? err.message : 'Please try again'
-      );
-    } finally {
-      setIsSubmitting(false);
+  const handleFormSubmit = async (formData: CreateContactDto | UpdateContactDto) => {
+    if (formMode === 'create') {
+      createContactMutation.mutate(formData as CreateContactDto);
+    } else {
+      if (!editingContact) return;
+      updateContactMutation.mutate({ id: editingContact.id, data: formData as UpdateContactDto });
     }
   };
 
@@ -243,7 +234,14 @@ export const ContactsPage: React.FC = () => {
     });
   };
 
-  console.log('🔄 ContactsPage render, loading:', loading, 'contacts:', contacts.length, 'filtered:', filteredContacts.length);
+  console.log(
+    '🔄 ContactsPage render, loading:',
+    loading,
+    'contacts:',
+    contacts.length,
+    'filtered:',
+    filteredContacts.length
+  );
 
   if (loading && contacts.length === 0) {
     console.log('⏳ Rendering loading state');
@@ -281,26 +279,34 @@ export const ContactsPage: React.FC = () => {
       >
         <ContactForm
           mode={formMode}
-          contact={editingContact ? {
-            ...editingContact,
-            email: editingContact.email || '', // Convert undefined to empty string
-          } : undefined}
+          contact={
+            editingContact
+              ? {
+                  ...editingContact,
+                  email: editingContact.email || '', // Convert undefined to empty string
+                }
+              : undefined
+          }
           onSubmit={handleFormSubmit}
           onCancel={handleFormCancel}
-          isLoading={isSubmitting}
+          isLoading={
+            formMode === 'create'
+              ? createContactMutation.isPending
+              : updateContactMutation.isPending
+          }
         />
       </Modal>
 
-      {/* Delete Confirmation Dialog - PHASE 2A FIXED */}
+      {/* Delete Confirmation Dialog */}
       <ConfirmationDialog
         isOpen={isDeleteDialogOpen}
         onClose={handleDeleteCancel}
         onConfirm={handleDeleteConfirm}
         title="Delete Contact"
         message={`Are you sure you want to delete "${contactToDelete?.firstName} ${contactToDelete?.lastName}"? This action cannot be undone.`}
-        confirmText={isDeleting ? "Deleting..." : "Delete Contact"}
+        confirmText={deleteContactMutation.isPending ? 'Deleting...' : 'Delete Contact'}
         cancelText="Cancel"
-        isLoading={isDeleting}
+        isLoading={deleteContactMutation.isPending}
       />
 
       {/* Header */}
@@ -308,15 +314,16 @@ export const ContactsPage: React.FC = () => {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Contacts</h1>
           <p className="text-gray-600">
-            {filteredContacts.length} contact{filteredContacts.length !== 1 ? 's' : ''} found
-            {searchTerm && ` for "${searchTerm}"`}
+            {totalContacts} contact{totalContacts !== 1 ? 's' : ''} total
+            {searchTerm ? `, ${filteredContacts.length} found for "${searchTerm}"` : ''}
           </p>
         </div>
-        <Button 
+        <Button
           onClick={handleCreateContact}
           leftIcon={<Plus className="h-4 w-4" />}
           variant="primary"
           aria-label="Add new contact"
+          loading={createContactMutation.isPending}
         >
           Add Contact
         </Button>
@@ -343,8 +350,12 @@ export const ContactsPage: React.FC = () => {
       <Card>
         {filteredContacts.length === 0 ? (
           <EmptyState
-            title={searchTerm ? "No matching contacts" : "No contacts yet"}
-            message={searchTerm ? "Try adjusting your search terms" : "Get started by adding your first contact"}
+            title={searchTerm ? 'No matching contacts' : 'No contacts yet'}
+            message={
+              searchTerm
+                ? 'Try adjusting your search terms'
+                : 'Get started by adding your first contact'
+            }
             actionLabel="Add Contact"
             onAction={handleCreateContact}
           />
@@ -357,6 +368,7 @@ export const ContactsPage: React.FC = () => {
                     <TableHead>Name</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Phone</TableHead>
+                    <TableHead>Company</TableHead>
                     <TableHead>Created</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -366,9 +378,13 @@ export const ContactsPage: React.FC = () => {
                     <TableRow key={contact.id}>
                       <TableCell className="font-medium">
                         {contact.firstName} {contact.lastName}
+                        {contact.title && (
+                          <div className="text-xs text-gray-500">{contact.title}</div>
+                        )}
                       </TableCell>
                       <TableCell>{contact.email || '—'}</TableCell>
                       <TableCell>{contact.phone || '—'}</TableCell>
+                      <TableCell>{contact.company || '—'}</TableCell>
                       <TableCell>{formatDate(contact.createdAt)}</TableCell>
                       <TableCell className="text-right space-x-2">
                         <Button
@@ -376,6 +392,9 @@ export const ContactsPage: React.FC = () => {
                           size="sm"
                           onClick={() => handleEditContact(contact)}
                           aria-label={`Edit ${contact.firstName} ${contact.lastName}`}
+                          loading={
+                            updateContactMutation.isPending && editingContact?.id === contact.id
+                          }
                         >
                           Edit
                         </Button>
@@ -384,6 +403,9 @@ export const ContactsPage: React.FC = () => {
                           size="sm"
                           onClick={() => handleDeleteClick(contact)}
                           aria-label={`Delete ${contact.firstName} ${contact.lastName}`}
+                          loading={
+                            deleteContactMutation.isPending && contactToDelete?.id === contact.id
+                          }
                         >
                           Delete
                         </Button>
@@ -398,13 +420,16 @@ export const ContactsPage: React.FC = () => {
             {totalPages > 1 && (
               <div className="flex items-center justify-between p-4 border-t">
                 <div className="text-sm text-gray-700">
-                  Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredContacts.length)} of {filteredContacts.length} contacts
+                  Showing {(currentPage - 1) * itemsPerPage + 1} to{' '}
+                  {Math.min(currentPage * itemsPerPage, filteredContacts.length)} of{' '}
+                  {filteredContacts.length} contacts
+                  {totalContacts > filteredContacts.length && ` (${totalContacts} total)`}
                 </div>
                 <div className="flex space-x-2">
                   <Button
                     variant="secondary"
                     size="sm"
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
                     aria-label="Previous page"
                   >
@@ -416,7 +441,7 @@ export const ContactsPage: React.FC = () => {
                   <Button
                     variant="secondary"
                     size="sm"
-                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
                     aria-label="Next page"
                   >

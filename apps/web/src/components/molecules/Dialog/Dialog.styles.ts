@@ -100,7 +100,7 @@ export const dialogTokens: DialogTokens = {
     '3xl': '3rem',
     '4xl': '4rem',
   },
-  
+
   dimensions: {
     width: {
       xs: '20rem',
@@ -114,7 +114,7 @@ export const dialogTokens: DialogTokens = {
       '5xl': '64rem',
       fullscreen: '95vw',
     },
-    
+
     height: {
       auto: 'auto',
       xs: '16rem',
@@ -124,7 +124,7 @@ export const dialogTokens: DialogTokens = {
       xl: '32rem',
       fullscreen: '95vh',
     },
-    
+
     padding: {
       none: '0',
       xs: '0.5rem',
@@ -134,7 +134,7 @@ export const dialogTokens: DialogTokens = {
       xl: '1.5rem',
       '2xl': '2rem',
     },
-    
+
     borderRadius: {
       none: '0',
       sm: '0.125rem',
@@ -144,7 +144,7 @@ export const dialogTokens: DialogTokens = {
       '2xl': '1rem',
       full: '9999px',
     },
-    
+
     icon: {
       xs: '0.75rem',
       sm: '1rem',
@@ -154,7 +154,7 @@ export const dialogTokens: DialogTokens = {
       '2xl': '2.5rem',
     },
   },
-  
+
   colors: {
     background: {
       primary: 'bg-white dark:bg-gray-800',
@@ -174,7 +174,7 @@ export const dialogTokens: DialogTokens = {
         warning: 'bg-white dark:bg-gray-800',
       },
     },
-    
+
     text: {
       primary: 'text-gray-900 dark:text-gray-100',
       secondary: 'text-gray-600 dark:text-gray-400',
@@ -190,7 +190,7 @@ export const dialogTokens: DialogTokens = {
         warning: 'text-warning-700 dark:text-warning-300',
       },
     },
-    
+
     border: {
       primary: 'border-gray-200 dark:border-gray-700',
       divider: 'border-gray-100 dark:border-gray-800',
@@ -208,7 +208,7 @@ export const dialogTokens: DialogTokens = {
         warning: 'border-l-warning-500 dark:border-l-warning-400',
       },
     },
-    
+
     icon: {
       primary: 'text-gray-500 dark:text-gray-400',
       secondary: 'text-gray-400 dark:text-gray-500',
@@ -223,11 +223,13 @@ export const dialogTokens: DialogTokens = {
       },
       close: 'text-gray-400 dark:text-gray-500 hover:text-gray-500 dark:hover:text-gray-400',
     },
-    
+
     action: {
       primary: 'bg-primary-600 hover:bg-primary-700 text-white',
-      secondary: 'bg-gray-200 hover:bg-gray-300 text-gray-900 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100',
-      outline: 'border border-primary-600 text-primary-600 hover:bg-primary-50 dark:border-primary-400 dark:text-primary-400 dark:hover:bg-primary-900/20',
+      secondary:
+        'bg-gray-200 hover:bg-gray-300 text-gray-900 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100',
+      outline:
+        'border border-primary-600 text-primary-600 hover:bg-primary-50 dark:border-primary-400 dark:text-primary-400 dark:hover:bg-primary-900/20',
       ghost: 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800',
       error: 'bg-error-600 hover:bg-error-700 text-white',
       success: 'bg-success-600 hover:bg-success-700 text-white',
@@ -236,7 +238,7 @@ export const dialogTokens: DialogTokens = {
       loading: 'opacity-75 cursor-wait',
     },
   },
-  
+
   typography: {
     fontFamily: {
       sans: 'font-sans',
@@ -268,7 +270,7 @@ export const dialogTokens: DialogTokens = {
       loose: 'leading-loose',
     },
   },
-  
+
   shadow: {
     none: 'shadow-none',
     sm: 'shadow-sm',
@@ -279,7 +281,7 @@ export const dialogTokens: DialogTokens = {
     inner: 'shadow-inner',
     overlay: 'shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)]',
   },
-  
+
   animation: {
     fast: 'duration-100',
     normal: 'duration-200',
@@ -288,7 +290,7 @@ export const dialogTokens: DialogTokens = {
     overlay: 'duration-300',
     dialog: 'duration-200',
   },
-  
+
   transition: {
     all: 'transition-all',
     colors: 'transition-colors',
@@ -297,7 +299,7 @@ export const dialogTokens: DialogTokens = {
     shadow: 'transition-shadow',
     backdrop: 'transition-backdrop-filter',
   },
-  
+
   zIndex: {
     overlay: 'z-40',
     dialog: 'z-50',
@@ -309,7 +311,7 @@ export const dialogTokens: DialogTokens = {
       '5': 'z-100',
     },
   },
-  
+
   backdrop: {
     none: 'backdrop-blur-none',
     sm: 'backdrop-blur-sm',
@@ -326,18 +328,12 @@ export const dialogTokens: DialogTokens = {
 export const dialogClasses = {
   // Base overlay classes
   overlay: {
-    base: [
-      'fixed',
-      'inset-0',
-      'transition-opacity',
-      'duration-300',
-      'ease-in-out',
-    ].join(' '),
+    base: ['fixed', 'inset-0', 'transition-opacity', 'duration-300', 'ease-in-out'].join(' '),
     visible: 'opacity-100',
     hidden: 'opacity-0 pointer-events-none',
     blur: dialogTokens.backdrop.sm,
   },
-  
+
   // Base dialog container classes - UPDATED: Flex layout
   container: {
     base: [
@@ -356,7 +352,7 @@ export const dialogClasses = {
     centered: 'mx-auto my-8',
     nested: 'shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)]',
   },
-  
+
   // Size variants - UPDATED: Mobile-safe widths
   size: {
     xs: [
@@ -389,70 +385,22 @@ export const dialogClasses = {
       'mx-4', // UPDATED: Mobile-safe margins
       'p-8',
     ].join(' '),
-    fullscreen: [
-      'max-w-[95vw]',
-      'max-h-[95vh]',
-      'w-[95vw]',
-      'h-[95vh]',
-      'p-8',
-    ].join(' '),
+    fullscreen: ['max-w-[95vw]', 'max-h-[95vh]', 'w-[95vw]', 'h-[95vh]', 'p-8'].join(' '),
   },
-  
+
   // Position classes
   position: {
-    center: [
-      'fixed',
-      'top-1/2',
-      'left-1/2',
-      '-translate-x-1/2',
-      '-translate-y-1/2',
-    ].join(' '),
-    top: [
-      'fixed',
-      'top-4',
-      'left-1/2',
-      '-translate-x-1/2',
-    ].join(' '),
-    bottom: [
-      'fixed',
-      'bottom-4',
-      'left-1/2',
-      '-translate-x-1/2',
-    ].join(' '),
-    left: [
-      'fixed',
-      'top-1/2',
-      'left-4',
-      '-translate-y-1/2',
-    ].join(' '),
-    right: [
-      'fixed',
-      'top-1/2',
-      'right-4',
-      '-translate-y-1/2',
-    ].join(' '),
-    'top-left': [
-      'fixed',
-      'top-4',
-      'left-4',
-    ].join(' '),
-    'top-right': [
-      'fixed',
-      'top-4',
-      'right-4',
-    ].join(' '),
-    'bottom-left': [
-      'fixed',
-      'bottom-4',
-      'left-4',
-    ].join(' '),
-    'bottom-right': [
-      'fixed',
-      'bottom-4',
-      'right-4',
-    ].join(' '),
+    center: ['fixed', 'top-1/2', 'left-1/2', '-translate-x-1/2', '-translate-y-1/2'].join(' '),
+    top: ['fixed', 'top-4', 'left-1/2', '-translate-x-1/2'].join(' '),
+    bottom: ['fixed', 'bottom-4', 'left-1/2', '-translate-x-1/2'].join(' '),
+    left: ['fixed', 'top-1/2', 'left-4', '-translate-y-1/2'].join(' '),
+    right: ['fixed', 'top-1/2', 'right-4', '-translate-y-1/2'].join(' '),
+    'top-left': ['fixed', 'top-4', 'left-4'].join(' '),
+    'top-right': ['fixed', 'top-4', 'right-4'].join(' '),
+    'bottom-left': ['fixed', 'bottom-4', 'left-4'].join(' '),
+    'bottom-right': ['fixed', 'bottom-4', 'right-4'].join(' '),
   },
-  
+
   // Variant classes
   variant: {
     default: [
@@ -512,7 +460,7 @@ export const dialogClasses = {
       'rounded-lg',
     ].join(' '),
   },
-  
+
   // Header classes
   header: {
     base: [
@@ -541,11 +489,7 @@ export const dialogClasses = {
       dialogTokens.colors.text.secondary,
       'mt-1',
     ].join(' '),
-    iconContainer: [
-      'flex-shrink-0',
-      'mr-3',
-      'mt-1',
-    ].join(' '),
+    iconContainer: ['flex-shrink-0', 'mr-3', 'mt-1'].join(' '),
     closeButton: [
       'ml-4',
       'flex-shrink-0',
@@ -563,12 +507,9 @@ export const dialogClasses = {
       'duration-150',
       'p-1',
     ].join(' '),
-    closeIcon: [
-      'h-5',
-      'w-5',
-    ].join(' '),
+    closeIcon: ['h-5', 'w-5'].join(' '),
   },
-  
+
   // Body classes - UPDATED: Flex-based scrollable layout
   body: {
     base: [
@@ -592,7 +533,7 @@ export const dialogClasses = {
       xl: 'p-6',
     },
   },
-  
+
   // Footer classes
   footer: {
     base: [
@@ -611,10 +552,7 @@ export const dialogClasses = {
       center: 'justify-center',
       right: 'justify-end',
     },
-    actions: [
-      'flex',
-      'gap-3',
-    ].join(' '),
+    actions: ['flex', 'gap-3'].join(' '),
     actionButton: {
       base: [
         'inline-flex',
@@ -652,22 +590,12 @@ export const dialogClasses = {
         lg: 'px-5 py-2.5 text-lg',
         xl: 'px-6 py-3 text-xl',
       },
-      loading: [
-        'relative',
-        'opacity-75',
-        'cursor-wait',
-      ].join(' '),
-      loadingSpinner: [
-        'absolute',
-        'inset-0',
-        'flex',
-        'items-center',
-        'justify-center',
-      ].join(' '),
+      loading: ['relative', 'opacity-75', 'cursor-wait'].join(' '),
+      loadingSpinner: ['absolute', 'inset-0', 'flex', 'items-center', 'justify-center'].join(' '),
     },
     divider: 'border-t border-gray-200 dark:border-gray-800',
   },
-  
+
   // Animation classes
   animation: {
     fade: {
@@ -725,24 +653,19 @@ export const dialogClasses = {
       exitActive: '',
     },
   },
-  
+
   // Accessibility classes
   accessibility: {
-    screenReaderOnly: [
-      'sr-only',
-    ].join(' '),
+    screenReaderOnly: ['sr-only'].join(' '),
     focusRing: [
       'focus:outline-none',
       'focus:ring-2',
       'focus:ring-primary-500',
       'focus:ring-offset-2',
     ].join(' '),
-    reducedMotion: [
-      'motion-reduce:transition-none',
-      'motion-reduce:transform-none',
-    ].join(' '),
+    reducedMotion: ['motion-reduce:transition-none', 'motion-reduce:transform-none'].join(' '),
   },
-  
+
   // Utility classes
   utility: {
     scrollbar: [
@@ -751,16 +674,8 @@ export const dialogClasses = {
       'dark:scrollbar-thumb-gray-600',
       'scrollbar-track-transparent',
     ].join(' '),
-    truncate: [
-      'truncate',
-      'overflow-hidden',
-      'text-ellipsis',
-      'whitespace-nowrap',
-    ].join(' '),
-    backdropBlur: [
-      'backdrop-blur-sm',
-      'bg-black/20',
-    ].join(' '),
+    truncate: ['truncate', 'overflow-hidden', 'text-ellipsis', 'whitespace-nowrap'].join(' '),
+    backdropBlur: ['backdrop-blur-sm', 'bg-black/20'].join(' '),
     glass: [
       'bg-white/80',
       'dark:bg-gray-800/80',
@@ -770,7 +685,7 @@ export const dialogClasses = {
       'dark:border-gray-700/20',
     ].join(' '),
   },
-  
+
   // Persistent dialog classes
   persistent: {
     overlay: 'cursor-not-allowed',
@@ -808,8 +723,10 @@ const getFooterAlignClass = (align?: 'left' | 'center' | 'right'): string => {
 
 const getActionVariantClass = (variant?: DialogAction['variant']): string => {
   const safeVariant = variant ?? 'primary';
-  return dialogClasses.footer.actionButton.variant[safeVariant] ?? 
-         dialogClasses.footer.actionButton.variant.primary;
+  return (
+    dialogClasses.footer.actionButton.variant[safeVariant] ??
+    dialogClasses.footer.actionButton.variant.primary
+  );
 };
 
 /**
@@ -834,7 +751,7 @@ export function getOverlayClasses(
     blur ? dialogClasses.overlay.blur : '',
     className || '',
   ];
-  
+
   return classes.filter(Boolean).join(' ');
 }
 
@@ -855,11 +772,11 @@ export function getDialogClasses(
   const safeSize = size ?? 'md';
   const safePosition = position ?? 'center';
   const safeAnimation = animation ?? 'fade';
-  
+
   const animationMap = getAnimationMap(safeAnimation);
   const animationState = isVisible ? 'enterActive' : 'exitActive';
   const animationClass = animationMap[animationState] ?? '';
-  
+
   const classes = [
     dialogClasses.container.base,
     getPositionClass(safePosition),
@@ -871,7 +788,7 @@ export function getDialogClasses(
     isPersistent && !isVisible ? dialogClasses.persistent.dialog : '',
     className || '',
   ];
-  
+
   return classes.filter(Boolean).join(' ');
 }
 
@@ -889,7 +806,7 @@ export function getHeaderClasses(
     hasDescription ? 'items-start' : 'items-center',
     className || '',
   ];
-  
+
   return classes.filter(Boolean).join(' ');
 }
 
@@ -907,7 +824,7 @@ export function getBodyClasses(
     dialogClasses.body.padding[padding] ?? dialogClasses.body.padding.md,
     className || '',
   ];
-  
+
   return classes.filter(Boolean).join(' ');
 }
 
@@ -925,7 +842,7 @@ export function getFooterClasses(
     showDivider ? dialogClasses.footer.divider : '',
     className || '',
   ];
-  
+
   return classes.filter(Boolean).join(' ');
 }
 
@@ -941,7 +858,7 @@ export function getActionButtonClasses(
 ): string {
   const safeVariant = variant ?? 'primary';
   const safeSize = size ?? 'md';
-  
+
   const classes = [
     dialogClasses.footer.actionButton.base,
     getActionVariantClass(safeVariant),
@@ -950,31 +867,28 @@ export function getActionButtonClasses(
     loading ? dialogClasses.footer.actionButton.loading : '',
     className || '',
   ];
-  
+
   return classes.filter(Boolean).join(' ');
 }
 
 /**
  * Utility function to build close button classes
  */
-export function getCloseButtonClasses(
-  size: 'sm' | 'md' | 'lg' = 'md',
-  className?: string
-): string {
+export function getCloseButtonClasses(size: 'sm' | 'md' | 'lg' = 'md', className?: string): string {
   const sizeClasses = {
     sm: 'h-4 w-4 p-0.5',
     md: 'h-5 w-5 p-1',
     lg: 'h-6 w-6 p-1.5',
   };
-  
+
   const safeSize = size ?? 'md';
-  
+
   const classes = [
     dialogClasses.header.closeButton,
     sizeClasses[safeSize] ?? sizeClasses.md,
     className || '',
   ];
-  
+
   return classes.filter(Boolean).join(' ');
 }
 
@@ -996,20 +910,20 @@ export function getNestedZIndex(nestedLevel: number = 0): string {
   if (nestedLevel <= 0) {
     return dialogTokens.zIndex.dialog;
   }
-  
-  const nestedIndex = Math.min(nestedLevel, 5).toString() as keyof typeof dialogTokens.zIndex.nested;
+
+  const nestedIndex = Math.min(
+    nestedLevel,
+    5
+  ).toString() as keyof typeof dialogTokens.zIndex.nested;
   return dialogTokens.zIndex.nested[nestedIndex] ?? dialogTokens.zIndex.dialog;
 }
 
 /**
  * Get appropriate overlay opacity based on variant and nested level
  */
-export function getOverlayOpacity(
-  variant?: DialogVariant,
-  nestedLevel: number = 0
-): number {
+export function getOverlayOpacity(variant?: DialogVariant, nestedLevel: number = 0): number {
   const safeVariant = variant ?? 'default';
-  
+
   const baseOpacity: Record<DialogVariant, number> = {
     default: 0.5,
     alert: 0.7,
@@ -1019,7 +933,7 @@ export function getOverlayOpacity(
     error: 0.7,
     warning: 0.6,
   };
-  
+
   // Reduce opacity for nested dialogs
   const reduction = nestedLevel * 0.1;
   const opacity = baseOpacity[safeVariant] ?? baseOpacity.default;
@@ -1034,11 +948,8 @@ export function getPersistentOverlayClasses(
   blur: boolean = false,
   className?: string
 ): string {
-  const classes = [
-    getOverlayClasses(isVisible, blur, className),
-    dialogClasses.persistent.overlay,
-  ];
-  
+  const classes = [getOverlayClasses(isVisible, blur, className), dialogClasses.persistent.overlay];
+
   return classes.filter(Boolean).join(' ');
 }
 
@@ -1054,13 +965,13 @@ export function memoizedGetDialogClasses(
 ): () => string {
   let cache: string | null = null;
   let cacheKey = `${variant}-${size}-${position}-${isVisible}-${animation}`;
-  
+
   return () => {
     const newKey = `${variant}-${size}-${position}-${isVisible}-${animation}`;
     if (cache && cacheKey === newKey) {
       return cache;
     }
-    
+
     cache = getDialogClasses(variant, size, position, isVisible, animation);
     cacheKey = newKey;
     return cache;
@@ -1091,11 +1002,11 @@ export function getDialogPositionStyles(
   offset: number = 0
 ): React.CSSProperties {
   const safePosition = position ?? 'center';
-  
+
   const styles: React.CSSProperties = {
     position: 'fixed' as const,
   };
-  
+
   switch (safePosition) {
     case 'center':
       styles.top = '50%';
@@ -1139,7 +1050,7 @@ export function getDialogPositionStyles(
       styles.right = `${offset}px`;
       break;
   }
-  
+
   return styles;
 }
 
@@ -1148,7 +1059,7 @@ export function getDialogPositionStyles(
  */
 export function getResponsiveWidth(size?: DialogSize): string {
   const safeSize = size ?? 'md';
-  
+
   const widthMap: Record<DialogSize, string> = {
     xs: '90vw',
     sm: '85vw',
@@ -1157,10 +1068,10 @@ export function getResponsiveWidth(size?: DialogSize): string {
     xl: '70vw',
     fullscreen: '95vw',
   };
-  
+
   const mobileWidth = widthMap[safeSize] ?? widthMap.md;
   const maxWidth = dialogTokens.dimensions.width[safeSize] ?? dialogTokens.dimensions.width.md;
-  
+
   return `min(${mobileWidth}, ${maxWidth})`;
 }
 
@@ -1173,7 +1084,7 @@ export function getSizePadding(size?: DialogSize): {
   footer: string;
 } {
   const safeSize = size ?? 'md';
-  
+
   const paddingMap: Record<DialogSize, { header: string; body: string; footer: string }> = {
     xs: { header: 'p-3', body: 'p-3', footer: 'p-3' },
     sm: { header: 'p-4', body: 'p-4', footer: 'p-4' },
@@ -1182,7 +1093,7 @@ export function getSizePadding(size?: DialogSize): {
     xl: { header: 'p-8', body: 'p-6', footer: 'p-8' },
     fullscreen: { header: 'p-8', body: 'p-6', footer: 'p-8' },
   };
-  
+
   return paddingMap[safeSize] ?? paddingMap.md;
 }
 
@@ -1191,13 +1102,20 @@ export function getSizePadding(size?: DialogSize): {
  */
 export function getDialogTestId(
   testId?: string,
-  element: 'container' | 'overlay' | 'header' | 'body' | 'footer' | 'close-button' | 'action' = 'container',
+  element:
+    | 'container'
+    | 'overlay'
+    | 'header'
+    | 'body'
+    | 'footer'
+    | 'close-button'
+    | 'action' = 'container',
   nestedLevel: number = 0,
   actionId?: string
 ): string {
   const base = testId || 'dialog';
   const nestedSuffix = nestedLevel > 0 ? `-nested-${nestedLevel}` : '';
-  
+
   switch (element) {
     case 'overlay':
       return `${base}${nestedSuffix}-overlay`;
@@ -1210,7 +1128,9 @@ export function getDialogTestId(
     case 'close-button':
       return `${base}${nestedSuffix}-close-button`;
     case 'action':
-      return actionId ? `${base}${nestedSuffix}-action-${actionId}` : `${base}${nestedSuffix}-action`;
+      return actionId
+        ? `${base}${nestedSuffix}-action-${actionId}`
+        : `${base}${nestedSuffix}-action`;
     default:
       return `${base}${nestedSuffix}`;
   }
@@ -1228,7 +1148,9 @@ export function getScrollLockStyles(scrollbarWidth: number): React.CSSProperties
 /**
  * Style utility for glass morphism effect
  */
-export function getGlassStyles(intensity: 'light' | 'medium' | 'heavy' = 'medium'): React.CSSProperties {
+export function getGlassStyles(
+  intensity: 'light' | 'medium' | 'heavy' = 'medium'
+): React.CSSProperties {
   const intensities = {
     light: {
       background: 'rgba(255, 255, 255, 0.7)',
@@ -1246,7 +1168,7 @@ export function getGlassStyles(intensity: 'light' | 'medium' | 'heavy' = 'medium
       borderColor: 'rgba(255, 255, 255, 0.4)',
     },
   };
-  
+
   const darkIntensities = {
     light: {
       background: 'rgba(31, 41, 55, 0.7)',
@@ -1264,9 +1186,9 @@ export function getGlassStyles(intensity: 'light' | 'medium' | 'heavy' = 'medium
       borderColor: 'rgba(31, 41, 55, 0.4)',
     },
   };
-  
+
   const safeIntensity = intensity ?? 'medium';
-  
+
   // Return both light and dark variants
   return {
     '--glass-light': intensities[safeIntensity].background,

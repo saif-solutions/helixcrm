@@ -12,13 +12,20 @@ export function getVariantForContentType(
   contentType: 'title' | 'subtitle' | 'body' | 'caption' | 'label' | 'code'
 ): TypographyVariant {
   switch (contentType) {
-    case 'title': return 'h1';
-    case 'subtitle': return 'h4';
-    case 'body': return 'body';
-    case 'caption': return 'caption';
-    case 'label': return 'label';
-    case 'code': return 'code';
-    default: return 'body';
+    case 'title':
+      return 'h1';
+    case 'subtitle':
+      return 'h4';
+    case 'body':
+      return 'body';
+    case 'caption':
+      return 'caption';
+    case 'label':
+      return 'label';
+    case 'code':
+      return 'code';
+    default:
+      return 'body';
   }
 }
 
@@ -29,12 +36,18 @@ export function getColorForContext(
   context: 'default' | 'success' | 'error' | 'warning' | 'info' | 'muted'
 ): TypographyColor {
   switch (context) {
-    case 'success': return 'success';
-    case 'error': return 'error';
-    case 'warning': return 'warning';
-    case 'info': return 'info';
-    case 'muted': return 'muted';
-    default: return 'inherit';
+    case 'success':
+      return 'success';
+    case 'error':
+      return 'error';
+    case 'warning':
+      return 'warning';
+    case 'info':
+      return 'info';
+    case 'muted':
+      return 'muted';
+    default:
+      return 'inherit';
   }
 }
 
@@ -53,9 +66,11 @@ export function calculateOptimalLineClamp(
 /**
  * Generate typography classes for a given readability score
  */
-export function getTypographyForReadability(
-  score: 'low' | 'medium' | 'high'
-): { size: string; weight: string; lineHeight: string } {
+export function getTypographyForReadability(score: 'low' | 'medium' | 'high'): {
+  size: string;
+  weight: string;
+  lineHeight: string;
+} {
   switch (score) {
     case 'low':
       return {
@@ -87,11 +102,7 @@ export function getTypographyForReadability(
 /**
  * Truncate text with ellipsis based on character count
  */
-export function truncateText(
-  text: string,
-  maxLength: number,
-  ellipsis: string = '...'
-): string {
+export function truncateText(text: string, maxLength: number, ellipsis: string = '...'): string {
   if (text.length <= maxLength) return text;
   return text.slice(0, maxLength - ellipsis.length) + ellipsis;
 }
@@ -104,7 +115,7 @@ export function formatNumberWithTypography(
   variant: 'short' | 'long' | 'currency' = 'short'
 ): { value: string; variant: TypographyVariant; weight: TypographyWeight } {
   let formattedValue: string;
-  
+
   switch (variant) {
     case 'short':
       formattedValue = new Intl.NumberFormat('en-US', {
@@ -125,7 +136,7 @@ export function formatNumberWithTypography(
       formattedValue = new Intl.NumberFormat('en-US').format(num);
       break;
   }
-  
+
   return {
     value: formattedValue,
     variant: 'h2',

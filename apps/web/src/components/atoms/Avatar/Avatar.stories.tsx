@@ -29,7 +29,8 @@ export default {
   parameters: {
     docs: {
       description: {
-        component: 'Enterprise Avatar component for user profile images or initials. Supports images with fallback, status indicators, multiple sizes/shapes, and full accessibility.',
+        component:
+          'Enterprise Avatar component for user profile images or initials. Supports images with fallback, status indicators, multiple sizes/shapes, and full accessibility.',
       },
     },
   },
@@ -114,7 +115,7 @@ export const StatusIndicators = () => (
       <Avatar status="away" fallback="AW" data-testid="avatar-away" />
       <Avatar status="busy" fallback="BS" data-testid="avatar-busy" />
     </div>
-    
+
     <div className="text-sm text-gray-500">
       Status indicators show user availability with appropriate ARIA labels for accessibility.
     </div>
@@ -157,7 +158,7 @@ export const FallbackInitials = () => (
       <Avatar fallback="" data-testid="avatar-empty" />
       <Avatar fallback="Alice Bob Charlie" data-testid="avatar-multi" />
     </div>
-    
+
     <div className="text-sm text-gray-500">
       Automatically extracts initials from names (1-2 characters max). Shows "?" for empty fallback.
     </div>
@@ -171,7 +172,7 @@ export const UsageExamples = () => (
       <h3 className="text-lg font-semibold mb-4">User List</h3>
       <div className="space-y-4">
         <div className="flex items-center gap-4 p-3 bg-white rounded-lg shadow-sm">
-          <Avatar 
+          <Avatar
             src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop"
             alt="John Doe"
             status="online"
@@ -183,9 +184,9 @@ export const UsageExamples = () => (
             <p className="text-sm text-success-600">Online • Active now</p>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-4 p-3 bg-white rounded-lg shadow-sm">
-          <Avatar 
+          <Avatar
             fallback="Jane Smith"
             color="success"
             status="away"
@@ -197,9 +198,9 @@ export const UsageExamples = () => (
             <p className="text-sm text-warning-600">Away • Last seen 15 min ago</p>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-4 p-3 bg-white rounded-lg shadow-sm">
-          <Avatar 
+          <Avatar
             fallback="Alex Johnson"
             color="warning"
             status="offline"
@@ -213,7 +214,7 @@ export const UsageExamples = () => (
         </div>
       </div>
     </div>
-    
+
     <div>
       <h3 className="text-lg font-semibold mb-4">Team Avatars</h3>
       <div className="flex items-center -space-x-2">
@@ -222,11 +223,9 @@ export const UsageExamples = () => (
         <Avatar size="sm" fallback="JS" color="warning" data-testid="team-3" />
         <Avatar size="sm" fallback="+3" color="gray" data-testid="team-more" />
       </div>
-      <p className="text-sm text-gray-500 mt-2">
-        Stacked avatars for team displays
-      </p>
+      <p className="text-sm text-gray-500 mt-2">Stacked avatars for team displays</p>
     </div>
-    
+
     <div>
       <h3 className="text-lg font-semibold mb-4">Dark Mode Support</h3>
       <div className="grid grid-cols-3 gap-4 p-4 bg-gray-900 rounded-lg">
@@ -234,9 +233,7 @@ export const UsageExamples = () => (
         <Avatar fallback="DM" color="gray" className="dark" />
         <Avatar fallback="DM" color="success" className="dark" />
       </div>
-      <p className="text-sm text-gray-500 mt-2">
-        All colors have dark mode variants
-      </p>
+      <p className="text-sm text-gray-500 mt-2">All colors have dark mode variants</p>
     </div>
   </div>
 );

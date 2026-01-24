@@ -8,13 +8,13 @@ import { Input } from '../../atoms/Input/Input';
 
 // Mock dependencies for comprehensive stories
 // Since Checkbox is in MVP roadmap, create a mock component
-const MockCheckbox = ({ 
-  checked, 
-  onChange, 
-  label 
-}: { 
-  checked: boolean; 
-  onChange: (checked: boolean) => void; 
+const MockCheckbox = ({
+  checked,
+  onChange,
+  label,
+}: {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
   label: string;
 }) => (
   <label className="flex items-center space-x-2 cursor-pointer">
@@ -29,16 +29,14 @@ const MockCheckbox = ({
 );
 
 // Mock Card component for dashboard examples
-const MockCard = ({ 
-  children, 
-  className = '' 
-}: { 
-  children: React.ReactNode; 
+const MockCard = ({
+  children,
+  className = '',
+}: {
+  children: React.ReactNode;
   className?: string;
 }) => (
-  <div className={`bg-white dark:bg-gray-800 rounded-lg shadow p-4 ${className}`}>
-    {children}
-  </div>
+  <div className={`bg-white dark:bg-gray-800 rounded-lg shadow p-4 ${className}`}>{children}</div>
 );
 
 // Type assertions for compound components (they exist in Dialog.tsx)
@@ -49,27 +47,15 @@ const DialogWithComponents = Dialog as typeof Dialog & {
 };
 
 // Create typed versions of compound components
-const DialogHeader = ({ 
-  title, 
-  description, 
-  showCloseButton = true,
-  children,
-  ...props 
-}: any) => (
-  <div 
+const DialogHeader = ({ title, description, showCloseButton = true, children, ...props }: any) => (
+  <div
     className="flex items-start justify-between p-6 pb-4 border-b border-gray-200 dark:border-gray-700"
     {...props}
   >
     <div className="flex-1">
-      {title && (
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-          {title}
-        </h2>
-      )}
+      {title && <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{title}</h2>}
       {description && (
-        <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-          {description}
-        </p>
+        <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">{description}</p>
       )}
       {children}
     </div>
@@ -80,32 +66,26 @@ const DialogHeader = ({
         aria-label="Close dialog"
       >
         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M6 18L18 6M6 6l12 12"
+          />
         </svg>
       </button>
     )}
   </div>
 );
 
-const DialogBody = ({ 
-  children, 
-  className = '',
-  ...props 
-}: any) => (
-  <div 
-    className={`px-6 py-4 ${className}`}
-    {...props}
-  >
+const DialogBody = ({ children, className = '', ...props }: any) => (
+  <div className={`px-6 py-4 ${className}`} {...props}>
     {children}
   </div>
 );
 
-const DialogFooter = ({ 
-  children, 
-  className = '',
-  ...props 
-}: any) => (
-  <div 
+const DialogFooter = ({ children, className = '', ...props }: any) => (
+  <div
     className={`flex items-center px-6 py-4 border-t border-gray-200 dark:border-gray-700 ${className}`}
     {...props}
   >
@@ -221,7 +201,17 @@ A fully accessible, enterprise-grade dialog/modal component for HELIX CRM with c
     },
     position: {
       control: 'select',
-      options: ['center', 'top', 'bottom', 'left', 'right', 'top-left', 'top-right', 'bottom-left', 'bottom-right'],
+      options: [
+        'center',
+        'top',
+        'bottom',
+        'left',
+        'right',
+        'top-left',
+        'top-right',
+        'bottom-left',
+        'bottom-right',
+      ],
       description: 'Position of the dialog on screen',
       table: {
         type: { summary: 'DialogPosition' },
@@ -230,7 +220,17 @@ A fully accessible, enterprise-grade dialog/modal component for HELIX CRM with c
     },
     animation: {
       control: 'select',
-      options: ['fade', 'slide', 'scale', 'none', 'slide-up', 'slide-down', 'slide-left', 'slide-right', 'shake'],
+      options: [
+        'fade',
+        'slide',
+        'scale',
+        'none',
+        'slide-up',
+        'slide-down',
+        'slide-left',
+        'slide-right',
+        'shake',
+      ],
       description: 'Animation for dialog entry/exit',
       table: {
         type: { summary: 'DialogAnimation' },
@@ -305,7 +305,8 @@ export const Default: Story = {
     children: (
       <div className="space-y-4">
         <p className="text-gray-600 dark:text-gray-400">
-          This is the main content area of the dialog. You can put any content here including forms, text, images, or other components.
+          This is the main content area of the dialog. You can put any content here including forms,
+          text, images, or other components.
         </p>
         <p className="text-gray-600 dark:text-gray-400">
           The dialog supports rich content and can be customized based on your needs.
@@ -368,7 +369,8 @@ export const AlertVariant: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Alert dialogs for critical messages that require immediate attention. Uses visual indicators for urgency.',
+        story:
+          'Alert dialogs for critical messages that require immediate attention. Uses visual indicators for urgency.',
       },
     },
   },
@@ -413,26 +415,39 @@ export const FormVariant: Story = {
     children: (
       <form className="space-y-4">
         <div className="space-y-2">
-          <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label
+            htmlFor="name"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
             Full Name
           </label>
           <Input id="name" placeholder="Enter full name" />
         </div>
         <div className="space-y-2">
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label
+            htmlFor="email"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
             Email Address
           </label>
           <Input id="email" type="email" placeholder="customer@example.com" />
         </div>
         <div className="space-y-2">
-          <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label
+            htmlFor="phone"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
             Phone Number
           </label>
           <Input id="phone" placeholder="(123) 456-7890" />
         </div>
         <div className="flex justify-end space-x-3 pt-4">
-          <Button variant="outline" type="button">Cancel</Button>
-          <Button variant="primary" type="submit">Save Changes</Button>
+          <Button variant="outline" type="button">
+            Cancel
+          </Button>
+          <Button variant="primary" type="submit">
+            Save Changes
+          </Button>
         </div>
       </form>
     ),
@@ -526,8 +541,12 @@ export const ExtraSmall: Story = {
           Are you sure you want to proceed?
         </p>
         <div className="flex justify-end space-x-2">
-          <Button size="sm" variant="outline">No</Button>
-          <Button size="sm" variant="primary">Yes</Button>
+          <Button size="sm" variant="outline">
+            No
+          </Button>
+          <Button size="sm" variant="primary">
+            Yes
+          </Button>
         </div>
       </div>
     ),
@@ -624,9 +643,7 @@ export const ExtraLarge: Story = {
             </div>
           </MockCard>
           <MockCard>
-            <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">
-              Customer Growth
-            </h3>
+            <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">Customer Growth</h3>
             <div className="space-y-1 text-sm text-gray-600 dark:text-gray-400">
               <p>New Customers: 245</p>
               <p>Churn Rate: 8.5%</p>
@@ -636,7 +653,9 @@ export const ExtraLarge: Story = {
           </MockCard>
         </div>
         <div className="text-sm text-gray-500 dark:text-gray-400">
-          <p>Extra large dialogs are ideal for dashboards, reports, and complex data visualization.</p>
+          <p>
+            Extra large dialogs are ideal for dashboards, reports, and complex data visualization.
+          </p>
         </div>
       </div>
     ),
@@ -669,8 +688,9 @@ export const Fullscreen: Story = {
         <MockCard className="h-64">
           <h3 className="font-semibold text-lg mb-3">Main Content Area</h3>
           <p className="text-gray-600 dark:text-gray-400">
-            Fullscreen dialogs are useful for complex applications like dashboards, document editors, or media viewers.
-            They provide maximum real estate while maintaining the benefits of the dialog pattern.
+            Fullscreen dialogs are useful for complex applications like dashboards, document
+            editors, or media viewers. They provide maximum real estate while maintaining the
+            benefits of the dialog pattern.
           </p>
         </MockCard>
       </div>
@@ -729,7 +749,8 @@ export const LeftPosition: Story = {
     children: (
       <div className="space-y-3">
         <p className="text-gray-600 dark:text-gray-400">
-          This dialog slides in from the left. Useful for side panels, navigation drawers, or settings.
+          This dialog slides in from the left. Useful for side panels, navigation drawers, or
+          settings.
         </p>
         <div className="pt-2">
           <Button variant="primary">Apply Settings</Button>
@@ -748,7 +769,8 @@ export const RightPosition: Story = {
     children: (
       <div className="space-y-3">
         <p className="text-gray-600 dark:text-gray-400">
-          This dialog slides in from the right. Common for settings panels, detail views, or quick actions.
+          This dialog slides in from the right. Common for settings panels, detail views, or quick
+          actions.
         </p>
         <div className="pt-2">
           <Button variant="primary">Save Preferences</Button>
@@ -766,7 +788,8 @@ export const TopLeftPosition: Story = {
     title: 'Top Left Corner',
     children: (
       <p className="text-gray-600 dark:text-gray-400">
-        Dialog positioned in the top-left corner. Good for notifications that shouldn't block main content.
+        Dialog positioned in the top-left corner. Good for notifications that shouldn't block main
+        content.
       </p>
     ),
   },
@@ -915,7 +938,8 @@ export const PersistentDialog: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Persistent dialogs prevent accidental closure and require explicit user action. They shake when users try to close them via escape or overlay click.',
+        story:
+          'Persistent dialogs prevent accidental closure and require explicit user action. They shake when users try to close them via escape or overlay click.',
       },
     },
   },
@@ -927,11 +951,13 @@ export const WithoutOverlay: Story = {
     open: true,
     overlay: false,
     title: 'Non-modal Dialog',
-    description: 'This dialog does not have an overlay, allowing interaction with background content.',
+    description:
+      'This dialog does not have an overlay, allowing interaction with background content.',
     children: (
       <div className="space-y-3">
         <p className="text-gray-600 dark:text-gray-400">
-          You can still interact with elements behind this dialog. Use cautiously as this can be confusing for users.
+          You can still interact with elements behind this dialog. Use cautiously as this can be
+          confusing for users.
         </p>
         <div className="pt-2">
           <Button variant="primary">Continue</Button>
@@ -942,7 +968,8 @@ export const WithoutOverlay: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Dialogs without overlays are non-modal and allow interaction with background content. Use cautiously as they can be confusing for users.',
+        story:
+          'Dialogs without overlays are non-modal and allow interaction with background content. Use cautiously as they can be confusing for users.',
       },
     },
   },
@@ -958,7 +985,8 @@ export const WithoutPortal: Story = {
     children: (
       <div className="space-y-3">
         <p className="text-gray-600 dark:text-gray-400">
-          Rendered within the DOM hierarchy instead of at document body level. Useful for specific layout requirements.
+          Rendered within the DOM hierarchy instead of at document body level. Useful for specific
+          layout requirements.
         </p>
         <div className="pt-2">
           <Button variant="primary">Continue</Button>
@@ -969,7 +997,8 @@ export const WithoutPortal: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Dialogs without portals render inline in the DOM hierarchy. Useful for specific layout requirements.',
+        story:
+          'Dialogs without portals render inline in the DOM hierarchy. Useful for specific layout requirements.',
       },
     },
   },
@@ -1018,7 +1047,8 @@ export const CompoundComponents: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Demonstrates using Dialog compound components (Header, Body, Footer) for maximum flexibility and control.',
+        story:
+          'Demonstrates using Dialog compound components (Header, Body, Footer) for maximum flexibility and control.',
       },
     },
   },
@@ -1048,7 +1078,7 @@ const NestedDialogExample = () => {
         <Button variant="primary" onClick={() => setChildOpen(true)}>
           Open Level 2 Dialog
         </Button>
-        
+
         {/* Level 2 Dialog */}
         <Dialog
           open={childOpen}
@@ -1066,7 +1096,7 @@ const NestedDialogExample = () => {
             <Button variant="primary" onClick={() => setGrandchildOpen(true)}>
               Open Level 3 Dialog
             </Button>
-            
+
             {/* Level 3 Dialog */}
             <Dialog
               open={grandchildOpen}
@@ -1105,7 +1135,8 @@ export const NestedDialogs: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Demonstrates nested dialogs with proper z-index stacking and focus management. Each nested dialog increments the z-index automatically.',
+        story:
+          'Demonstrates nested dialogs with proper z-index stacking and focus management. Each nested dialog increments the z-index automatically.',
       },
     },
   },
@@ -1121,17 +1152,13 @@ const FocusReturnExample = () => {
 
   return (
     <div className="space-y-4">
-      <Button
-        ref={triggerRef}
-        onClick={() => setOpen(true)}
-        data-testid="trigger-button"
-      >
+      <Button ref={triggerRef} onClick={() => setOpen(true)} data-testid="trigger-button">
         Open Dialog
       </Button>
       <p className="text-sm text-gray-500 dark:text-gray-400">
         After closing, focus returns to this button.
       </p>
-      
+
       <Dialog
         open={open}
         onClose={() => setOpen(false)}
@@ -1164,7 +1191,8 @@ export const FocusReturn: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Demonstrates proper focus management where focus returns to the triggering element when the dialog closes.',
+        story:
+          'Demonstrates proper focus management where focus returns to the triggering element when the dialog closes.',
       },
     },
   },
@@ -1199,7 +1227,8 @@ export const AlertDialogAria: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Demonstrates proper ARIA attributes for alert dialogs including role="alertdialog" and aria-describedby for screen readers.',
+        story:
+          'Demonstrates proper ARIA attributes for alert dialogs including role="alertdialog" and aria-describedby for screen readers.',
       },
     },
   },
@@ -1243,7 +1272,7 @@ const FormValidationExample = (args: any) => {
             Complete all required fields
           </p>
         </div>
-        
+
         <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -1251,17 +1280,15 @@ const FormValidationExample = (args: any) => {
             </label>
             <Input
               value={formData.name}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => 
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 setFormData({ ...formData, name: e.target.value })
               }
               placeholder="Enter your name"
               className={errors.name ? 'border-error-500' : ''}
             />
-            {errors.name && (
-              <p className="text-error-600 text-sm">{errors.name}</p>
-            )}
+            {errors.name && <p className="text-error-600 text-sm">{errors.name}</p>}
           </div>
-          
+
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Email Address *
@@ -1269,26 +1296,22 @@ const FormValidationExample = (args: any) => {
             <Input
               type="email"
               value={formData.email}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => 
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 setFormData({ ...formData, email: e.target.value })
               }
               placeholder="user@example.com"
               className={errors.email ? 'border-error-500' : ''}
             />
-            {errors.email && (
-              <p className="text-error-600 text-sm">{errors.email}</p>
-            )}
+            {errors.email && <p className="text-error-600 text-sm">{errors.email}</p>}
           </div>
-          
+
           <div className="space-y-2">
             <MockCheckbox
               checked={formData.agree}
               onChange={(checked: boolean) => setFormData({ ...formData, agree: checked })}
               label="I agree to the terms and conditions"
             />
-            {errors.agree && (
-              <p className="text-error-600 text-sm">{errors.agree}</p>
-            )}
+            {errors.agree && <p className="text-error-600 text-sm">{errors.agree}</p>}
           </div>
         </form>
 
@@ -1315,7 +1338,8 @@ export const FormValidation: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Demonstrates form validation within a dialog with proper error handling and user feedback.',
+        story:
+          'Demonstrates form validation within a dialog with proper error handling and user feedback.',
       },
     },
   },
@@ -1358,7 +1382,8 @@ export const LargeFormPerformance: Story = {
     chromatic: { disable: true },
     docs: {
       description: {
-        story: 'Stress test with large number of form fields. Verifies performance optimization and smooth scrolling.',
+        story:
+          'Stress test with large number of form fields. Verifies performance optimization and smooth scrolling.',
       },
     },
   },
@@ -1378,7 +1403,8 @@ export const EmptyDialog: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Dialog with no content. Tests proper rendering and accessibility with minimal content.',
+        story:
+          'Dialog with no content. Tests proper rendering and accessibility with minimal content.',
       },
     },
   },
@@ -1388,7 +1414,8 @@ export const VeryLongTitle: Story = {
   name: 'Edge Case: Very Long Title',
   args: {
     open: true,
-    title: 'This is an extremely long dialog title that might wrap to multiple lines and needs proper handling with truncation or word breaking for responsive design considerations',
+    title:
+      'This is an extremely long dialog title that might wrap to multiple lines and needs proper handling with truncation or word breaking for responsive design considerations',
     description: 'Dialog with a very long title to test text wrapping and truncation behavior.',
     children: (
       <div className="space-y-3">
@@ -1472,9 +1499,7 @@ export const DeleteConfirmation: Story = {
     children: (
       <div className="space-y-4">
         <div className="bg-error-50 dark:bg-error-900/20 border border-error-200 dark:border-error-800 rounded-md p-4">
-          <p className="text-error-700 dark:text-error-300 font-medium">
-            You are about to delete:
-          </p>
+          <p className="text-error-700 dark:text-error-300 font-medium">You are about to delete:</p>
           <ul className="mt-2 space-y-1">
             <li className="text-error-600 dark:text-error-400">• Customer: John Smith</li>
             <li className="text-error-600 dark:text-error-400">• Email: john.smith@example.com</li>
@@ -1495,7 +1520,8 @@ export const DeleteConfirmation: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Real-world delete confirmation dialog with detailed information and destructive action.',
+        story:
+          'Real-world delete confirmation dialog with detailed information and destructive action.',
       },
     },
   },
@@ -1528,77 +1554,83 @@ const MultiStepWizardExample = () => {
       case 1:
         return (
           <div className="space-y-4">
-            <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-              Personal Information
-            </h3>
+            <h3 className="font-semibold text-gray-900 dark:text-gray-100">Personal Information</h3>
             <Input
               placeholder="Full Name"
               value={formData.step1.name}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({
-                ...formData,
-                step1: { ...formData.step1, name: e.target.value }
-              })}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setFormData({
+                  ...formData,
+                  step1: { ...formData.step1, name: e.target.value },
+                })
+              }
             />
             <Input
               type="email"
               placeholder="Email Address"
               value={formData.step1.email}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({
-                ...formData,
-                step1: { ...formData.step1, email: e.target.value }
-              })}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setFormData({
+                  ...formData,
+                  step1: { ...formData.step1, email: e.target.value },
+                })
+              }
             />
           </div>
         );
       case 2:
         return (
           <div className="space-y-4">
-            <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-              Company Details
-            </h3>
+            <h3 className="font-semibold text-gray-900 dark:text-gray-100">Company Details</h3>
             <Input
               placeholder="Company Name"
               value={formData.step2.company}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({
-                ...formData,
-                step2: { ...formData.step2, company: e.target.value }
-              })}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setFormData({
+                  ...formData,
+                  step2: { ...formData.step2, company: e.target.value },
+                })
+              }
             />
             <Input
               placeholder="Your Role"
               value={formData.step2.role}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({
-                ...formData,
-                step2: { ...formData.step2, role: e.target.value }
-              })}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setFormData({
+                  ...formData,
+                  step2: { ...formData.step2, role: e.target.value },
+                })
+              }
             />
           </div>
         );
       case 3:
         return (
           <div className="space-y-4">
-            <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-              Select Plan
-            </h3>
+            <h3 className="font-semibold text-gray-900 dark:text-gray-100">Select Plan</h3>
             <div className="space-y-2">
               {['basic', 'professional', 'enterprise'].map((plan) => (
                 <MockCheckbox
                   key={plan}
                   checked={formData.step3.plan === plan}
-                  onChange={() => setFormData({
-                    ...formData,
-                    step3: { ...formData.step3, plan }
-                  })}
+                  onChange={() =>
+                    setFormData({
+                      ...formData,
+                      step3: { ...formData.step3, plan },
+                    })
+                  }
                   label={`${plan.charAt(0).toUpperCase() + plan.slice(1)} Plan`}
                 />
               ))}
             </div>
             <MockCheckbox
               checked={formData.step3.agree}
-              onChange={(checked: boolean) => setFormData({
-                ...formData,
-                step3: { ...formData.step3, agree: checked }
-              })}
+              onChange={(checked: boolean) =>
+                setFormData({
+                  ...formData,
+                  step3: { ...formData.step3, agree: checked },
+                })
+              }
               label="I agree to the terms of service"
             />
           </div>
@@ -1621,7 +1653,9 @@ const MultiStepWizardExample = () => {
         <div className="flex justify-between items-center">
           {steps.map((s) => (
             <div key={s.number} className="flex items-center">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= s.number ? 'bg-primary-600 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}>
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= s.number ? 'bg-primary-600 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}
+              >
                 {s.number}
               </div>
               <span className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -1637,21 +1671,14 @@ const MultiStepWizardExample = () => {
 
         {/* Navigation */}
         <div className="flex justify-between pt-6 border-t border-gray-200 dark:border-gray-700">
-          <Button
-            variant="outline"
-            onClick={handleBack}
-            disabled={step === 1}
-          >
+          <Button variant="outline" onClick={handleBack} disabled={step === 1}>
             Back
           </Button>
           <div className="space-x-3">
             <Button variant="outline" onClick={jest.fn()}>
               Cancel
             </Button>
-            <Button
-              variant="primary"
-              onClick={step === 3 ? jest.fn() : handleNext}
-            >
+            <Button variant="primary" onClick={step === 3 ? jest.fn() : handleNext}>
               {step === 3 ? 'Complete' : 'Next'}
             </Button>
           </div>
@@ -1667,7 +1694,8 @@ export const MultiStepWizard: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Complex multi-step wizard dialog demonstrating sequential form completion with progress tracking.',
+        story:
+          'Complex multi-step wizard dialog demonstrating sequential form completion with progress tracking.',
       },
     },
   },
@@ -1689,17 +1717,12 @@ const DynamicContentDialog = () => {
       data-testid="dynamic-dialog"
     >
       <div className="space-y-4">
-        <p className="text-gray-600 dark:text-gray-400">
-          This dialog changes content dynamically.
-        </p>
-        
-        <Button
-          variant="outline"
-          onClick={() => setShowDetails(!showDetails)}
-        >
+        <p className="text-gray-600 dark:text-gray-400">This dialog changes content dynamically.</p>
+
+        <Button variant="outline" onClick={() => setShowDetails(!showDetails)}>
           {showDetails ? 'Hide Details' : 'Show Details'}
         </Button>
-        
+
         {showDetails && (
           <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-md space-y-2">
             <p className="font-semibold text-gray-900 dark:text-gray-100">
@@ -1710,22 +1733,16 @@ const DynamicContentDialog = () => {
             </p>
           </div>
         )}
-        
+
         <div className="pt-4">
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Add items to increase height:
           </label>
           <div className="flex space-x-2">
-            <Button
-              size="sm"
-              onClick={() => setItems(Math.max(1, items - 1))}
-            >
+            <Button size="sm" onClick={() => setItems(Math.max(1, items - 1))}>
               Remove
             </Button>
-            <Button
-              size="sm"
-              onClick={() => setItems(items + 1)}
-            >
+            <Button size="sm" onClick={() => setItems(items + 1)}>
               Add
             </Button>
           </div>
@@ -1749,7 +1766,8 @@ export const DynamicContent: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Demonstrates dialog with dynamic content that changes height and content based on user interactions.',
+        story:
+          'Demonstrates dialog with dynamic content that changes height and content based on user interactions.',
       },
     },
   },
@@ -1771,7 +1789,8 @@ export const SemanticClasses: Story = {
           This dialog uses semantic class names for better maintainability.
         </p>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-          Classes like 'dialog-elevated' and 'dialog-content-padded' are defined in Dialog.styles.ts.
+          Classes like 'dialog-elevated' and 'dialog-content-padded' are defined in
+          Dialog.styles.ts.
         </p>
         <div className="dialog-actions mt-4">
           <Button variant="outline">Cancel</Button>
@@ -1783,7 +1802,8 @@ export const SemanticClasses: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Demonstrates using semantic class names instead of raw Tailwind utilities for better maintainability and theming.',
+        story:
+          'Demonstrates using semantic class names instead of raw Tailwind utilities for better maintainability and theming.',
       },
     },
   },

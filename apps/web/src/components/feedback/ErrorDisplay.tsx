@@ -19,7 +19,7 @@ export const ErrorDisplay: React.FC<ErrorDisplayProps> = ({
   className = '',
 }) => {
   return (
-    <div 
+    <div
       data-testid="error-display"
       className={`bg-error-50 border border-error-200 rounded-lg p-4 ${className}`}
       role="alert"
@@ -33,7 +33,7 @@ export const ErrorDisplay: React.FC<ErrorDisplayProps> = ({
           <div className="mt-2 text-sm text-error-800">
             <p>{message}</p>
           </div>
-          
+
           {details && (
             <details className="mt-2">
               <summary className="text-sm font-medium text-error-700 cursor-pointer hover:text-error-900">
@@ -44,7 +44,7 @@ export const ErrorDisplay: React.FC<ErrorDisplayProps> = ({
               </pre>
             </details>
           )}
-          
+
           {onRetry && (
             <div className="mt-4">
               <button

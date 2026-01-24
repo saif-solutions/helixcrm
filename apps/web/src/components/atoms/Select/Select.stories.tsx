@@ -13,7 +13,11 @@ const EmailIcon = () => (
 
 const SmsIcon = () => (
   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-    <path fillRule="evenodd" d="M18 5v8a2 2 0 01-2 2h-5l-5 4v-4H4a2 2 0 01-2-2V5a2 2 0 012-2h12a2 2 0 012 2zM7 8H5v2h2V8zm2 0h2v2H9V8zm6 0h-2v2h2V8z" clipRule="evenodd" />
+    <path
+      fillRule="evenodd"
+      d="M18 5v8a2 2 0 01-2 2h-5l-5 4v-4H4a2 2 0 01-2-2V5a2 2 0 012-2h12a2 2 0 012 2zM7 8H5v2h2V8zm2 0h2v2H9V8zm6 0h-2v2h2V8z"
+      clipRule="evenodd"
+    />
   </svg>
 );
 
@@ -353,7 +357,9 @@ export const CustomOptionRendering: Story = {
       // Type assertion inside the function
       const planOption = option as PlanOption;
       return (
-        <div className={`p-3 rounded ${isFocused ? 'bg-blue-50' : ''} ${isSelected ? 'border-l-4 border-blue-500' : ''}`}>
+        <div
+          className={`p-3 rounded ${isFocused ? 'bg-blue-50' : ''} ${isSelected ? 'border-l-4 border-blue-500' : ''}`}
+        >
           <div className="font-medium">{planOption.label}</div>
           {planOption.metadata && (
             <div className="text-sm text-gray-500">
@@ -379,19 +385,19 @@ export const CustomValueDisplay: Story = {
       // The component ALWAYS passes an array to renderValue
       // For single select, it's an array with one element
       // For multiple select, it's an array with multiple elements
-      
+
       if (!selected || selected.length === 0) {
         return <span className="text-gray-500">{displayText}</span>;
       }
-      
+
       if (selected.length > 1) {
         // Multiple selection
         const currencyOptions = selected as CurrencyOption[];
         const symbols = currencyOptions
-          .map(s => s.metadata?.symbol)
+          .map((s) => s.metadata?.symbol)
           .filter(Boolean)
           .join(', ');
-        
+
         return (
           <div className="flex items-center gap-2">
             <span className="font-medium">{selected.length} selected</span>
@@ -399,7 +405,7 @@ export const CustomValueDisplay: Story = {
           </div>
         );
       }
-      
+
       // Single selection
       const currencyOption = selected[0] as CurrencyOption;
       return (
@@ -474,12 +480,12 @@ export const InForm: Story = {
   render: () => {
     const [country, setCountry] = useState<string>('');
     const [languages, setLanguages] = useState<string[]>([]);
-    
+
     const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault();
       alert(`Country: ${country}\nLanguages: ${languages.join(', ')}`);
     };
-    
+
     return (
       <form onSubmit={handleSubmit} className="space-y-4 max-w-md">
         <div>
@@ -498,7 +504,7 @@ export const InForm: Story = {
             required
           />
         </div>
-        
+
         <div>
           <label className="block text-sm font-medium mb-1">Languages</label>
           <Select
@@ -516,7 +522,7 @@ export const InForm: Story = {
             helperText="You can select multiple languages"
           />
         </div>
-        
+
         <button
           type="submit"
           className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"

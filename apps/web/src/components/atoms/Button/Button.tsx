@@ -8,29 +8,26 @@ import {
   GhostButtonProps,
   DangerButtonProps,
 } from './Button.types';
-import {
-  buttonClasses,
-  loadingSpinnerClasses,
-} from './Button.styles';
+import { buttonClasses, loadingSpinnerClasses } from './Button.styles';
 
 /**
  * Enterprise-grade Button component with comprehensive features
- * 
+ *
  * Enhanced for Phase 2A:
  * - ✅ Fixed loading prop support for auth forms
  * - ✅ aria-busy attribute for accessibility
  * - ✅ Improved disabled state handling during loading
  * - ✅ Forward ref support for form integration
  * - ✅ TypeScript strict compliance
- * 
+ *
  * @example
  * ```tsx
  * // Basic usage
  * <Button variant="primary">Submit</Button>
- * 
+ *
  * // With loading state (for auth forms)
  * <Button loading>Processing...</Button>
- * 
+ *
  * // Full width loading button
  * <Button variant="primary" size="lg" fullWidth loading>
  *   Signing in...
@@ -65,12 +62,11 @@ export const Button = React.memo(
       ref: React.Ref<ButtonRef>
     ) => {
       const isDisabled = disabled || loading;
-      
+
       // Handle accessibility: if iconOnly and no aria-label, use children as fallback
-      const accessibilityLabel = iconOnly && !ariaLabel && typeof children === 'string' 
-        ? children 
-        : ariaLabel;
-      
+      const accessibilityLabel =
+        iconOnly && !ariaLabel && typeof children === 'string' ? children : ariaLabel;
+
       // Build CSS classes using utility function
       const buttonClass = cn(
         buttonClasses.base,
@@ -84,25 +80,31 @@ export const Button = React.memo(
         className
       );
 
-      const handleClick = React.useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
-        if (!isDisabled && onClick) {
-          onClick(e);
-        }
-      }, [isDisabled, onClick]);
-
-      const handleKeyDown = React.useCallback((e: React.KeyboardEvent<HTMLButtonElement>) => {
-        if (!isDisabled && onKeyDown) {
-          onKeyDown(e);
-        }
-        
-        // Handle Space/Enter for better accessibility
-        if (!isDisabled && (e.key === ' ' || e.key === 'Enter')) {
-          e.preventDefault();
-          if (onClick) {
-            onClick(e as any);
+      const handleClick = React.useCallback(
+        (e: React.MouseEvent<HTMLButtonElement>) => {
+          if (!isDisabled && onClick) {
+            onClick(e);
           }
-        }
-      }, [isDisabled, onClick, onKeyDown]);
+        },
+        [isDisabled, onClick]
+      );
+
+      const handleKeyDown = React.useCallback(
+        (e: React.KeyboardEvent<HTMLButtonElement>) => {
+          if (!isDisabled && onKeyDown) {
+            onKeyDown(e);
+          }
+
+          // Handle Space/Enter for better accessibility
+          if (!isDisabled && (e.key === ' ' || e.key === 'Enter')) {
+            e.preventDefault();
+            if (onClick) {
+              onClick(e as any);
+            }
+          }
+        },
+        [isDisabled, onClick, onKeyDown]
+      );
 
       return (
         <button
@@ -123,27 +125,25 @@ export const Button = React.memo(
           {...props}
         >
           {/* Loading Spinner - Conditionally render */}
-          {loading && (
-            <LoadingSpinner size={size} iconOnly={iconOnly} />
-          )}
-          
+          {loading && <LoadingSpinner size={size} iconOnly={iconOnly} />}
+
           {/* Left Icon (when not loading) */}
           {!loading && leftIcon && (
             <IconWrapper position="left" iconOnly={iconOnly}>
               {leftIcon}
             </IconWrapper>
           )}
-          
+
           {/* Button Text (hidden for icon-only when loading) */}
           {(!iconOnly || (iconOnly && !loading)) && children}
-          
+
           {/* Right Icon (when not loading) */}
           {!loading && rightIcon && (
             <IconWrapper position="right" iconOnly={iconOnly}>
               {rightIcon}
             </IconWrapper>
           )}
-          
+
           {/* Icon-only content (when not loading and no left/right icons) */}
           {iconOnly && !loading && !leftIcon && !rightIcon && children}
         </button>
@@ -163,16 +163,14 @@ const LoadingSpinner: React.FC<{
   iconOnly?: boolean;
 }> = ({ size, iconOnly }) => {
   const spinnerSize = iconOnly ? 'sm' : size;
-  
+
   return (
     <svg
       className={cn(
         loadingSpinnerClasses.base,
         loadingSpinnerClasses.size[spinnerSize],
-        iconOnly 
-          ? loadingSpinnerClasses.spacing.iconOnly 
-          : loadingSpinnerClasses.spacing.withText,
-        "animate-spin"
+        iconOnly ? loadingSpinnerClasses.spacing.iconOnly : loadingSpinnerClasses.spacing.withText,
+        'animate-spin'
       )}
       xmlns="http://www.w3.org/2000/svg"
       fill="none"
@@ -182,14 +180,7 @@ const LoadingSpinner: React.FC<{
       data-testid="button-loading-spinner"
     >
       <title>Loading</title>
-      <circle
-        className="opacity-25"
-        cx="12"
-        cy="12"
-        r="10"
-        stroke="currentColor"
-        strokeWidth="4"
-      />
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
       <path
         className="opacity-75"
         fill="currentColor"
@@ -209,14 +200,13 @@ const IconWrapper: React.FC<{
   iconOnly?: boolean;
   children: React.ReactNode;
 }> = ({ position, iconOnly, children }) => (
-  <span className={cn(
-    "flex items-center justify-center",
-    !iconOnly && (
-      position === 'left' 
-        ? buttonClasses.iconSpacing.left 
-        : buttonClasses.iconSpacing.right
-    )
-  )}>
+  <span
+    className={cn(
+      'flex items-center justify-center',
+      !iconOnly &&
+        (position === 'left' ? buttonClasses.iconSpacing.left : buttonClasses.iconSpacing.right)
+    )}
+  >
     {children}
   </span>
 );

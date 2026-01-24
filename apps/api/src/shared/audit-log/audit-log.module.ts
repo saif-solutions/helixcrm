@@ -1,10 +1,9 @@
 import { Module } from "@nestjs/common";
-import { PrismaModule } from "../prisma/prisma.module";
 import { LoggingModule } from "../logging/logging.module";
 import { AuditLogService } from "./audit-log.service";
 
 @Module({
-  imports: [PrismaModule, LoggingModule],
+  imports: [LoggingModule], // REMOVE PrismaModule
   providers: [AuditLogService],
   exports: [AuditLogService],
 })

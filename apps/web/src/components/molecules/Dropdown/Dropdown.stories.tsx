@@ -2,20 +2,17 @@
 import * as React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 import { action } from '@storybook/addon-actions';
-import { 
-  Dropdown,
-  createDefaultDropdownItems,
-} from './index';
+import { Dropdown, createDefaultDropdownItems } from './index';
 
 // ============================================================================
 // STORY UTILITIES & CONSTANTS
 // ============================================================================
 
 // Simple icon placeholder component (SVG-based, consistent across platforms)
-const IconPlaceholder = ({ 
-  size = 14, 
+const IconPlaceholder = ({
+  size = 14,
   color = '#6B7280',
-  ...props 
+  ...props
 }: React.SVGProps<SVGSVGElement> & { size?: number }) => (
   <svg
     width={size}
@@ -35,15 +32,9 @@ const IconPlaceholder = ({
 );
 
 const EditIcon = (props: any) => <IconPlaceholder {...props} />;
-const DeleteIcon = (props: any) => (
-  <IconPlaceholder color="#EF4444" {...props} />
-);
-const DuplicateIcon = (props: any) => (
-  <IconPlaceholder color="#3B82F6" {...props} />
-);
-const SettingsIcon = (props: any) => (
-  <IconPlaceholder color="#8B5CF6" {...props} />
-);
+const DeleteIcon = (props: any) => <IconPlaceholder color="#EF4444" {...props} />;
+const DuplicateIcon = (props: any) => <IconPlaceholder color="#3B82F6" {...props} />;
+const SettingsIcon = (props: any) => <IconPlaceholder color="#8B5CF6" {...props} />;
 
 // Storybook button with forwardRef support
 const StoryButton = React.forwardRef<
@@ -167,11 +158,18 @@ const items = [
     placement: {
       control: 'select',
       options: [
-        'top', 'bottom', 'left', 'right',
-        'top-start', 'top-end',
-        'bottom-start', 'bottom-end',
-        'left-start', 'left-end',
-        'right-start', 'right-end',
+        'top',
+        'bottom',
+        'left',
+        'right',
+        'top-start',
+        'top-end',
+        'bottom-start',
+        'bottom-end',
+        'left-start',
+        'left-end',
+        'right-start',
+        'right-end',
       ],
       description: 'Position relative to trigger',
       table: {
@@ -364,12 +362,7 @@ export const SizeVariants: Story = {
   render: (args) => (
     <div style={{ display: 'flex', gap: STORY_CONSTANTS.spacing.medium, flexWrap: 'wrap' }}>
       {(['xs', 'sm', 'md', 'lg', 'xl'] as const).map((size) => (
-        <Dropdown 
-          key={size} 
-          {...args} 
-          size={size} 
-          trigger={<StoryButton>Size {size}</StoryButton>}
-        >
+        <Dropdown key={size} {...args} size={size} trigger={<StoryButton>Size {size}</StoryButton>}>
           <Dropdown.Item>Item 1</Dropdown.Item>
           <Dropdown.Item>Item 2</Dropdown.Item>
           <Dropdown.Item>Item 3</Dropdown.Item>
@@ -387,22 +380,28 @@ export const PlacementVariants: Story = {
   },
   render: (args) => {
     const placements = [
-      'top-start', 'top', 'top-end',
-      'bottom-start', 'bottom', 'bottom-end',
+      'top-start',
+      'top',
+      'top-end',
+      'bottom-start',
+      'bottom',
+      'bottom-end',
     ] as const;
-    
+
     return (
-      <div style={{ 
-        display: 'flex', 
-        gap: STORY_CONSTANTS.spacing.large,
-        padding: '100px',
-        flexWrap: 'wrap',
-        justifyContent: 'center',
-      }}>
+      <div
+        style={{
+          display: 'flex',
+          gap: STORY_CONSTANTS.spacing.large,
+          padding: '100px',
+          flexWrap: 'wrap',
+          justifyContent: 'center',
+        }}
+      >
         {placements.map((placement) => (
           <div key={placement} style={{ textAlign: 'center' }}>
-            <Dropdown 
-              {...args} 
+            <Dropdown
+              {...args}
               placement={placement}
               trigger={<StoryButton>{placement}</StoryButton>}
             >
@@ -432,10 +431,12 @@ export const AnimationVariants: Story = {
   },
   render: (args) => (
     <div style={{ display: 'flex', gap: STORY_CONSTANTS.spacing.medium, flexWrap: 'wrap' }}>
-      {(['fade', 'scale', 'slide-up', 'slide-down', 'slide-left', 'slide-right', 'none'] as const).map((animation) => (
-        <Dropdown 
-          key={animation} 
-          {...args} 
+      {(
+        ['fade', 'scale', 'slide-up', 'slide-down', 'slide-left', 'slide-right', 'none'] as const
+      ).map((animation) => (
+        <Dropdown
+          key={animation}
+          {...args}
           animation={animation}
           trigger={<StoryButton>Animation: {animation}</StoryButton>}
         >
@@ -462,21 +463,23 @@ export const ControlledDropdown: Story = {
   render: (args) => {
     const [open, setOpen] = React.useState(false);
     const handleOpenChange = React.useCallback(setOpen, []);
-    
+
     return (
-      <div style={{ 
-        display: 'flex', 
-        flexDirection: 'column', 
-        gap: STORY_CONSTANTS.spacing.medium, 
-        alignItems: 'center' 
-      }}>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: STORY_CONSTANTS.spacing.medium,
+          alignItems: 'center',
+        }}
+      >
         <div style={{ display: 'flex', gap: STORY_CONSTANTS.spacing.small }}>
           <StoryButton onClick={() => setOpen(true)}>Open Programmatically</StoryButton>
           <StoryButton onClick={() => setOpen(false)}>Close Programmatically</StoryButton>
           <StoryButton onClick={() => setOpen(!open)}>Toggle</StoryButton>
         </div>
-        
-        <Dropdown 
+
+        <Dropdown
           {...args}
           open={open}
           onOpenChange={handleOpenChange}
@@ -486,12 +489,14 @@ export const ControlledDropdown: Story = {
           <Dropdown.Item>Item 2</Dropdown.Item>
           <Dropdown.Item onSelect={() => setOpen(false)}>Close on Select</Dropdown.Item>
         </Dropdown>
-        
-        <p style={{ 
-          color: STORY_CONSTANTS.colors.text.secondary, 
-          fontSize: '14px',
-          fontFamily: 'monospace',
-        }}>
+
+        <p
+          style={{
+            color: STORY_CONSTANTS.colors.text.secondary,
+            fontSize: '14px',
+            fontFamily: 'monospace',
+          }}
+        >
           Current state: <strong>{open ? 'Open' : 'Closed'}</strong>
         </p>
       </div>
@@ -510,20 +515,19 @@ export const PersistentDropdown: Story = {
       <p style={{ color: STORY_CONSTANTS.colors.text.secondary, fontSize: '14px' }}>
         This dropdown will not close automatically. You must close it via the "Close" button.
       </p>
-      
-      <Dropdown 
-        {...args}
-        trigger={<StoryButton>Persistent Menu</StoryButton>}
-      >
+
+      <Dropdown {...args} trigger={<StoryButton>Persistent Menu</StoryButton>}>
         <Dropdown.Label>Persistent Mode</Dropdown.Label>
         <Dropdown.Item>Item 1 (won't close menu)</Dropdown.Item>
         <Dropdown.Item>Item 2 (won't close menu)</Dropdown.Item>
         <Dropdown.Separator />
-        <Dropdown.Item onSelect={() => {
-          // Manual close example
-          const trigger = document.querySelector('[data-testid^="dropdown"]') as HTMLElement;
-          trigger?.click();
-        }}>
+        <Dropdown.Item
+          onSelect={() => {
+            // Manual close example
+            const trigger = document.querySelector('[data-testid^="dropdown"]') as HTMLElement;
+            trigger?.click();
+          }}
+        >
           Click to manually close
         </Dropdown.Item>
       </Dropdown>
@@ -539,25 +543,19 @@ export const NestedDropdown: Story = {
     <Dropdown {...args}>
       <Dropdown.Item>Regular Item</Dropdown.Item>
       <Dropdown.Item>Another Item</Dropdown.Item>
-      
-      <Dropdown.SubMenu
-        trigger="Submenu Item"
-        data-testid="submenu-trigger"
-      >
+
+      <Dropdown.SubMenu trigger="Submenu Item" data-testid="submenu-trigger">
         <Dropdown.Item>Submenu Item 1</Dropdown.Item>
         <Dropdown.Item>Submenu Item 2</Dropdown.Item>
         <Dropdown.Item>Submenu Item 3</Dropdown.Item>
-        
+
         {/* Second level nesting */}
-        <Dropdown.SubMenu
-          trigger="Nested Again"
-          data-testid="nested-submenu-trigger"
-        >
+        <Dropdown.SubMenu trigger="Nested Again" data-testid="nested-submenu-trigger">
           <Dropdown.Item>Deep Item 1</Dropdown.Item>
           <Dropdown.Item>Deep Item 2</Dropdown.Item>
         </Dropdown.SubMenu>
       </Dropdown.SubMenu>
-      
+
       <Dropdown.Item>Final Item</Dropdown.Item>
     </Dropdown>
   ),
@@ -580,9 +578,9 @@ export const WithItemsProp: Story = {
   },
   render: (args) => {
     const items = createDefaultDropdownItems('user-menu');
-    
+
     return (
-      <Dropdown 
+      <Dropdown
         {...args}
         items={items}
         trigger={<StoryButton>User Menu (Items Prop)</StoryButton>}
@@ -616,9 +614,9 @@ export const WithGroupsProp: Story = {
         ],
       },
     ];
-    
+
     return (
-      <Dropdown 
+      <Dropdown
         {...args}
         groups={groups}
         trigger={<StoryButton>Editor Menu (Groups Prop)</StoryButton>}
@@ -637,36 +635,42 @@ export const UserMenu: Story = {
     size: 'md',
   },
   render: (args) => (
-    <Dropdown 
+    <Dropdown
       {...args}
       trigger={
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: STORY_CONSTANTS.spacing.small,
-          padding: '8px 12px',
-          border: `1px solid ${STORY_CONSTANTS.colors.border}`,
-          borderRadius: STORY_CONSTANTS.borderRadius.medium,
-          cursor: 'pointer',
-          background: 'white',
-          transition: 'border-color 200ms',
-        }}>
-          <div style={{ 
-            width: '32px', 
-            height: '32px', 
-            borderRadius: '50%',
-            background: STORY_CONSTANTS.colors.primary,
-            color: STORY_CONSTANTS.colors.text.inverse,
+        <div
+          style={{
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
-            fontWeight: 'bold',
-          }}>
+            gap: STORY_CONSTANTS.spacing.small,
+            padding: '8px 12px',
+            border: `1px solid ${STORY_CONSTANTS.colors.border}`,
+            borderRadius: STORY_CONSTANTS.borderRadius.medium,
+            cursor: 'pointer',
+            background: 'white',
+            transition: 'border-color 200ms',
+          }}
+        >
+          <div
+            style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '50%',
+              background: STORY_CONSTANTS.colors.primary,
+              color: STORY_CONSTANTS.colors.text.inverse,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontWeight: 'bold',
+            }}
+          >
             JD
           </div>
           <div style={{ fontSize: '14px' }}>
             John Doe
-            <div style={{ fontSize: '12px', color: STORY_CONSTANTS.colors.text.secondary }}>Admin</div>
+            <div style={{ fontSize: '12px', color: STORY_CONSTANTS.colors.text.secondary }}>
+              Admin
+            </div>
           </div>
         </div>
       }
@@ -705,26 +709,29 @@ export const KeyboardNavigation: Story = {
     closeOnEscape: true,
   },
   render: (args) => (
-    <div 
-      style={{ 
+    <div
+      style={{
         padding: STORY_CONSTANTS.spacing.large,
         border: `2px dashed ${STORY_CONSTANTS.colors.border}`,
         borderRadius: STORY_CONSTANTS.borderRadius.medium,
       }}
       data-testid="keyboard-test-area"
     >
-      <p style={{ 
-        color: STORY_CONSTANTS.colors.text.secondary, 
-        fontSize: '14px',
-        marginBottom: STORY_CONSTANTS.spacing.medium,
-      }}>
-        <strong>Test with keyboard only:</strong> Tab to focus, use Space/Enter to open, Arrow keys to navigate.
+      <p
+        style={{
+          color: STORY_CONSTANTS.colors.text.secondary,
+          fontSize: '14px',
+          marginBottom: STORY_CONSTANTS.spacing.medium,
+        }}
+      >
+        <strong>Test with keyboard only:</strong> Tab to focus, use Space/Enter to open, Arrow keys
+        to navigate.
       </p>
-      
-      <Dropdown 
+
+      <Dropdown
         {...args}
         trigger={
-          <StoryButton 
+          <StoryButton
             style={{ pointerEvents: 'auto' }}
             onKeyDown={(e) => {
               // Allow keyboard interaction
@@ -786,9 +793,9 @@ export const ManyItems: Story = {
       label: `Item ${i + 1}`,
       onClick: action(`Item ${i + 1} clicked`),
     }));
-    
+
     return (
-      <Dropdown 
+      <Dropdown
         {...args}
         items={manyItems}
         trigger={<StoryButton>Dropdown with 50 Items</StoryButton>}
@@ -818,10 +825,10 @@ export const CustomStyles: Story = {
     },
   },
   render: (args) => (
-    <Dropdown 
+    <Dropdown
       {...args}
       trigger={
-        <StoryButton 
+        <StoryButton
           style={{
             background: 'linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%)',
             color: 'white',
@@ -833,21 +840,23 @@ export const CustomStyles: Story = {
         </StoryButton>
       }
     >
-      <Dropdown.Item style={{ 
-        fontWeight: 'bold',
-        color: '#7C3AED',
-      }}>
+      <Dropdown.Item
+        style={{
+          fontWeight: 'bold',
+          color: '#7C3AED',
+        }}
+      >
         Bold Purple Item
       </Dropdown.Item>
-      <Dropdown.Item style={{ 
-        color: '#8B5CF6',
-        fontStyle: 'italic',
-      }}>
+      <Dropdown.Item
+        style={{
+          color: '#8B5CF6',
+          fontStyle: 'italic',
+        }}
+      >
         Italic Purple Text
       </Dropdown.Item>
-      <Dropdown.Item className="custom-item">
-        Custom CSS Class Item
-      </Dropdown.Item>
+      <Dropdown.Item className="custom-item">Custom CSS Class Item</Dropdown.Item>
     </Dropdown>
   ),
 };

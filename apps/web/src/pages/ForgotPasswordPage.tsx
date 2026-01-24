@@ -11,26 +11,26 @@ export default function ForgotPasswordPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  
+
   const { success: showSuccess, error: showError } = useToast();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!email) {
       setError('Please enter your email address');
       return;
     }
-    
+
     if (!/\S+@\S+\.\S+/.test(email)) {
       setError('Please enter a valid email address');
       return;
     }
-    
+
     setIsLoading(true);
     setError(null);
-    
+
     try {
       const response = await fetch(`${API_URL}/auth/password-reset/request`, {
         method: 'POST',
@@ -39,19 +39,18 @@ export default function ForgotPasswordPage() {
         },
         body: JSON.stringify({ email }),
       });
-      
+
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.message || 'Failed to send reset email');
       }
-      
+
       setSuccess(true);
       showSuccess('Reset email sent', 'Check your email for the password reset link');
-      
+
       // Clear form
       setEmail('');
-      
     } catch (err) {
       const message = err instanceof Error ? err.message : 'An error occurred';
       setError(message);
@@ -70,22 +69,34 @@ export default function ForgotPasswordPage() {
       <div className="min-h-screen bg-gradient-to-br from-primary-50 to-neutral-50 flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8 text-center">
           <div className="w-16 h-16 bg-success-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <svg className="w-8 h-8 text-success-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+            <svg
+              className="w-8 h-8 text-success-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M5 13l4 4L19 7"
+              ></path>
             </svg>
           </div>
-          
+
           <h1 className="text-2xl font-bold text-neutral-900">Check your email</h1>
-          
+
           <div className="mt-4 p-4 bg-success-50 border border-success-200 rounded-lg">
             <p className="text-success-700">
-              We've sent password reset instructions to <span className="font-semibold">{email}</span>
+              We've sent password reset instructions to{' '}
+              <span className="font-semibold">{email}</span>
             </p>
             <p className="text-success-600 text-sm mt-2">
               If you don't see the email, check your spam folder.
             </p>
           </div>
-          
+
           <div className="mt-8 space-y-4">
             <button
               onClick={handleBackToLogin}
@@ -93,7 +104,7 @@ export default function ForgotPasswordPage() {
             >
               Back to Login
             </button>
-            
+
             <p className="text-neutral-600 text-sm">
               Didn't receive the email?{' '}
               <button
@@ -118,22 +129,18 @@ export default function ForgotPasswordPage() {
               <span className="text-white text-xl font-bold">H</span>
             </div>
           </Link>
-          
+
           <h1 className="text-2xl font-bold text-neutral-900">Forgot Password</h1>
           <p className="text-neutral-600 mt-2">
             Enter your email and we'll send you reset instructions
           </p>
         </div>
-        
+
         <form onSubmit={handleSubmit} className="space-y-6">
           {error && (
-            <ErrorDisplay
-              message={error}
-              onRetry={() => setError(null)}
-              retryLabel="Try again"
-            />
+            <ErrorDisplay message={error} onRetry={() => setError(null)} retryLabel="Try again" />
           )}
-          
+
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-neutral-700 mb-2">
               Email Address
@@ -149,7 +156,7 @@ export default function ForgotPasswordPage() {
               required
             />
           </div>
-          
+
           <button
             type="submit"
             disabled={isLoading}
@@ -164,7 +171,7 @@ export default function ForgotPasswordPage() {
               'Send Reset Instructions'
             )}
           </button>
-          
+
           <div className="text-center">
             <button
               type="button"
@@ -176,7 +183,7 @@ export default function ForgotPasswordPage() {
             </button>
           </div>
         </form>
-        
+
         <div className="mt-8 pt-6 border-t border-neutral-200">
           <p className="text-neutral-600 text-sm text-center">
             Remember your password?{' '}

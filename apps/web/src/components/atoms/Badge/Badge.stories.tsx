@@ -68,7 +68,7 @@ export const WithIcons = () => (
     <Badge leftIcon={<CheckIcon size="xs" />} rightIcon={<XIcon size="xs" />}>
       Both Icons
     </Badge>
-        <Badge leftIcon={<CheckIcon size="xs" />}>Icon</Badge>
+    <Badge leftIcon={<CheckIcon size="xs" />}>Icon</Badge>
   </div>
 );
 
@@ -96,7 +96,7 @@ export const ClickableBadges = () => (
         Success Clickable
       </Badge>
     </div>
-    
+
     <div className="text-sm text-gray-500">
       Clickable badges have hover effects and can be triggered
     </div>
@@ -115,7 +115,7 @@ export const UsageExamples = () => (
         <Badge variant="info">New</Badge>
       </div>
     </div>
-    
+
     <div>
       <h3 className="text-lg font-semibold mb-3">Categories & Tags</h3>
       <div className="flex flex-wrap gap-2">
@@ -129,7 +129,7 @@ export const UsageExamples = () => (
         </Badge>
       </div>
     </div>
-    
+
     <div>
       <h3 className="text-lg font-semibold mb-3">User Roles</h3>
       <div className="flex flex-wrap gap-2">
@@ -139,22 +139,30 @@ export const UsageExamples = () => (
         <Badge variant="outline">Guest</Badge>
       </div>
     </div>
-    
+
     <div>
       <h3 className="text-lg font-semibold mb-3">Priority Levels</h3>
       <div className="flex flex-wrap gap-2">
         <ErrorBadge size="sm">High</ErrorBadge>
         <WarningBadge size="sm">Medium</WarningBadge>
-        <Badge variant="default" size="sm">Low</Badge>
+        <Badge variant="default" size="sm">
+          Low
+        </Badge>
       </div>
     </div>
-    
+
     <div>
       <h3 className="text-lg font-semibold mb-3">Counters & Notifications</h3>
       <div className="flex flex-wrap gap-2">
-        <Badge variant="primary" shape="pill">5</Badge>
-        <Badge variant="error" shape="pill">99+</Badge>
-        <Badge variant="success" shape="pill">New</Badge>
+        <Badge variant="primary" shape="pill">
+          5
+        </Badge>
+        <Badge variant="error" shape="pill">
+          99+
+        </Badge>
+        <Badge variant="success" shape="pill">
+          New
+        </Badge>
       </div>
     </div>
   </div>

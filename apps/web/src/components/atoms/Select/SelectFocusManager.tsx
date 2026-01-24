@@ -5,7 +5,7 @@ import * as React from 'react';
  * Custom hook for robust focus management without setTimeout
  */
 export function useFocusWithin(
-  ref: React.RefObject<HTMLElement>, 
+  ref: React.RefObject<HTMLElement>,
   onFocusWithinChange?: (isFocusWithin: boolean) => void
 ) {
   React.useEffect(() => {

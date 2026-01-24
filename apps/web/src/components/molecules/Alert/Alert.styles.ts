@@ -7,11 +7,11 @@ import { AlertVariant, AlertSize } from './Alert.types';
 export const alertTokens = {
   // Spacing tokens (in rem units)
   spacing: {
-    sm: '0.5rem',    // 8px
-    md: '0.75rem',   // 12px
-    lg: '1rem',      // 16px
+    sm: '0.5rem', // 8px
+    md: '0.75rem', // 12px
+    lg: '1rem', // 16px
   },
-  
+
   // Color tokens for each variant (Tailwind color palette)
   colors: {
     info: {
@@ -43,23 +43,23 @@ export const alertTokens = {
       hover: 'hover:bg-warning-100',
     },
   },
-  
+
   // Typography tokens
   typography: {
     sm: 'text-xs',
     md: 'text-sm',
     lg: 'text-base',
   },
-  
+
   // Border radius tokens
   borderRadius: 'rounded-lg',
-  
+
   // Border width tokens
   borderWidth: 'border',
-  
+
   // Transition tokens
   transition: 'transition-all duration-200',
-  
+
   // Icon size tokens (matches Icon component)
   iconSizes: {
     sm: 'w-4 h-4',
@@ -74,14 +74,14 @@ export const alertTokens = {
 export const alertClasses = {
   // Base classes (always applied)
   base: 'relative flex items-start gap-3',
-  
+
   // Size classes
   size: {
     sm: 'px-3 py-2',
     md: 'px-4 py-3',
     lg: 'px-4 py-4',
   },
-  
+
   // Variant classes
   variant: {
     info: `${alertTokens.colors.info.bg} ${alertTokens.colors.info.border} ${alertTokens.colors.info.text}`,
@@ -89,7 +89,7 @@ export const alertClasses = {
     error: `${alertTokens.colors.error.bg} ${alertTokens.colors.error.border} ${alertTokens.colors.error.text}`,
     warning: `${alertTokens.colors.warning.bg} ${alertTokens.colors.warning.border} ${alertTokens.colors.warning.text}`,
   },
-  
+
   // Icon classes
   icon: {
     base: 'flex-shrink-0 mt-0.5',
@@ -100,32 +100,32 @@ export const alertClasses = {
       warning: alertTokens.colors.warning.icon,
     },
   },
-  
+
   // Content classes
   content: 'flex-1 min-w-0',
-  
+
   // Title classes
   title: 'font-semibold mb-1',
-  
+
   // Message classes
   message: '',
-  
+
   // Actions classes
   actions: 'mt-3 flex flex-wrap gap-2',
-  
+
   // Dismiss button classes
   dismissButton: {
     base: 'flex-shrink-0 ml-2 -mr-1 p-1 rounded transition-colors',
     hover: 'hover:bg-black/5 hover:bg-opacity-10',
     focus: 'focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-current',
   },
-  
+
   // Animation classes
   animation: {
     enter: 'animate-fade-in',
     exit: 'animate-fade-out',
   },
-  
+
   // Accessibility classes
   accessibility: {
     focus: 'focus:outline-none focus:ring-2 focus:ring-offset-2',
@@ -147,22 +147,22 @@ export function getAlertContainerClasses(
     alertTokens.borderRadius,
     alertTokens.borderWidth,
     alertTokens.transition,
-    
+
     // Variant classes
     alertClasses.variant[variant],
-    
+
     // Size classes
     alertClasses.size[size],
     alertTokens.typography[size],
-    
+
     // Accessibility
     alertClasses.accessibility.focus,
     alertClasses.accessibility.reducedMotion,
-    
+
     // Custom classes
     className || '',
   ];
-  
+
   return classes.filter(Boolean).join(' ');
 }
 
@@ -177,17 +177,17 @@ export function getAlertIconClasses(
   const classes = [
     // Base icon classes
     alertClasses.icon.base,
-    
+
     // Variant-specific icon color
     alertClasses.icon.variant[variant],
-    
+
     // Size-specific icon dimensions
     alertTokens.iconSizes[size],
-    
+
     // Custom classes
     className || '',
   ];
-  
+
   return classes.filter(Boolean).join(' ');
 }
 
@@ -237,7 +237,7 @@ export function getAlertSizeDimensions(size: AlertSize): {
       iconSize: 'w-6 h-6',
     },
   };
-  
+
   return sizeMap[size];
 }
 

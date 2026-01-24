@@ -2,10 +2,10 @@
 
 /**
  * Dropdown Component Utilities
- * 
+ *
  * Utility functions, type guards, and helper methods for the Dropdown component.
  * Enterprise-grade utilities following HELIX CRM standards.
- * 
+ *
  * @packageDocumentation
  * @module Components/Molecules/Dropdown/Utils
  * @version 2.0.0-beta.1
@@ -74,9 +74,7 @@ export function isDomKeyboardEvent(event: unknown): event is KeyboardEvent {
 /**
  * Create normalized dropdown event for consistent public API
  */
-export function createNormalizedDropdownEvent(
-  event: Event
-): NormalizedDropdownEvent {
+export function createNormalizedDropdownEvent(event: Event): NormalizedDropdownEvent {
   return {
     type: event instanceof KeyboardEvent ? 'keyboard' : 'mouse',
     key: event instanceof KeyboardEvent ? event.key : undefined,
@@ -101,7 +99,7 @@ export function generateDropdownIds(prefix: string = 'dropdown'): {
   const timestamp = Date.now().toString(36);
   const randomStr = Math.random().toString(36).slice(2, 11);
   const unique = `${timestamp}-${randomStr}`;
-  
+
   return {
     dropdownId: `${prefix}-${unique}`,
     triggerId: `${prefix}-trigger-${unique}`,
@@ -124,17 +122,17 @@ export function validateDropdownProps(props: DropdownProps): {
   const warnings: string[] = [];
   const errors: string[] = [];
   const normalizedProps: Partial<DropdownProps> = { ...props };
-  
+
   // Validate required props
   if (!props.trigger) {
     errors.push('Dropdown requires "trigger" prop');
   }
-  
+
   // Validate content warnings
   if (!props.children && !props.items && !props.groups) {
     warnings.push('Dropdown has no content. Provide children, items, or groups.');
   }
-  
+
   // Validate persistent dropdown behavior
   if (props.persistent) {
     if (props.closeOnEscape !== false) {
@@ -142,16 +140,18 @@ export function validateDropdownProps(props: DropdownProps): {
       normalizedProps.closeOnEscape = false;
     }
     if (props.closeOnOutsideClick !== false) {
-      warnings.push('Persistent dropdown should have closeOnOutsideClick=false for consistent behavior');
+      warnings.push(
+        'Persistent dropdown should have closeOnOutsideClick=false for consistent behavior'
+      );
       normalizedProps.closeOnOutsideClick = false;
     }
   }
-  
+
   // Remove animation validation since transitionDuration doesn't exist
   // if (props.animation === 'none' && props.transitionDuration) {
   //   warnings.push('transitionDuration is provided but animation is "none". Duration will be ignored.');
   // }
-  
+
   return { warnings, errors, normalizedProps };
 }
 
@@ -184,7 +184,7 @@ export function createDefaultDropdownItems(
         onClick: () => {},
       },
     ],
-    'actions': [
+    actions: [
       {
         id: 'action-edit',
         label: 'Edit',
@@ -246,7 +246,7 @@ export function createDefaultDropdownItems(
       },
     ],
   };
-  
+
   return items[type] || items.actions;
 }
 
@@ -256,7 +256,7 @@ export function createDefaultDropdownItems(
 
 /**
  * Measure dropdown render performance
- * 
+ *
  * @internal
  */
 export function measureDropdownPerformance(renderFn: () => void): {
@@ -265,12 +265,12 @@ export function measureDropdownPerformance(renderFn: () => void): {
 } {
   const startTime = performance.now();
   const startMemory = (performance as any).memory?.usedJSHeapSize || 0;
-  
+
   renderFn();
-  
+
   const endTime = performance.now();
   const endMemory = (performance as any).memory?.usedJSHeapSize || 0;
-  
+
   return {
     renderTime: endTime - startTime,
     memoryUsage: endMemory - startMemory,
@@ -279,7 +279,7 @@ export function measureDropdownPerformance(renderFn: () => void): {
 
 /**
  * Debounce function for dropdown events
- * 
+ *
  * @internal
  */
 export function debounce<T extends (...args: any[]) => any>(
@@ -287,7 +287,7 @@ export function debounce<T extends (...args: any[]) => any>(
   delay: number
 ): (...args: Parameters<T>) => void {
   let timeoutId: NodeJS.Timeout;
-  
+
   return (...args: Parameters<T>) => {
     clearTimeout(timeoutId);
     timeoutId = setTimeout(() => fn(...args), delay);

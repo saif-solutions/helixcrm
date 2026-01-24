@@ -22,7 +22,7 @@ let scrollbarWidth = 0;
  */
 export function lockBodyScroll(): () => void {
   scrollLockCount++;
-  
+
   if (scrollLockCount === 1) {
     // First lock - calculate and save original styles
     originalStyles = {
@@ -32,29 +32,31 @@ export function lockBodyScroll(): () => void {
       top: document.body.style.top,
       width: document.body.style.width,
     };
-    
+
     // Save current scroll position
     scrollY = window.scrollY;
-    
+
     // Calculate scrollbar width to prevent layout shift
     scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-    
+
     // Apply scroll lock styles
     document.body.style.overflow = 'hidden';
     document.body.style.paddingRight = `${scrollbarWidth}px`;
     document.body.style.position = 'fixed';
     document.body.style.top = `-${scrollY}px`;
     document.body.style.width = '100%';
-    
+
     // Dispatch custom event for other components
-    document.dispatchEvent(new CustomEvent('dialog:scroll-locked', { 
-      detail: { lockCount: scrollLockCount }
-    }));
+    document.dispatchEvent(
+      new CustomEvent('dialog:scroll-locked', {
+        detail: { lockCount: scrollLockCount },
+      })
+    );
   }
-  
+
   return () => {
     scrollLockCount = Math.max(0, scrollLockCount - 1);
-    
+
     if (scrollLockCount === 0 && originalStyles) {
       // Last unlock - restore original styles
       document.body.style.overflow = originalStyles.overflow;
@@ -62,15 +64,15 @@ export function lockBodyScroll(): () => void {
       document.body.style.position = originalStyles.position;
       document.body.style.top = originalStyles.top;
       document.body.style.width = originalStyles.width;
-      
+
       // Restore scroll position
       window.scrollTo(0, scrollY);
-      
+
       // Reset saved values
       originalStyles = null;
       scrollY = 0;
       scrollbarWidth = 0;
-      
+
       // Dispatch custom event
       document.dispatchEvent(new CustomEvent('dialog:scroll-unlocked'));
     }
@@ -116,7 +118,7 @@ export function emergencyUnlockScroll(): void {
     document.body.style.top = '';
     document.body.style.width = '';
   }
-  
+
   scrollLockCount = 0;
   originalStyles = null;
   scrollY = 0;

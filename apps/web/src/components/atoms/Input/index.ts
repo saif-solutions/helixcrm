@@ -3,13 +3,7 @@
 // ============================================================================
 // Re-export all components
 // ============================================================================
-export {
-  Input,
-  TextInput,
-  EmailInput,
-  PasswordInput,
-  NumberInput,
-} from './Input';
+export { Input, TextInput, EmailInput, PasswordInput, NumberInput } from './Input';
 
 // ============================================================================
 // Re-export all types
@@ -48,8 +42,4 @@ export {
 // ============================================================================
 // Re-export utility functions (type guards)
 // ============================================================================
-export {
-  hasInputError,
-  isInputRequired,
-  getInputAccessibilityProps,
-} from './Input.types';
+export { hasInputError, isInputRequired, getInputAccessibilityProps } from './Input.types';

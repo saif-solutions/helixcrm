@@ -1,11 +1,91 @@
-import React, { useState } from 'react';
+// apps/web/src/pages/DashboardPage.tsx
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useToast } from '../components/feedback/ToastProvider';
 import { LoadingSpinner } from '../components/feedback/LoadingSpinner';
+import { Card } from '../components/molecules/Card';
+import { Button } from '../components/atoms/Button';
+import { useApiQuery } from '../providers/QueryProvider';
+import { DashboardAPI, LeadsAPI, DealsAPI } from '../services/api';
+// import type { DashboardStats, Lead, Deal } from '../lib/types/crm.types';
+import {
+  Users,
+  Briefcase,
+  Target,
+  TrendingUp,
+  DollarSign,
+  BarChart3,
+  Calendar,
+  Clock,
+  ChevronRight,
+  Plus,
+  Download,
+  RefreshCw,
+  Activity,
+} from 'lucide-react';
 
 const DashboardPage: React.FC = () => {
-  const [isLoading] = useState(false);
-  const { success, info } = useToast();
+  const { success, error: showError } = useToast();
+  const [loading, setLoading] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<string>('');
+  const [activeTab, setActiveTab] = useState<'overview' | 'leads' | 'deals'>('overview');
+
+  // Fetch Phase 3.4 enhanced dashboard stats
+  const {
+    data: dashboardStats,
+    isLoading: isLoadingStats,
+    error: statsError,
+    refetch: refetchStats,
+  } = useApiQuery(['dashboard-stats'], () => DashboardAPI.stats(), {
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: false,
+  });
+
+  // Update lastUpdated when stats load
+  useEffect(() => {
+    if (dashboardStats) {
+      setLastUpdated(new Date().toLocaleTimeString());
+    }
+  }, [dashboardStats]);
+
+  // Fetch recent leads
+  const {
+    data: recentLeads,
+    isLoading: isLoadingLeads,
+    error: leadsError,
+  } = useApiQuery(
+    ['recent-leads'],
+    () => LeadsAPI.list(0, 5), // Get 5 most recent leads
+    {
+      staleTime: 2 * 60 * 1000, // 2 minutes
+    }
+  );
+
+  // Fetch recent deals
+  const {
+    data: recentDeals,
+    isLoading: isLoadingDeals,
+    error: dealsError,
+  } = useApiQuery(
+    ['recent-deals'],
+    () => DealsAPI.list(0, 5), // Get 5 most recent deals
+    {
+      staleTime: 2 * 60 * 1000, // 2 minutes
+    }
+  );
+
+  // Handle errors
+  useEffect(() => {
+    if (statsError) {
+      showError('Dashboard Error', 'Failed to load dashboard statistics');
+    }
+    if (leadsError) {
+      showError('Leads Error', 'Failed to load recent leads');
+    }
+    if (dealsError) {
+      showError('Deals Error', 'Failed to load recent deals');
+    }
+  }, [statsError, leadsError, dealsError, showError]);
 
   const handleLogout = () => {
     localStorage.removeItem('access_token');
@@ -15,68 +95,94 @@ const DashboardPage: React.FC = () => {
     window.location.href = '/login';
   };
 
+  const handleRefresh = () => {
+    setLoading(true);
+    refetchStats().finally(() => {
+      setLoading(false);
+      success('Dashboard Refreshed', 'Latest data has been loaded');
+    });
+  };
+
+  const handleExport = () => {
+    success('Export Started', 'Your dashboard report will be generated shortly');
+    // TODO: Implement export functionality
+  };
+
   // Get user from localStorage
   const userStr = localStorage.getItem('user');
   const user = userStr ? JSON.parse(userStr) : null;
 
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+    });
+  };
+
+  const isLoading = isLoadingStats || isLoadingLeads || isLoadingDeals || loading;
+
   return (
-    <div className="min-h-screen bg-neutral-50">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b border-neutral-200">
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <Link to="/dashboard" className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center">
+                <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center">
                   <span className="text-white font-bold">H</span>
                 </div>
-                <span className="text-xl font-bold text-primary-900">HelixCRM</span>
+                <span className="text-xl font-bold text-gray-900">HelixCRM</span>
               </Link>
-              <div className="text-sm text-neutral-500">|</div>
+              <div className="text-sm text-gray-400">|</div>
               <nav className="flex items-center space-x-4">
-                <Link 
-                  to="/dashboard" 
-                  className="text-neutral-700 hover:text-primary-600 font-medium"
+                <Link
+                  to="/dashboard"
+                  className="text-primary-600 font-medium border-b-2 border-primary-600 pb-1"
                 >
                   Dashboard
                 </Link>
-                <Link 
-                  to="/contacts" 
-                  className="text-neutral-700 hover:text-primary-600 font-medium"
-                >
+                <Link to="/leads" className="text-gray-700 hover:text-primary-600 font-medium">
+                  Leads
+                </Link>
+                <Link to="/contacts" className="text-gray-700 hover:text-primary-600 font-medium">
                   Contacts
                 </Link>
-                <Link 
-                  to="/accounts" 
-                  className="text-neutral-700 hover:text-primary-600 font-medium"
-                >
-                  Accounts
-                </Link>
-                <Link 
-                  to="/activities" 
-                  className="text-neutral-700 hover:text-primary-600 font-medium"
-                >
-                  Activities
+                <Link to="/deals" className="text-gray-700 hover:text-primary-600 font-medium">
+                  Deals
                 </Link>
               </nav>
             </div>
-            
+
             <div className="flex items-center space-x-4">
-              <div className="text-sm text-neutral-600">
-                Logged in as <span className="font-medium">{user?.email || 'User'}</span>
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={handleRefresh}
+                  disabled={isLoading}
+                  className="p-2 text-gray-600 hover:text-primary-600 hover:bg-gray-100 rounded-lg transition-colors"
+                  title="Refresh dashboard"
+                >
+                  <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+                </button>
+                <div className="text-sm text-gray-600">
+                  {lastUpdated && `Updated ${lastUpdated}`}
+                </div>
+              </div>
+              <div className="text-sm text-gray-600">
+                <span className="font-medium">{user?.email?.split('@')[0] || 'User'}</span>
               </div>
               <button
-                onClick={() => info('Profile', 'Profile page coming soon')}
-                className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center text-primary-700 hover:bg-primary-200 transition-colors"
-                title="Profile"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-              </button>
-              <button
                 onClick={handleLogout}
-                className="px-4 py-2 text-sm font-medium text-neutral-700 hover:text-primary-600 transition-colors"
+                className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 Logout
               </button>
@@ -87,61 +193,51 @@ const DashboardPage: React.FC = () => {
 
       <div className="flex">
         {/* Sidebar */}
-        <aside className="w-64 bg-white border-r border-neutral-200 min-h-[calc(100vh-73px)]">
+        <aside className="w-64 bg-white border-r border-gray-200 min-h-[calc(100vh-73px)] hidden lg:block">
           <nav className="p-4 space-y-1">
-            <div className="px-3 py-2 text-xs font-semibold text-neutral-500 uppercase tracking-wider">
+            <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
               Navigation
             </div>
             <Link
               to="/dashboard"
-              className="flex items-center space-x-3 px-3 py-2 text-neutral-700 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+              className="flex items-center space-x-3 px-3 py-2 text-primary-600 bg-primary-50 rounded-lg"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-              </svg>
+              <BarChart3 className="w-5 h-5" />
               <span>Dashboard</span>
             </Link>
             <Link
-              to="/contacts"
-              className="flex items-center space-x-3 px-3 py-2 text-neutral-700 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+              to="/leads"
+              className="flex items-center space-x-3 px-3 py-2 text-gray-700 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
+              <Target className="w-5 h-5" />
+              <span>Leads</span>
+            </Link>
+            <Link
+              to="/contacts"
+              className="flex items-center space-x-3 px-3 py-2 text-gray-700 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+            >
+              <Users className="w-5 h-5" />
               <span>Contacts</span>
             </Link>
             <Link
-              to="/accounts"
-              className="flex items-center space-x-3 px-3 py-2 text-neutral-700 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+              to="/deals"
+              className="flex items-center space-x-3 px-3 py-2 text-gray-700 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-              </svg>
-              <span>Accounts</span>
+              <Briefcase className="w-5 h-5" />
+              <span>Deals</span>
             </Link>
-            <Link
-              to="/activities"
-              className="flex items-center space-x-3 px-3 py-2 text-neutral-700 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span>Activities</span>
-            </Link>
-            
-            <div className="px-3 py-2 text-xs font-semibold text-neutral-500 uppercase tracking-wider mt-6">
-              Settings
+
+            <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider mt-6">
+              Quick Actions
             </div>
             <Link
-              to="/settings"
-              className="flex items-center space-x-3 px-3 py-2 text-neutral-700 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+              to="/leads/new"
+              className="flex items-center space-x-3 px-3 py-2 text-gray-700 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              <span>Settings</span>
+              <Plus className="w-5 h-5" />
+              <span>New Lead</span>
             </Link>
+            {/* Note: Contacts and Deals creation is handled within their respective pages via modals */}
           </nav>
         </aside>
 
@@ -150,122 +246,427 @@ const DashboardPage: React.FC = () => {
           <div className="max-w-7xl mx-auto">
             {/* Welcome Banner */}
             <div className="bg-gradient-to-r from-primary-500 to-primary-600 rounded-xl p-6 mb-6 text-white">
-              <h1 className="text-2xl font-bold mb-2">Welcome back, {user?.email?.split('@')[0] || 'User'}!</h1>
-              <p className="opacity-90">Here's what's happening with your CRM today.</p>
+              <div className="flex flex-col md:flex-row md:items-center justify-between">
+                <div>
+                  <h1 className="text-2xl font-bold mb-2">
+                    Welcome back, {user?.email?.split('@')[0] || 'User'}!
+                  </h1>
+                  <p className="opacity-90">Here's your CRM overview for today.</p>
+                </div>
+                <div className="flex items-center space-x-3 mt-4 md:mt-0">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleExport}
+                    leftIcon={<Download className="w-4 h-4" />}
+                    className="bg-white/20 hover:bg-white/30 text-white"
+                  >
+                    Export Report
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleRefresh}
+                    loading={loading}
+                    leftIcon={<RefreshCw className="w-4 h-4" />}
+                    className="bg-white/20 hover:bg-white/30 text-white"
+                  >
+                    Refresh
+                  </Button>
+                </div>
+              </div>
             </div>
 
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-              <div className="bg-white rounded-xl border border-neutral-200 p-6">
+            {/* Dashboard Tabs */}
+            <div className="flex space-x-1 bg-white rounded-lg border border-gray-200 p-1 mb-6">
+              <button
+                onClick={() => setActiveTab('overview')}
+                className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors ${
+                  activeTab === 'overview'
+                    ? 'bg-primary-50 text-primary-700'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                Overview
+              </button>
+              <button
+                onClick={() => setActiveTab('leads')}
+                className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors ${
+                  activeTab === 'leads'
+                    ? 'bg-primary-50 text-primary-700'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                Leads
+              </button>
+              <button
+                onClick={() => setActiveTab('deals')}
+                className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors ${
+                  activeTab === 'deals'
+                    ? 'bg-primary-50 text-primary-700'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                Deals
+              </button>
+            </div>
+
+            {/* Stats Cards - Phase 3.4 Enhanced */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+              {/* Leads Card */}
+              <Card className="p-6 hover:shadow-lg transition-shadow">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-neutral-500">Total Contacts</p>
-                    <p className="text-2xl font-bold text-neutral-900 mt-1">0</p>
+                    <p className="text-sm text-gray-500">Total Leads</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">
+                      {isLoadingStats
+                        ? '...'
+                        : dashboardStats?.summary?.leads?.toLocaleString() || '0'}
+                    </p>
+                    {dashboardStats?.summary && (
+                      <div className="flex items-center mt-2 text-sm text-gray-600">
+                        <TrendingUp className="w-4 h-4 mr-1" />
+                        <span>{dashboardStats.summary.newLeadsThisWeek} new this week</span>
+                      </div>
+                    )}
                   </div>
-                  <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center">
-                    <svg className="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
+                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                    <Target className="w-6 h-6 text-blue-600" />
                   </div>
                 </div>
-              </div>
+              </Card>
 
-              <div className="bg-white rounded-xl border border-neutral-200 p-6">
+              {/* Contacts Card */}
+              <Card className="p-6 hover:shadow-lg transition-shadow">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-neutral-500">Total Accounts</p>
-                    <p className="text-2xl font-bold text-neutral-900 mt-1">0</p>
+                    <p className="text-sm text-gray-500">Total Contacts</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">
+                      {isLoadingStats
+                        ? '...'
+                        : dashboardStats?.summary?.contacts?.toLocaleString() || '0'}
+                    </p>
+                    {dashboardStats?.summary && dashboardStats.summary.conversionRate > 0 && (
+                      <div className="flex items-center mt-2 text-sm text-gray-600">
+                        <Activity className="w-4 h-4 mr-1" />
+                        <span>{dashboardStats.summary.conversionRate.toFixed(1)}% conversion</span>
+                      </div>
+                    )}
                   </div>
-                  <div className="w-12 h-12 bg-success-100 rounded-full flex items-center justify-center">
-                    <svg className="w-6 h-6 text-success-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                    </svg>
+                  <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                    <Users className="w-6 h-6 text-green-600" />
                   </div>
                 </div>
-              </div>
+              </Card>
 
-              <div className="bg-white rounded-xl border border-neutral-200 p-6">
+              {/* Deals Card */}
+              <Card className="p-6 hover:shadow-lg transition-shadow">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-neutral-500">Activities Today</p>
-                    <p className="text-2xl font-bold text-neutral-900 mt-1">0</p>
+                    <p className="text-sm text-gray-500">Active Deals</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">
+                      {isLoadingStats
+                        ? '...'
+                        : dashboardStats?.summary?.deals?.toLocaleString() || '0'}
+                    </p>
+                    {dashboardStats?.summary && (
+                      <div className="flex items-center mt-2 text-sm text-gray-600">
+                        <Briefcase className="w-4 h-4 mr-1" />
+                        <span>
+                          ${dashboardStats.summary.totalWonValue?.toLocaleString() || '0'} won
+                        </span>
+                      </div>
+                    )}
                   </div>
-                  <div className="w-12 h-12 bg-warning-100 rounded-full flex items-center justify-center">
-                    <svg className="w-6 h-6 text-warning-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
+                  <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                    <Briefcase className="w-6 h-6 text-purple-600" />
                   </div>
                 </div>
-              </div>
-            </div>
+              </Card>
 
-            {/* Quick Actions */}
-            <div className="bg-white rounded-xl border border-neutral-200 p-6 mb-6">
-              <h2 className="text-lg font-semibold text-neutral-900 mb-4">Quick Actions</h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <button
-                  onClick={() => info('Add Contact', 'Contact creation coming soon')}
-                  className="flex items-center justify-center space-x-2 p-4 border border-neutral-300 hover:border-primary-500 rounded-lg transition-colors hover:bg-primary-50"
-                >
-                  <svg className="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                  </svg>
-                  <span className="font-medium text-neutral-700">Add Contact</span>
-                </button>
-                <button
-                  onClick={() => info('Import CSV', 'CSV import coming soon')}
-                  className="flex items-center justify-center space-x-2 p-4 border border-neutral-300 hover:border-primary-500 rounded-lg transition-colors hover:bg-primary-50"
-                >
-                  <svg className="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                  </svg>
-                  <span className="font-medium text-neutral-700">Import CSV</span>
-                </button>
-                <button
-                  onClick={() => info('Generate Report', 'Reporting coming soon')}
-                  className="flex items-center justify-center space-x-2 p-4 border border-neutral-300 hover:border-primary-500 rounded-lg transition-colors hover:bg-primary-50"
-                >
-                  <svg className="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
-                  <span className="font-medium text-neutral-700">Generate Report</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Recent Activity */}
-            <div className="bg-white rounded-xl border border-neutral-200 p-6">
-              <h2 className="text-lg font-semibold text-neutral-900 mb-4">Recent Activity</h2>
-              <div className="text-center py-8">
-                <div className="w-16 h-16 bg-neutral-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-8 h-8 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
+              {/* Revenue Card */}
+              <Card className="p-6 hover:shadow-lg transition-shadow">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-500">Avg Deal Value</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">
+                      {isLoadingStats
+                        ? '...'
+                        : formatCurrency(dashboardStats?.summary?.averageDealValue || 0)}
+                    </p>
+                    {dashboardStats?.summary && (
+                      <div className="flex items-center mt-2 text-sm text-gray-600">
+                        <DollarSign className="w-4 h-4 mr-1" />
+                        <span>{dashboardStats.summary.winRate?.toFixed(1) || '0'}% win rate</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+                    <DollarSign className="w-6 h-6 text-orange-600" />
+                  </div>
                 </div>
-                <h3 className="text-lg font-medium text-neutral-900">No activity yet</h3>
-                <p className="text-neutral-600 mt-1">Your recent activities will appear here</p>
-                <button
-                  onClick={() => info('Add Activity', 'Activity creation coming soon')}
-                  className="mt-4 inline-flex items-center px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg transition-colors"
-                >
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-                  </svg>
-                  Log First Activity
-                </button>
-              </div>
+              </Card>
             </div>
+
+            {/* Pipeline Overview - Phase 3.4 Enhanced */}
+            {dashboardStats?.pipeline && (
+              <Card className="mb-6">
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg font-semibold text-gray-900">
+                      {dashboardStats.pipeline.name} Pipeline
+                    </h2>
+                    <span className="text-sm text-gray-600">
+                      {dashboardStats.pipeline.totalDeals} deals •{' '}
+                      {formatCurrency(dashboardStats.pipeline.totalValue)} total
+                    </span>
+                  </div>
+
+                  <div className="space-y-4">
+                    {dashboardStats.pipeline.stages.map((stage, index) => (
+                      <div key={stage.stageId || `stage-${index}`} className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                            <span className="font-medium text-gray-700">{stage.stageName}</span>
+                            <span className="text-sm text-gray-500">
+                              {stage.probability}% probability
+                            </span>
+                          </div>
+                          <div className="text-right">
+                            <span className="font-semibold text-gray-900">
+                              {stage.dealCount} deals
+                            </span>
+                            <span className="block text-sm text-gray-500">
+                              {formatCurrency(stage.totalValue)}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-blue-500 to-blue-600"
+                            style={{
+                              width: `${(stage.dealCount / (dashboardStats.pipeline?.totalDeals || 1)) * 100}%`,
+                            }}
+                          ></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </Card>
+            )}
+
+            {/* Recent Activity & Quick Stats */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Recent Leads */}
+              <Card className="lg:col-span-2">
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg font-semibold text-gray-900">Recent Leads</h2>
+                    <Link
+                      to="/leads"
+                      className="text-sm text-primary-600 hover:text-primary-700 flex items-center"
+                    >
+                      View all <ChevronRight className="w-4 h-4 ml-1" />
+                    </Link>
+                  </div>
+
+                  {isLoadingLeads ? (
+                    <div className="flex justify-center py-8">
+                      <LoadingSpinner size="md" />
+                    </div>
+                  ) : recentLeads?.data && recentLeads.data.length > 0 ? (
+                    <div className="space-y-4">
+                      {recentLeads.data.map((lead) => (
+                        <div
+                          key={lead.id}
+                          className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                        >
+                          <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                              <span className="font-medium text-blue-600">
+                                {lead.name.charAt(0).toUpperCase()}
+                              </span>
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-900">{lead.name}</p>
+                              <p className="text-sm text-gray-500">
+                                {lead.company || 'No company'} • {lead.email || 'No email'}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <span
+                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                lead.status === 'new'
+                                  ? 'bg-blue-100 text-blue-800'
+                                  : lead.status === 'contacted'
+                                    ? 'bg-yellow-100 text-yellow-800'
+                                    : lead.status === 'qualified'
+                                      ? 'bg-green-100 text-green-800'
+                                      : 'bg-gray-100 text-gray-800'
+                              }`}
+                            >
+                              {lead.status}
+                            </span>
+                            <p className="text-xs text-gray-500 mt-1">
+                              {formatDate(lead.createdAt)}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">No recent leads found</div>
+                  )}
+                </div>
+              </Card>
+
+              {/* Quick Stats */}
+              <Card>
+                <div className="p-6">
+                  <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Stats</h2>
+
+                  {isLoadingStats ? (
+                    <div className="flex justify-center py-8">
+                      <LoadingSpinner size="md" />
+                    </div>
+                  ) : dashboardStats ? (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                        <div>
+                          <p className="text-sm text-gray-600">Win Rate</p>
+                          <p className="text-2xl font-bold text-gray-900">
+                            {dashboardStats.summary?.winRate?.toFixed(1) || '0'}%
+                          </p>
+                        </div>
+                        <TrendingUp className="w-8 h-8 text-blue-600" />
+                      </div>
+
+                      <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                        <div>
+                          <p className="text-sm text-gray-600">Deals This Month</p>
+                          <p className="text-2xl font-bold text-gray-900">
+                            {dashboardStats.summary?.dealsThisMonth || '0'}
+                          </p>
+                        </div>
+                        <Calendar className="w-8 h-8 text-green-600" />
+                      </div>
+
+                      <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
+                        <div>
+                          <p className="text-sm text-gray-600">Overdue Deals</p>
+                          <p className="text-2xl font-bold text-gray-900">
+                            {dashboardStats.summary?.overdueDeals || '0'}
+                          </p>
+                        </div>
+                        <Clock className="w-8 h-8 text-purple-600" />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">No stats available</div>
+                  )}
+                </div>
+              </Card>
+            </div>
+
+            {/* Recent Deals */}
+            <Card className="mt-6">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold text-gray-900">Recent Deals</h2>
+                  <Link
+                    to="/deals"
+                    className="text-sm text-primary-600 hover:text-primary-700 flex items-center"
+                  >
+                    View all <ChevronRight className="w-4 h-4 ml-1" />
+                  </Link>
+                </div>
+
+                {isLoadingDeals ? (
+                  <div className="flex justify-center py-8">
+                    <LoadingSpinner size="md" />
+                  </div>
+                ) : recentDeals?.data && recentDeals.data.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-gray-200">
+                          <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900">
+                            Deal Name
+                          </th>
+                          <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900">
+                            Stage
+                          </th>
+                          <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900">
+                            Value
+                          </th>
+                          <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900">
+                            Probability
+                          </th>
+                          <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900">
+                            Expected Close
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {recentDeals.data.map((deal) => (
+                          <tr
+                            key={deal.id}
+                            className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                          >
+                            <td className="py-3 px-4">
+                              <div className="font-medium text-gray-900">{deal.name}</div>
+                              <div className="text-sm text-gray-500">
+                                {deal.pipelineName || 'No pipeline'}
+                              </div>
+                            </td>
+                            <td className="py-3 px-4">
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                {deal.stageName || deal.stageId}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 font-medium text-gray-900">
+                              {formatCurrency(deal.amount)}
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="flex items-center">
+                                <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                  <div
+                                    className="bg-green-500 h-2 rounded-full"
+                                    style={{ width: `${deal.probability}%` }}
+                                  ></div>
+                                </div>
+                                <span className="text-sm text-gray-700">{deal.probability}%</span>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4 text-sm text-gray-600">
+                              {deal.expectedCloseDate
+                                ? formatDate(deal.expectedCloseDate)
+                                : 'Not set'}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">No recent deals found</div>
+                )}
+              </div>
+            </Card>
           </div>
         </main>
       </div>
 
-      {/* Session Warning Modal (would be triggered by useSession hook) */}
+      {/* Loading Overlay */}
       {isLoading && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 max-w-sm w-full mx-4">
             <div className="flex flex-col items-center">
               <LoadingSpinner size="lg" />
-              <p className="mt-4 text-neutral-700">Loading...</p>
+              <p className="mt-4 text-gray-700">Loading dashboard data...</p>
             </div>
           </div>
         </div>

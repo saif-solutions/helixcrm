@@ -1,6 +1,4 @@
-﻿//D:\Projects-In-Hand\helixcrm\apps\api\src\modules\contacts\contacts.controller.ts
-
-import { 
+﻿import { 
   Controller, 
   Get, 
   Post, 
@@ -21,12 +19,14 @@ import {
 } from "@nestjs/common";
 import { AuthGuard } from "../../shared/guards/auth.guard";
 import { TenantGuard } from "../../shared/guards/tenant.guard";
+import { PermissionGuard } from "../../shared/guards/permission.guard";
+import { RequirePermission } from "../../shared/decorators/require-permission.decorator";
 import { ContactsService } from "./contacts.service";
 import { CreateContactDto } from "./dto/create-contact.dto";
 import { UpdateContactDto } from "./dto/update-contact.dto";
 
 @Controller("contacts")
-@UseGuards(AuthGuard, TenantGuard)
+@UseGuards(AuthGuard, TenantGuard, PermissionGuard)
 export class ContactsController {
   constructor(private readonly contactsService: ContactsService) {}
 
@@ -34,6 +34,7 @@ export class ContactsController {
   @HttpCode(HttpStatus.CREATED)
   @UsePipes(ValidationPipe)
   @UsePipes(new ValidationPipe({ transform: true }))
+  @RequirePermission('contacts.write')
   create(@Body() createContactDto: CreateContactDto, @Req() req: Request) {
     return this.contactsService.create({
       ...createContactDto,
@@ -42,6 +43,7 @@ export class ContactsController {
   }
 
   @Get()
+  @RequirePermission('contacts.read')
   findAll(
     @Req() req: Request,
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
@@ -57,12 +59,14 @@ export class ContactsController {
   }
 
   @Get(":id")
+  @RequirePermission('contacts.read')
   findOne(@Param("id") id: string, @Req() req: Request) {
     return this.contactsService.findOne(id, (req as any).user.organizationId);
   }
 
   @Put(":id")
   @UsePipes(new ValidationPipe({ transform: true, skipMissingProperties: true }))
+  @RequirePermission('contacts.write')
   update(
     @Param("id") id: string,
     @Body() updateContactDto: UpdateContactDto,
@@ -77,6 +81,7 @@ export class ContactsController {
 
   @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @RequirePermission('contacts.delete')
   remove(@Param("id") id: string, @Req() req: Request) {
     return this.contactsService.remove(id, (req as any).user.organizationId);
   }

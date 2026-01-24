@@ -16,16 +16,19 @@ import { Lead } from '../../lib/types/api.types';
 
 // Zod schema for lead validation
 const leadSchema = z.object({
-  name: z.string()
+  name: z
+    .string()
     .min(2, { message: 'Name must be at least 2 characters' })
     .max(100, { message: 'Name cannot exceed 100 characters' }),
-  email: z.string()
+  email: z
+    .string()
     .email({ message: 'Please enter a valid email address' })
     .optional()
     .or(z.literal('')),
-  phone: z.string()
+  phone: z
+    .string()
     .optional()
-    .refine(val => !val || /^[\d\s\-\+\(\)]+$/.test(val), {
+    .refine((val) => !val || /^[\d\s\-\+\(\)]+$/.test(val), {
       message: 'Please enter a valid phone number',
     }),
   status: z.enum(['new', 'contacted', 'qualified']).default('new'),
@@ -51,19 +54,19 @@ const EditLeadPage: React.FC = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const navigate = useNavigate();
   const { success, error } = useToast();
-  
+
   // Fetch lead data
   const { data: lead, isLoading } = useApiQuery(
     ['lead', id || ''],
     async () => {
       // TODO: Replace with real API call
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 500));
       if (!id) throw new Error('Lead ID not found');
       return mockLead; // Replace with API call
     },
     { enabled: !!id }
   );
-  
+
   const {
     register,
     handleSubmit,
@@ -74,7 +77,7 @@ const EditLeadPage: React.FC = () => {
   } = useForm<LeadFormData>({
     resolver: zodResolver(leadSchema),
   });
-  
+
   // Reset form when lead data loads
   useEffect(() => {
     if (lead) {
@@ -86,17 +89,17 @@ const EditLeadPage: React.FC = () => {
       });
     }
   }, [lead, reset]);
-  
+
   const onSubmit = async (data: LeadFormData) => {
     if (!id) return;
-    
+
     setIsSubmitting(true);
-    
+
     try {
       // TODO: Replace with real API call
       console.log('Updating lead:', id, data);
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
       success('Lead Updated', `${data.name} has been updated`);
       navigate('/leads');
     } catch (err) {
@@ -105,21 +108,23 @@ const EditLeadPage: React.FC = () => {
       setIsSubmitting(false);
     }
   };
-  
+
   const handleDelete = async () => {
     if (!id) return;
-    
-    if (!window.confirm('Are you sure you want to delete this lead? This action cannot be undone.')) {
+
+    if (
+      !window.confirm('Are you sure you want to delete this lead? This action cannot be undone.')
+    ) {
       return;
     }
-    
+
     setIsDeleting(true);
-    
+
     try {
       // TODO: Replace with real API call
       console.log('Deleting lead:', id);
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
       success('Lead Deleted', 'The lead has been removed');
       navigate('/leads');
     } catch (err) {
@@ -128,15 +133,27 @@ const EditLeadPage: React.FC = () => {
       setIsDeleting(false);
     }
   };
-  
-  const statusOptions: { value: 'new' | 'contacted' | 'qualified'; label: string; color: string }[] = [
+
+  const statusOptions: {
+    value: 'new' | 'contacted' | 'qualified';
+    label: string;
+    color: string;
+  }[] = [
     { value: 'new', label: 'New', color: 'text-blue-600 bg-blue-50 border-blue-200' },
-    { value: 'contacted', label: 'Contacted', color: 'text-yellow-600 bg-yellow-50 border-yellow-200' },
-    { value: 'qualified', label: 'Qualified', color: 'text-green-600 bg-green-50 border-green-200' },
+    {
+      value: 'contacted',
+      label: 'Contacted',
+      color: 'text-yellow-600 bg-yellow-50 border-yellow-200',
+    },
+    {
+      value: 'qualified',
+      label: 'Qualified',
+      color: 'text-green-600 bg-green-50 border-green-200',
+    },
   ];
-  
+
   const selectedStatus = watch('status');
-  
+
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -146,7 +163,7 @@ const EditLeadPage: React.FC = () => {
       </div>
     );
   }
-  
+
   if (!lead) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -159,7 +176,7 @@ const EditLeadPage: React.FC = () => {
       </div>
     );
   }
-  
+
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Header */}
@@ -176,7 +193,7 @@ const EditLeadPage: React.FC = () => {
             <p className="text-gray-600">Update lead information</p>
           </div>
         </div>
-        
+
         <Button
           variant="danger"
           size="sm"
@@ -187,23 +204,23 @@ const EditLeadPage: React.FC = () => {
           Delete
         </Button>
       </div>
-      
+
       <div className="max-w-2xl mx-auto">
         <Card>
           <form onSubmit={handleSubmit(onSubmit)}>
             <div className="p-6 space-y-6">
               {/* Lead Info */}
               <div className="text-sm text-gray-600 mb-4">
-                <p>Lead ID: <span className="font-mono">{id}</span></p>
+                <p>
+                  Lead ID: <span className="font-mono">{id}</span>
+                </p>
                 <p>Created: {new Date(lead.createdAt).toLocaleDateString()}</p>
                 <p>Last Updated: {new Date(lead.updatedAt).toLocaleDateString()}</p>
               </div>
-              
+
               {/* Status Selector */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Status
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
                 <div className="flex gap-2">
                   {statusOptions.map((option) => (
                     <button
@@ -224,7 +241,7 @@ const EditLeadPage: React.FC = () => {
                   <p className="mt-1 text-sm text-red-600">{errors.status.message}</p>
                 )}
               </div>
-              
+
               {/* Name */}
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
@@ -238,7 +255,7 @@ const EditLeadPage: React.FC = () => {
                   {...register('name')}
                 />
               </div>
-              
+
               {/* Email */}
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
@@ -252,7 +269,7 @@ const EditLeadPage: React.FC = () => {
                   {...register('email')}
                 />
               </div>
-              
+
               {/* Phone */}
               <div>
                 <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
@@ -266,7 +283,7 @@ const EditLeadPage: React.FC = () => {
                   {...register('phone')}
                 />
               </div>
-              
+
               {/* Notes */}
               <div>
                 <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
@@ -280,7 +297,7 @@ const EditLeadPage: React.FC = () => {
                   defaultValue="Initial contact made via email. Interested in enterprise plan."
                 />
               </div>
-              
+
               {/* Form Actions */}
               <div className="flex justify-end gap-3 pt-4 border-t">
                 <Link to="/leads">
@@ -288,7 +305,11 @@ const EditLeadPage: React.FC = () => {
                     Cancel
                   </Button>
                 </Link>
-                <Button type="submit" loading={isSubmitting} leftIcon={<Save className="w-4 h-4" />}>
+                <Button
+                  type="submit"
+                  loading={isSubmitting}
+                  leftIcon={<Save className="w-4 h-4" />}
+                >
                   Save Changes
                 </Button>
               </div>

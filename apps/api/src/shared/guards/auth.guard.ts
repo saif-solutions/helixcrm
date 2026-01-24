@@ -1,6 +1,8 @@
 import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from "@nestjs/common";
+import { Reflector } from "@nestjs/core"; // ADD THIS IMPORT
 import { JwtService } from "@nestjs/jwt";
 import { PrismaService } from "../prisma/prisma.service";
+import { PERMISSION_KEY } from "../decorators/require-permission.decorator"; // ADD THIS IMPORT
 
 interface JwtPayload {
   sub: string;
@@ -15,9 +17,21 @@ export class AuthGuard implements CanActivate {
   constructor(
     private jwtService: JwtService,
     private prisma: PrismaService,
+    private reflector: Reflector, // ADD THIS
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    // Check if route is public (has @Public() decorator)
+    const requiredPermissions = this.reflector.getAllAndOverride<string[]>(
+      PERMISSION_KEY,
+      [context.getHandler(), context.getClass()],
+    );
+    
+    // If route is public (empty permissions array), allow access
+    if (requiredPermissions && requiredPermissions.length === 0) {
+      return true;
+    }
+
     const request = context.switchToHttp().getRequest();
     const token = this.extractToken(request);
 

@@ -24,14 +24,11 @@ import {
   TypographyColor,
   TypographyWeight,
 } from './Typography.types';
-import {
-  getTypographyClasses,
-  getLineClampStyles,
-} from './Typography.styles';
+import { getTypographyClasses, getLineClampStyles } from './Typography.styles';
 
 /**
  * Typography component for consistent text rendering throughout the application.
- * 
+ *
  * Features:
  * - All heading variants (display, h1-h6)
  * - Body text variants (body, bodySmall, lead, subtitle)
@@ -40,7 +37,7 @@ import {
  * - Line clamping and truncation
  * - Semantic HTML elements with proper accessibility
  * - Forward ref support
- * 
+ *
  * @example
  * ```tsx
  * <Typography variant="h1">Main Heading</Typography>
@@ -72,14 +69,14 @@ export const Typography = React.forwardRef<TypographyRef, TypographyProps>(
   ) => {
     // Determine which HTML element to use
     const Element = as || getTypographyElement(variant);
-    
+
     // Get accessibility props for headings
     const isHeading = isTypographyHeading(variant);
     const accessibilityProps = {
       role: getTypographyRole(variant),
       'aria-level': isHeading ? getTypographyAriaLevel(variant) : undefined,
     };
-    
+
     // Build CSS classes using utility functions
     const typographyClassName = getTypographyClasses(
       variant,
@@ -94,12 +91,10 @@ export const Typography = React.forwardRef<TypographyRef, TypographyProps>(
       className,
       disabled
     );
-    
+
     // Get line clamp styles if needed
     const lineClampStyle = getLineClampStyles(lineClamp);
-    const combinedStyle = lineClampStyle 
-      ? { ...lineClampStyle, ...props.style }
-      : props.style;
+    const combinedStyle = lineClampStyle ? { ...lineClampStyle, ...props.style } : props.style;
 
     return React.createElement(
       Element,
@@ -300,37 +295,36 @@ Code.displayName = 'Code';
  * <TypographyLink href="/about">About Us</TypographyLink>
  * ```
  */
-export const TypographyLink = React.forwardRef<HTMLAnchorElement, 
+export const TypographyLink = React.forwardRef<
+  HTMLAnchorElement,
   Omit<TypographyProps, 'as'> & React.AnchorHTMLAttributes<HTMLAnchorElement>
->(
-  ({ href, className, children, ...props }, ref) => (
-    <a
-      ref={ref}
-      href={href}
-      className={cn(
-        getTypographyClasses(
-          props.variant || 'body',
-          props.color || 'primary',
-          props.weight,
-          props.align || 'left',
-          props.truncate || false,
-          props.uppercase || false,
-          props.italic || false,
-          props.underline || false,
-          props.selectable !== false,
-          // props.disabled || false,
-          className
-        ),
-        'text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300',
-        'underline underline-offset-2',
-        'transition-colors duration-200'
-      )}
-      {...props}
-    >
-      {children}
-    </a>
-  )
-);
+>(({ href, className, children, ...props }, ref) => (
+  <a
+    ref={ref}
+    href={href}
+    className={cn(
+      getTypographyClasses(
+        props.variant || 'body',
+        props.color || 'primary',
+        props.weight,
+        props.align || 'left',
+        props.truncate || false,
+        props.uppercase || false,
+        props.italic || false,
+        props.underline || false,
+        props.selectable !== false,
+        // props.disabled || false,
+        className
+      ),
+      'text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300',
+      'underline underline-offset-2',
+      'transition-colors duration-200'
+    )}
+    {...props}
+  >
+    {children}
+  </a>
+));
 TypographyLink.displayName = 'TypographyLink';
 
 /**
@@ -340,12 +334,7 @@ export const InlineCode = React.forwardRef<HTMLElement, CodeProps>(
   (props: CodeProps, ref: React.Ref<HTMLElement>) => (
     <Code
       ref={ref}
-      className={cn(
-        'inline-block',
-        'px-1.5 py-0.5',
-        'text-sm',
-        props.className
-      )}
+      className={cn('inline-block', 'px-1.5 py-0.5', 'text-sm', props.className)}
       {...props}
     />
   )
@@ -355,20 +344,13 @@ InlineCode.displayName = 'InlineCode';
 /**
  * Text highlight component
  */
-export const Highlight = React.forwardRef<HTMLSpanElement, 
-  Omit<TypographyProps, 'variant'>
->(
+export const Highlight = React.forwardRef<HTMLSpanElement, Omit<TypographyProps, 'variant'>>(
   ({ className, children, ...props }, ref) => (
     <Typography
       ref={ref as React.Ref<HTMLElement>}
       as="span"
       variant="body"
-      className={cn(
-        'bg-yellow-100 dark:bg-yellow-900',
-        'px-1 py-0.5',
-        'rounded',
-        className
-      )}
+      className={cn('bg-yellow-100 dark:bg-yellow-900', 'px-1 py-0.5', 'rounded', className)}
       {...props}
     >
       {children}
@@ -408,7 +390,7 @@ export const TypographyProvider: React.FC<{
 export const TypographyWithContext = React.forwardRef<TypographyRef, TypographyProps>(
   (props, ref) => {
     const context = React.useContext(TypographyContext);
-    
+
     // Merge context defaults with props
     const mergedProps = {
       variant: props.variant || context.defaultVariant || 'body',
@@ -416,7 +398,7 @@ export const TypographyWithContext = React.forwardRef<TypographyRef, TypographyP
       weight: props.weight || context.defaultWeight,
       ...props,
     };
-    
+
     return <Typography ref={ref} {...mergedProps} />;
   }
 );

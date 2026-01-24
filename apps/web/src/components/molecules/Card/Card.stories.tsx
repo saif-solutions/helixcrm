@@ -1,12 +1,12 @@
 // D:\Projects-In-Hand\helixcrm\apps\web\src\components\molecules\Card\Card.stories.tsx
-import { 
-  Card, 
-  CardHeader, 
-  CardTitle, 
-  CardSubtitle, 
-  CardContent, 
-  CardFooter, 
-  CardActions 
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardSubtitle,
+  CardContent,
+  CardFooter,
+  CardActions,
 } from './Card';
 import { Button } from '../../atoms/Button'; // Fixed import path
 
@@ -40,15 +40,15 @@ export const Variants = () => (
     <Card variant="default">
       <CardContent>Default Card</CardContent>
     </Card>
-    
+
     <Card variant="outline">
       <CardContent>Outline Card</CardContent>
     </Card>
-    
+
     <Card variant="ghost">
       <CardContent>Ghost Card</CardContent>
     </Card>
-    
+
     <Card variant="elevated">
       <CardContent>Elevated Card</CardContent>
     </Card>
@@ -61,11 +61,11 @@ export const Sizes = () => (
     <Card size="sm">
       <CardContent>Small Card</CardContent>
     </Card>
-    
+
     <Card size="md">
       <CardContent>Medium Card</CardContent>
     </Card>
-    
+
     <Card size="lg">
       <CardContent>Large Card</CardContent>
     </Card>
@@ -86,15 +86,13 @@ export const WithHeader = () => (
         </p>
       </CardContent>
     </Card>
-    
+
     <Card>
       <CardHeader>
         <CardTitle>Another Card</CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="text-gray-600">
-          Card with just a title and no subtitle.
-        </p>
+        <p className="text-gray-600">Card with just a title and no subtitle.</p>
       </CardContent>
     </Card>
   </div>
@@ -113,8 +111,8 @@ export const WithImage = () => (
   >
     <CardContent>
       <p className="text-gray-600">
-        This card features a header image with title and subtitle overlay.
-        Perfect for showcasing featured content.
+        This card features a header image with title and subtitle overlay. Perfect for showcasing
+        featured content.
       </p>
     </CardContent>
   </Card>
@@ -123,10 +121,7 @@ export const WithImage = () => (
 // With footer and actions
 export const WithFooter = () => (
   <div className="space-y-4">
-    <Card
-      title="User Profile"
-      subtitle="Manage your account settings"
-    >
+    <Card title="User Profile" subtitle="Manage your account settings">
       <CardContent>
         <p className="text-gray-600">
           Update your profile information, password, and account settings.
@@ -139,7 +134,7 @@ export const WithFooter = () => (
         </CardActions>
       </CardFooter>
     </Card>
-    
+
     <Card>
       <CardHeader>
         <CardTitle>Product Card</CardTitle>
@@ -171,7 +166,7 @@ export const InteractiveCards = () => (
         </div>
       </CardContent>
     </Card>
-    
+
     <Card clickable onClick={() => alert('Card clicked!')}>
       <CardContent>
         <div className="text-center">
@@ -191,15 +186,16 @@ export const WithSubComponents = () => (
       <CardTitle>Using Sub-Components</CardTitle>
       <CardSubtitle>More control over card structure</CardSubtitle>
     </CardHeader>
-    
+
     <CardContent>
       <p className="text-gray-600 mb-4">
-        When you need more control over the card structure, you can use the individual sub-components.
+        When you need more control over the card structure, you can use the individual
+        sub-components.
       </p>
-      
+
       <div className="bg-gray-50 p-4 rounded">
         <pre className="text-sm">
-{`<Card>
+          {`<Card>
   <CardHeader>
     <CardTitle>Title</CardTitle>
     <CardSubtitle>Subtitle</CardSubtitle>
@@ -216,7 +212,7 @@ export const WithSubComponents = () => (
         </pre>
       </div>
     </CardContent>
-    
+
     <CardFooter>
       <CardActions>
         <Button variant="ghost">Learn More</Button>
@@ -244,7 +240,7 @@ export const UsageExamples = () => (
             </div>
           </div>
         </Card>
-        
+
         <Card hoverable>
           <div className="flex items-start gap-4">
             <div className="w-12 h-12 bg-success-100 rounded-full flex items-center justify-center">
@@ -259,7 +255,7 @@ export const UsageExamples = () => (
         </Card>
       </div>
     </div>
-    
+
     <div>
       <h3 className="text-lg font-semibold mb-3">Dashboard Stats</h3>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -269,21 +265,21 @@ export const UsageExamples = () => (
             <div className="text-sm text-gray-500">Total Users</div>
           </CardContent>
         </Card>
-        
+
         <Card variant="outline" size="sm">
           <CardContent className="text-center">
             <div className="text-2xl font-bold text-success-600">89%</div>
             <div className="text-sm text-gray-500">Growth Rate</div>
           </CardContent>
         </Card>
-        
+
         <Card variant="outline" size="sm">
           <CardContent className="text-center">
             <div className="text-2xl font-bold text-warning-600">$12.5K</div>
             <div className="text-sm text-gray-500">Revenue</div>
           </CardContent>
         </Card>
-        
+
         <Card variant="outline" size="sm">
           <CardContent className="text-center">
             <div className="text-2xl font-bold text-info-600">256</div>
@@ -292,7 +288,7 @@ export const UsageExamples = () => (
         </Card>
       </div>
     </div>
-    
+
     <div>
       <h3 className="text-lg font-semibold mb-3">Settings Panel</h3>
       <Card>
@@ -300,7 +296,7 @@ export const UsageExamples = () => (
           <CardTitle>Notification Settings</CardTitle>
           <CardSubtitle>Manage how you receive notifications</CardSubtitle>
         </CardHeader>
-        
+
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
@@ -311,7 +307,7 @@ export const UsageExamples = () => (
               <div className="w-5 h-5 bg-white rounded-full absolute top-0.5 right-0.5"></div>
             </div>
           </div>
-          
+
           <div className="flex items-center justify-between">
             <div>
               <p className="font-medium">Push Notifications</p>
@@ -321,7 +317,7 @@ export const UsageExamples = () => (
               <div className="w-5 h-5 bg-white rounded-full absolute top-0.5 left-0.5"></div>
             </div>
           </div>
-          
+
           <div className="flex items-center justify-between">
             <div>
               <p className="font-medium">SMS Alerts</p>
@@ -332,7 +328,7 @@ export const UsageExamples = () => (
             </div>
           </div>
         </CardContent>
-        
+
         <CardFooter>
           <CardActions>
             <Button variant="ghost">Reset</Button>

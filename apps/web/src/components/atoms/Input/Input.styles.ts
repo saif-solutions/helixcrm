@@ -6,13 +6,13 @@
 export const inputTokens = {
   // Spacing tokens (4px grid system)
   spacing: {
-    xs: '0.25rem',    // 4px
-    sm: '0.5rem',     // 8px
-    md: '0.75rem',    // 12px
-    lg: '1rem',       // 16px
-    xl: '1.5rem',     // 24px
+    xs: '0.25rem', // 4px
+    sm: '0.5rem', // 8px
+    md: '0.75rem', // 12px
+    lg: '1rem', // 16px
+    xl: '1.5rem', // 24px
   },
-  
+
   // Border radius tokens
   borderRadius: {
     none: 'rounded-none',
@@ -21,14 +21,14 @@ export const inputTokens = {
     lg: 'rounded-lg',
     full: 'rounded-full',
   },
-  
+
   // Animation durations
   transition: {
     fast: 'duration-150',
     normal: 'duration-200',
     slow: 'duration-300',
   },
-  
+
   // Icon sizes
   iconSize: {
     sm: 'h-4 w-4',
@@ -56,76 +56,45 @@ export const inputClasses = {
     'disabled:cursor-not-allowed',
     'transition-colors',
   ].join(' '),
-  
+
   // Variant classes (border and focus colors)
   variant: {
-    default: [
-      'border-gray-300',
-      'focus:border-primary-500',
-      'focus:ring-primary-500',
-    ].join(' '),
-    
-    success: [
-      'border-success-300',
-      'focus:border-success-500',
-      'focus:ring-success-500',
-    ].join(' '),
-    
-    error: [
-      'border-error-300',
-      'focus:border-error-500',
-      'focus:ring-error-500',
-    ].join(' '),
-    
-    warning: [
-      'border-warning-300',
-      'focus:border-warning-500',
-      'focus:ring-warning-500',
-    ].join(' '),
+    default: ['border-gray-300', 'focus:border-primary-500', 'focus:ring-primary-500'].join(' '),
+
+    success: ['border-success-300', 'focus:border-success-500', 'focus:ring-success-500'].join(' '),
+
+    error: ['border-error-300', 'focus:border-error-500', 'focus:ring-error-500'].join(' '),
+
+    warning: ['border-warning-300', 'focus:border-warning-500', 'focus:ring-warning-500'].join(' '),
   },
-  
+
   // Size classes (padding, font size, border radius)
   size: {
-    sm: [
-      'px-3',
-      'py-1.5',
-      'text-sm',
-      'rounded',
-    ].join(' '),
-    
-    md: [
-      'px-4',
-      'py-2.5',
-      'text-sm',
-      'rounded-md',
-    ].join(' '),
-    
-    lg: [
-      'px-4',
-      'py-3',
-      'text-base',
-      'rounded-md',
-    ].join(' '),
+    sm: ['px-3', 'py-1.5', 'text-sm', 'rounded'].join(' '),
+
+    md: ['px-4', 'py-2.5', 'text-sm', 'rounded-md'].join(' '),
+
+    lg: ['px-4', 'py-3', 'text-base', 'rounded-md'].join(' '),
   },
-  
+
   // Wrapper classes
   wrapper: {
     base: 'relative',
     fullWidth: 'w-full',
   },
-  
+
   // Icon container classes
   iconContainer: {
     base: 'absolute inset-y-0 flex items-center pointer-events-none',
     left: 'left-0 pl-3',
     right: 'right-0 pr-3',
   },
-  
+
   // Label classes
   label: {
     base: 'block text-sm font-medium text-gray-700',
   },
-  
+
   // Helper text classes
   helper: {
     base: 'text-sm text-gray-500',
@@ -156,36 +125,30 @@ export function getInputClasses(
   size: InputSize = 'md',
   options?: InputClassOptions
 ): string {
-  const {
-    disabled,
-    readonly,
-    hasLeftIcon,
-    hasRightIcon,
-    className,
-  } = options || {};
-  
+  const { disabled, readonly, hasLeftIcon, hasRightIcon, className } = options || {};
+
   const classes = [
     // Base classes
     inputClasses.base,
-    
+
     // Variant
     inputClasses.variant[variant],
-    
+
     // Size
     inputClasses.size[size],
-    
+
     // States
     disabled ? 'opacity-50 cursor-not-allowed' : '',
     readonly ? 'bg-gray-50' : '',
-    
+
     // Padding adjustments for icons
     hasLeftIcon ? 'pl-10' : '',
     hasRightIcon ? 'pr-10' : '',
-    
+
     // Custom classes
     className || '',
   ];
-  
+
   return classes.filter(Boolean).join(' ');
 }
 
@@ -195,11 +158,9 @@ export function getInputClasses(
 export function getIconContainerClasses(position: IconPosition): string {
   const classes = [
     inputClasses.iconContainer.base,
-    position === 'left' 
-      ? inputClasses.iconContainer.left 
-      : inputClasses.iconContainer.right,
+    position === 'left' ? inputClasses.iconContainer.left : inputClasses.iconContainer.right,
   ];
-  
+
   return classes.join(' ');
 }
 
@@ -212,7 +173,7 @@ export function getWrapperClasses(fullWidth?: boolean, className?: string): stri
     fullWidth ? inputClasses.wrapper.fullWidth : '',
     className || '',
   ];
-  
+
   return classes.filter(Boolean).join(' ');
 }
 
@@ -227,9 +188,7 @@ export function getLabelClasses(): string {
  * Utility function to get helper text classes
  */
 export function getHelperClasses(isError?: boolean): string {
-  return isError 
-    ? inputClasses.helper.error 
-    : inputClasses.helper.base;
+  return isError ? inputClasses.helper.error : inputClasses.helper.base;
 }
 
 /**

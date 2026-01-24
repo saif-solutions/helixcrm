@@ -8,46 +8,46 @@ import { KanbanColor, KanbanPriority } from './Kanban.types';
 export const kanbanTokens = {
   // Spacing tokens (in rem units - 4px base)
   spacing: {
-    xs: '0.25rem',    // 4px
-    sm: '0.5rem',     // 8px
-    md: '0.75rem',    // 12px
-    lg: '1rem',       // 16px
-    xl: '1.5rem',     // 24px
-    '2xl': '2rem',    // 32px
+    xs: '0.25rem', // 4px
+    sm: '0.5rem', // 8px
+    md: '0.75rem', // 12px
+    lg: '1rem', // 16px
+    xl: '1.5rem', // 24px
+    '2xl': '2rem', // 32px
   },
-  
+
   // Column dimensions
   column: {
-    minWidth: '280px',      // Minimum column width
-    maxWidth: '380px',      // Maximum column width
-    headerHeight: '3rem',   // Column header height
+    minWidth: '280px', // Minimum column width
+    maxWidth: '380px', // Maximum column width
+    headerHeight: '3rem', // Column header height
     footerHeight: '2.5rem', // Column footer height
-    gap: '1rem',           // Gap between columns
+    gap: '1rem', // Gap between columns
   },
-  
+
   // Card dimensions
   card: {
-    minHeight: '5rem',     // Minimum card height
-    maxHeight: '12rem',    // Maximum card height (before scroll)
-    padding: '0.75rem',    // Card internal padding
+    minHeight: '5rem', // Minimum card height
+    maxHeight: '12rem', // Maximum card height (before scroll)
+    padding: '0.75rem', // Card internal padding
     borderRadius: '0.375rem', // Card border radius
     marginBottom: '0.5rem', // Space between cards
   },
-  
+
   // Animation durations
   animation: {
     fast: '150ms',
     normal: '250ms',
     slow: '350ms',
   },
-  
+
   // Shadow tokens
   shadow: {
     sm: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
     md: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
     lg: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
   },
-  
+
   // Z-index layers
   zIndex: {
     card: 10,
@@ -77,14 +77,10 @@ export const kanbanClasses = {
     'transition-all',
     'duration-200',
   ].join(' '),
-  
+
   // Loading state
-  loading: [
-    'opacity-70',
-    'cursor-wait',
-    'select-none',
-  ].join(' '),
-  
+  loading: ['opacity-70', 'cursor-wait', 'select-none'].join(' '),
+
   // Empty state
   empty: [
     'flex',
@@ -96,7 +92,7 @@ export const kanbanClasses = {
     'text-lg',
     'font-medium',
   ].join(' '),
-  
+
   // Error state
   error: [
     'flex',
@@ -115,7 +111,7 @@ export const kanbanClasses = {
     'bg-error-50',
     'dark:bg-error-900/20',
   ].join(' '),
-  
+
   // Column classes
   column: {
     base: [
@@ -135,7 +131,7 @@ export const kanbanClasses = {
       'transition-all',
       'duration-200',
     ].join(' '),
-    
+
     // Column color variants
     color: {
       primary: 'border-primary-200 dark:border-primary-800',
@@ -146,7 +142,7 @@ export const kanbanClasses = {
       info: 'border-info-200 dark:border-info-800',
       gray: 'border-gray-200 dark:border-gray-700',
     },
-    
+
     // Column states
     state: {
       dragging: [
@@ -166,13 +162,9 @@ export const kanbanClasses = {
         'ring-offset-white',
         'dark:ring-offset-gray-800',
       ].join(' '),
-      collapsed: [
-        'w-16',
-        'min-h-0',
-        'overflow-hidden',
-      ].join(' '),
+      collapsed: ['w-16', 'min-h-0', 'overflow-hidden'].join(' '),
     },
-    
+
     // Column header
     header: [
       'flex',
@@ -190,7 +182,7 @@ export const kanbanClasses = {
       'top-0',
       'z-10',
     ].join(' '),
-    
+
     // Column body (cards container)
     body: [
       'flex-1',
@@ -201,7 +193,7 @@ export const kanbanClasses = {
       'transition-all',
       'duration-200',
     ].join(' '),
-    
+
     // Column footer
     footer: [
       'px-4',
@@ -215,7 +207,7 @@ export const kanbanClasses = {
       'sticky',
       'bottom-0',
     ].join(' '),
-    
+
     // Card count badge
     count: [
       'inline-flex',
@@ -232,7 +224,7 @@ export const kanbanClasses = {
       'dark:text-gray-300',
       'min-w-[1.5rem]',
     ].join(' '),
-    
+
     // WIP limit indicator
     wipLimit: {
       base: [
@@ -249,7 +241,7 @@ export const kanbanClasses = {
       over: 'bg-error-100 text-error-800 dark:bg-error-900 dark:text-error-200',
     },
   },
-  
+
   // Card classes
   card: {
     base: [
@@ -271,16 +263,10 @@ export const kanbanClasses = {
       'select-none',
       'group',
     ].join(' '),
-    
+
     // Card states
     state: {
-      dragging: [
-        'opacity-50',
-        'shadow-lg',
-        'rotate-1',
-        'scale-105',
-        'z-50',
-      ].join(' '),
+      dragging: ['opacity-50', 'shadow-lg', 'rotate-1', 'scale-105', 'z-50'].join(' '),
       over: [
         'border-dashed',
         'border-2',
@@ -290,20 +276,10 @@ export const kanbanClasses = {
         'dark:bg-primary-900/20',
         'mt-6', // Creates visual space for drop indicator
       ].join(' '),
-      selected: [
-        'ring-2',
-        'ring-primary-500',
-        'dark:ring-primary-400',
-        'ring-offset-1',
-      ].join(' '),
-      archived: [
-        'opacity-60',
-        'bg-gray-50',
-        'dark:bg-gray-900',
-        'border-dashed',
-      ].join(' '),
+      selected: ['ring-2', 'ring-primary-500', 'dark:ring-primary-400', 'ring-offset-1'].join(' '),
+      archived: ['opacity-60', 'bg-gray-50', 'dark:bg-gray-900', 'border-dashed'].join(' '),
     },
-    
+
     // Priority indicators
     priority: {
       low: 'border-l-4 border-l-success-500 dark:border-l-success-400',
@@ -317,25 +293,13 @@ export const kanbanClasses = {
         'dark:bg-error-900/20',
       ].join(' '),
     },
-    
+
     // Card header (title area)
-    header: [
-      'flex',
-      'items-start',
-      'justify-between',
-      'gap-2',
-      'mb-2',
-    ].join(' '),
-    
+    header: ['flex', 'items-start', 'justify-between', 'gap-2', 'mb-2'].join(' '),
+
     // Card body (content area)
-    body: [
-      'text-sm',
-      'text-gray-600',
-      'dark:text-gray-400',
-      'line-clamp-3',
-      'mb-3',
-    ].join(' '),
-    
+    body: ['text-sm', 'text-gray-600', 'dark:text-gray-400', 'line-clamp-3', 'mb-3'].join(' '),
+
     // Card footer (metadata area)
     footer: [
       'flex',
@@ -345,15 +309,10 @@ export const kanbanClasses = {
       'text-gray-500',
       'dark:text-gray-500',
     ].join(' '),
-    
+
     // Tags container
-    tags: [
-      'flex',
-      'flex-wrap',
-      'gap-1',
-      'mt-2',
-    ].join(' '),
-    
+    tags: ['flex', 'flex-wrap', 'gap-1', 'mt-2'].join(' '),
+
     // Individual tag
     tag: [
       'inline-flex',
@@ -370,7 +329,7 @@ export const kanbanClasses = {
       'max-w-[120px]',
       'truncate',
     ].join(' '),
-    
+
     // Due date indicator
     dueDate: {
       base: [
@@ -388,7 +347,7 @@ export const kanbanClasses = {
       overdue: 'bg-error-100 text-error-800 dark:bg-error-900 dark:text-error-200',
       none: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
     },
-    
+
     // Avatar/assigned user
     avatar: [
       'flex-shrink-0',
@@ -399,7 +358,7 @@ export const kanbanClasses = {
       'dark:border-gray-800',
     ].join(' '),
   },
-  
+
   // Action buttons
   action: {
     base: [
@@ -426,7 +385,7 @@ export const kanbanClasses = {
     edit: 'text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-300',
     more: 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300',
   },
-  
+
   // Drag and drop
   drag: {
     placeholder: [
@@ -448,7 +407,7 @@ export const kanbanClasses = {
       'shadow-xl',
     ].join(' '),
   },
-  
+
   // Accessibility
   accessibility: {
     focus: [
@@ -460,27 +419,21 @@ export const kanbanClasses = {
       'focus:ring-offset-white',
       'dark:focus:ring-offset-gray-800',
     ].join(' '),
-    screenReaderOnly: [
-      'sr-only',
-    ].join(' '),
+    screenReaderOnly: ['sr-only'].join(' '),
   },
 };
 
 /**
  * Utility function to build Kanban container classes
  */
-export function getKanbanClasses(
-  loading?: boolean,
-  error?: string,
-  className?: string
-): string {
+export function getKanbanClasses(loading?: boolean, error?: string, className?: string): string {
   const classes = [
     kanbanClasses.base,
     loading ? kanbanClasses.loading : '',
     error ? kanbanClasses.error : '',
     className || '',
   ];
-  
+
   return classes.filter(Boolean).join(' ');
 }
 
@@ -502,7 +455,7 @@ export function getColumnClasses(
     isCollapsed ? kanbanClasses.column.state.collapsed : '',
     className || '',
   ];
-  
+
   return classes.filter(Boolean).join(' ');
 }
 
@@ -526,7 +479,7 @@ export function getCardClasses(
     isArchived ? kanbanClasses.card.state.archived : '',
     className || '',
   ];
-  
+
   return classes.filter(Boolean).join(' ');
 }
 
@@ -538,26 +491,26 @@ export function getCardClasses(
  */
 export function getDueDateClass(dueDate?: Date | string): string {
   if (!dueDate) return kanbanClasses.card.dueDate.none;
-  
+
   // Handle both Date objects and strings
   const date = dueDate instanceof Date ? dueDate : new Date(dueDate);
-  
+
   // Check for invalid date
   if (isNaN(date.getTime())) return kanbanClasses.card.dueDate.none;
-  
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  
+
   const due = new Date(date);
   due.setHours(0, 0, 0, 0);
-  
+
   const diffDays = Math.floor((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-  
-  if (diffDays < 0) return kanbanClasses.card.dueDate.overdue;      // Overdue
-  if (diffDays === 0) return kanbanClasses.card.dueDate.today;      // Today
-  if (diffDays <= 3) return kanbanClasses.card.dueDate.upcoming;    // Upcoming (within 3 days)
-  
-  return kanbanClasses.card.dueDate.none;                           // Future or no date
+
+  if (diffDays < 0) return kanbanClasses.card.dueDate.overdue; // Overdue
+  if (diffDays === 0) return kanbanClasses.card.dueDate.today; // Today
+  if (diffDays <= 3) return kanbanClasses.card.dueDate.upcoming; // Upcoming (within 3 days)
+
+  return kanbanClasses.card.dueDate.none; // Future or no date
 }
 
 /**
@@ -566,10 +519,12 @@ export function getDueDateClass(dueDate?: Date | string): string {
 // Update getWipLimitClass function:
 export function getWipLimitClass(current: number, limit?: number): string {
   if (!limit) return kanbanClasses.column.wipLimit.base;
-  
-  if (current > limit) return `${kanbanClasses.column.wipLimit.base} ${kanbanClasses.column.wipLimit.over}`;
-  if (current === limit) return `${kanbanClasses.column.wipLimit.base} ${kanbanClasses.column.wipLimit.at}`;
-  
+
+  if (current > limit)
+    return `${kanbanClasses.column.wipLimit.base} ${kanbanClasses.column.wipLimit.over}`;
+  if (current === limit)
+    return `${kanbanClasses.column.wipLimit.base} ${kanbanClasses.column.wipLimit.at}`;
+
   return `${kanbanClasses.column.wipLimit.base} ${kanbanClasses.column.wipLimit.under}`;
 }
 
@@ -602,6 +557,6 @@ export function getDragAriaLabel(
       over: `Drop column here to reorder`,
     },
   };
-  
+
   return labels[type][action];
 }

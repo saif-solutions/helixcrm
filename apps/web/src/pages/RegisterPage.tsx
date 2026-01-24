@@ -13,9 +13,15 @@ import { mapBackendErrorToFormErrors } from '../lib/utils/auth-error-mapper';
 
 const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
-  const { register: registerUser, isLoading, sessionExpired, clearSessionExpired, authError } = useAuthStore();
+  const {
+    register: registerUser,
+    isLoading,
+    sessionExpired,
+    clearSessionExpired,
+    authError,
+  } = useAuthStore();
   const { error: showErrorToast } = useToast();
-  
+
   const [showPassword, setShowPassword] = React.useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
   const [backendFieldErrors, setBackendFieldErrors] = React.useState<Record<string, string>>({});
@@ -66,18 +72,18 @@ const RegisterPage: React.FC = () => {
   const onSubmit = async (data: RegisterFormData) => {
     clearErrors();
     setBackendFieldErrors({});
-    
+
     try {
       await registerUser(data);
       navigate('/dashboard', { replace: true });
     } catch (error: any) {
       const formErrors = mapBackendErrorToFormErrors(error);
-      
+
       // Set field errors
       if (formErrors.fieldErrors) {
         setBackendFieldErrors(formErrors.fieldErrors);
       }
-      
+
       // Show toast for non-field errors
       if (formErrors.formError && !formErrors.fieldErrors) {
         showErrorToast('Registration Failed', formErrors.formError);
@@ -102,8 +108,8 @@ const RegisterPage: React.FC = () => {
             </h1>
             <p className="mt-2 text-center text-sm text-gray-600">
               Already have an account?{' '}
-              <Link 
-                to="/login" 
+              <Link
+                to="/login"
                 className="font-medium text-primary-600 hover:text-primary-500"
                 aria-label="Navigate to login page"
               >
@@ -111,19 +117,19 @@ const RegisterPage: React.FC = () => {
               </Link>
             </p>
           </div>
-          
+
           <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)} noValidate>
             {/* Global Error Banner */}
             {authError && (
-              <div 
-                className="rounded-md bg-red-50 p-4"
-                role="alert"
-                aria-live="assertive"
-              >
+              <div className="rounded-md bg-red-50 p-4" role="alert" aria-live="assertive">
                 <div className="flex">
                   <div className="flex-shrink-0">
                     <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                        clipRule="evenodd"
+                      />
                     </svg>
                   </div>
                   <div className="ml-3">
@@ -132,7 +138,7 @@ const RegisterPage: React.FC = () => {
                 </div>
               </div>
             )}
-            
+
             <div className="space-y-4">
               {/* Name Fields */}
               <div className="grid grid-cols-2 gap-4">
@@ -155,7 +161,7 @@ const RegisterPage: React.FC = () => {
                     </p>
                   )}
                 </div>
-                
+
                 <div>
                   <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
                     Last Name *
@@ -176,10 +182,13 @@ const RegisterPage: React.FC = () => {
                   )}
                 </div>
               </div>
-              
+
               {/* Organization */}
               <div>
-                <label htmlFor="organizationName" className="block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="organizationName"
+                  className="block text-sm font-medium text-gray-700"
+                >
                   Organization Name *
                 </label>
                 <Input
@@ -197,7 +206,7 @@ const RegisterPage: React.FC = () => {
                   </p>
                 )}
               </div>
-              
+
               {/* Email */}
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700">
@@ -218,7 +227,7 @@ const RegisterPage: React.FC = () => {
                   </p>
                 )}
               </div>
-              
+
               {/* Password */}
               <div>
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700">
@@ -258,10 +267,13 @@ const RegisterPage: React.FC = () => {
                   </p>
                 )}
               </div>
-              
+
               {/* Confirm Password */}
               <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="confirmPassword"
+                  className="block text-sm font-medium text-gray-700"
+                >
                   Confirm Password *
                 </label>
                 <div className="mt-1 relative">
@@ -279,7 +291,11 @@ const RegisterPage: React.FC = () => {
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     className="absolute inset-y-0 right-0 pr-3 flex items-center"
                     disabled={isSubmittingForm}
-                    aria-label={showConfirmPassword ? 'Hide password confirmation' : 'Show password confirmation'}
+                    aria-label={
+                      showConfirmPassword
+                        ? 'Hide password confirmation'
+                        : 'Show password confirmation'
+                    }
                   >
                     {showConfirmPassword ? (
                       <EyeOff className="h-5 w-5 text-gray-400" />
@@ -295,7 +311,7 @@ const RegisterPage: React.FC = () => {
                 )}
               </div>
             </div>
-            
+
             <div>
               <Button
                 type="submit"
@@ -309,20 +325,20 @@ const RegisterPage: React.FC = () => {
                 Create Account
               </Button>
             </div>
-            
+
             <div className="text-sm text-gray-600">
               <p>
                 By creating an account, you agree to our{' '}
-                <a 
-                  href="#" 
+                <a
+                  href="#"
                   className="font-medium text-primary-600 hover:text-primary-500"
                   aria-label="Read our Terms of Service"
                 >
                   Terms of Service
                 </a>{' '}
                 and{' '}
-                <a 
-                  href="#" 
+                <a
+                  href="#"
                   className="font-medium text-primary-600 hover:text-primary-500"
                   aria-label="Read our Privacy Policy"
                 >
@@ -333,11 +349,8 @@ const RegisterPage: React.FC = () => {
           </form>
         </div>
       </div>
-      
-      <SessionExpiredModal
-        isOpen={sessionExpired}
-        onClose={handleCloseSessionModal}
-      />
+
+      <SessionExpiredModal isOpen={sessionExpired} onClose={handleCloseSessionModal} />
     </>
   );
 };

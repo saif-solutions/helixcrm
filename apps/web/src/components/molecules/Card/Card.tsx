@@ -1,8 +1,8 @@
 // D:\Projects-In-Hand\helixcrm\apps\web\src\components\molecules\Card\Card.tsx
 import * as React from 'react';
 import { cn } from '../../../lib/utils';
-import { 
-  CardProps, 
+import {
+  CardProps,
   CardRef,
   CardHeaderProps,
   CardTitleProps,
@@ -16,11 +16,11 @@ import {
   getCardRole,
   getCardTabIndex,
 } from './Card.types';
-import { 
+import {
   getCardContainerClasses,
   getImageContainerClasses,
   getImageClasses,
-  cardClasses
+  cardClasses,
 } from './Card.styles';
 
 /**
@@ -49,18 +49,15 @@ export const Card = React.forwardRef<CardRef, CardProps>(
   ) => {
     // Get container classes using utility function
     const containerClasses = getCardContainerClasses(
-      variant, 
-      size, 
-      hoverable, 
-      clickable, 
+      variant,
+      size,
+      hoverable,
+      clickable,
       className
     );
 
     // Get content classes
-    const contentClasses = cn(
-      cardClasses.content,
-      contentClassName
-    );
+    const contentClasses = cn(cardClasses.content, contentClassName);
 
     // Determine if card has header/footer/image
     const hasHeader = hasCardHeader({ header, title, subtitle });
@@ -102,36 +99,22 @@ export const Card = React.forwardRef<CardRef, CardProps>(
               header
             ) : (
               <>
-                {title && (
-                  <h3 className={cardClasses.title}>
-                    {title}
-                  </h3>
-                )}
-                {subtitle && (
-                  <p className={cardClasses.subtitle}>
-                    {subtitle}
-                  </p>
-                )}
+                {title && <h3 className={cardClasses.title}>{title}</h3>}
+                {subtitle && <p className={cardClasses.subtitle}>{subtitle}</p>}
               </>
             )}
           </div>
         )}
 
         {/* Content */}
-        <div className={contentClasses}>
-          {children}
-        </div>
+        <div className={contentClasses}>{children}</div>
 
         {/* Footer */}
         {hasFooter && (
           <div className={cardClasses.footer}>
             <div className="flex items-center justify-between">
               <div>{footer}</div>
-              {actions && (
-                <div className={cardClasses.actions}>
-                  {actions}
-                </div>
-              )}
+              {actions && <div className={cardClasses.actions}>{actions}</div>}
             </div>
           </div>
         )}
@@ -143,74 +126,44 @@ export const Card = React.forwardRef<CardRef, CardProps>(
 Card.displayName = 'Card';
 
 // Card sub-components
-export const CardHeader = React.forwardRef<
-  HTMLDivElement,
-  CardHeaderProps
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn(cardClasses.header, className)}
-    {...props}
-  />
-));
+export const CardHeader = React.forwardRef<HTMLDivElement, CardHeaderProps>(
+  ({ className, ...props }, ref) => (
+    <div ref={ref} className={cn(cardClasses.header, className)} {...props} />
+  )
+);
 CardHeader.displayName = 'CardHeader';
 
-export const CardTitle = React.forwardRef<
-  HTMLHeadingElement,
-  CardTitleProps
->(({ className, ...props }, ref) => (
-  <h3
-    ref={ref}
-    className={cn(cardClasses.title, className)}
-    {...props}
-  />
-));
+export const CardTitle = React.forwardRef<HTMLHeadingElement, CardTitleProps>(
+  ({ className, ...props }, ref) => (
+    <h3 ref={ref} className={cn(cardClasses.title, className)} {...props} />
+  )
+);
 CardTitle.displayName = 'CardTitle';
 
-export const CardSubtitle = React.forwardRef<
-  HTMLParagraphElement,
-  CardSubtitleProps
->(({ className, ...props }, ref) => (
-  <p
-    ref={ref}
-    className={cn(cardClasses.subtitle, className)}
-    {...props}
-  />
-));
+export const CardSubtitle = React.forwardRef<HTMLParagraphElement, CardSubtitleProps>(
+  ({ className, ...props }, ref) => (
+    <p ref={ref} className={cn(cardClasses.subtitle, className)} {...props} />
+  )
+);
 CardSubtitle.displayName = 'CardSubtitle';
 
-export const CardContent = React.forwardRef<
-  HTMLDivElement,
-  CardContentProps
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn(cardClasses.content, className)}
-    {...props}
-  />
-));
+export const CardContent = React.forwardRef<HTMLDivElement, CardContentProps>(
+  ({ className, ...props }, ref) => (
+    <div ref={ref} className={cn(cardClasses.content, className)} {...props} />
+  )
+);
 CardContent.displayName = 'CardContent';
 
-export const CardFooter = React.forwardRef<
-  HTMLDivElement,
-  CardFooterProps
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn(cardClasses.footer, className)}
-    {...props}
-  />
-));
+export const CardFooter = React.forwardRef<HTMLDivElement, CardFooterProps>(
+  ({ className, ...props }, ref) => (
+    <div ref={ref} className={cn(cardClasses.footer, className)} {...props} />
+  )
+);
 CardFooter.displayName = 'CardFooter';
 
-export const CardActions = React.forwardRef<
-  HTMLDivElement,
-  CardActionsProps
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn(cardClasses.actions, className)}
-    {...props}
-  />
-));
+export const CardActions = React.forwardRef<HTMLDivElement, CardActionsProps>(
+  ({ className, ...props }, ref) => (
+    <div ref={ref} className={cn(cardClasses.actions, className)} {...props} />
+  )
+);
 CardActions.displayName = 'CardActions';

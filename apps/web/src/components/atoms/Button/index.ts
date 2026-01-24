@@ -2,13 +2,7 @@
 // ============================================================================
 // Re-export all components
 // ============================================================================
-export {
-  Button,
-  PrimaryButton,
-  SecondaryButton,
-  GhostButton,
-  DangerButton,
-} from './Button';
+export { Button, PrimaryButton, SecondaryButton, GhostButton, DangerButton } from './Button';
 
 // ============================================================================
 // Re-export all types
@@ -42,7 +36,4 @@ export {
 // ============================================================================
 // Re-export utility functions
 // ============================================================================
-export {
-  isButtonLoading,
-  isButtonDisabled,
-} from './Button.types';
+export { isButtonLoading, isButtonDisabled } from './Button.types';
