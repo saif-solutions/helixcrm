@@ -1,16 +1,95 @@
-﻿# Dependencies
+# Dependencies
 node_modules/
+.pnpm-store/
+.yarn/
+package-lock.json
+yarn.lock
 
 # Environment variables
 .env
-.env.local
+.env.*
+!.env.example
 
-# Build output
+# Build outputs
 dist/
 build/
-
-# Database
-*.db
+.coverage/
+.nyc_output/
 
 # Logs
+logs/
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Backups
+*.backup
+*.backup2
+*.bak
+*.old
+*.patch
+*.versioned
+
+# Temp files
+cookies.txt
+login_cookies.txt
+*.tmp
+
+# Testing
+coverage/
+.nyc_output/
+
+# Docker
+.docker/
+docker-compose.override.yml
+
+# Turbo
+.turbo/
+
+# Storybook
+storybook-static/
+.storybook-static/
+
+# Prisma
+apps/api/prisma/migrations/*
+!apps/api/prisma/migrations/
+!apps/api/prisma/migrations/*.sql
+apps/api/prisma/*.db
+
+# TypeScript
+*.tsbuildinfo
+
+# Compiled output
+*.js
+*.js.map
+*.d.ts
+!apps/api/dist/
+!apps/web/dist/
+
+# VSCode
+.vscode/settings.json
+.vscode/launch.json
