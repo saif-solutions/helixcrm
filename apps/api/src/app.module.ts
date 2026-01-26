@@ -1,4 +1,6 @@
 import { MiddlewareConsumer, Module, NestModule, RequestMethod } from "@nestjs/common";
+import { DatabaseModule } from './shared/database/database.module';
+
 import { ConfigModule } from "@nestjs/config";
 import { APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
 import { ThrottlerModule } from "@nestjs/throttler";
@@ -22,19 +24,22 @@ import { SecurityModule } from "./shared/security/security.module";
 import { Reflector } from "@nestjs/core";
 import { DateRangeConstraint } from './shared/validators/date-range.validator';
 import { CurrencyCodeConstraint } from './shared/validators/currency-code.validator';
-import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { AnalyticsModule, getAnalyticsModule } from './modules/analytics/analytics.module';
 import { DashboardModule } from "./modules/dashboard/dashboard.module";
+import { PermissionsModule } from './shared/permissions/permissions.module';
+
 
 @Module({
   imports: [
+    PermissionsModule,  // ADD THIS
+    DatabaseModule,
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: ['.env', '.env.local', '.env.development'],
       expandVariables: true,
     }),
-
     SecurityModule,
-
+    
     // Rate limiting
     ThrottlerModule.forRoot([
       {
@@ -70,9 +75,7 @@ import { DashboardModule } from "./modules/dashboard/dashboard.module";
     
     // ✅ FIXED: Analytics Module with conditional registration
     // Check if Redis is available and exports are enabled
-    (process.env.REDIS_HOST && process.env.ANALYTICS_EXPORT_ENABLED !== 'false')
-      ? AnalyticsModule.registerWithExports()
-      : AnalyticsModule.register(),
+    getAnalyticsModule(),
 
     // Infrastructure modules
     LoggingModule,
@@ -81,17 +84,11 @@ import { DashboardModule } from "./modules/dashboard/dashboard.module";
   controllers: [AppController, HealthController],
   providers: [
     AppService,
-    
-    // Core NestJS services needed by guards
     Reflector,
-    
-    // Custom validators for dependency injection
     DateRangeConstraint,
     CurrencyCodeConstraint,
-    
-    // Guards - must be in providers for dependency injection to work
     AuthGuard,
-    PermissionGuard,
+    PermissionGuard, // ✅ ADD PermissionGuard here
     
     // Global request logging
     {
@@ -100,18 +97,21 @@ import { DashboardModule } from "./modules/dashboard/dashboard.module";
     },
     
     // Global Auth Guard (runs first - authentication)
-    // IMPORTANT: useExisting uses the instance from providers with proper DI
     {
       provide: APP_GUARD,
       useExisting: AuthGuard,
     },
     
     // Global Permission Guard (runs second - authorization)
-    // IMPORTANT: useExisting uses the instance from providers with proper DI
     {
       provide: APP_GUARD,
       useExisting: PermissionGuard,
     },
+  ],
+  exports: [
+    // ✅ Export PermissionGuard so other modules can use it
+    AuthGuard,
+    PermissionGuard,
   ],
 })
 export class AppModule implements NestModule {

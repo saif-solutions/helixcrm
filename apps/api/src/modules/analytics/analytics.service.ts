@@ -1,4 +1,4 @@
-import { Injectable, Logger, Inject, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, Inject, NotFoundException, Optional } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Cache } from 'cache-manager';
@@ -23,14 +23,14 @@ import {
 export class AnalyticsService {
   private readonly logger = new Logger(AnalyticsService.name);
 
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly auditLogService: AuditLogService,
-    private readonly appLogger: AppLogger,
-    private readonly configService: ConfigService,
-    @Inject(CACHE_MANAGER) private cacheManager: Cache,
-    @InjectQueue('analytics-export') private exportQueue: Queue,
-  ) {}
+constructor(
+  private readonly prisma: PrismaService,
+  private readonly auditLogService: AuditLogService,
+  private readonly appLogger: AppLogger,
+  private readonly configService: ConfigService,
+  @Inject(CACHE_MANAGER) private cacheManager: Cache,
+  @Optional() @InjectQueue('analytics-export') private exportQueue?: Queue,
+) {}
 
   // ==================== DEAL ANALYTICS ====================
   async getDealAnalytics(organizationId: string, query: DealAnalyticsQueryDto) {
@@ -364,15 +364,20 @@ export class AnalyticsService {
     });
 
     // Queue background job
-    await this.exportQueue.add('export', {
-      exportId,
-      organizationId,
-      userId,
-      format: processedQuery.format,
-      queryParams: processedQuery,
-      downloadToken,
-      requestedAt: new Date().toISOString(),
-    });
+if (this.exportQueue) {
+  await this.exportQueue.add('export', {
+    exportId,
+    organizationId,
+    userId,
+    format: processedQuery.format,
+    queryParams: processedQuery,
+    downloadToken,
+    requestedAt: new Date().toISOString(),
+  });
+} else {
+  this.logger.warn('Export queue not available - analytics exports will be processed synchronously');
+  // In a future phase, you could process exports synchronously here
+}
 
     return {
       exportId,

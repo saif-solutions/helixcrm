@@ -50,13 +50,16 @@ export class AuthGuard implements CanActivate {
         throw new UnauthorizedException("Invalid token");
       }
 
-      // Attach user to request with proper typing
-      request.user = {
-        sub: payload.sub,
-        email: payload.email,
-        organizationId: payload.organizationId,
-        tokenVersion: payload.tokenVersion,
-      };
+// Attach user to request with proper typing
+request.user = {
+  sub: payload.sub,
+  email: payload.email,
+  organizationId: payload.organizationId,
+  tokenVersion: payload.tokenVersion,
+  // PHASE 3.3 ADDITIONS
+  permissions: payload.permissions || [],
+  roles: payload.roles || [],
+};
       request.organizationId = payload.organizationId; // For tenant context
 
       return true;

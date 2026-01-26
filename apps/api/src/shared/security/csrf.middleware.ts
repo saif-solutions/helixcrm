@@ -1,8 +1,10 @@
-//D:\Projects-In-Hand\helixcrm\apps\api\src\shared\security\csrf.middleware.ts
-
+// File: apps/api/src/shared/security/csrf.middleware.ts
 import { Injectable, NestMiddleware, Logger } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
-import * as csurf from 'csurf';
+// CHANGE THIS LINE:
+// import * as csurf from 'csurf';
+// TO THIS:
+import csurf from 'csurf';
 import SecurityConfig from '../../config/security.config';
 
 @Injectable()
@@ -14,7 +16,7 @@ export class CsrfMiddleware implements NestMiddleware {
     // Configure CSRF protection using centralized config
     this.csrfProtection = csurf({
       cookie: SecurityConfig.cookies.csrfToken(),
-      value: (req: Request) => {
+      value: (req: any) => {
         // Get token from header (for API requests) or from body (for forms)
         return req.headers[SecurityConfig.csrf.headerName.toLowerCase()] as string || 
                (req.body && req.body._csrf) ||

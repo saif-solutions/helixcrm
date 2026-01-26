@@ -1,7 +1,7 @@
 import { NestFactory, Reflector } from "@nestjs/core";
 import { AppModule } from "./app.module";
 import helmet from 'helmet';
-import * as cookieParser from 'cookie-parser';
+import cookieParser from 'cookie-parser';
 import { ValidationPipe, ClassSerializerInterceptor, Logger } from "@nestjs/common";
 
 async function bootstrap() {

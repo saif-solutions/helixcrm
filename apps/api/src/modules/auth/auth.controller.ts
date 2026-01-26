@@ -1,3 +1,4 @@
+// File: apps/api/src/modules/auth/auth.controller.ts
 import { 
   Controller, 
   Post, 
@@ -9,13 +10,15 @@ import {
   Res,
   Req,
   Get,
-  BadRequestException
+  BadRequestException,
+  Query
 } from "@nestjs/common";
 import type { Response, Request } from 'express';
 import { Throttle } from "@nestjs/throttler";
 import { AuthService } from "./auth.service";
 import { AuthGuard } from "../../shared/guards/auth.guard";
 import { Public } from "../../shared/decorators/require-permission.decorator";
+import SecurityConfig from "../../config/security.config";
 
 @Controller("auth")
 export class AuthController {
@@ -89,7 +92,7 @@ export class AuthController {
   @Post("login")
   @Public()
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 attempts per minute
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async login(
     @Body() loginDto: { email: string; password: string },
     @Res({ passthrough: true }) res: Response
@@ -136,7 +139,6 @@ export class AuthController {
   @Get("me")
   @UseGuards(AuthGuard)
   async getCurrentUser(@Req() req: any) {
-    // User is attached to request by AuthGuard
     return {
       user: {
         id: req.user.sub,
@@ -148,7 +150,7 @@ export class AuthController {
 
   @Post("register")
   @Public()
-  @Throttle({ default: { limit: 3, ttl: 60000 } }) // 3 registrations per minute
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
   async register(
     @Body()
     registerDto: {
@@ -159,8 +161,48 @@ export class AuthController {
       organizationName: string;
     },
   ) {
-    // For MVP: Create user with a new organization
-    // This is simplified - in production you'd want more validation
     return this.authService.register(registerDto);
+  }
+
+  // ============== NEW SESSION MANAGEMENT ENDPOINTS ==============
+
+  @Get("sessions")
+  @UseGuards(AuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async getSessions(@Req() req: any) {
+    const userId = req.user.sub;
+    return this.authService.getUserSessions(userId);
+  }
+
+  @Post("logout/all")
+  @UseGuards(AuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async logoutAll(
+    @Req() req: any,
+    @Res({ passthrough: true }) res: Response
+  ) {
+    const userId = req.user.sub;
+    
+    // Clear cookies
+    res.clearCookie('access_token', SecurityConfig.cookies.accessToken());
+    res.clearCookie('refresh_token', SecurityConfig.cookies.refreshToken());
+    
+    // Invalidate all tokens
+    await this.authService.invalidateAllTokens(userId);
+
+    return { message: 'Logged out from all devices' };
+  }
+
+  @Post("sessions/invalidate-others")
+  @UseGuards(AuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async invalidateOtherSessions(
+    @Req() req: any,
+    @Query('keepCurrent') keepCurrent: string = 'true'
+  ) {
+    const userId = req.user.sub;
+    const shouldKeepCurrent = keepCurrent.toLowerCase() === 'true';
+    
+    return this.authService.invalidateOtherSessions(userId, shouldKeepCurrent);
   }
 }

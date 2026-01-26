@@ -1,3 +1,4 @@
+// apps/api/src/modules/pipelines/pipelines.controller.ts
 import { 
   Controller, 
   Get, 

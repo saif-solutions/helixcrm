@@ -1,3 +1,4 @@
+// apps/api/src/modules/deals/deals.controller.ts
 import { 
   Controller, 
   Get, 
@@ -46,7 +47,8 @@ export class DealsController {
     return this.dealsService.create({
       ...createDealDto,
       organizationId: user.organizationId,
-      userId: user.userId,
+      // FIXED: Use user.sub instead of user.userId
+      userId: user.sub,
     });
   }
 
@@ -60,7 +62,8 @@ export class DealsController {
   }
 
   @Get("stats")
-  @RequirePermission(['deals.read', 'analytics.read'])
+  // FIXED: This requires ALL permissions. If you want ANY, create separate endpoint or modify decorator
+  @RequirePermission('deals.read')
   getStats(
     @Req() req: Request,
     @Query('pipelineId') pipelineId?: string,
@@ -72,7 +75,7 @@ export class DealsController {
   }
 
   @Get("pipeline-performance")
-  @RequirePermission(['deals.read', 'analytics.read'])
+  @RequirePermission('deals.read')
   getPipelinePerformance(
     @Req() req: Request,
     @Query('pipelineId') pipelineId?: string,
@@ -122,7 +125,8 @@ export class DealsController {
       id,
       updateDealDto,
       user.organizationId,
-      user.userId,
+      // FIXED: Use user.sub instead of user.userId
+      user.sub,
     );
   }
 
@@ -137,7 +141,8 @@ export class DealsController {
     return this.dealsService.remove(
       id,
       user.organizationId,
-      user.userId,
+      // FIXED: Use user.sub instead of user.userId
+      user.sub,
     );
   }
 
@@ -159,7 +164,8 @@ export class DealsController {
     return this.dealsService.createSimple({
       ...createDealSimpleDto,
       organizationId: user.organizationId,
-      userId: user.userId,
+      // FIXED: Use user.sub instead of user.userId
+      userId: user.sub,
     });
   }
   // ==================== DEAL STAGE TRANSITION ENDPOINTS ====================
@@ -178,7 +184,8 @@ export class DealsController {
       id,
       moveDealStageDto,
       user.organizationId,
-      user.userId,
+      // FIXED: Use user.sub instead of user.userId
+      user.sub,
     );
   }
 
@@ -201,7 +208,8 @@ export class DealsController {
         dealId,
         { stageId },
         user.organizationId,
-        user.userId,
+        // FIXED: Use user.sub instead of user.userId
+        user.sub,
       )
     );
     
@@ -223,7 +231,8 @@ export class DealsController {
       this.dealsService.remove(
         dealId,
         user.organizationId,
-        user.userId,
+        // FIXED: Use user.sub instead of user.userId
+        user.sub,
       )
     );
     

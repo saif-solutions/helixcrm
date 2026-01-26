@@ -44,6 +44,7 @@ model Organization {
   Pipeline           Pipeline[]
   Role               Role[]
   UserRole           UserRole[]
+  RefreshToken       RefreshToken[]
 
   @@map("organizations")
 }
@@ -68,6 +69,10 @@ model User {
   refreshTokenVersion  String?  @db.VarChar(255)
   refreshTokenIssuedAt DateTime?
   
+  // PHASE 3 ADDITIONS:
+  lastPasswordChange   DateTime?  // Track for forced resets
+  mustChangePassword   Boolean   @default(false) // For admin-forced changes
+  
   organizationId       String
   organization         Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
@@ -84,15 +89,39 @@ model User {
   OwnedDeals         Deal[]              @relation("DealOwner")
   ChangedStageHistory DealStageHistory[] @relation("StageHistoryChanger")
   UserRoles          UserRole[]
+  RefreshTokens      RefreshToken[]      // Added relation
 
-  @@index([organizationId, email])
+  @@unique([organizationId, email])  // Added for tenant uniqueness
+  @@index([organizationId])
   @@index([deletedAt])
   @@index([emailVerified])
   @@index([lockedUntil])
   @@index([refreshTokenHash])
   @@index([refreshTokenVersion])
   @@index([refreshTokenIssuedAt])
+  @@index([mustChangePassword])
   @@map("users")
+}
+
+// ==================== PHASE 3: REFRESH TOKEN TABLE ====================
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizationId String
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  tokenHash String   @db.VarChar(512)
+  expiresAt DateTime
+  revoked   Boolean  @default(false)
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([userId, revoked])
+  @@index([organizationId])
+  @@index([expiresAt])
+  @@unique([userId, tokenHash])  // Prevent duplicate tokens
+  @@map("refresh_tokens")
 }
 
 model Contact {
@@ -114,6 +143,8 @@ model Contact {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  deletedAt DateTime?  // Added soft delete
+  deletedBy String?    // Who performed deletion
 
   // Phase 3 relations
   deals      Deal[]   // Added opposite relation
@@ -122,6 +153,7 @@ model Contact {
   @@index([organizationId, email])
   @@index([organizationId, accountId])
   @@index([organizationId, company])
+  @@index([deletedAt])  // Added for soft delete queries
   @@map("contacts")
 }
 
@@ -139,11 +171,14 @@ model Lead {
   
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  deletedAt     DateTime?  // Added soft delete
+  deletedBy     String?    // Who performed deletion
   
   @@index([organizationId])
   @@index([organizationId, email])
   @@index([organizationId, status])
   @@index([organizationId, createdAt])
+  @@index([deletedAt])  // Added for soft delete queries
   @@map("leads")
 }
 
@@ -163,6 +198,8 @@ model Account {
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+  deletedAt DateTime?  // Added soft delete
+  deletedBy String?    // Who performed deletion
   
   // Core relations
   Contact   Contact[]
@@ -172,6 +209,7 @@ model Account {
 
   @@index([organizationId])
   @@index([organizationId, name])
+  @@index([deletedAt])  // Added for soft delete queries
   @@map("accounts")
 }
 
@@ -195,11 +233,14 @@ model Activity {
   completedAt DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?  // Added soft delete
+  deletedBy   String?    // Who performed deletion
 
   @@index([organizationId])
   @@index([organizationId, userId])
   @@index([organizationId, type])
   @@index([organizationId, relatedToId, relatedToType])
+  @@index([deletedAt])  // Added for soft delete queries
   @@map("activities")
 }
 
@@ -271,6 +312,9 @@ model Deal {
   probability         Int         @default(0)
   expectedCloseDate   DateTime?
   
+  // ADD THIS FIELD:
+  closedAt            DateTime?   // When the deal was closed (won or lost)
+  
   pipelineId          String
   pipeline            Pipeline    @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
   
@@ -288,6 +332,7 @@ model Deal {
   
   metadata            Json?
   deletedAt           DateTime?
+  deletedBy           String?     // Added who performed deletion
   
   createdAt           DateTime    @default(now())
   updatedAt           DateTime    @updatedAt
@@ -301,6 +346,7 @@ model Deal {
   @@index([organizationId, status])
   @@index([organizationId, expectedCloseDate])
   @@index([organizationId, deletedAt])
+  @@index([organizationId, closedAt])  // ADD INDEX FOR NEW FIELD
   @@unique([organizationId, pipelineId, name])
   @@map("deals")
 }
@@ -319,9 +365,12 @@ model Pipeline {
   
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?  // Added soft delete
+  deletedBy       String?    // Who performed deletion
   
   @@index([organizationId])
   @@unique([organizationId, name])
+  @@index([deletedAt])  // Added for soft delete queries
   @@map("pipelines")
 }
 
@@ -341,9 +390,12 @@ model PipelineStage {
   
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?  // Added soft delete
+  deletedBy       String?    // Who performed deletion
   
   @@unique([pipelineId, order])
   @@index([pipelineId])
+  @@index([deletedAt])  // Added for soft delete queries
   @@map("pipeline_stages")
 }
 
@@ -362,7 +414,7 @@ model DealStageHistory {
   changedBy       User      @relation(fields: [changedByUserId], references: [id], onDelete: Cascade, name: "StageHistoryChanger")
   
   changedAt       DateTime  @default(now())
-  
+
   @@index([dealId])
   @@index([changedByUserId])
   @@index([changedAt])
@@ -384,9 +436,12 @@ model Role {
   
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
+  deletedAt       DateTime?     // Added soft delete
+  deletedBy       String?       // Who performed deletion
   
   @@unique([organizationId, name])
   @@index([organizationId])
+  @@index([deletedAt])  // Added for soft delete queries
   @@map("roles")
 }
 
@@ -425,10 +480,13 @@ model UserRole {
   organizationId String
   organization  Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   createdAt     DateTime    @default(now())
+  deletedAt     DateTime?   // Added soft delete
+  deletedBy     String?     // Who performed deletion
   
   @@unique([userId, roleId, organizationId])
   @@index([userId])
   @@index([roleId])
   @@index([organizationId])
+  @@index([deletedAt])  // Added for soft delete queries
   @@map("user_roles")
 }

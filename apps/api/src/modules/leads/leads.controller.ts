@@ -1,3 +1,4 @@
+// apps/api/src/modules/leads/leads.controller.ts
 import { 
   Controller, 
   Get, 
@@ -61,7 +62,7 @@ export class LeadsController {
   }
 
   @Get('stats')
-  @RequirePermission(['leads.read', 'analytics.read'])
+  @RequirePermission('leads.read')
   getStats(@Req() req: Request) {
     return this.leadsService.getStats((req as any).user.organizationId);
   }

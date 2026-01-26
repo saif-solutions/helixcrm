@@ -1,3 +1,4 @@
+// apps/api/src/shared/guards/permission.guard.ts
 import {
   Injectable,
   CanActivate,
@@ -10,6 +11,10 @@ import { Reflector } from '@nestjs/core';
 import { PrismaService } from '../prisma/prisma.service';
 import { PERMISSION_KEY } from '../decorators/require-permission.decorator';
 
+import { PermissionCacheService } from '../permissions/permission-cache.service'; // NEW
+
+
+
 @Injectable()
 export class PermissionGuard implements CanActivate {
   private readonly logger = new Logger(PermissionGuard.name);
@@ -17,6 +22,7 @@ export class PermissionGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
     private readonly prisma: PrismaService,
+    private readonly cacheService: PermissionCacheService, // NEW
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -28,7 +34,7 @@ export class PermissionGuard implements CanActivate {
     this.logger.debug(`Checking permissions for route: ${context.getClass().name}.${context.getHandler().name}`);
     this.logger.debug(`Required permissions: ${JSON.stringify(requiredPermissions)}`);
 
-    // If no permissions metadata is set, allow access (might be handled by other guards)
+    // If no permissions metadata is set, allow access
     if (requiredPermissions === undefined) {
       this.logger.debug('No permission metadata found, allowing access');
       return true;
@@ -50,9 +56,18 @@ export class PermissionGuard implements CanActivate {
 
     this.logger.debug(`Checking permissions for user: ${user.sub} (org: ${user.organizationId})`);
 
-    // Get user's permissions
-    const userPermissions = await this.getUserPermissions(user.id, user.organizationId);
-    this.logger.debug(`User permissions: ${JSON.stringify(userPermissions)}`);
+    // PHASE 3.3 OPTIMIZATION: Check JWT permissions first (cached)
+    let userPermissions: string[];
+    
+    if (user.permissions && Array.isArray(user.permissions)) {
+      // Use permissions from JWT (cached for 5 minutes)
+      userPermissions = user.permissions;
+      this.logger.debug(`Using JWT cached permissions: ${userPermissions.length} permissions`);
+    } else {
+      // Fallback to database lookup
+      userPermissions = await this.getUserPermissions(user.id, user.organizationId);
+      this.logger.debug(`Fetched DB permissions: ${userPermissions.length} permissions`);
+    }
 
     // Check if user has any of the required permissions
     const hasPermission = requiredPermissions.some((perm) => 
@@ -64,7 +79,7 @@ export class PermissionGuard implements CanActivate {
         `Permission denied for user ${user.sub}. Required: ${requiredPermissions.join(', ')}, Has: ${userPermissions.join(', ')}`,
       );
       throw new ForbiddenException(
-        `Insufficient permissions. Required: ${requiredPermissions.join(', ')}`,
+        `Insufficient permissions. Required: ${requiredPermissions.join(' OR ')}`,
       );
     }
 
@@ -73,25 +88,26 @@ export class PermissionGuard implements CanActivate {
   }
 
   private async getUserPermissions(userId: string, organizationId: string): Promise<string[]> {
+    // PHASE 3.3 OPTIMIZATION: Check cache first
+    const cached = await this.cacheService.get(userId);
+    if (cached) {
+      return cached;
+    }
+
     try {
-      // Fetch permissions from database using correct relation names
+      // Fetch permissions from database
       const userWithRoles = await this.prisma.user.findUnique({
         where: { id: userId },
         include: {
-          // According to schema: User has UserRoles (PascalCase)
           UserRoles: {
             where: {
-              role: {
-                organizationId: organizationId,
-              },
+              organizationId: organizationId,
             },
             include: {
               role: {
                 include: {
-                  // According to schema: Role has permissions (lowercase)
                   permissions: {
                     include: {
-                      // According to schema: RolePermission has permission (lowercase)
                       permission: true,
                     },
                   },
@@ -119,7 +135,12 @@ export class PermissionGuard implements CanActivate {
         }
       });
 
-      return Array.from(permissions);
+      const permissionArray = Array.from(permissions);
+      
+      // Cache the permissions
+      await this.cacheService.set(userId, permissionArray);
+      
+      return permissionArray;
     } catch (error) {
       this.logger.error(`Failed to fetch user permissions: ${error.message}`, error.stack);
       return [];
