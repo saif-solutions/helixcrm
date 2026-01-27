@@ -240,7 +240,7 @@ async login(user: any, res: any) {
   }
 
 async refreshToken(oldRefreshToken: string, res: any) {
-  console.log('🔄 REFRESH START - Old token:', oldRefreshToken.substring(0, 30) + '...');
+  console.log('��� REFRESH START - Old token:', oldRefreshToken.substring(0, 30) + '...');
   
   try {
     // Verify JWT
@@ -459,6 +459,16 @@ async refreshToken(oldRefreshToken: string, res: any) {
       },
     });
 
+    // ============================================
+    // NEW: CREATE DEFAULT RBAC ROLES FOR ORGANIZATION
+    // ============================================
+    await this.createDefaultRolesForOrganization(organization.id);
+    
+    // ============================================
+    // NEW: ASSIGN SYSTEMADMIN ROLE TO NEW USER
+    // ============================================
+    await this.assignSystemAdminRoleToUser(user.id, organization.id);
+
     this.logger.log(`New user registered: ${user.email}`, {
       userId: user.id,
       organizationId: organization.id,
@@ -469,7 +479,321 @@ async refreshToken(oldRefreshToken: string, res: any) {
       id: user.id,
       email: user.email,
       organizationId: user.organizationId,
+      message: 'Organization created successfully. Default roles and permissions have been set up.',
     };
+  }
+
+  /**
+   * Create default system roles for a new organization
+   * Extracted from the RBAC initialization script
+   */
+  private async createDefaultRolesForOrganization(organizationId: string): Promise<void> {
+    this.logger.log(`Creating default roles for organization: ${organizationId.substring(0, 8)}...`);
+
+    // 1. Ensure core permissions exist (they should from global initialization)
+    const corePermissions = [
+      // Users module
+      'users.read', 'users.create', 'users.update', 'users.delete',
+      // Contacts module
+      'contacts.read', 'contacts.write', 'contacts.delete',
+      // Deals module  
+      'deals.read', 'deals.write', 'deals.delete',
+      // Leads module
+      'leads.read', 'leads.write', 'leads.delete',
+      // Pipelines module
+      'pipelines.read', 'pipelines.write', 'pipelines.manage',
+      // Analytics module
+      'analytics.read', 'analytics.export',
+      // RBAC module
+      'rbac.read', 'rbac.manage',
+      // Dashboard module
+      'dashboard.read',
+    ];
+
+    // Create any missing permissions
+    for (const code of corePermissions) {
+      const name = this.formatPermissionName(code);
+      const description = this.getPermissionDescription(code);
+      const module = code.split('.')[0];
+
+      await this.prisma.permission.upsert({
+        where: { code },
+        update: {},
+        create: { code, name, description, module },
+      });
+    }
+
+    // 2. Create SystemAdmin Role
+    const adminRole = await this.prisma.role.upsert({
+      where: {
+        organizationId_name: {
+          organizationId,
+          name: 'SystemAdmin',
+        },
+      },
+      update: {
+        description: 'Full system administrator with all permissions',
+        isSystem: true,
+      },
+      create: {
+        name: 'SystemAdmin',
+        description: 'Full system administrator with all permissions',
+        isSystem: true,
+        organizationId,
+      },
+    });
+
+    // Assign all permissions to SystemAdmin
+    const allPermissions = await this.prisma.permission.findMany();
+    for (const permission of allPermissions) {
+      await this.prisma.rolePermission.upsert({
+        where: {
+          roleId_permissionId: {
+            roleId: adminRole.id,
+            permissionId: permission.id,
+          },
+        },
+        update: {},
+        create: {
+          roleId: adminRole.id,
+          permissionId: permission.id,
+        },
+      });
+    }
+    this.logger.log(`  ✓ SystemAdmin role with ${allPermissions.length} permissions`);
+
+    // 3. Create Manager Role
+    const managerRole = await this.prisma.role.upsert({
+      where: {
+        organizationId_name: {
+          organizationId,
+          name: 'Manager',
+        },
+      },
+      update: {
+        description: 'Manager with read/write access to most resources',
+        isSystem: true,
+      },
+      create: {
+        name: 'Manager',
+        description: 'Manager with read/write access to most resources',
+        isSystem: true,
+        organizationId,
+      },
+    });
+
+    // Assign manager permissions
+    const managerPermissions = await this.prisma.permission.findMany({
+      where: {
+        code: {
+          in: [
+            'contacts.read', 'contacts.write',
+            'deals.read', 'deals.write',
+            'leads.read', 'leads.write',
+            'pipelines.read', 'pipelines.write',
+            'analytics.read',
+            'dashboard.read',
+          ],
+        },
+      },
+    });
+
+    for (const permission of managerPermissions) {
+      await this.prisma.rolePermission.upsert({
+        where: {
+          roleId_permissionId: {
+            roleId: managerRole.id,
+            permissionId: permission.id,
+          },
+        },
+        update: {},
+        create: {
+          roleId: managerRole.id,
+          permissionId: permission.id,
+        },
+      });
+    }
+    this.logger.log(`    ✓ Manager role with ${managerPermissions.length} permissions`);
+
+    // 4. Create User Role
+    const userRole = await this.prisma.role.upsert({
+      where: {
+        organizationId_name: {
+          organizationId,
+          name: 'User',
+        },
+      },
+      update: {
+        description: 'Regular user with basic access',
+        isSystem: true,
+      },
+      create: {
+        name: 'User',
+        description: 'Regular user with basic access',
+        isSystem: true,
+        organizationId,
+      },
+    });
+
+    const userPermissions = await this.prisma.permission.findMany({
+      where: {
+        code: {
+          in: [
+            'contacts.read', 'contacts.write',
+            'deals.read', 'deals.write',
+            'leads.read', 'leads.write',
+            'dashboard.read',
+          ],
+        },
+      },
+    });
+
+    for (const permission of userPermissions) {
+      await this.prisma.rolePermission.upsert({
+        where: {
+          roleId_permissionId: {
+            roleId: userRole.id,
+            permissionId: permission.id,
+          },
+        },
+        update: {},
+        create: {
+          roleId: userRole.id,
+          permissionId: permission.id,
+        },
+      });
+    }
+    this.logger.log(`    ✓ User role with ${userPermissions.length} permissions`);
+
+    // 5. Create Viewer Role
+    const viewerRole = await this.prisma.role.upsert({
+      where: {
+        organizationId_name: {
+          organizationId,
+          name: 'Viewer',
+        },
+      },
+      update: {
+        description: 'Viewer with read-only access',
+        isSystem: true,
+      },
+      create: {
+        name: 'Viewer',
+        description: 'Viewer with read-only access',
+        isSystem: true,
+        organizationId,
+      },
+    });
+
+    const viewerPermissions = await this.prisma.permission.findMany({
+      where: {
+        code: {
+          in: [
+            'contacts.read',
+            'deals.read',
+            'leads.read',
+            'pipelines.read',
+            'analytics.read',
+            'dashboard.read',
+          ],
+        },
+      },
+    });
+
+    for (const permission of viewerPermissions) {
+      await this.prisma.rolePermission.upsert({
+        where: {
+          roleId_permissionId: {
+            roleId: viewerRole.id,
+            permissionId: permission.id,
+          },
+        },
+        update: {},
+        create: {
+          roleId: viewerRole.id,
+          permissionId: permission.id,
+        },
+      });
+    }
+    this.logger.log(`    ✓ Viewer role with ${viewerPermissions.length} permissions`);
+  }
+
+  /**
+   * Assign SystemAdmin role to a user
+   */
+  private async assignSystemAdminRoleToUser(userId: string, organizationId: string): Promise<void> {
+    const adminRole = await this.prisma.role.findFirst({
+      where: {
+        organizationId,
+        name: 'SystemAdmin',
+      },
+    });
+
+    if (!adminRole) {
+      throw new Error(`SystemAdmin role not found for organization ${organizationId}`);
+    }
+
+    await this.prisma.userRole.create({
+      data: {
+        userId,
+        roleId: adminRole.id,
+        organizationId,
+      },
+    });
+
+    this.logger.log(`Assigned SystemAdmin role to user ${userId}`, {
+      userId,
+      organizationId,
+      event: 'systemadmin_assigned',
+    });
+  }
+
+  /**
+   * Helper: Format permission code into readable name
+   */
+  private formatPermissionName(code: string): string {
+    const [module, action] = code.split('.');
+    return `${module.charAt(0).toUpperCase() + module.slice(1)} ${action.charAt(0).toUpperCase() + action.slice(1)}`;
+  }
+
+
+  /**
+   * Helper: Get permission description
+   */
+  private getPermissionDescription(code: string): string {
+    const descriptions: Record<string, string> = {
+      // Users module
+      'users.read': 'View users in organization',
+      'users.create': 'Create new users',
+      'users.update': 'Update user information',
+      'users.delete': 'Delete users',
+      // Contacts module
+      'contacts.read': 'View contacts',
+      'contacts.write': 'Create and update contacts',
+      'contacts.delete': 'Delete contacts',
+      // Deals module
+      'deals.read': 'View deals',
+      'deals.write': 'Create and update deals',
+      'deals.delete': 'Delete deals',
+      // Leads module
+      'leads.read': 'View leads',
+      'leads.write': 'Create and update leads',
+      'leads.delete': 'Delete leads',
+      // Pipelines module
+      'pipelines.read': 'View pipelines',
+      'pipelines.write': 'Create and update pipelines',
+      'pipelines.manage': 'Manage pipeline stages and settings',
+      // Analytics module
+      'analytics.read': 'View analytics data',
+      'analytics.export': 'Export analytics data',
+      // RBAC module
+      'rbac.read': 'View roles and permissions',
+      'rbac.manage': 'Manage roles and permissions',
+      // Dashboard module
+      'dashboard.read': 'View dashboard',
+    };
+    
+    return descriptions[code] || `${code} permission`;
   }
 
   async invalidateAllTokens(userId: string) {

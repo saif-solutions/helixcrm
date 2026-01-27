@@ -27,6 +27,7 @@ import { CurrencyCodeConstraint } from './shared/validators/currency-code.valida
 import { AnalyticsModule, getAnalyticsModule } from './modules/analytics/analytics.module';
 import { DashboardModule } from "./modules/dashboard/dashboard.module";
 import { PermissionsModule } from './shared/permissions/permissions.module';
+import { UsersModule } from "./modules/users/users.module";
 
 
 @Module({
@@ -71,6 +72,7 @@ import { PermissionsModule } from './shared/permissions/permissions.module';
     PipelinesModule,
     DealsModule,
     RbacModule,
+    UsersModule,
     DashboardModule,
     
     // ✅ FIXED: Analytics Module with conditional registration
