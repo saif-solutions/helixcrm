@@ -40,7 +40,7 @@ export class RLSExecutorService {
           // TODO: Implement actual execution via Prisma
           // await this.prisma.$executeRawUnsafe(statement);
           
-        } catch (error) {
+        } catch (error: any) {
           this.logger.error(`Failed to execute RLS statement ${index + 1}:`, error);
           throw new Error(`RLS enforcement failed: ${error.message}`);
         }
@@ -70,7 +70,7 @@ export class RLSExecutorService {
       try {
         // await this.prisma.$queryRawUnsafe(query);
         this.logger.debug(`Verification query executed: ${query.substring(0, 50)}...`);
-      } catch (error) {
+      } catch (error: any) {
         this.logger.warn(`RLS verification query failed: ${error.message}`);
       }
     }
