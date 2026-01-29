@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../shared/prisma/prisma.service';
-import { AuditLogService } from '../../shared/audit-log/audit-log.service';
+import { AuditLogService, AuditAction, AuditSeverity, AuditEntityType } from '../../shared/audit-log/audit-log.service';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { AssignRoleDto } from './dto/assign-role.dto';
@@ -13,6 +13,19 @@ export class RolesService {
     private readonly prisma: PrismaService,
     private readonly auditLogService: AuditLogService,
   ) {}
+
+  private async getUserEmail(userId: string): Promise<string> {
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { email: true }
+      });
+      return user?.email || `user-${userId}@unknown.example.com`;
+    } catch (error) {
+      console.warn(`Failed to fetch email for user ${userId}: ${error.message}`);
+      return `user-${userId}@error.example.com`;
+    }
+  }
 
   async findAll(organizationId: string, query: RoleQueryDto) {
     const { isSystem, search, includeUserCount } = query;
@@ -78,6 +91,9 @@ export class RolesService {
   async create(organizationId: string, createRoleDto: CreateRoleDto, userId: string) {
     const { name, description, permissions = [], isSystem = false } = createRoleDto;
 
+    // Get user email for audit logging
+    const actorEmail = await this.getUserEmail(userId);
+
     // Check if role name already exists in organization
     const existingRole = await this.prisma.role.findFirst({
       where: {
@@ -126,18 +142,19 @@ export class RolesService {
     });
 
     // Audit logging
-await this.auditLogService.logEvent({
-  action: 'ROLE_CREATED',
-  entity: 'Role',
-  entityId: role.id,
-  organizationId,
-  userId,
-  metadata: {  // Changed from details to metadata
-    name: role.name,
-    isSystem: role.isSystem,
-    permissions,
-  },
-});
+    await this.auditLogService.logEvent({
+      action: AuditAction.ROLE_CREATED,
+      entityId: role.id,
+      entityType: AuditEntityType.SYSTEM,
+      organizationId,
+      actorUserId: userId,
+      actorEmail,
+      metadata: {
+        name: role.name,
+        isSystem: role.isSystem,
+        permissions,
+      },
+    });
 
     return role;
   }
@@ -148,6 +165,9 @@ await this.auditLogService.logEvent({
     updateRoleDto: UpdateRoleDto,
     userId: string,
   ) {
+    // Get user email for audit logging
+    const actorEmail = await this.getUserEmail(userId);
+
     const role = await this.prisma.role.findFirst({
       where: { id, organizationId },
     });
@@ -215,24 +235,28 @@ await this.auditLogService.logEvent({
     });
 
     // Audit logging
-await this.auditLogService.logEvent({
-  action: 'ROLE_UPDATED',
-  entity: 'Role',
-  entityId: updatedRole.id,
-  organizationId,
-  userId,
-  metadata: {  // Changed from details to metadata
-    oldName: role.name,
-    newName: updatedRole.name,
-    updatedFields: Object.keys(updateData),
-    permissions,
-  },
-});
+    await this.auditLogService.logEvent({
+      action: AuditAction.ROLE_UPDATED,
+      entityId: updatedRole.id,
+      entityType: AuditEntityType.SYSTEM,
+      organizationId,
+      actorUserId: userId,
+      actorEmail,
+      metadata: {
+        oldName: role.name,
+        newName: updatedRole.name,
+        updatedFields: Object.keys(updateData),
+        permissions,
+      },
+    });
 
     return updatedRole;
   }
 
   async remove(organizationId: string, id: string, userId: string) {
+    // Get user email for audit logging
+    const actorEmail = await this.getUserEmail(userId);
+
     const role = await this.prisma.role.findFirst({
       where: { id, organizationId },
       include: {
@@ -271,22 +295,26 @@ await this.auditLogService.logEvent({
     });
 
     // Audit logging
-await this.auditLogService.logEvent({
-  action: 'ROLE_DELETED',
-  entity: 'Role',
-  entityId: role.id,
-  organizationId,
-  userId,
-  metadata: {  // Changed from details to metadata
-    name: role.name,
-  },
-});
+    await this.auditLogService.logEvent({
+      action: AuditAction.ROLE_DELETED,
+      entityId: role.id,
+      entityType: AuditEntityType.SYSTEM,
+      organizationId,
+      actorUserId: userId,
+      actorEmail,
+      metadata: {
+        name: role.name,
+      },
+    });
 
     return { message: 'Role deleted successfully' };
   }
 
   async assignRole(organizationId: string, assignRoleDto: AssignRoleDto, userId: string) {
     const { roleId, userId: targetUserId } = assignRoleDto;
+
+    // Get user email for audit logging
+    const actorEmail = await this.getUserEmail(userId);
 
     // Verify user exists in organization
     const user = await this.prisma.user.findFirst({
@@ -327,24 +355,28 @@ await this.auditLogService.logEvent({
     });
 
     // Audit logging
-await this.auditLogService.logEvent({
-  action: 'ROLE_ASSIGNED',
-  entity: 'UserRole',
-  entityId: userRole.id,
-  organizationId,
-  userId,
-  metadata: {  // Changed from details to metadata
-    targetUserId,
-    roleId,
-    roleName: role.name,
-  },
-});
+    await this.auditLogService.logEvent({
+      action: AuditAction.ROLE_ASSIGNED,
+      entityId: userRole.id,
+      entityType: AuditEntityType.USER,
+      organizationId,
+      actorUserId: userId,
+      actorEmail,
+      metadata: {
+        targetUserId,
+        roleId,
+        roleName: role.name,
+      },
+    });
 
     return userRole;
   }
 
   async removeRole(organizationId: string, removeRoleDto: RemoveRoleDto, userId: string) {
     const { roleId, userId: targetUserId } = removeRoleDto;
+
+    // Get user email for audit logging
+    const actorEmail = await this.getUserEmail(userId);
 
     // Verify assignment exists
     const userRole = await this.prisma.userRole.findFirst({
@@ -382,19 +414,19 @@ await this.auditLogService.logEvent({
     });
 
     // Audit logging
-await this.auditLogService.logEvent({
-  action: 'ROLE_REMOVED',
-  entity: 'UserRole',
-  entityId: userRole.id,
-  organizationId,
-  userId,
-  metadata: {  // Changed from details to metadata
-    targetUserId,
-    roleId,
-    roleName: userRole.role.name,
-  },
-});
-
+    await this.auditLogService.logEvent({
+      action: AuditAction.ROLE_REMOVED,
+      entityId: userRole.id,
+      entityType: AuditEntityType.USER,
+      organizationId,
+      actorUserId: userId,
+      actorEmail,
+      metadata: {
+        targetUserId,
+        roleId,
+        roleName: userRole.role.name,
+      },
+    });
 
     return { message: 'Role removed successfully' };
   }

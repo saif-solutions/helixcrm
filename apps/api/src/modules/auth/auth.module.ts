@@ -10,6 +10,7 @@ import { RefreshTokenService } from './services/refresh-token.service';
 import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
 import { RefreshTokenGuard } from './guards/refresh-token.guard';
 import { PrismaModule } from '../../shared/prisma/prisma.module';
+import { AuditLogModule } from '../../shared/audit-log/audit-log.module'; // ADD THIS IMPORT
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { PrismaModule } from '../../shared/prisma/prisma.module';
       ttl: 60000,
       limit: 10,
     }]),
+    AuditLogModule, // ADD THIS TO IMPORTS ARRAY
   ],
   controllers: [AuthController, PasswordResetController],
   providers: [

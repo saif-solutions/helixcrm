@@ -10,15 +10,20 @@ interface SessionExpiredModalProps {
 
 export const SessionExpiredModal: React.FC<SessionExpiredModalProps> = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
-  const { setUser } = useAuthStore();
+  const logout = useAuthStore((state) => state.logout);
 
-  const handleLoginRedirect = () => {
-    // Clear auth state
-    setUser(null);
-    // Close modal
-    onClose();
-    // Redirect to login
-    navigate('/login', { replace: true });
+  const handleLoginRedirect = async () => {
+    try {
+      // Clear auth state
+      await logout();
+    } catch (error) {
+      console.error('Error during logout:', error);
+    } finally {
+      // Close modal
+      onClose();
+      // Redirect to login
+      navigate('/login', { replace: true });
+    }
   };
 
   if (!isOpen) return null;

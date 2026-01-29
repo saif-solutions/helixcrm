@@ -5,7 +5,7 @@ import { Cache } from 'cache-manager';
 import { Queue } from 'bullmq';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../shared/prisma/prisma.service';
-import { AuditLogService } from '../../shared/audit-log/audit-log.service';
+import { AuditLogService, AuditAction, AuditSeverity, AuditEntityType } from '../../shared/audit-log/audit-log.service';
 import { AppLogger } from '../../shared/logging/logger.service';
 import {
   DealAnalyticsQueryDto,
@@ -267,7 +267,7 @@ constructor(
     }
 
     if (processedQuery.userId) {
-      where.userId = processedQuery.userId;
+      where.actorUserId = processedQuery.userId;
     }
 
     if (processedQuery.type) {
@@ -285,12 +285,11 @@ constructor(
         select: {
           id: true,
           action: true,
-          entity: true,
           entityId: true,
-          userId: true,
-          before: true,    // Using 'before' field instead of 'metadata'
-          after: true,     // Using 'after' field
-          diff: true,      // Using 'diff' field
+          entityType: true,
+          actorUserId: true,
+          actorEmail: true,
+          metadata: true,
           createdAt: true,
         },
       }),
@@ -304,7 +303,7 @@ constructor(
       _count: { id: true },
     });
 
-    // Transform response - FIXED: Use 'diff' field for metadata
+    // Transform response - FIXED: Use correct fields
     const result = {
       totalActivities: total,
       byType: byType.reduce((acc, item) => {
@@ -314,12 +313,13 @@ constructor(
       recentActivities: activities.map(log => ({
         id: log.id,
         type: log.action as ActivityType,
-        userId: log.userId,
-        entityType: log.entity,
+        userId: log.actorUserId,
+        userEmail: log.actorEmail,
+        entityType: log.entityType,
         entityId: log.entityId,
         timestamp: log.createdAt.toISOString(),
-        // Use 'diff' field for metadata since 'metadata' doesn't exist
-        changes: log.diff || log.after || log.before,
+        // Use metadata field
+        changes: log.metadata || {},
       })),
       pagination: {
         page: processedQuery.page,
@@ -331,6 +331,19 @@ constructor(
 
     return result;
   }
+
+private async getUserEmail(userId: string): Promise<string> {
+  try {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true }
+    });
+    return user?.email || `user-${userId}@unknown.example.com`;
+  } catch (error) {
+    this.logger.warn(`Failed to fetch email for user ${userId}: ${error.message}`);
+    return `user-${userId}@error.example.com`;
+  }
+}
 
   // ==================== EXPORT FUNCTIONALITY ====================
   async queueExportJob(organizationId: string, userId: string, query: AnalyticsExportQueryDto) {
@@ -346,38 +359,41 @@ constructor(
     const downloadToken = `token_${Date.now()}_${Math.random().toString(36).substr(2, 16)}`;
     const tokenTtl = this.configService.get<number>('EXPORT_TOKEN_TTL', 900);
 
-    // Log export request - FIXED: Use correct AuditLogService structure
+    // Get user email for audit logging
+    const actorEmail = await this.getUserEmail(userId);
+
+    // Log export request
     await this.auditLogService.logEvent({
-      action: 'ANALYTICS_EXPORT_REQUESTED',
-      entity: 'AnalyticsExport',
+      action: AuditAction.ANALYTICS_EXPORT_REQUESTED,
       entityId: exportId,
+      entityType: AuditEntityType.SYSTEM,
       organizationId,
-      userId,
-      // Use 'metadata' for AuditLogService (different from Prisma model)
+      actorUserId: userId,
+      actorEmail,
       metadata: {
         format: processedQuery.format,
         include: processedQuery.include,
         startDate: processedQuery.startDate,
         endDate: processedQuery.endDate,
       },
-      severity: 'info',
+      severity: AuditSeverity.LOW,
     });
 
     // Queue background job
-if (this.exportQueue) {
-  await this.exportQueue.add('export', {
-    exportId,
-    organizationId,
-    userId,
-    format: processedQuery.format,
-    queryParams: processedQuery,
-    downloadToken,
-    requestedAt: new Date().toISOString(),
-  });
-} else {
-  this.logger.warn('Export queue not available - analytics exports will be processed synchronously');
-  // In a future phase, you could process exports synchronously here
-}
+    if (this.exportQueue) {
+      await this.exportQueue.add('export', {
+        exportId,
+        organizationId,
+        userId,
+        format: processedQuery.format,
+        queryParams: processedQuery,
+        downloadToken,
+        requestedAt: new Date().toISOString(),
+      });
+    } else {
+      this.logger.warn('Export queue not available - analytics exports will be processed synchronously');
+      // In a future phase, you could process exports synchronously here
+    }
 
     return {
       exportId,
@@ -397,6 +413,9 @@ if (this.exportQueue) {
       throw new NotFoundException('Invalid download token');
     }
 
+    // Get user email for audit logging
+    const actorEmail = await this.getUserEmail(userId);
+
     const exportData = {
       exportId: 'mock_export_123',
       format: ExportFormat.CSV,
@@ -405,19 +424,19 @@ if (this.exportQueue) {
       expiresAt: new Date(Date.now() + 900000).toISOString(), // 15 minutes
     };
 
-    // Log download - FIXED: Use correct AuditLogService structure
+    // Log download
     await this.auditLogService.logEvent({
-      action: 'ANALYTICS_EXPORT_DOWNLOADED',
-      entity: 'AnalyticsExport',
+      action: AuditAction.ANALYTICS_EXPORT_DOWNLOADED,
       entityId: exportData.exportId,
+      entityType: AuditEntityType.SYSTEM,
       organizationId,
-      userId,
-      // Use 'metadata' for AuditLogService
+      actorUserId: userId,
+      actorEmail,
       metadata: {
         token,
         format: exportData.format,
       },
-      severity: 'info',
+      severity: AuditSeverity.LOW,
     });
 
     return exportData;

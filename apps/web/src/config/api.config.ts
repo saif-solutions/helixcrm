@@ -3,41 +3,32 @@
 /**
  * API Configuration
  * 
- * In development with Vite proxy:
- * - Use '/api' as base URL (Vite will proxy to backend)
- * - This avoids CORS issues
- * 
- * In production:
- * - Use full backend URL
+ * Configuration for real backend integration only.
+ * No mock flags or development bypasses.
  */
 
 export const API_CONFIG = {
-  // In development, use Vite proxy path to avoid CORS
-  // In production, use actual backend URL
-  baseURL: import.meta.env.VITE_API_URL || '/api',
+  // Use VITE_API_URL environment variable
+  // Default: http://localhost:3001/api/v1
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3001/api/v1',
   
-  // Development mode settings
+  // Environment
   isDevelopment: import.meta.env.DEV,
   
-  // Proxy configuration
-  useProxy: import.meta.env.DEV && !import.meta.env.VITE_API_URL?.includes('localhost:3001'),
-  
-  // Timeout settings
+  // Timeout settings (30 seconds)
   timeout: 30000,
   
   // Headers
   headers: {
     'Content-Type': 'application/json',
-    'X-App-Version': import.meta.env.VITE_APP_VERSION || '0.9.0',
+    'X-App-Version': import.meta.env.VITE_APP_VERSION || '1.0.0',
   },
   
-  // CORS settings
+  // CORS settings - required for cookies/auth
   withCredentials: true,
 };
 
-console.log('ðŸ”§ API Configuration:', {
+console.log('í´§ API Configuration (Phase 5 - Real Backend Only):', {
   baseURL: API_CONFIG.baseURL,
   isDevelopment: API_CONFIG.isDevelopment,
-  useProxy: API_CONFIG.useProxy,
-  envAPI: import.meta.env.VITE_API_URL,
 });

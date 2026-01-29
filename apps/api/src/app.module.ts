@@ -28,7 +28,7 @@ import { AnalyticsModule, getAnalyticsModule } from './modules/analytics/analyti
 import { DashboardModule } from "./modules/dashboard/dashboard.module";
 import { PermissionsModule } from './shared/permissions/permissions.module';
 import { UsersModule } from "./modules/users/users.module";
-
+import { CorrelationIdMiddleware } from './shared/middleware/correlation-id.middleware';
 
 @Module({
   imports: [
@@ -116,15 +116,20 @@ import { UsersModule } from "./modules/users/users.module";
     PermissionGuard,
   ],
 })
+
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    // Apply RequestContextMiddleware to ALL routes first
+    // Apply Correlation ID Middleware FIRST
+    consumer
+      .apply(CorrelationIdMiddleware)
+      .forRoutes({ path: '*', method: RequestMethod.ALL });
+
+    // Apply RequestContextMiddleware to ALL routes second
     consumer
       .apply(RequestContextMiddleware)
       .forRoutes({ path: '*', method: RequestMethod.ALL });
 
-    // Apply CSRF middleware to ALL routes
-    // The CsrfMiddleware itself handles which paths/methods to skip
+    // Apply CSRF middleware to ALL routes third
     consumer
       .apply(CsrfMiddleware)
       .forRoutes({ path: '*', method: RequestMethod.ALL });

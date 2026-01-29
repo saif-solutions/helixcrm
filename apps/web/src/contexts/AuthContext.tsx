@@ -1,150 +1,111 @@
-﻿import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useEffect } from 'react';
+import { useAuthStore, User } from '../stores/auth.store';
 import { useToast } from '../components/feedback/ToastProvider';
-
-interface User {
-  id: string;
-  email: string;
-  organizationId: string;
-}
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
+  isAuthenticated: boolean;
+  sessionExpired: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  register: (email: string, password: string, organizationName: string) => Promise<void>;
+  register: (email: string, password: string, firstName: string, lastName: string, organizationName: string) => Promise<void>;
+  clearSessionExpired: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const {
+    user,
+    isLoading,
+    isAuthenticated,
+    sessionExpired,
+    initialize,
+    login,
+    logout,
+    register,
+    clearSessionExpired,
+    setSessionExpired,
+  } = useAuthStore();
+  
   const { success, error } = useToast();
 
-  // Check for existing token on mount
+  // Initialize auth on mount
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          setIsLoading(false);
-          return;
-        }
+    initialize();
+  }, [initialize]);
 
-        // Verify token with backend
-        const response = await fetch(`${API_URL}/auth/me`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+  // Show session expired toast when session expires
+  useEffect(() => {
+    if (sessionExpired) {
+error(
+  'Session Expired',
+  'Your session has expired. Please log in again to continue.'
+);
+clearSessionExpired();
+    }
+  }, [sessionExpired, error, clearSessionExpired]);
 
-        if (response.ok) {
-          const userData = await response.json();
-          setUser(userData);
-        } else {
-          // Token is invalid, clear it
-          localStorage.removeItem('token');
-        }
-      } catch (err) {
-        console.error('Auth check failed:', err);
-        localStorage.removeItem('token');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    checkAuth();
-  }, []);
-
-  const login = useCallback(
-    async (email: string, password: string) => {
-      setIsLoading(true);
-      try {
-        const response = await fetch(`${API_URL}/auth/login`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password }),
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.message || 'Login failed');
-        }
-
-        localStorage.setItem('token', data.token);
-        setUser(data.user);
-
-        success('Login successful', 'Welcome back!');
-      } catch (err) {
-        const message = err instanceof Error ? err.message : 'Login failed';
-        error('Login failed', message);
-        throw err;
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [success, error]
-  );
-
-  const logout = useCallback(async () => {
-    setIsLoading(true);
+  const handleLogin = async (email: string, password: string) => {
     try {
-      const token = localStorage.getItem('token');
-      if (token) {
-        await fetch(`${API_URL}/auth/logout`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-      }
+      await login({ email, password, rememberMe: false });
+      success('Login successful', 'Welcome back!');
+    } catch (err: any) {
+      const message = err.message || 'Login failed';
+      error('Login failed', message);
+      throw err;
+    }
+  };
+
+  const handleRegister = async (
+    email: string, 
+    password: string, 
+    firstName: string, 
+    lastName: string, 
+    organizationName: string
+  ) => {
+    try {
+      await register({ 
+        email, 
+        password, 
+        confirmPassword: password,
+        firstName,
+        lastName,
+        organizationName,
+      });
+      success('Registration successful', 'Welcome to HelixCRM!');
+    } catch (err: any) {
+      const message = err.message || 'Registration failed';
+      error('Registration failed', message);
+      throw err;
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      success('Logged out', 'You have been successfully logged out');
     } catch (err) {
       console.error('Logout error:', err);
-    } finally {
-      localStorage.removeItem('token');
-      setUser(null);
-      setIsLoading(false);
-      success('Logged out', 'You have been successfully logged out');
+      // Still show success since local state is cleared
+      success('Logged out', 'You have been logged out');
     }
-  }, [success]);
+  };
 
-  const register = useCallback(
-    async (email: string, password: string, organizationName: string) => {
-      setIsLoading(true);
-      try {
-        const response = await fetch(`${API_URL}/auth/register`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password, organizationName }),
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.message || 'Registration failed');
-        }
-
-        localStorage.setItem('token', data.token);
-        setUser(data.user);
-
-        success('Registration successful', 'Welcome to HelixCRM!');
-      } catch (err) {
-        const message = err instanceof Error ? err.message : 'Registration failed';
-        error('Registration failed', message);
-        throw err;
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [success, error]
-  );
+  const value: AuthContextType = {
+    user,
+    isLoading,
+    isAuthenticated,
+    sessionExpired,
+    login: handleLogin,
+    logout: handleLogout,
+    register: handleRegister,
+    clearSessionExpired,
+  };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout, register }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

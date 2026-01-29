@@ -1,0 +1,163 @@
+# HELIXCRM Documentation
+
+**Project:** HELIXCRM  
+**Status:** MVP v1.0 ‚Äì Complete & Validated  
+**Branch:** main  
+**Release Tag:** mvp-v1.0  
+
+HELIXCRM is a secure, multi-tenant CRM platform built with enterprise-grade architecture, role-based access control (RBAC), row-level security (RLS), and API-first design.
+
+This directory contains the authoritative technical and product documentation for the platform.
+
+---
+
+## Ì≥¶ Project Status
+
+- ‚úÖ MVP fully implemented and validated
+- ‚úÖ Multi-tenant isolation verified
+- ‚úÖ RBAC + JWT + RLS security active
+- ‚úÖ Seed and automated test scripts available
+- ‚úÖ Tagged release: `mvp-v1.0`
+
+---
+
+## Ì∫Ä Quick Start (Developers)
+
+```bash
+# Install dependencies
+npm install
+
+# Start API server
+npm run start:dev
+
+# Seed database with 2 organizations and test data
+npx ts-node apps/api/scripts/dev/seed-mvp.ts
+
+# Run end-to-end validation
+./test-mvp.sh
+Ì¥ê Test Credentials (Seeded)
+Organization 1
+Email: admin@techsolutions.com
+
+Password: Admin123!
+
+Organization 2
+Email: admin@marketingpros.com
+
+Password: Admin123!
+
+Ì∑Ç Documentation Structure
+docs/
+‚îú‚îÄ‚îÄ api/                # API contracts & validation status
+‚îú‚îÄ‚îÄ architecture/       # System & security architecture
+‚îú‚îÄ‚îÄ development/        # Local setup & dev workflows
+‚îú‚îÄ‚îÄ operations/         # Deployment & runtime operations
+‚îú‚îÄ‚îÄ product/            # Product assumptions & constraints
+‚îú‚îÄ‚îÄ roadmap/            # Delivery & feature roadmap
+‚îî‚îÄ‚îÄ history/            # Archived project phases & reports
+Ì≥Å Folder Overview
+api/
+API documentation and validation status.
+
+mvp-api-status.md ‚Äì Complete list of validated MVP endpoints
+
+architecture/
+Core technical design documentation.
+
+overview.md ‚Äì System architecture overview
+
+security.md ‚Äì Authentication, RBAC, RLS, and security model
+
+development/
+Developer onboarding and environment setup.
+
+setup.md ‚Äì Local development configuration
+
+operations/
+Runtime and deployment procedures.
+
+deployment.md ‚Äì Deployment guidelines
+
+product/
+Product-level constraints and decisions.
+
+assumptions-and-limitations.md
+
+roadmap/
+Project planning and forward-looking milestones.
+
+project-roadmap.md
+
+history/
+Archived material from earlier phases:
+
+Phase 1 execution docs
+
+Sprint reports
+
+Pilot documentation
+
+Test gate reports
+
+Governance & strategy documents
+
+Project management logs
+
+Original Word documents
+
+This content is preserved for traceability but is not part of the active system documentation.
+
+Ìª° Security Model Summary
+JWT authentication
+
+Role-based access control (RBAC)
+
+Row-level security (RLS) per organization
+
+CSRF protection
+
+Rate limiting
+
+Permission format: module.action (dot notation)
+
+Ì∑™ Validation Summary
+11/11 automated MVP tests passed
+
+Multi-tenant isolation verified
+
+All core business endpoints operational
+
+Analytics verified with tenant isolation
+
+See: docs/api/mvp-api-status.md
+
+Ì≥å Contribution Guidelines
+Update documentation when modifying architecture, APIs, or security model
+
+Place historical reports in docs/history/
+
+Keep architecture/ and api/ as the source of truth
+
+Tag releases when updating production behavior
+
+Ì≥Ö Next Phase
+Recommended next steps:
+
+Frontend integration
+
+Task & document modules
+
+Advanced analytics
+
+Performance benchmarking
+
+CI/CD automation
+
+Cloud deployment
+
+Ì≥Ñ License / Ownership
+Internal project documentation ‚Äì HELIXCRM platform.
+
+Maintained by: Saif
+Technical Lead: DeepSeek (AI-assisted)
+

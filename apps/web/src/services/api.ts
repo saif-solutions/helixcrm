@@ -24,18 +24,10 @@ const API_BASE_URL = API_CONFIG.baseURL;
 const APP_ENV = import.meta.env.VITE_APP_ENV || 'development';
 const IS_DEV = import.meta.env.DEV;
 
-// Development mode configuration
-const DEV_MOCK_MODE = IS_DEV && (import.meta.env.VITE_MOCK_API === 'true' || false);
-const DEV_OFFLINE_MODE = IS_DEV && (import.meta.env.VITE_OFFLINE_MODE === 'true' || false);
-const DEV_BYPASS_AUTH = IS_DEV && (import.meta.env.VITE_DEV_BYPASS_AUTH === 'true' || false);
-
-console.log(`🚀 API Configuration:
+console.log(`��� API Configuration:
   - Base URL: ${API_BASE_URL}
   - Environment: ${APP_ENV}
   - Development Mode: ${IS_DEV}
-  - Mock Mode: ${DEV_MOCK_MODE}
-  - Offline Mode: ${DEV_OFFLINE_MODE}
-  - Auth Bypass: ${DEV_BYPASS_AUTH}
 `);
 
 // Generate UUID for request IDs
@@ -67,83 +59,6 @@ export interface PaginatedResponse<T> {
 export interface LeadResponse extends PaginatedResponse<Lead> {}
 export interface ContactResponse extends PaginatedResponse<Contact> {}
 export interface DealResponse extends PaginatedResponse<Deal> {}
-
-// Enhanced mock data with more realistic CRM data
-const MOCK_DATA = {
-  user: {
-    id: 'mock-user-1',
-    email: 'admin@helixcrm.com',
-    name: 'Admin User',
-    role: 'admin',
-    avatar: '',
-    organizationId: 'org-helix-001',
-    permissions: ['read', 'write', 'delete', 'admin']
-  },
-  csrfToken: 'mock-csrf-token-dev-' + Date.now(),
-  stats: {
-    leads: 156,
-    contacts: 428,
-    deals: 89,
-    totalWonValue: 4250000,
-    recentActivities: [
-      { id: 'act-1', type: 'lead_created', user: 'John Doe', time: '2 hours ago', description: 'New lead: Acme Corp' },
-      { id: 'act-2', type: 'deal_won', user: 'Jane Smith', time: '4 hours ago', description: 'Deal closed: $250,000' },
-      { id: 'act-3', type: 'contact_added', user: 'Mike Johnson', time: '1 day ago', description: 'New contact added' }
-    ],
-    pipelineStages: [
-      { stage: 'Prospect', count: 42, value: 1250000 },
-      { stage: 'Qualified', count: 28, value: 1850000 },
-      { stage: 'Proposal', count: 12, value: 850000 },
-      { stage: 'Negotiation', count: 5, value: 300000 },
-      { stage: 'Closed Won', count: 2, value: 200000 }
-    ]
-  },
-  leads: Array.from({ length: 50 }, (_, i) => ({
-    id: `lead-${i + 1}`,
-    name: `Lead ${i + 1}`,
-    email: `lead${i + 1}@example.com`,
-    phone: `+1 (555) ${100 + i}-${1000 + i}`,
-    company: `Company ${(i % 10) + 1}`,
-    status: ['new', 'contacted', 'qualified'][i % 3] as any,
-    source: ['website', 'referral', 'organic', 'campaign'][i % 4],
-    createdAt: new Date(Date.now() - i * 86400000).toISOString(),
-    lastContacted: new Date(Date.now() - (i % 7) * 86400000).toISOString()
-  })),
-  contacts: Array.from({ length: 50 }, (_, i) => ({
-    id: `contact-${i + 1}`,
-    firstName: `First${i + 1}`,
-    lastName: `Last${i + 1}`,
-    email: `contact${i + 1}@example.com`,
-    phone: `+1 (555) ${200 + i}-${2000 + i}`,
-    mobile: `+1 (555) ${300 + i}-${3000 + i}`,
-    company: `Company ${(i % 10) + 1}`,
-    title: ['CEO', 'CTO', 'CFO', 'Manager', 'Director'][i % 5],
-    department: ['Sales', 'Marketing', 'Engineering', 'Finance', 'HR'][i % 5],
-    createdAt: new Date(Date.now() - i * 86400000).toISOString(),
-    lastContacted: new Date(Date.now() - (i % 14) * 86400000).toISOString()
-  })),
-  deals: Array.from({ length: 50 }, (_, i) => ({
-    id: `deal-${i + 1}`,
-    name: `Deal ${i + 1}: ${['Acme Corp', 'Globex', 'Stark Industries', 'Wayne Enterprises', 'Cyberdyne'][i % 5]}`,
-    amount: (i + 1) * 25000,
-    stageId: `stage-${(i % 5) + 1}`,
-    stageName: ['Prospect', 'Qualified', 'Proposal', 'Negotiation', 'Closed Won'][i % 5],
-    probability: [10, 25, 50, 75, 90][i % 5],
-    contactId: `contact-${(i % 20) + 1}`,
-    contactName: `Contact ${(i % 20) + 1}`,
-    expectedCloseDate: new Date(Date.now() + (i + 1) * 86400000).toISOString(),
-    createdAt: new Date(Date.now() - i * 86400000).toISOString(),
-    status: ['active', 'pending', 'won', 'lost'][i % 4] as any,
-    priority: ['low', 'medium', 'high'][i % 3] as any
-  })),
-  pipelineStages: [
-    { id: 'stage-1', name: 'Prospect', order: 1, probability: 10, color: 'bg-blue-100 text-blue-800' },
-    { id: 'stage-2', name: 'Qualified', order: 2, probability: 25, color: 'bg-purple-100 text-purple-800' },
-    { id: 'stage-3', name: 'Proposal', order: 3, probability: 50, color: 'bg-yellow-100 text-yellow-800' },
-    { id: 'stage-4', name: 'Negotiation', order: 4, probability: 75, color: 'bg-orange-100 text-orange-800' },
-    { id: 'stage-5', name: 'Closed Won', order: 5, probability: 100, color: 'bg-green-100 text-green-800' }
-  ]
-};
 
 // CSRF Token Manager
 class CsrfTokenManager {
@@ -180,29 +95,16 @@ class CsrfTokenManager {
     this.isRefreshing = true;
 
     try {
-      // In mock mode, return mock token
-      if (DEV_MOCK_MODE || DEV_OFFLINE_MODE || DEV_BYPASS_AUTH) {
-        this.setToken(MOCK_DATA.csrfToken);
-        console.log('🔧 Using mock CSRF token for development');
-      } else {
-        const response = await api.get<{ csrfToken: string }>('/auth/csrf-token');
-        this.setToken(response.data.csrfToken);
-        console.log('✅ CSRF token refreshed');
-      }
-
+      const response = await api.get<{ csrfToken: string }>('/auth/csrf-token');
+      this.setToken(response.data.csrfToken);
+      console.log('✅ CSRF token refreshed');
+      
       // Resolve all queued requests
       this.refreshQueue.forEach((resolve) => resolve());
       this.refreshQueue = [];
     } catch (error) {
-      console.warn('⚠️ Could not refresh CSRF token');
-      
-      // In development, use mock token as fallback
-      if (IS_DEV) {
-        console.log('🔧 Falling back to mock CSRF token');
-        this.setToken(MOCK_DATA.csrfToken);
-      } else {
-        throw error;
-      }
+      console.error('❌ Could not refresh CSRF token', error);
+      throw error;
     } finally {
       this.isRefreshing = false;
     }
@@ -215,7 +117,7 @@ export const csrfManager = new CsrfTokenManager();
 // Create Axios instance
 const api: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
-  timeout: DEV_OFFLINE_MODE ? 1000 : 30000, // Shorter timeout in offline mode
+  timeout: 30000,
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
@@ -235,8 +137,8 @@ api.interceptors.request.use(
       const csrfToken = csrfManager.getToken();
       if (csrfToken) {
         config.headers['X-CSRF-Token'] = csrfToken;
-      } else if (!DEV_MOCK_MODE && !DEV_OFFLINE_MODE && !DEV_BYPASS_AUTH) {
-        console.warn('CSRF token missing for', config.method, 'request');
+      } else {
+        console.warn('⚠️ CSRF token missing for', config.method, 'request');
       }
     }
 
@@ -252,7 +154,7 @@ api.interceptors.request.use(
 
     // Log in development
     if (IS_DEV) {
-      console.log(`📤 [${config.method?.toUpperCase()}] ${config.url}`, {
+      console.log(`��� [${config.method?.toUpperCase()}] ${config.url}`, {
         requestId,
         hasData: !!config.data,
         hasCsrf: !!config.headers['X-CSRF-Token'],
@@ -266,14 +168,13 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor with enhanced mock/offline support
+// Response interceptor
 api.interceptors.response.use(
   (response: AxiosResponse) => {
     // Log in development
     if (IS_DEV) {
-      console.log(`📥 [${response.config.method?.toUpperCase()}] ${response.config.url}`, {
+      console.log(`��� [${response.config.method?.toUpperCase()}] ${response.config.url}`, {
         status: response.status,
-        data: response.data,
       });
     }
     return response;
@@ -283,125 +184,15 @@ api.interceptors.response.use(
     const requestId = originalRequest?._requestId || 'unknown';
     const url = originalRequest?.url || '';
 
-    // DEVELOPMENT MODE: Return mock data for specific endpoints
-    if (IS_DEV && (DEV_MOCK_MODE || DEV_OFFLINE_MODE || DEV_BYPASS_AUTH)) {
-      console.log(`🔧 Development mode: Mocking response for ${url}`);
-      
-      // Mock responses for common endpoints
-      if (url.includes('/auth/me')) {
-        console.log('🔧 Returning mock user data');
-        return Promise.resolve({ 
-          data: MOCK_DATA.user,
-          status: 200,
-          statusText: 'OK',
-          headers: {},
-          config: originalRequest
-        });
-      }
-      
-      if (url.includes('/auth/csrf-token')) {
-        console.log('🔧 Returning mock CSRF token');
-        return Promise.resolve({ 
-          data: { csrfToken: MOCK_DATA.csrfToken },
-          status: 200,
-          statusText: 'OK',
-          headers: {},
-          config: originalRequest
-        });
-      }
-      
-      if (url.includes('/dashboard/stats')) {
-        console.log('🔧 Returning mock dashboard stats');
-        return Promise.resolve({ 
-          data: MOCK_DATA.stats,
-          status: 200,
-          statusText: 'OK',
-          headers: {},
-          config: originalRequest
-        });
-      }
-      
-      if (url.includes('/leads')) {
-        const mockResponse = {
-          data: MOCK_DATA.leads.slice(0, 10), // Return first 10 leads
-          meta: { page: 1, limit: 10, total: MOCK_DATA.leads.length, totalPages: Math.ceil(MOCK_DATA.leads.length / 10) }
-        };
-        console.log('🔧 Returning mock leads data');
-        return Promise.resolve({ 
-          data: mockResponse,
-          status: 200,
-          statusText: 'OK',
-          headers: {},
-          config: originalRequest
-        });
-      }
-      
-      if (url.includes('/contacts')) {
-        const mockResponse = {
-          data: MOCK_DATA.contacts.slice(0, 10), // Return first 10 contacts
-          meta: { page: 1, limit: 10, total: MOCK_DATA.contacts.length, totalPages: Math.ceil(MOCK_DATA.contacts.length / 10) }
-        };
-        console.log('🔧 Returning mock contacts data');
-        return Promise.resolve({ 
-          data: mockResponse,
-          status: 200,
-          statusText: 'OK',
-          headers: {},
-          config: originalRequest
-        });
-      }
-      
-      if (url.includes('/deals')) {
-        const mockResponse = {
-          data: MOCK_DATA.deals.slice(0, 10), // Return first 10 deals
-          meta: { page: 1, limit: 10, total: MOCK_DATA.deals.length, totalPages: Math.ceil(MOCK_DATA.deals.length / 10) }
-        };
-        console.log('🔧 Returning mock deals data');
-        return Promise.resolve({ 
-          data: mockResponse,
-          status: 200,
-          statusText: 'OK',
-          headers: {},
-          config: originalRequest
-        });
-      }
-      
-      if (url.includes('/pipeline-stages') || url.includes('/stages')) {
-        console.log('🔧 Returning mock pipeline stages');
-        return Promise.resolve({ 
-          data: MOCK_DATA.pipelineStages,
-          status: 200,
-          statusText: 'OK',
-          headers: {},
-          config: originalRequest
-        });
-      }
-      
-      // Default success response for other development endpoints
-      console.log(`🔧 Default mock response for ${url}`);
-      return Promise.resolve({ 
-        data: { 
-          success: true, 
-          message: 'Development mock response',
-          endpoint: url,
-          timestamp: new Date().toISOString()
-        },
-        status: 200,
-        statusText: 'OK',
-        headers: {},
-        config: originalRequest
-      });
-    }
-
     // Network error (backend offline)
     if (!error.response) {
-      console.warn('🌐 Network error - backend might be offline', {
+      console.error('��� Network error - backend might be offline', {
         requestId,
         url: originalRequest?.url,
         method: originalRequest?.method,
       });
 
-      // Only show session expired if it's an auth endpoint
+      // Show session expired if it's an auth endpoint
       if (originalRequest?.url?.includes('/auth/')) {
         useAuthStore.getState().setSessionExpired(true);
       }
@@ -422,69 +213,10 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    // Handle 401 Unauthorized - DEVELOPMENT MODE: Return mock data
+    // Handle 401 Unauthorized
     if (error.response?.status === 401) {
-      console.warn(`🔐 Auth required for ${url} - development mode`);
+      console.warn(`��� Authentication required for ${url}`);
       
-      // In development with auth bypass, return mock data
-      if (IS_DEV && DEV_BYPASS_AUTH) {
-        console.log(`🔧 Development auth bypass for ${url}`);
-        
-        // Return mock responses for common endpoints
-        if (url.includes('/dashboard/stats')) {
-          return Promise.resolve({ 
-            data: MOCK_DATA.stats,
-            status: 200,
-            statusText: 'OK',
-            headers: {},
-            config: originalRequest
-          });
-        }
-        
-        if (url.includes('/leads')) {
-          const mockResponse = {
-            data: MOCK_DATA.leads.slice(0, 10),
-            meta: { page: 1, limit: 10, total: MOCK_DATA.leads.length, totalPages: Math.ceil(MOCK_DATA.leads.length / 10) }
-          };
-          return Promise.resolve({ 
-            data: mockResponse,
-            status: 200,
-            statusText: 'OK',
-            headers: {},
-            config: originalRequest
-          });
-        }
-        
-        if (url.includes('/deals')) {
-          const mockResponse = {
-            data: MOCK_DATA.deals.slice(0, 10),
-            meta: { page: 1, limit: 10, total: MOCK_DATA.deals.length, totalPages: Math.ceil(MOCK_DATA.deals.length / 10) }
-          };
-          return Promise.resolve({ 
-            data: mockResponse,
-            status: 200,
-            statusText: 'OK',
-            headers: {},
-            config: originalRequest
-          });
-        }
-        
-        if (url.includes('/contacts')) {
-          const mockResponse = {
-            data: MOCK_DATA.contacts.slice(0, 10),
-            meta: { page: 1, limit: 10, total: MOCK_DATA.contacts.length, totalPages: Math.ceil(MOCK_DATA.contacts.length / 10) }
-          };
-          return Promise.resolve({ 
-            data: mockResponse,
-            status: 200,
-            statusText: 'OK',
-            headers: {},
-            config: originalRequest
-          });
-        }
-      }
-      
-      // Original 401 handling (refresh token logic)
       if (originalRequest._retry) {
         useAuthStore.getState().setSessionExpired(true);
         return Promise.reject(error);
@@ -506,12 +238,12 @@ api.interceptors.response.use(
       }
     }
 
-    // CSRF token expired (403) - with retry guard
+    // CSRF token expired (403)
     if (error.response?.status === 403 && error.response?.data?.code === 'INVALID_CSRF_TOKEN') {
       // CSRF retry guard - prevent infinite loops
       originalRequest._csrfRetryCount = (originalRequest._csrfRetryCount || 0) + 1;
       if (originalRequest._csrfRetryCount > 1) {
-        console.error('CSRF retry limit exceeded, setting session expired');
+        console.error('❌ CSRF retry limit exceeded, setting session expired');
         useAuthStore.getState().setSessionExpired(true);
         return Promise.reject(error);
       }
@@ -540,7 +272,7 @@ api.interceptors.response.use(
       requestId,
     };
 
-    console.error('API Error:', {
+    console.error('❌ API Error:', {
       requestId,
       status: apiError.status,
       message: apiError.message,
@@ -553,13 +285,6 @@ api.interceptors.response.use(
 
 // API initialization with retry logic
 export const initializeApi = async (): Promise<void> => {
-  // Skip initialization in mock/offline mode
-  if (DEV_MOCK_MODE || DEV_OFFLINE_MODE || DEV_BYPASS_AUTH) {
-    console.log('🔧 Skipping API initialization in mock/offline/auth bypass mode');
-    csrfManager.setToken(MOCK_DATA.csrfToken);
-    return;
-  }
-
   let retries = 0;
   const maxRetries = 3;
 
@@ -577,8 +302,8 @@ export const initializeApi = async (): Promise<void> => {
         console.warn(`⚠️ CSRF initialization failed (attempt ${retries}/${maxRetries}), retrying in 2s...`);
         await new Promise(resolve => setTimeout(resolve, 2000));
       } else {
-        console.warn('⚠️ Could not initialize CSRF token - backend might be offline');
-        // Don't throw, allow app to continue
+        console.error('❌ Could not initialize CSRF token - backend might be offline');
+        throw error;
       }
     }
   }
@@ -608,11 +333,11 @@ export const apiClient = {
 };
 
 // ============================================================================
-// PHASE 3.4 CRM API METHODS
+// CRM API METHODS
 // ============================================================================
 
 /**
- * Leads API - Phase 3.4
+ * Leads API
  */
 export const LeadsAPI = {
   /**
@@ -655,7 +380,7 @@ export const LeadsAPI = {
 };
 
 /**
- * Contacts API - Phase 3.4
+ * Contacts API
  */
 export const ContactsAPI = {
   /**
@@ -699,7 +424,7 @@ export const ContactsAPI = {
 };
 
 /**
- * Deals API - Phase 3.4
+ * Deals API
  */
 export const DealsAPI = {
   /**
@@ -712,7 +437,7 @@ export const DealsAPI = {
     apiClient.get<DealResponse>(`/deals?skip=${skip}&take=${take}`),
 
   /**
-   * Phase 3.4 Simplified Deal Creation
+   * Simplified Deal Creation
    * @param data CreateDealSimpleDto
    * @returns Created deal
    */
@@ -752,7 +477,7 @@ export const DealsAPI = {
 };
 
 /**
- * Dashboard API - Phase 3.4 Enhanced Stats
+ * Dashboard API
  */
 export const DashboardAPI = {
   /**

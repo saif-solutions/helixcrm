@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, ConflictException, BadRequestException } from "@nestjs/common";
 import { PrismaService } from "../../shared/prisma/prisma.service";
 import { AppLogger } from "../../shared/logging/logger.service";
-import { AuditLogService } from "../../shared/audit-log/audit-log.service";
+import { AuditLogService, AuditAction, AuditSeverity, AuditEntityType } from "../../shared/audit-log/audit-log.service";
 import { CreateDealDto } from "./dto/create-deal.dto";
 import { UpdateDealDto } from "./dto/update-deal.dto";
 import { MoveDealStageDto } from "./dto/move-deal-stage.dto";
@@ -16,6 +16,18 @@ export class DealsService {
     private auditLogService: AuditLogService,
   ) {}
 
+  private async getUserEmail(userId: string): Promise<string> {
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { email: true }
+      });
+      return user?.email || `user-${userId}@unknown.example.com`;
+    } catch (error) {
+      this.logger.warn(`Failed to fetch email for user ${userId}: ${error.message}`);
+      return `user-${userId}@error.example.com`;
+    }
+  }
 
     private async getOrCreateDefaultPipeline(organizationId: string, userId: string) {
     // Use transaction for atomic operation to prevent race conditions
@@ -83,6 +95,9 @@ export class DealsService {
     const { organizationId, userId, ...dealData } = data;
 
     try {
+      // Get user email for audit logging
+      const actorEmail = await this.getUserEmail(userId);
+
       // Get or create default pipeline with transaction safety
       const defaultPipeline = await this.getOrCreateDefaultPipeline(organizationId, userId);
 
@@ -178,17 +193,19 @@ export class DealsService {
 
       // Audit logging
       await this.auditLogService.logEvent({
-        action: 'deal.created',
-        entity: 'Deal',
+        action: AuditAction.DEAL_CREATED,
         entityId: deal.id,
+        entityType: AuditEntityType.DEAL,
         organizationId,
-        userId,
-        after: deal,
-        severity: 'info',
+        actorUserId: userId,
+        actorEmail,
+        severity: AuditSeverity.LOW,
         metadata: {
           createdVia: 'phase3.4_simple_api',
           source: 'phase_3_4_compatibility_layer',
+          after: deal,
         },
+        
       });
 
       this.logger.log("Deal created via Phase 3.4 simple API", {
@@ -227,6 +244,9 @@ export class DealsService {
     const { organizationId, userId, ...dealData } = data;
 
     try {
+      // Get user email for audit logging
+      const actorEmail = await this.getUserEmail(userId);
+
       // Validate pipeline and stage belong to organization
       const pipeline = await this.prisma.pipeline.findFirst({
         where: {
@@ -306,13 +326,16 @@ export class DealsService {
 
       // Audit logging
       await this.auditLogService.logEvent({
-        action: 'deal.created',
-        entity: 'Deal',
+        action: AuditAction.DEAL_CREATED,
         entityId: deal.id,
+        entityType: AuditEntityType.DEAL,
         organizationId,
-        userId,
-        after: deal,
-        severity: 'info',
+        actorUserId: userId,
+        actorEmail,
+        metadata: {
+  after: deal,
+},
+        severity: AuditSeverity.LOW,
       });
 
       this.logger.log("Deal created successfully", {
@@ -565,6 +588,9 @@ export class DealsService {
 
   async update(id: string, updateDealDto: UpdateDealDto, organizationId: string, userId: string) {
     try {
+      // Get user email for audit logging
+      const actorEmail = await this.getUserEmail(userId);
+
       // First verify deal belongs to organization
       const existingDeal = await this.findOne(id, organizationId);
 
@@ -641,14 +667,17 @@ export class DealsService {
 
       // Audit logging
       await this.auditLogService.logEvent({
-        action: 'deal.updated',
-        entity: 'Deal',
+        action: AuditAction.DEAL_UPDATED,
         entityId: deal.id,
+        entityType: AuditEntityType.DEAL,
         organizationId,
-        userId,
-        before: existingDeal,
-        after: deal,
-        severity: 'info',
+        actorUserId: userId,
+        actorEmail,
+        metadata: {
+  before: existingDeal,
+  after: deal,
+},
+        severity: AuditSeverity.LOW,
       });
 
       this.logger.log("Deal updated successfully", {
@@ -671,6 +700,9 @@ export class DealsService {
 
   async remove(id: string, organizationId: string, userId: string) {
     try {
+      // Get user email for audit logging
+      const actorEmail = await this.getUserEmail(userId);
+
       // First verify deal belongs to organization
       const deal = await this.findOne(id, organizationId);
 
@@ -684,14 +716,17 @@ export class DealsService {
 
       // Audit logging
       await this.auditLogService.logEvent({
-        action: 'deal.deleted',
-        entity: 'Deal',
+        action: AuditAction.DEAL_DELETED,
         entityId: deal.id,
+        entityType: AuditEntityType.DEAL,
         organizationId,
-        userId,
-        before: deal,
-        after: deletedDeal,
-        severity: 'warning',
+        actorUserId: userId,
+        actorEmail,
+        metadata: {
+  before: deal,
+  after: deletedDeal,
+},
+        severity: AuditSeverity.MEDIUM,
       });
 
       this.logger.log("Deal soft deleted", {
@@ -717,6 +752,9 @@ export class DealsService {
   async moveStage(id: string, moveData: MoveDealStageDto, organizationId: string, userId: string) {
     // Use transaction for atomic update
     return this.prisma.$transaction(async (tx) => {
+      // Get user email for audit logging
+      const actorEmail = await this.getUserEmail(userId);
+
       // Get current deal with pipeline info
       const deal = await tx.deal.findFirst({
         where: {
@@ -785,15 +823,16 @@ export class DealsService {
 
       // Audit logging
       await this.auditLogService.logEvent({
-        action: 'deal.stage_changed',
-        entity: 'Deal',
+        action: AuditAction.DEAL_UPDATED,
         entityId: deal.id,
+        entityType: AuditEntityType.DEAL,
         organizationId,
-        userId,
-        before: deal,
-        after: updatedDeal,
-        severity: 'info',
+        actorUserId: userId,
+        actorEmail,
+        severity: AuditSeverity.LOW,
         metadata: {
+          before: deal,
+          after: updatedDeal,
           fromStage: deal.stage.name,
           toStage: newStage.name,
           notes: moveData.notes,

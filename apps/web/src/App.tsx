@@ -19,12 +19,10 @@ import { initializeApi } from './services/api';
 
 // Development mode configuration
 const IS_DEV = import.meta.env.DEV;
-const DEV_BYPASS_AUTH = IS_DEV && (import.meta.env.VITE_DEV_BYPASS_AUTH === 'true' || false);
 
 console.log(`🚀 App Configuration:
   - Environment: ${import.meta.env.MODE}
   - Development Mode: ${IS_DEV}
-  - Bypass Auth: ${DEV_BYPASS_AUTH}
 `);
 
 function App() {
@@ -87,7 +85,6 @@ function App() {
           <div className="flex items-center">
             <span className="font-semibold">🔧 Development Mode</span>
             {offlineMode && <span className="ml-2">(Offline - Backend not connected)</span>}
-            {DEV_BYPASS_AUTH && <span className="ml-2">(Auth Bypassed)</span>}
           </div>
           <div>
             Backend: {offlineMode ? '❌ Offline' : '✅ Connected'}
@@ -110,39 +107,23 @@ function App() {
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
 
-                {/* Development mode: Bypass auth for testing */}
-                {DEV_BYPASS_AUTH ? (
-                  <Route
-                    path="/*"
-                    element={<Layout />}
-                  >
-                    <Route index element={<Navigate to="/dashboard" replace />} />
-                    <Route path="dashboard" element={<DashboardPage />} />
-                    <Route path="contacts" element={<ContactsPage />} />
-                    <Route path="leads" element={<LeadsPage />} />
-                    <Route path="leads/new" element={<NewLeadPage />} />
-                    <Route path="leads/:id/edit" element={<EditLeadPage />} />
-                    <Route path="deals" element={<DealsPage />} />
-                  </Route>
-                ) : (
-                  /* Production mode: Protected routes */
-                  <Route
-                    path="/*"
-                    element={
-                      <ProtectedRoute>
-                        <Layout />
-                      </ProtectedRoute>
-                    }
-                  >
-                    <Route index element={<Navigate to="/dashboard" replace />} />
-                    <Route path="dashboard" element={<DashboardPage />} />
-                    <Route path="contacts" element={<ContactsPage />} />
-                    <Route path="leads" element={<LeadsPage />} />
-                    <Route path="leads/new" element={<NewLeadPage />} />
-                    <Route path="leads/:id/edit" element={<EditLeadPage />} />
-                    <Route path="deals" element={<DealsPage />} />
-                  </Route>
-                )}
+                {/* Protected routes */}
+                <Route
+                  path="/*"
+                  element={
+                    <ProtectedRoute>
+                      <Layout />
+                    </ProtectedRoute>
+                  }
+                >
+                  <Route index element={<Navigate to="/dashboard" replace />} />
+                  <Route path="dashboard" element={<DashboardPage />} />
+                  <Route path="contacts" element={<ContactsPage />} />
+                  <Route path="leads" element={<LeadsPage />} />
+                  <Route path="leads/new" element={<NewLeadPage />} />
+                  <Route path="leads/:id/edit" element={<EditLeadPage />} />
+                  <Route path="deals" element={<DealsPage />} />
+                </Route>
               </Routes>
             </ErrorBoundary>
 

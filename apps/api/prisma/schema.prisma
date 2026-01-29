@@ -19,6 +19,18 @@ enum DealStatus {
   lost
 }
 
+enum ActorType {
+  USER
+  SYSTEM
+}
+
+enum AuditSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
 // ==================== CORE MODELS ====================
 model Organization {
   id       String   @id @default(uuid())
@@ -83,7 +95,7 @@ model User {
   // Core relations
   PasswordResetToken PasswordResetToken[]
   Activity           Activity[]
-  AuditLog           AuditLog[]
+   auditLogs       AuditLog[]   @relation("UserAuditLogs")
   
   // Phase 3 relations
   OwnedDeals         Deal[]              @relation("DealOwner")
@@ -243,35 +255,99 @@ model Activity {
   @@index([deletedAt])  // Added for soft delete queries
   @@map("activities")
 }
+// ==================== AUDIT LOG ENUMS ====================
+enum AuditAction {
+  // Auth events
+  LOGIN_SUCCESS
+  LOGIN_FAILURE
+  LOGOUT
+  PASSWORD_CHANGE
+  TOKEN_REFRESH
+  
+  // User management
+  USER_CREATED
+  USER_UPDATED
+  USER_DELETED
+  ROLE_CHANGED
+  
+  // Data events
+  CONTACT_CREATED
+  CONTACT_UPDATED
+  CONTACT_DELETED
+  DEAL_CREATED
+  DEAL_UPDATED
+  DEAL_DELETED
+  PIPELINE_CREATED
+  PIPELINE_UPDATED
+  PIPELINE_DELETED
+  LEAD_CREATED
+  LEAD_UPDATED
+  LEAD_DELETED
+  
+  // System events
+  PERMISSION_DENIED
+  CSRF_FAILURE
+  RATE_LIMIT_TRIGGERED
+  SYSTEM_ERROR
+}
 
+enum AuditEntityType {
+  AUTH
+  USER
+  CONTACT
+  DEAL
+  PIPELINE
+  LEAD
+  ACCOUNT
+  ACTIVITY
+  SYSTEM
+}
+
+// ==================== AUDIT LOG MODEL ====================
 model AuditLog {
-  id       String  @id @default(uuid())
-  action   String
-  entity   String
-  entityId String?
-
-  organizationId String?
-  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  userId String?
-  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
-
-  before Json?
-  after  Json?
-  diff   Json?
-  correlationId String?
-  severity      String  @default("info")
-
-  ipAddress String?
-  userAgent String?
-
-  createdAt DateTime @default(now())
-
-  @@index([organizationId])
-  @@index([entity, entityId])
-  @@index([createdAt])
+  id             String        @id @default(cuid())
+  
+  // Core fields - USE ENUMS
+  action         AuditAction
+  entityType     AuditEntityType
+  entityId       String?
+  organizationId String
+  
+  // Actor information - USE ENUM
+  actorUserId    String?
+  actorEmail     String
+  actorType      ActorType     @default(USER)
+  
+  // Request context
+  requestId      String?
+  correlationId  String?
+  
+  // Severity - USE ENUM
+  severity       AuditSeverity @default(LOW)
+  
+  // Metadata
+  metadata       Json?
+  ipAddress      String?
+  userAgent      String?
+  
+  // Timestamps
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  
+  // Relations
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  actor          User?         @relation(fields: [actorUserId], references: [id], name: "UserAuditLogs")
+  
+  // Indexes
+  @@index([organizationId, createdAt])
+  @@index([actorUserId])
+  @@index([requestId])
   @@index([correlationId])
   @@index([severity])
+  @@index([actorType, createdAt])
+  @@index([action])
+  @@index([entityType])
+  
   @@map("audit_logs")
 }
 
@@ -312,7 +388,7 @@ model Deal {
   probability         Int         @default(0)
   expectedCloseDate   DateTime?
   
-  // ADD THIS FIELD:
+  // This field EXISTS in database but was missing from schema
   closedAt            DateTime?   // When the deal was closed (won or lost)
   
   pipelineId          String
@@ -339,6 +415,7 @@ model Deal {
   
   stageHistory        DealStageHistory[]
 
+  // INDEXES - MUST MATCH DATABASE
   @@index([organizationId])
   @@index([organizationId, pipelineId])
   @@index([organizationId, stageId])
@@ -346,7 +423,7 @@ model Deal {
   @@index([organizationId, status])
   @@index([organizationId, expectedCloseDate])
   @@index([organizationId, deletedAt])
-  @@index([organizationId, closedAt])  // ADD INDEX FOR NEW FIELD
+  @@index([organizationId, closedAt])  // This index EXISTS in database
   @@unique([organizationId, pipelineId, name])
   @@map("deals")
 }
@@ -490,3 +567,4 @@ model UserRole {
   @@index([deletedAt])  // Added for soft delete queries
   @@map("user_roles")
 }
+

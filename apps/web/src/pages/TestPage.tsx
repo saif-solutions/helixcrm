@@ -1,6 +1,6 @@
 // apps/web/src/pages/TestPage.tsx
 import React, { useState } from 'react';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../contexts/AuthContext';
 import { Card } from '../components/molecules/Card';
 import { Button } from '../components/atoms/Button';
 import { Input } from '../components/atoms/Input';

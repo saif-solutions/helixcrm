@@ -71,3 +71,63 @@ export default defineConfig([
   },
 ])
 ```
+
+## Phase 5 - Real Backend Integration
+
+### Changes Made
+1. **Removed mock API system** - All mock data and development bypasses removed
+2. **Updated API configuration** - Now only connects to real backend
+3. **Enhanced security** - CSRF token handling, proper error responses
+4. **Added auth service** - Centralized authentication logic
+
+### Environment Variables
+Copy `.env.example` to `.env`:
+```bash
+cp .env.example .env
+Required variables:
+
+VITE_API_URL: Backend API URL (default: http://localhost:3001/api/v1)
+
+Development Setup
+Start backend first:
+
+bash
+cd ../backend
+npm run dev
+Start frontend:
+
+bash
+cd apps/web
+npm run dev
+Verify connectivity:
+
+Open browser to http://localhost:5173
+
+Check browser console for API initialization logs
+
+Register new user or login with existing credentials
+
+Security Notes
+CSRF tokens are automatically managed
+
+All API calls require valid session cookies
+
+401 errors trigger automatic logout
+
+Multi-tenant isolation enforced by backend
+
+No mock data or development bypasses
+
+Testing
+Run the auth flow test:
+
+bash
+./test-auth-flow.sh
+Troubleshooting
+Backend not reachable: Ensure backend is running on port 3001
+
+CORS errors: Check withCredentials: true is set in API config
+
+CSRF token issues: Verify cookies are being sent/received
+
+401 errors: Session expired, user needs to login again

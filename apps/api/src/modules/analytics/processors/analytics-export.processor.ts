@@ -2,7 +2,7 @@ import { Processor, WorkerHost, OnWorkerEvent } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
-import { AuditLogService } from '../../../shared/audit-log/audit-log.service';
+import { AuditLogService, AuditAction, AuditSeverity, AuditEntityType } from '../../../shared/audit-log/audit-log.service';
 
 export interface AnalyticsExportJobData {
   exportId: string;
@@ -39,32 +39,36 @@ export class AnalyticsExportProcessor extends WorkerHost {
     this.logger.log(`Processing export job ${job.id} for organization ${organizationId}`);
     
     try {
-      // 1. Update export status to processing
+      // 1. Get user email for audit logging
+      const actorEmail = await this.getUserEmail(userId);
+      
+      // 2. Update export status to processing
       await this.updateExportStatus(exportId, 'processing');
       
-      // 2. Fetch analytics data based on queryParams
+      // 3. Fetch analytics data based on queryParams
       const exportData = await this.generateExportData(organizationId, queryParams, format);
       
-      // 3. Store export result (in Phase 3.4 - in-memory; Phase 3.6+ - S3/filesystem)
+      // 4. Store export result (in Phase 3.4 - in-memory; Phase 3.6+ - S3/filesystem)
       const filePath = await this.storeExport(exportId, exportData, format);
       
-      // 4. Update export record with completion details
+      // 5. Update export record with completion details
       await this.completeExport(exportId, filePath, exportData.recordCount);
       
-      // 5. Log completion
+      // 6. Log completion
       await this.auditLogService.logEvent({
-        action: 'ANALYTICS_EXPORT_COMPLETED',
-        entity: 'AnalyticsExport',
+        action: AuditAction.ANALYTICS_EXPORT_COMPLETED,
         entityId: exportId,
+        entityType: AuditEntityType.SYSTEM,
         organizationId,
-        userId,
+        actorUserId: userId,
+        actorEmail,
         metadata: {
           jobId: job.id,
           format,
           fileSize: exportData.fileSize,
           recordCount: exportData.recordCount,
         },
-        severity: 'info',
+        severity: AuditSeverity.LOW,
       });
 
       this.logger.log(`Export job ${job.id} completed successfully for export ${exportId}`);
@@ -78,20 +82,24 @@ export class AnalyticsExportProcessor extends WorkerHost {
     } catch (error) {
       this.logger.error(`Export job ${job.id} failed: ${error.message}`, error.stack);
       
+      // Get user email for error logging
+      const actorEmail = await this.getUserEmail(userId);
+      
       // Update export status to failed
       await this.updateExportStatus(exportId, 'failed', error.message);
       
       await this.auditLogService.logEvent({
-        action: 'ANALYTICS_EXPORT_FAILED',
-        entity: 'AnalyticsExport',
+        action: AuditAction.ANALYTICS_EXPORT_FAILED,
         entityId: exportId,
+        entityType: AuditEntityType.SYSTEM,
         organizationId,
-        userId,
+        actorUserId: userId,
+        actorEmail,
         metadata: {
           jobId: job.id,
           error: error.message,
         },
-        severity: 'error',
+        severity: AuditSeverity.HIGH,
       });
 
       throw error; // Will trigger retry based on job configuration
@@ -110,6 +118,19 @@ export class AnalyticsExportProcessor extends WorkerHost {
 
   // ============= PRIVATE HELPER METHODS =============
   
+  private async getUserEmail(userId: string): Promise<string> {
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { email: true }
+      });
+      return user?.email || `user-${userId}@unknown.example.com`;
+    } catch (error) {
+      this.logger.warn(`Failed to fetch email for user ${userId}: ${error.message}`);
+      return `user-${userId}@error.example.com`;
+    }
+  }
+
   private async updateExportStatus(
     exportId: string, 
     status: 'pending' | 'processing' | 'completed' | 'failed',

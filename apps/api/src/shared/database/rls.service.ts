@@ -71,39 +71,67 @@ export class RLSService implements OnModuleInit {
   /**
    * Enable RLS by executing the SQL script
    */
-  async enableRLS(): Promise<void> {
-    try {
-      // Read and execute the enable RLS SQL script
-      const fs = await import('fs');
-      const path = await import('path');
+// Update src/shared/database/rls.service.ts - enableRLS method
+async enableRLS() {
+  await this.prisma.$transaction(async (tx) => {
+    const tables = ['organizations', 'users', 'contacts', 'leads', 'accounts', 
+                   'activities', 'audit_logs', 'password_reset_tokens', 'deals',
+                   'pipelines', 'pipeline_stages', 'deal_stage_history', 'roles',
+                   'permissions', 'role_permissions', 'user_roles', 'refresh_tokens'];
+
+    for (const table of tables) {
+      // Enable RLS - single statement
+      await tx.$executeRawUnsafe(`ALTER TABLE "${table}" ENABLE ROW LEVEL SECURITY;`);
       
-      const sqlPath = path.join(process.cwd(), 'prisma', 'scripts', 'enable-rls.sql');
-      
-      // Check if file exists
-      if (!fs.existsSync(sqlPath)) {
-        throw new Error(`RLS SQL file not found at: ${sqlPath}`);
+      // Drop policy if exists - single statement
+      try {
+        await tx.$executeRawUnsafe(`DROP POLICY IF EXISTS "${table}_bypass_policy" ON "${table}";`);
+      } catch (e) {
+        // Policy might not exist - that's fine
       }
       
-      const sql = fs.readFileSync(sqlPath, 'utf8');
+      // Create bypass policy - single statement
+      await tx.$executeRawUnsafe(`
+        CREATE POLICY "${table}_bypass_policy" ON "${table}"
+        FOR ALL USING (current_setting('app.current_role', true) = 'super_admin')
+      `);
       
-      // Execute the SQL in a transaction
-      await this.prisma.$transaction(async (tx) => {
-        // Split by semicolon and execute each statement
-        const statements = sql.split(';').filter(stmt => stmt.trim());
-        
-        for (const statement of statements) {
-          if (statement.trim()) {
-            await tx.$executeRawUnsafe(statement);
-          }
+      // Check if table has organizationId column
+      const hasOrgId = await this.tableHasColumn(tx, table, 'organizationId');
+      
+      if (hasOrgId) {
+        // Drop isolation policy if exists
+        try {
+          await tx.$executeRawUnsafe(`DROP POLICY IF EXISTS "${table}_isolation_policy" ON "${table}";`);
+        } catch (e) {
+          // Policy might not exist - that's fine
         }
-      });
-      
-      this.logger.log('RLS policies applied successfully');
-    } catch (error) {
-      this.logger.error('Failed to enable RLS:', error);
-      throw error;
+        
+        // Create isolation policy - single statement
+        await tx.$executeRawUnsafe(`
+          CREATE POLICY "${table}_isolation_policy" ON "${table}"
+          FOR ALL USING (
+            current_setting('app.current_role', true) = 'super_admin' OR
+            "organizationId" = current_setting('app.current_organization_id', true)
+          )
+        `);
+      }
     }
-  }
+  });
+}
+
+// Add helper method
+private async tableHasColumn(tx: any, table: string, column: string): Promise<boolean> {
+  const result = await tx.$queryRawUnsafe(`
+    SELECT EXISTS (
+      SELECT 1 FROM information_schema.columns 
+      WHERE table_schema = 'public' 
+      AND table_name = $1
+      AND column_name = $2
+    ) as exists
+  `, table, column);
+  return result[0]?.exists || false;
+}
 
   /**
    * Disable RLS for maintenance

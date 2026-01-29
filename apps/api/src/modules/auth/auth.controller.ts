@@ -19,10 +19,15 @@ import { AuthService } from "./auth.service";
 import { AuthGuard } from "../../shared/guards/auth.guard";
 import { Public } from "../../shared/decorators/require-permission.decorator";
 import SecurityConfig from "../../config/security.config";
+// ADD THESE IMPORTS:
+import { AuditLogService, AuditAction, AuditEntityType, AuditSeverity } from "../../shared/audit-log/audit-log.service";
 
 @Controller("auth")
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService,
+    private auditLogService: AuditLogService // ADD THIS
+  ) {}
 
   @Get("csrf-token")
   @Public()
@@ -95,6 +100,7 @@ export class AuthController {
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   async login(
     @Body() loginDto: { email: string; password: string },
+    @Req() req: Request,
     @Res({ passthrough: true }) res: Response
   ) {
     const user = await this.authService.validateUser(
@@ -103,10 +109,34 @@ export class AuthController {
     );
 
     if (!user) {
+      // Log failed login attempt
+      await this.auditLogService.logWithRequest(
+        req,
+        AuditAction.LOGIN_FAILURE,
+        AuditEntityType.AUTH,
+        loginDto.email,
+        undefined,
+        undefined,
+        { reason: 'Invalid credentials' },
+        AuditSeverity.MEDIUM,
+      );
+      
       throw new UnauthorizedException("Invalid credentials");
     }
 
-    return this.authService.login(user, res);
+    // Log successful login
+    await this.auditLogService.logWithRequest(
+      req,
+      AuditAction.LOGIN_SUCCESS,
+      AuditEntityType.AUTH,
+      user.email,
+      user.id,
+      undefined,
+      { method: 'password' },
+      AuditSeverity.MEDIUM,
+    );
+
+    return this.authService.login(user, res, req);
   }
 
   @Post("logout")
@@ -117,7 +147,20 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response
   ) {
     const userId = req.user.sub;
-    return this.authService.logout(userId, res);
+    
+    // Log logout event
+    await this.auditLogService.logWithRequest(
+      req,
+      AuditAction.LOGOUT,
+      AuditEntityType.AUTH,
+      req.user.email,
+      userId,
+      undefined,
+      { method: 'manual' },
+      AuditSeverity.MEDIUM,
+    );
+    
+    return this.authService.logout(userId, res, req);
   }
 
   @Post("refresh")
@@ -133,7 +176,7 @@ export class AuthController {
       throw new UnauthorizedException('No refresh token provided');
     }
 
-    return this.authService.refreshToken(refreshToken, res);
+    return this.authService.refreshToken(refreshToken, res, req);
   }
 
   @Get("me")
@@ -148,7 +191,7 @@ export class AuthController {
     };
   }
 
-  @Post("register")
+   @Post("register")
   @Public()
   @Throttle({ default: { limit: 3, ttl: 60000 } })
   async register(
@@ -160,8 +203,31 @@ export class AuthController {
       lastName: string;
       organizationName: string;
     },
+    @Req() req: Request
   ) {
-    return this.authService.register(registerDto);
+    const result = await this.authService.register(registerDto, req);
+    
+    // Log user registration - check if result has user property
+    // The register method might return different structure, so we need to handle it
+    const userEmail = registerDto.email;
+    const userId = (result as any).user?.id || (result as any).userId || 'unknown';
+    
+    await this.auditLogService.logWithRequest(
+      req,
+      AuditAction.USER_CREATED,
+      AuditEntityType.USER,
+      userEmail,
+      userId,
+      userId,
+      { 
+        firstName: registerDto.firstName,
+        lastName: registerDto.lastName,
+        organizationName: registerDto.organizationName
+      },
+      AuditSeverity.LOW,
+    );
+    
+    return result;
   }
 
   // ============== NEW SESSION MANAGEMENT ENDPOINTS ==============
@@ -189,6 +255,18 @@ export class AuthController {
     
     // Invalidate all tokens
     await this.authService.invalidateAllTokens(userId);
+    
+    // Log logout from all devices
+    await this.auditLogService.logWithRequest(
+      req,
+      AuditAction.LOGOUT,
+      AuditEntityType.AUTH,
+      req.user.email,
+      userId,
+      undefined,
+      { scope: 'all_devices' },
+      AuditSeverity.MEDIUM,
+    );
 
     return { message: 'Logged out from all devices' };
   }
@@ -203,6 +281,26 @@ export class AuthController {
     const userId = req.user.sub;
     const shouldKeepCurrent = keepCurrent.toLowerCase() === 'true';
     
-    return this.authService.invalidateOtherSessions(userId, shouldKeepCurrent);
+    const result = await this.authService.invalidateOtherSessions(userId, shouldKeepCurrent);
+    
+    // Log session invalidation - handle different return types
+    const invalidatedCount = (result as any).invalidatedCount || (result as any).count || 0;
+    
+    await this.auditLogService.logWithRequest(
+      req,
+      AuditAction.LOGOUT,
+      AuditEntityType.AUTH,
+      req.user.email,
+      userId,
+      undefined,
+      { 
+        scope: 'other_sessions',
+        keepCurrent: shouldKeepCurrent,
+        invalidatedCount: invalidatedCount
+      },
+      AuditSeverity.MEDIUM,
+    );
+    
+    return result;
   }
 }

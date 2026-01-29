@@ -9,7 +9,7 @@ export interface User {
   firstName?: string;
   lastName?: string;
   organizationId: string;
-  role?: 'admin' | 'user';
+  role?: 'admin' | 'user' | 'manager';
 }
 
 export interface AuthState {
