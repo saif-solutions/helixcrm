@@ -15,7 +15,7 @@ import {
 @Injectable()
 export class AuditLogService {
   constructor(
-    @Inject('IAuditLogRepository')
+    @Inject('IAuditLogRepository') // Keep string token for now
     private readonly auditLogRepository: IAuditLogRepository,
   ) {}
 

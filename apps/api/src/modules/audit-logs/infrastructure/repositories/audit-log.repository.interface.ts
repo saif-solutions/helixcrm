@@ -6,6 +6,9 @@ import {
   FilterOption,
 } from '../../domain';
 
+// Export a symbol token that can be used for dependency injection
+export const IAuditLogRepositoryToken = Symbol('IAuditLogRepository');
+
 export interface IAuditLogRepository {
   create(data: Omit<AuditLog, 'id' | 'createdAt' | 'updatedAt'>): Promise<void>;
   findPaginated(query: AuditLogQuery): Promise<PaginatedAuditLogs>;

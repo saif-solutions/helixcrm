@@ -1,163 +1,147 @@
-# HELIXCRM Documentation
+# HelixCRM Documentation
 
-**Project:** HELIXCRM  
-**Status:** MVP v1.0 ‚Äì Complete & Validated  
-**Branch:** main  
-**Release Tag:** mvp-v1.0  
+## Ì≥ö Documentation Structure
 
-HELIXCRM is a secure, multi-tenant CRM platform built with enterprise-grade architecture, role-based access control (RBAC), row-level security (RLS), and API-first design.
+This documentation follows the **Single Source of Truth (SSOT)** principle. All documentation is centralized in these 5 core documents:
 
-This directory contains the authoritative technical and product documentation for the platform.
+### Core Documents
+1. **[SSOT.md](SSOT.md)** - **CONSTITUTIONAL DOCUMENT**
+   - Vision & strategy
+   - Operating model
+   - MVP definition
+   - Enterprise rules
+   - **Always authoritative in case of conflicts**
 
----
+2. **[ARCHITECTURE.md](ARCHITECTURE.md)**
+   - System architecture
+   - Technology stack
+   - Module boundaries
+   - Scalability strategy
 
-## Ì≥¶ Project Status
+3. **[SECURITY.md](SECURITY.md)**
+   - Authentication & authorization
+   - RBAC model
+   - Tenant isolation
+   - Security compliance
 
-- ‚úÖ MVP fully implemented and validated
-- ‚úÖ Multi-tenant isolation verified
-- ‚úÖ RBAC + JWT + RLS security active
-- ‚úÖ Seed and automated test scripts available
-- ‚úÖ Tagged release: `mvp-v1.0`
+4. **[API_CONTRACTS.md](API_CONTRACTS.md)**
+   - Stable API endpoints
+   - Versioning policy
+   - Response formats
+   - Breaking change rules
 
----
+5. **[OPERATIONS.md](OPERATIONS.md)**
+   - Development setup
+   - Deployment procedures
+   - Environment configuration
+   - Troubleshooting
 
-## Ì∫Ä Quick Start (Developers)
+## Ì∫Ä Getting Started
 
+### Quick Start
 ```bash
-# Install dependencies
+# Clone repository
+git clone <repository-url>
+
+# Start services
+docker-compose -f docker/docker-compose.yml up -d
+
+# Setup and run
+cd apps/api
 npm install
-
-# Start API server
+npx prisma migrate dev
 npm run start:dev
+Verification
+bash
+curl http://localhost:3000/health
+# Should return: {"status":"ok","service":"helixcrm-api"}
+Ì≥Å Archive
+Historical documents, phase reports, and legacy documentation are preserved in:
 
-# Seed database with 2 organizations and test data
-npx ts-node apps/api/scripts/dev/seed-mvp.ts
+/_archive/ - Read-only historical reference
 
-# Run end-to-end validation
-./test-mvp.sh
-Ì¥ê Test Credentials (Seeded)
-Organization 1
-Email: admin@techsolutions.com
+Ì¥Ñ Governance Rules
+Documentation Principles
+SSOT is authoritative - All decisions must align with SSOT.md
 
-Password: Admin123!
+No duplication - Information lives in exactly one place
 
-Organization 2
-Email: admin@marketingpros.com
+Current state only - No historical/phase docs in active documentation
 
-Password: Admin123!
+Link, don't repeat - Reference sections instead of copying content
 
-Ì∑Ç Documentation Structure
-docs/
-‚îú‚îÄ‚îÄ api/                # API contracts & validation status
-‚îú‚îÄ‚îÄ architecture/       # System & security architecture
-‚îú‚îÄ‚îÄ development/        # Local setup & dev workflows
-‚îú‚îÄ‚îÄ operations/         # Deployment & runtime operations
-‚îú‚îÄ‚îÄ product/            # Product assumptions & constraints
-‚îú‚îÄ‚îÄ roadmap/            # Delivery & feature roadmap
-‚îî‚îÄ‚îÄ history/            # Archived project phases & reports
-Ì≥Å Folder Overview
-api/
-API documentation and validation status.
+Forbidden in Active Docs
+Phase completion reports
 
-mvp-api-status.md ‚Äì Complete list of validated MVP endpoints
+Temporary status updates
 
-architecture/
-Core technical design documentation.
+Personal notes
 
-overview.md ‚Äì System architecture overview
+Historical decision logs
 
-security.md ‚Äì Authentication, RBAC, RLS, and security model
+Where Those Belong
+GitHub Issues
 
-development/
-Developer onboarding and environment setup.
+PR descriptions
 
-setup.md ‚Äì Local development configuration
+Commit messages
 
-operations/
-Runtime and deployment procedures.
+/_archive/ folder
 
-deployment.md ‚Äì Deployment guidelines
+Ì¥ù Contributing
+Check SSOT.md for strategic direction
 
-product/
-Product-level constraints and decisions.
+Update relevant core document(s)
 
-assumptions-and-limitations.md
+Ensure no duplication with existing docs
 
-roadmap/
-Project planning and forward-looking milestones.
+Move outdated content to /_archive/
 
-project-roadmap.md
+Reference SSOT sections where applicable
 
-history/
-Archived material from earlier phases:
+‚ùì Help & Support
+Architecture questions: ARCHITECTURE.md
 
-Phase 1 execution docs
+Security concerns: SECURITY.md
 
-Sprint reports
+API integration: API_CONTRACTS.md
 
-Pilot documentation
+Deployment issues: OPERATIONS.md
 
-Test gate reports
+Strategic direction: SSOT.md
 
-Governance & strategy documents
+Remember: When in doubt, consult SSOT.md - it's the constitutional document of HelixCRM.
 
-Project management logs
+## Ì≥ú Documentation Governance (From SSOT.md)
 
-Original Word documents
+### Allowed Documentation
+- Architecture specifications
+- Security protocols  
+- API contracts
+- Operations procedures
+- Standards and guidelines
 
-This content is preserved for traceability but is not part of the active system documentation.
+### Forbidden in Active Docs
+- Phase completion reports
+- Temporary status updates
+- Personal notes
+- Historical decision logs
 
-Ìª° Security Model Summary
-JWT authentication
+### Archive Policy
+- Historical documents ‚Üí `/docs/_archive/`
+- Phase reports ‚Üí `/docs/_archive/`
+- Governance docs superseded by SSOT ‚Üí `/docs/_archive/`
 
-Role-based access control (RBAC)
+### Conflict Resolution
+When documentation conflicts arise:
+1. SSOT.md is always authoritative
+2. Update other docs to align with SSOT
+3. Archive outdated versions
+4. Document the resolution
 
-Row-level security (RLS) per organization
-
-CSRF protection
-
-Rate limiting
-
-Permission format: module.action (dot notation)
-
-Ì∑™ Validation Summary
-11/11 automated MVP tests passed
-
-Multi-tenant isolation verified
-
-All core business endpoints operational
-
-Analytics verified with tenant isolation
-
-See: docs/api/mvp-api-status.md
-
-Ì≥å Contribution Guidelines
-Update documentation when modifying architecture, APIs, or security model
-
-Place historical reports in docs/history/
-
-Keep architecture/ and api/ as the source of truth
-
-Tag releases when updating production behavior
-
-Ì≥Ö Next Phase
-Recommended next steps:
-
-Frontend integration
-
-Task & document modules
-
-Advanced analytics
-
-Performance benchmarking
-
-CI/CD automation
-
-Cloud deployment
-
-Ì≥Ñ License / Ownership
-Internal project documentation ‚Äì HELIXCRM platform.
-
-Maintained by: Saif
-Technical Lead: DeepSeek (AI-assisted)
-
+## Ì¥ç Verification Checklist
+- [x] SSOT.md established as constitutional document
+- [x] 5 core documentation files created
+- [x] Historical docs moved to `/docs/_archive/`
+- [x] No duplicate content across active docs
+- [x] All docs reference SSOT where applicable

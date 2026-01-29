@@ -3,6 +3,7 @@ import { AppModule } from "./app.module";
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import { ValidationPipe, ClassSerializerInterceptor, Logger } from "@nestjs/common";
+import { VersioningType } from "@nestjs/common";
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
@@ -62,9 +63,12 @@ async function bootstrap() {
 
   // ==================== GLOBAL PREFIX ====================
   // ⚠️ IMPORTANT: This must be set BEFORE app.init() in tests
-  const globalPrefix = 'api/v1';
+  const globalPrefix = 'api';
   app.setGlobalPrefix(globalPrefix);
   logger.log(`✅ Global prefix set to: /${globalPrefix}`);
+  // ==================== API VERSIONING ====================
+  app.enableVersioning({ type: VersioningType.URI });
+  logger.log("✅ URI versioning enabled");
 
   // ==================== APPLICATION INITIALIZATION ====================
   // Initialize the application (triggers module registration)

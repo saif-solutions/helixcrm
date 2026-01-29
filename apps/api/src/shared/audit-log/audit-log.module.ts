@@ -1,13 +1,17 @@
-import { Module } from "@nestjs/common";
-import { PrismaModule } from "../prisma/prisma.module";
-import { AuditLogService } from "./audit-log.service";
-import { AuditLogController } from "./audit-log.controller";
-import { PermissionsModule } from "../permissions/permissions.module";
+import { Module } from '@nestjs/common';
+import { AuditLogsModule } from '../../modules/audit-logs/audit-logs.module';
+import { AuditLogService } from './audit-log.service';
+import { AuditPermissionInterceptor } from '../../modules/audit-logs/presentation/interceptors/audit-permission.interceptor';
 
 @Module({
-  imports: [PrismaModule, PermissionsModule],
-  controllers: [AuditLogController],
-  providers: [AuditLogService],
-  exports: [AuditLogService],
+  imports: [AuditLogsModule],
+  providers: [
+    AuditLogService, // Bridge service
+    AuditPermissionInterceptor,
+  ],
+  exports: [
+    AuditLogService, // Export bridge service for other modules
+    AuditPermissionInterceptor,
+  ],
 })
 export class AuditLogModule {}

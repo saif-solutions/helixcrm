@@ -1,6 +1,5 @@
 import { MiddlewareConsumer, Module, NestModule, RequestMethod } from "@nestjs/common";
 import { DatabaseModule } from './shared/database/database.module';
-
 import { ConfigModule } from "@nestjs/config";
 import { APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
 import { ThrottlerModule } from "@nestjs/throttler";
@@ -13,7 +12,8 @@ import { LeadsModule } from "./modules/leads/leads.module";
 import { PipelinesModule } from "./modules/pipelines/pipelines.module";
 import { DealsModule } from "./modules/deals/deals.module";
 import { LoggingModule } from "./shared/logging/logging.module";
-import { AuditLogModule } from './shared/audit-log/audit-log.module';
+import { AuditLogModule } from './shared/audit-log/audit-log.module'; // OLD bridge module
+import { AuditLogsModule } from './modules/audit-logs/audit-logs.module'; // NEW clean architecture module
 import { RequestLoggerInterceptor } from "./shared/logging/request-logger.interceptor";
 import { RequestContextMiddleware } from "./shared/middleware/request-context.middleware";
 import { CsrfMiddleware } from "./shared/security/csrf.middleware";
@@ -32,7 +32,7 @@ import { CorrelationIdMiddleware } from './shared/middleware/correlation-id.midd
 
 @Module({
   imports: [
-    PermissionsModule,  // ADD THIS
+    PermissionsModule,
     DatabaseModule,
     ConfigModule.forRoot({
       isGlobal: true,
@@ -75,13 +75,15 @@ import { CorrelationIdMiddleware } from './shared/middleware/correlation-id.midd
     UsersModule,
     DashboardModule,
     
-    // ✅ FIXED: Analytics Module with conditional registration
-    // Check if Redis is available and exports are enabled
+    // Analytics Module
     getAnalyticsModule(),
 
     // Infrastructure modules
     LoggingModule,
-    AuditLogModule,
+    
+    // ✅ AUDIT LOG MODULES - BOTH DURING MIGRATION
+    AuditLogModule,    // OLD: Bridge module (keep for backward compatibility)
+    AuditLogsModule,   // NEW: Clean architecture module
   ],
   controllers: [AppController, HealthController],
   providers: [
@@ -90,7 +92,7 @@ import { CorrelationIdMiddleware } from './shared/middleware/correlation-id.midd
     DateRangeConstraint,
     CurrencyCodeConstraint,
     AuthGuard,
-    PermissionGuard, // ✅ ADD PermissionGuard here
+    PermissionGuard,
     
     // Global request logging
     {
@@ -111,7 +113,6 @@ import { CorrelationIdMiddleware } from './shared/middleware/correlation-id.midd
     },
   ],
   exports: [
-    // ✅ Export PermissionGuard so other modules can use it
     AuthGuard,
     PermissionGuard,
   ],
