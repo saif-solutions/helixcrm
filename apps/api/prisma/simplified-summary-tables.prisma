@@ -1,0 +1,139 @@
+
+// ==================== ANALYTICS SUMMARY TABLES ====================
+// These tables store pre-aggregated data for analytics queries
+// Updated via background jobs to avoid hitting operational tables
+// Note: No reverse relations needed as these are read-only for analytics
+
+model DealDailySummary {
+  id              String      @id @default(uuid())
+  organizationId  String
+  date            DateTime    // Date of the summary (YYYY-MM-DD)
+  
+  // Counts
+  totalDeals      Int         @default(0)
+  wonDeals        Int         @default(0)
+  lostDeals       Int         @default(0)
+  openDeals       Int         @default(0)
+  
+  // Amounts
+  totalAmount     Decimal     @db.Decimal(15, 2)
+  wonAmount       Decimal     @db.Decimal(15, 2)
+  averageDealSize Decimal     @db.Decimal(15, 2)
+  
+  // Derived metrics
+  winRate         Decimal     @db.Decimal(5, 2)  // Percentage
+  
+  // Metadata
+  currency        String      @default("USD")
+  pipelineId      String?     // Optional: filter by pipeline
+  stageId         String?     // Optional: filter by stage
+  
+  // Timestamps
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  summarizedAt    DateTime    @default(now())  // When this summary was calculated
+  
+  // Indexes for fast querying
+  @@unique([organizationId, date, pipelineId, stageId, currency])
+  @@index([organizationId, date])
+  @@index([organizationId, date, pipelineId])
+  @@index([organizationId, date, stageId])
+  @@index([summarizedAt])
+  @@map("deal_daily_summaries")
+}
+
+model RevenueDailySummary {
+  id              String      @id @default(uuid())
+  organizationId  String
+  date            DateTime    // Date of the summary (YYYY-MM-DD)
+  
+  // Revenue metrics
+  totalRevenue    Decimal     @db.Decimal(15, 2)
+  wonRevenue      Decimal     @db.Decimal(15, 2)
+  forecastRevenue Decimal     @db.Decimal(15, 2)  // Based on open deals
+  
+  // Counts
+  totalDeals      Int         @default(0)
+  wonDeals        Int         @default(0)
+  
+  // Derived metrics
+  averageDealSize Decimal     @db.Decimal(15, 2)
+  
+  // Currency
+  currency        String      @default("USD")
+  
+  // Timestamps
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  summarizedAt    DateTime    @default(now())
+  
+  // Indexes
+  @@unique([organizationId, date, currency])
+  @@index([organizationId, date])
+  @@index([summarizedAt])
+  @@map("revenue_daily_summaries")
+}
+
+model PipelineStageSummary {
+  id              String      @id @default(uuid())
+  organizationId  String
+  pipelineId      String
+  stageId         String
+  date            DateTime    // Date of the snapshot
+  
+  // Stage metrics
+  dealCount       Int         @default(0)
+  totalAmount     Decimal     @db.Decimal(15, 2)
+  averageAmount   Decimal     @db.Decimal(15, 2)
+  
+  // Duration metrics (days)
+  avgStageDuration Int        @default(0)  // Average days in this stage
+  maxStageDuration Int        @default(0)
+  
+  // Bottleneck indicator
+  isBottleneck    Boolean     @default(false)
+  
+  // Timestamps
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  summarizedAt    DateTime    @default(now())
+  
+  // Indexes
+  @@unique([organizationId, pipelineId, stageId, date])
+  @@index([organizationId, date])
+  @@index([pipelineId, stageId])
+  @@index([isBottleneck])
+  @@map("pipeline_stage_summaries")
+}
+
+model ActivityDailySummary {
+  id              String      @id @default(uuid())
+  organizationId  String
+  date            DateTime    // Date of the summary (YYYY-MM-DD)
+  
+  // Activity counts by type
+  loginCount      Int         @default(0)
+  dealCreated     Int         @default(0)
+  dealUpdated     Int         @default(0)
+  dealWon         Int         @default(0)
+  dealLost        Int         @default(0)
+  contactCreated  Int         @default(0)
+  contactUpdated  Int         @default(0)
+  leadCreated     Int         @default(0)
+  leadConverted   Int         @default(0)
+  
+  // User activity
+  activeUsers     Int         @default(0)  // Distinct users with activity
+  totalActions    Int         @default(0)
+  
+  // Timestamps
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  summarizedAt    DateTime    @default(now())
+  
+  // Indexes
+  @@unique([organizationId, date])
+  @@index([organizationId, date])
+  @@index([summarizedAt])
+  @@map("activity_daily_summaries")
+}

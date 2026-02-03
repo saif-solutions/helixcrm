@@ -1,9 +1,11 @@
 import { Module, DynamicModule } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { CacheModule } from '@nestjs/cache-manager';
 import { BullModule } from '@nestjs/bullmq';
 import { AnalyticsController } from './analytics.controller';
 import { AnalyticsService } from './analytics.service';
+import { AnalyticsSummaryService } from './services/analytics-summary.service';
 import { AnalyticsExportProcessor } from './processors/analytics-export.processor';
 import { AuditLogModule } from '../../shared/audit-log/audit-log.module';
 import { PrismaModule } from '../../shared/prisma/prisma.module';
@@ -22,6 +24,7 @@ export class AnalyticsModule {
         PrismaModule,
         AuditLogModule,
         LoggingModule,
+        ScheduleModule.forRoot(), // Add scheduling for background jobs
         
         // Caching with namespace isolation
         CacheModule.registerAsync({
@@ -30,9 +33,9 @@ export class AnalyticsModule {
           useFactory: async (configService: ConfigService) => {
             const ttl = configService.get<number>('ANALYTICS_CACHE_TTL', 300);
             const max = configService.get<number>('ANALYTICS_CACHE_MAX', 100);
-            
-            console.log(`ðŸ“Š Analytics cache configured: TTL=${ttl}s, Max=${max} entries`);
-            
+
+            console.log(`í³Š Analytics cache configured: TTL=${ttl}s, Max=${max} entries`);
+
             return {
               ttl: ttl * 1000, // Convert seconds to milliseconds
               max,
@@ -44,27 +47,28 @@ export class AnalyticsModule {
       controllers: [AnalyticsController],
       providers: [
         AnalyticsService,
+        AnalyticsSummaryService,
         // Register validators for dependency injection
         DateRangeConstraint,
         CurrencyCodeConstraint,
       ],
-      exports: [AnalyticsService],
+      exports: [AnalyticsService, AnalyticsSummaryService],
     };
   }
 
   static registerWithExports(): DynamicModule {
     const baseModule = this.register();
-    
+
     // Check if exports are enabled via environment
     const exportsEnabled = process.env.ANALYTICS_EXPORT_ENABLED !== 'false';
     const redisHost = process.env.REDIS_HOST || 'localhost';
-    
+
     if (!exportsEnabled) {
-      console.log('ðŸ“Š Analytics exports disabled via ANALYTICS_EXPORT_ENABLED=false');
+      console.log('í³Š Analytics exports disabled via ANALYTICS_EXPORT_ENABLED=false');
       return baseModule;
     }
 
-    console.log(`ðŸ“Š Analytics exports enabled, Redis host: ${redisHost}`);
+    console.log(`í³Š Analytics exports enabled, Redis host: ${redisHost}`);
 
     // Add BullMQ export queue with enterprise Redis configuration
     const bullImports = [
@@ -88,16 +92,16 @@ export class AnalyticsModule {
           // Add Redis password if configured
           if (redisPassword) {
             redisConfig.password = redisPassword;
-            console.log('ðŸ“Š Redis password configured (TLS:', useTls ? 'enabled' : 'disabled', ')');
+            console.log('í³Š Redis password configured (TLS:', useTls ? 'enabled' : 'disabled', ')');
           }
 
           // Add TLS configuration if enabled
           if (useTls) {
             redisConfig.tls = {};
-            console.log('ðŸ“Š Redis TLS enabled');
+            console.log('í³Š Redis TLS enabled');
           }
 
-          console.log(`ðŸ“Š BullMQ queue configured: host=${redisHost}:${redisPort}, attempts=${jobAttempts}, timeout=${jobTimeout}ms`);
+          console.log(`í³Š BullMQ queue configured: host=${redisHost}:${redisPort}, attempts=${jobAttempts}, timeout=${jobTimeout}ms`);
 
           return {
             connection: redisConfig,
@@ -130,7 +134,7 @@ export class AnalyticsModule {
 export function getAnalyticsModule() {
   const redisHost = process.env.REDIS_HOST;
   const exportsEnabled = process.env.ANALYTICS_EXPORT_ENABLED !== 'false';
-  
+
   if (redisHost && exportsEnabled) {
     console.log('âœ… Analytics module configured with Redis export capabilities');
     return AnalyticsModule.registerWithExports();

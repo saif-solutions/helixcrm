@@ -1,0 +1,48 @@
+name: PR Validation (Fast Feedback)
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+
+concurrency:
+  group: pr-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pr-validation:
+    name: PR Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: apps/api/package-lock.json
+    
+    - name: Install Dependencies
+      run: |
+        cd apps/api
+        npm ci
+    
+    - name: Type Check
+      run: |
+        cd apps/api
+        npx tsc --noEmit
+    
+    - name: Unit Tests (Must Pass for Merge)
+      run: |
+        cd apps/api
+        npm run test:unit -- --coverage --maxWorkers=2
+    
+    - name: Upload Coverage
+      uses: codecov/codecov-action@v3
+      with:
+        directory: apps/api/coverage
+        flags: unit
+        name: unit-tests-coverage

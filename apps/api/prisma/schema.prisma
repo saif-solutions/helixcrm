@@ -592,3 +592,140 @@ model UserRole {
   @@index([deletedAt])  // Added for soft delete queries
   @@map("user_roles")
 }
+// ==================== ANALYTICS SUMMARY TABLES ====================
+// These tables store pre-aggregated data for analytics queries
+// Updated via background jobs to avoid hitting operational tables
+
+model DealDailySummary {
+  id              String      @id @default(uuid())
+  organizationId  String      @map("organization_id")
+  date            DateTime    @map("date")
+
+  // Counts
+  totalDeals      Int         @default(0) @map("total_deals")
+  wonDeals        Int         @default(0) @map("won_deals")
+  lostDeals       Int         @default(0) @map("lost_deals")
+  openDeals       Int         @default(0) @map("open_deals")
+
+  // Amounts
+  totalAmount     Decimal     @db.Decimal(15, 2) @map("total_amount")
+  wonAmount       Decimal     @db.Decimal(15, 2) @map("won_amount")
+  averageDealSize Decimal     @db.Decimal(15, 2) @map("average_deal_size")
+
+  // Derived metrics
+  winRate         Decimal     @db.Decimal(5, 2) @map("win_rate")
+
+  // Metadata
+  currency        String      @default("USD") @map("currency")
+  pipelineId      String?     @map("pipeline_id")
+  stageId         String?     @map("stage_id")
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+  summarizedAt    DateTime    @default(now()) @map("summarized_at")
+
+  // Indexes for fast querying
+  @@unique([organizationId, date, pipelineId, stageId, currency])
+  @@index([organizationId, date])
+  @@index([organizationId, date, pipelineId])
+  @@index([organizationId, date, stageId])
+  @@index([summarizedAt])
+  @@map("deal_daily_summaries")
+}
+
+model RevenueDailySummary {
+  id              String      @id @default(uuid())
+  organizationId  String      @map("organization_id")
+  date            DateTime    @map("date")
+
+  // Revenue metrics
+  totalRevenue    Decimal     @db.Decimal(15, 2) @map("total_revenue")
+  wonRevenue      Decimal     @db.Decimal(15, 2) @map("won_revenue")
+  forecastRevenue Decimal     @db.Decimal(15, 2) @map("forecast_revenue")
+
+  // Counts
+  totalDeals      Int         @default(0) @map("total_deals")
+  wonDeals        Int         @default(0) @map("won_deals")
+
+  // Derived metrics
+  averageDealSize Decimal     @db.Decimal(15, 2) @map("average_deal_size")
+
+  // Currency
+  currency        String      @default("USD") @map("currency")
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+  summarizedAt    DateTime    @default(now()) @map("summarized_at")
+
+  // Indexes
+  @@unique([organizationId, date, currency])
+  @@index([organizationId, date])
+  @@index([summarizedAt])
+  @@map("revenue_daily_summaries")
+}
+
+model PipelineStageSummary {
+  id              String      @id @default(uuid())
+  organizationId  String      @map("organization_id")
+  pipelineId      String      @map("pipeline_id")
+  stageId         String      @map("stage_id")
+  date            DateTime    @map("date")
+
+  // Stage metrics
+  dealCount       Int         @default(0) @map("deal_count")
+  totalAmount     Decimal     @db.Decimal(15, 2) @map("total_amount")
+  averageAmount   Decimal     @db.Decimal(15, 2) @map("average_amount")
+
+  // Duration metrics (days)
+  avgStageDuration Int        @default(0) @map("avg_stage_duration")
+  maxStageDuration Int        @default(0) @map("max_stage_duration")
+
+  // Bottleneck indicator
+  isBottleneck    Boolean     @default(false) @map("is_bottleneck")
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+  summarizedAt    DateTime    @default(now()) @map("summarized_at")
+
+  // Indexes
+  @@unique([organizationId, pipelineId, stageId, date])
+  @@index([organizationId, date])
+  @@index([pipelineId, stageId])
+  @@index([isBottleneck])
+  @@map("pipeline_stage_summaries")
+}
+
+model ActivityDailySummary {
+  id              String      @id @default(uuid())
+  organizationId  String      @map("organization_id")
+  date            DateTime    @map("date")
+
+  // Activity counts by type
+  loginCount      Int         @default(0) @map("login_count")
+  dealCreated     Int         @default(0) @map("deal_created")
+  dealUpdated     Int         @default(0) @map("deal_updated")
+  dealWon         Int         @default(0) @map("deal_won")
+  dealLost        Int         @default(0) @map("deal_lost")
+  contactCreated  Int         @default(0) @map("contact_created")
+  contactUpdated  Int         @default(0) @map("contact_updated")
+  leadCreated     Int         @default(0) @map("lead_created")
+  leadConverted   Int         @default(0) @map("lead_converted")
+
+  // User activity
+  activeUsers     Int         @default(0) @map("active_users")
+  totalActions    Int         @default(0) @map("total_actions")
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+  summarizedAt    DateTime    @default(now()) @map("summarized_at")
+
+  // Indexes
+  @@unique([organizationId, date])
+  @@index([organizationId, date])
+  @@index([summarizedAt])
+  @@map("activity_daily_summaries")
+}

@@ -8,12 +8,8 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { PrismaService } from '../prisma/prisma.service';
+import { PermissionContextService } from '../permissions/context/permission-context.service';
 import { PERMISSION_KEY } from '../decorators/require-permission.decorator';
-
-import { PermissionCacheService } from '../permissions/permission-cache.service'; // NEW
-
-
 
 @Injectable()
 export class PermissionGuard implements CanActivate {
@@ -21,8 +17,7 @@ export class PermissionGuard implements CanActivate {
 
   constructor(
     private readonly reflector: Reflector,
-    private readonly prisma: PrismaService,
-    private readonly cacheService: PermissionCacheService, // NEW
+    private readonly permissionContext: PermissionContextService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -56,25 +51,19 @@ export class PermissionGuard implements CanActivate {
 
     this.logger.debug(`Checking permissions for user: ${user.sub} (org: ${user.organizationId})`);
 
-    // PHASE 3.3 OPTIMIZATION: Check JWT permissions first (cached)
-    let userPermissions: string[];
-    
-    if (user.permissions && Array.isArray(user.permissions)) {
-      // Use permissions from JWT (cached for 5 minutes)
-      userPermissions = user.permissions;
-      this.logger.debug(`Using JWT cached permissions: ${userPermissions.length} permissions`);
-    } else {
-      // Fallback to database lookup
-      userPermissions = await this.getUserPermissions(user.id, user.organizationId);
-      this.logger.debug(`Fetched DB permissions: ${userPermissions.length} permissions`);
-    }
+    // Build permission context ONCE per request
+    // This will be cached in PermissionContextService for downstream use
+    await this.permissionContext.buildContext({
+      userId: user.id,
+      tenantId: user.organizationId,
+      jwtPermissions: user.permissions,
+    });
 
     // Check if user has any of the required permissions
-    const hasPermission = requiredPermissions.some((perm) => 
-      userPermissions.includes(perm)
-    );
+    const hasPermission = this.permissionContext.hasAnyPermission(requiredPermissions);
 
     if (!hasPermission) {
+      const userPermissions = this.permissionContext.getPermissions();
       this.logger.warn(
         `Permission denied for user ${user.sub}. Required: ${requiredPermissions.join(', ')}, Has: ${userPermissions.join(', ')}`,
       );
@@ -85,65 +74,5 @@ export class PermissionGuard implements CanActivate {
 
     this.logger.debug(`Permission granted for user ${user.sub}`);
     return true;
-  }
-
-  private async getUserPermissions(userId: string, organizationId: string): Promise<string[]> {
-    // PHASE 3.3 OPTIMIZATION: Check cache first
-    const cached = await this.cacheService.get(userId);
-    if (cached) {
-      return cached;
-    }
-
-    try {
-      // Fetch permissions from database
-      const userWithRoles = await this.prisma.user.findUnique({
-        where: { id: userId },
-        include: {
-          UserRoles: {
-            where: {
-              organizationId: organizationId,
-            },
-            include: {
-              role: {
-                include: {
-                  permissions: {
-                    include: {
-                      permission: true,
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      });
-
-      if (!userWithRoles || !userWithRoles.UserRoles) {
-        return [];
-      }
-
-      // Extract unique permission codes
-      const permissions = new Set<string>();
-      
-      userWithRoles.UserRoles.forEach((userRole) => {
-        if (userRole.role && userRole.role.permissions) {
-          userRole.role.permissions.forEach((rolePermission) => {
-            if (rolePermission.permission) {
-              permissions.add(rolePermission.permission.code);
-            }
-          });
-        }
-      });
-
-      const permissionArray = Array.from(permissions);
-      
-      // Cache the permissions
-      await this.cacheService.set(userId, permissionArray);
-      
-      return permissionArray;
-    } catch (error) {
-      this.logger.error(`Failed to fetch user permissions: ${error.message}`, error.stack);
-      return [];
-    }
   }
 }
