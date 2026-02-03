@@ -10,7 +10,9 @@ import { RefreshTokenService } from './services/refresh-token.service';
 import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
 import { RefreshTokenGuard } from './guards/refresh-token.guard';
 import { PrismaModule } from '../../shared/prisma/prisma.module';
-import { AuditLogModule } from '../../shared/audit-log/audit-log.module'; // ADD THIS IMPORT
+import { AuditLogModule } from '../../shared/audit-log/audit-log.module';
+import { JwtModule } from '@nestjs/jwt'; // Add JWT module import
+import { AuthCoreAdapter } from './adapters/AuthCoreAdapter'; // Add this import
 
 @Module({
   imports: [
@@ -21,6 +23,7 @@ import { AuditLogModule } from '../../shared/audit-log/audit-log.module'; // ADD
       limit: 10,
     }]),
     AuditLogModule, // ADD THIS TO IMPORTS ARRAY
+    JwtModule, // Add JwtModule to imports for AuthCoreAdapter
   ],
   controllers: [AuthController, PasswordResetController],
   providers: [
@@ -30,6 +33,7 @@ import { AuditLogModule } from '../../shared/audit-log/audit-log.module'; // ADD
     RefreshTokenService,
     JwtRefreshStrategy,
     RefreshTokenGuard,
+    AuthCoreAdapter, // Add AuthCoreAdapter to providers
   ],
   exports: [
     AuthService, 
@@ -37,6 +41,7 @@ import { AuditLogModule } from '../../shared/audit-log/audit-log.module'; // ADD
     AccountLockoutService,
     RefreshTokenService,
     RefreshTokenGuard,
+    AuthCoreAdapter, // Export AuthCoreAdapter as well
   ],
 })
 export class AuthModule {}

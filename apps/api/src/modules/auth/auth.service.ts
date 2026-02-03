@@ -5,14 +5,14 @@ import {
   ConflictException, 
   BadRequestException, 
   Logger, 
-  ForbiddenException 
+  ForbiddenException,
+  InternalServerErrorException 
 } from "@nestjs/common";
-import { AuditLogService, AuditAction, AuditEntityType } from "../../shared/audit-log/audit-log.service";
-import { JwtService } from "@nestjs/jwt";
+import { AuditLogService, AuditAction, AuditEntityType, AuditSeverity } from "../../shared/audit-log/audit-log.service";
 import { PrismaService } from "../../shared/prisma/prisma.service";
-import * as bcrypt from "bcrypt";
 import SecurityConfig from "../../config/security.config";
 import { AccountLockoutService } from "./services/account-lockout.service";
+import { AuthCoreAdapter } from "./adapters/AuthCoreAdapter";
 
 @Injectable()
 export class AuthService {
@@ -20,10 +20,12 @@ export class AuthService {
 
   constructor(
     private prisma: PrismaService,
-    private jwtService: JwtService,
     private accountLockoutService: AccountLockoutService,
-    private auditLogService: AuditLogService, // ADD AUDIT LOG SERVICE
+    private auditLogService: AuditLogService,
+    private authCoreAdapter: AuthCoreAdapter,
   ) {}
+
+  // ==================== USER VALIDATION ====================
 
   async validateUser(email: string, password: string, request?: any) {
     const normalizedEmail = email.toLowerCase().trim();
@@ -39,20 +41,31 @@ export class AuthService {
       
       // Log failed login attempt due to locked account
       if (request) {
-        await this.auditLogService.logAuthEvent(
+        await this.auditLogService.logAuthEvent({
           request,
-          AuditAction.LOGIN_FAILURE,
-          normalizedEmail,
-          undefined,
-          { reason: 'Account locked', lockedUntil: lockStatus.lockedUntil }
-        );
+          action: AuditAction.LOGIN_FAILURE,
+          actorEmail: normalizedEmail,
+          metadata: { 
+            reason: 'Account locked', 
+            lockedUntil: lockStatus.lockedUntil 
+          },
+          severity: AuditSeverity.HIGH
+        });
       }
       
       throw new ForbiddenException(`Account is locked until ${lockStatus.lockedUntil}`);
     }
 
     const user = await this.prisma.user.findUnique({ 
-      where: { email: normalizedEmail } 
+      where: { email: normalizedEmail },
+      include: {
+        organization: {
+          select: {
+            id: true,
+            name: true
+          }
+        }
+      }
     });
     
     if (!user || !user.isActive) {
@@ -63,32 +76,34 @@ export class AuthService {
       
       // Log failed login attempt
       if (request) {
-        await this.auditLogService.logAuthEvent(
+        await this.auditLogService.logAuthEvent({
           request,
-          AuditAction.LOGIN_FAILURE,
-          normalizedEmail,
-          undefined,
-          { reason: 'Invalid credentials or inactive account' }
-        );
+          action: AuditAction.LOGIN_FAILURE,
+          actorEmail: normalizedEmail,
+          metadata: { reason: 'Invalid credentials or inactive account' },
+          severity: AuditSeverity.MEDIUM
+        });
       }
       
       return null;
     }
 
-    const isValid = await bcrypt.compare(password, user.passwordHash);
+    const isValid = await this.authCoreAdapter.getPasswordService().compare(password, user.passwordHash);
     if (!isValid) {
       // Record failed attempt
       await this.accountLockoutService.recordFailedAttempt(user.id);
       
       // Log failed login attempt
       if (request) {
-        await this.auditLogService.logAuthEvent(
+        await this.auditLogService.logAuthEvent({
           request,
-          AuditAction.LOGIN_FAILURE,
-          normalizedEmail,
-          user.id,
-          { reason: 'Invalid password' }
-        );
+          action: AuditAction.LOGIN_FAILURE,
+          actorEmail: normalizedEmail,
+          actorUserId: user.id,
+          metadata: { reason: 'Invalid password' },
+          organizationId: user.organizationId,
+          severity: AuditSeverity.MEDIUM
+        });
       }
       
       return null;
@@ -101,11 +116,17 @@ export class AuthService {
     return {
       id: user.id,
       email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
       organizationId: user.organizationId,
+      organization: user.organization,
       tokenVersion: user.tokenVersion,
       refreshTokenHash: user.refreshTokenHash,
+      isActive: user.isActive,
     };
   }
+
+  // ==================== PERMISSIONS & ROLES ====================
 
   private async getUserPermissions(userId: string, organizationId: string): Promise<{ permissions: string[], roles: string[] }> {
     try {
@@ -162,64 +183,47 @@ export class AuthService {
     }
   }
 
+  // ==================== LOGIN FLOW ====================
+
   async login(user: any, res: any, request?: any) {
     try {
       // Get user permissions
       const { permissions, roles } = await this.getUserPermissions(user.id, user.organizationId);
       
-      const payload = {
-        sub: user.id,
+      // Use auth-core token manager service for access token
+      const accessToken = await this.authCoreAdapter.getTokenManagerService().issueAccessToken({
+        userId: user.id,
         email: user.email,
         organizationId: user.organizationId,
         tokenVersion: user.tokenVersion,
-        type: 'access',
-        permissions,
-        roles,
-      };
-
-      // Generate access token
-      const accessToken = this.jwtService.sign(payload, {
-        expiresIn: SecurityConfig.jwt.accessTokenExpiry,
-        issuer: SecurityConfig.jwt.issuer,
-        audience: SecurityConfig.jwt.audience,
+        permissions: permissions,
+        roles: roles,
+        metadata: {
+          firstName: user.firstName || '',
+          lastName: user.lastName || '',
+          isActive: true,
+        },
       });
       
-      // Generate refresh token with proper payload
-      const crypto = await import('crypto');
-      const uniqueId = crypto.randomBytes(16).toString('hex');
-      const initialVersion = `${Date.now()}-${uniqueId}`;
-      
-      const refreshToken = this.jwtService.sign(
-        { 
-          sub: user.id, 
-          type: 'refresh',
-          version: initialVersion,
-        },
-        { 
-          expiresIn: SecurityConfig.jwt.refreshTokenExpiry,
-          issuer: SecurityConfig.jwt.issuer,
-          audience: SecurityConfig.jwt.audience,
-        }
-      );
+      // IMPORTANT: Let auth-core generate refresh token with its own jti
+      // DO NOT pass version parameter - auth-core will create jti automatically
+      const refreshToken = await this.authCoreAdapter.getTokenManagerService().issueRefreshToken({
+        userId: user.id,
+        organizationId: user.organizationId,
+        // version: undefined, // Let auth-core handle jti generation
+      });
 
-      // CRITICAL: ALWAYS hash refresh tokens
-      const refreshTokenHash = await bcrypt.hash(
-        refreshToken, 
-        SecurityConfig.refreshToken.bcryptRounds
-      );
-
-      // Update user with hashed refresh token AND version binding
+      // CRITICAL: DO NOT update refreshTokenVersion or refreshTokenHash here!
+      // The PrismaTokenRepositoryBridge.saveRefreshToken() handles this via auth-core
+      // Only update lastLoginAt - bridge handles token storage
       await this.prisma.user.update({
         where: { id: user.id },
         data: { 
-          refreshTokenHash,
-          refreshTokenVersion: initialVersion,
-          refreshTokenIssuedAt: new Date(),
           lastLoginAt: new Date(),
         },
       });
 
-      // Set cookies (plain token in cookie, hash in database)
+      // Set cookies (plain token in cookie, hash in database via bridge)
       res.cookie('access_token', accessToken, SecurityConfig.cookies.accessToken());
       res.cookie('refresh_token', refreshToken, SecurityConfig.cookies.refreshToken());
 
@@ -233,17 +237,19 @@ export class AuthService {
 
       // Log successful login to audit log
       if (request) {
-        await this.auditLogService.logAuthEvent(
+        await this.auditLogService.logAuthEvent({
           request,
-          AuditAction.LOGIN_SUCCESS,
-          user.email,
-          user.id,
-          {
+          action: AuditAction.LOGIN_SUCCESS,
+          actorEmail: user.email,
+          actorUserId: user.id,
+          metadata: {
             permissionsCount: permissions.length,
             roles: roles,
             tokenVersion: user.tokenVersion,
-          }
-        );
+          },
+          organizationId: user.organizationId,
+          severity: AuditSeverity.MEDIUM
+        });
       }
 
       return {
@@ -251,6 +257,8 @@ export class AuthService {
         user: {
           id: user.id,
           email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
           organizationId: user.organizationId,
           permissions,
           roles,
@@ -265,25 +273,40 @@ export class AuthService {
       
       // Log login failure to audit log
       if (request && user?.email) {
-        await this.auditLogService.logAuthEvent(
+        await this.auditLogService.logAuthEvent({
           request,
-          AuditAction.LOGIN_FAILURE,
-          user.email,
-          user?.id,
-          { error: error.message }
-        );
+          action: AuditAction.LOGIN_FAILURE,
+          actorEmail: user.email,
+          actorUserId: user?.id,
+          metadata: { 
+            error: error.message,
+            errorType: error.name 
+          },
+          organizationId: user?.organizationId,
+          severity: AuditSeverity.HIGH
+        });
       }
       
       throw error;
     }
   }
 
+  // ==================== LOGOUT FLOW ====================
+
   async logout(userId: string, res: any, request?: any) {
-    // Get user email before logging out for audit log
+    // Get user with organization for audit log
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { email: true }
+      select: { 
+        email: true,
+        organizationId: true
+      }
     });
+
+    if (!user) {
+      this.logger.warn(`Logout attempted for non-existent user: ${userId}`);
+      throw new BadRequestException('User not found');
+    }
 
     // Clear cookies
     res.clearCookie('access_token', SecurityConfig.cookies.accessToken());
@@ -302,180 +325,180 @@ export class AuthService {
 
     this.logger.log(`User ${userId} logged out`, {
       userId,
+      email: user.email,
       event: 'user_logout',
     });
 
     // Log logout to audit log
-    if (request && user) {
-      await this.auditLogService.logAuthEvent(
+    if (request) {
+      await this.auditLogService.logAuthEvent({
         request,
-        AuditAction.LOGOUT,
-        user.email,
-        userId,
-        {}
-      );
+        action: AuditAction.LOGOUT,
+        actorEmail: user.email,
+        actorUserId: userId,
+        metadata: {},
+        organizationId: user.organizationId,
+        severity: AuditSeverity.MEDIUM
+      });
     }
 
     return { message: 'Logged out successfully' };
   }
 
+  // ==================== REFRESH TOKEN FLOW ====================
+
   async refreshToken(oldRefreshToken: string, res: any, request?: any) {
-    console.log('🔄 REFRESH START - Old token:', oldRefreshToken.substring(0, 30) + '...');
+    this.logger.debug('Refresh token process started', {
+      tokenPrefix: oldRefreshToken.substring(0, 10) + '...'
+    });
     
     try {
-      // Verify JWT
-      const payload = this.jwtService.verify(oldRefreshToken, {
-        issuer: SecurityConfig.jwt.issuer,
-        audience: SecurityConfig.jwt.audience,
-      });
+    this.logger.log('[CRITICAL-DEBUG] refreshToken method called', {
+      oldRefreshTokenLength: oldRefreshToken?.length,
+      oldRefreshTokenFirst100: oldRefreshToken?.substring(0, 100) + '...',
+      oldRefreshTokenIsJWT: oldRefreshToken?.includes('.') && oldRefreshToken.split('.').length === 3,
+      caller: 'auth/refresh endpoint'
+    });
+    this.logger.debug('[DEBUG] Refresh token flow started', {
+      tokenPrefix: oldRefreshToken.substring(0, 30) + '...',
+      tokenLength: oldRefreshToken.length,
+    });
+      // Verify JWT using auth-core
+      const payload = this.authCoreAdapter.getTokenManagerService().verifyRefreshToken(oldRefreshToken);
       
+      // Security validation
       if (payload.type !== 'refresh') {
+        this.logger.warn(`Invalid token type in refresh flow: ${payload.type}`);
         throw new UnauthorizedException('Invalid token type');
       }
 
-      console.log('  JWT verified for user:', payload.sub);
-      console.log('  Token version in JWT:', payload.version);
+      this.logger.debug('Refresh JWT verified', {
+        userId: payload.sub,
+        jtiPrefix: payload.jti?.substring(0, 10),
+        jtiLength: payload.jti?.length,
+      });
 
-      // ============================================
       // CRITICAL: TRANSACTION WITH VERSION BINDING
-      // ============================================
-      
-      return await this.prisma.$transaction(async (tx) => {
-        // Find user WITHIN transaction
-        const user = await tx.user.findUnique({
+      return await this.authCoreAdapter.withTransaction(async ({ tokenRepository, userRepository }) => {
+        // Find user using auth-core repository
+        const authCoreUser = await userRepository.findById(payload.sub);
+        if (!authCoreUser) {
+          throw new UnauthorizedException('User not found');
+        }
+
+        // Fetch full user from database for business logic
+        const fullUser = await this.prisma.user.findUnique({
           where: { id: payload.sub },
+          include: {
+            organization: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
+          }
         });
 
-        if (!user || !user.isActive) {
+        if (!fullUser || !fullUser.isActive) {
           throw new UnauthorizedException('User not found or inactive');
         }
 
-        console.log('  User found:', user.email);
-        console.log('  Current tokenVersion:', user.tokenVersion);
-        console.log('  Current refreshTokenVersion in DB:', user.refreshTokenVersion);
+        const userWithOrg = {
+          ...fullUser,
+          organization: fullUser.organization,
+        };
 
-        // ============================================
-        // CRITICAL: VERSION BINDING CHECK (REPLAY DETECTION)
-        // ============================================
+        this.logger.debug('User found for refresh', {
+          email: userWithOrg.email,
+          tokenVersion: userWithOrg.tokenVersion,
+          refreshTokenVersionLength: userWithOrg.refreshTokenVersion?.length,
+          refreshTokenVersionPrefix: userWithOrg.refreshTokenVersion?.substring(0, 10),
+        });
+
+        // ==================== CRITICAL: VERSION BINDING CHECK ====================
+        // Auth-core uses jti (JWT ID) for version binding
+        const tokenJti = payload.jti;
         
-        // Check if token has already been used (REPLAY DETECTION)
-        if (user.refreshTokenVersion && user.refreshTokenVersion !== payload.version) {
-          console.log('  ❌ TOKEN REUSE ATTACK DETECTED!');
-          console.log('     DB version:', user.refreshTokenVersion);
-          console.log('     JWT version:', payload.version);
-          
-          // Log security breach to audit log
-          if (request) {
-            await this.auditLogService.logAuthEvent(
-              request,
-              AuditAction.SYSTEM_ERROR,
-              user.email,
-              user.id,
-              { 
-                securityEvent: 'refresh_token_reuse_detected',
-                dbVersion: user.refreshTokenVersion,
-                jwtVersion: payload.version 
-              }
-            );
-          }
-          
-          // Security response: Invalidate all tokens
-          await tx.user.update({
-            where: { id: user.id },
-            data: { 
-              refreshTokenHash: null,
-              refreshTokenVersion: null,
-              refreshTokenIssuedAt: null,
-              tokenVersion: user.tokenVersion + 1,
-            },
-          });
-          
-          throw new UnauthorizedException('Refresh token reuse detected - security breach');
-        }
-
-        // Validate current refresh token hash
-        if (!user.refreshTokenHash) {
-          console.log('  ❌ No active refresh token');
-          throw new UnauthorizedException('No active refresh token');
-        }
-
-        // Verify hash matches
-        console.log('  Comparing hash...');
-        const isTokenValid = await bcrypt.compare(oldRefreshToken, user.refreshTokenHash);
-        console.log('  Hash comparison result:', isTokenValid);
-        
-        if (!isTokenValid) {
-          console.log('  ❌ Invalid hash');
+        if (!tokenJti) {
+          this.logger.error('Refresh token missing jti', { userId: payload.sub });
           throw new UnauthorizedException('Invalid refresh token');
         }
 
-        // ============================================
-        // GENERATE NEW TOKENS
-        // ============================================
-        
-        const crypto = await import('crypto');
-        const uniqueId = crypto.randomBytes(16).toString('hex');
-        const newVersion = `${Date.now()}-${uniqueId}`;
-        
-        console.log('  Generating new version:', newVersion);
+// Validate current refresh token hash
+if (!userWithOrg.refreshTokenHash) {
+  throw new UnauthorizedException('No active refresh token');
+}
 
+// FIX: Auth-core provides SHA256 hash, not raw JWT
+// We need to SHA256 hash the JWT before bcrypt comparison
+const crypto = await import('crypto');
+const jwtHash = crypto.createHash('sha256').update(oldRefreshToken).digest('hex');
+
+const isTokenValid = await this.authCoreAdapter.getPasswordService().compare(
+  jwtHash,  // Compare SHA256 hash of JWT
+  userWithOrg.refreshTokenHash
+);
+
+// Debug logging
+this.logger.debug('[FIX] SHA256 Hash Comparison', {
+  jwtHashLength: jwtHash.length,
+  jwtHashPrefix: jwtHash.substring(0, 20),
+  storedHashPrefix: userWithOrg.refreshTokenHash?.substring(0, 30),
+  comparisonType: 'bcrypt.compare(SHA256(JWT), storedHash)'
+});
+
+if (!isTokenValid) {
+  this.logger.log('[DEBUG] Token validation FAILED - entering error block');
+  this.logger.log('[DEBUG] Hash comparison result', {
+    isValid: isTokenValid,
+    comparisonType: 'bcrypt.compare(rawToken, hash)'
+  });
+  throw new UnauthorizedException('Invalid refresh token');
+}
+        // ==================== GENERATE NEW TOKENS ====================
+        
         // Get user permissions for the new token
-        const { permissions, roles } = await this.getUserPermissions(user.id, user.organizationId);
+        const { permissions, roles } = await this.getUserPermissions(userWithOrg.id, userWithOrg.organizationId);
 
-        // New refresh token
-        const newRefreshToken = this.jwtService.sign(
-          { 
-            sub: user.id, 
-            type: 'refresh',
-            version: newVersion,
-          },
-          { 
-            expiresIn: SecurityConfig.jwt.refreshTokenExpiry,
-            issuer: SecurityConfig.jwt.issuer,
-            audience: SecurityConfig.jwt.audience,
-          }
-        );
-
-        // New access token WITH PERMISSIONS
-        const newAccessToken = this.jwtService.sign({
-          sub: user.id,
-          email: user.email,
-          organizationId: user.organizationId,
-          tokenVersion: user.tokenVersion + 1,
-          type: 'access',
-          permissions,
-          roles,
-        }, {
-          expiresIn: SecurityConfig.jwt.accessTokenExpiry,
-          issuer: SecurityConfig.jwt.issuer,
-          audience: SecurityConfig.jwt.audience,
+        // Generate new refresh token (auth-core will create new jti)
+        const newRefreshToken = await this.authCoreAdapter.getTokenManagerService().issueRefreshToken({
+          userId: userWithOrg.id,
+          organizationId: userWithOrg.organizationId,
+          // version: undefined, // Let auth-core handle jti generation
         });
 
-        // Hash the NEW token
-        const newRefreshTokenHash = await bcrypt.hash(
-          newRefreshToken, 
-          SecurityConfig.refreshToken.bcryptRounds
-        );
+        // Generate new access token
+        const newAccessToken = await this.authCoreAdapter.getTokenManagerService().issueAccessToken({
+          userId: userWithOrg.id,
+          email: userWithOrg.email,
+          organizationId: userWithOrg.organizationId,
+          tokenVersion: userWithOrg.tokenVersion + 1, // Increment token version
+          permissions: permissions,
+          roles: roles,
+          metadata: {
+            firstName: userWithOrg.firstName || '',
+            lastName: userWithOrg.lastName || '',
+            isActive: true,
+          },
+        });
 
-        console.log('  New hash prefix:', newRefreshTokenHash.substring(0, 30));
+        // Hash the NEW token (bridge will handle this via auth-core)
+        const newRefreshTokenHash = await this.authCoreAdapter.getPasswordService().hash(newRefreshToken);
 
-        // ============================================
         // ATOMIC UPDATE WITH VERSION BINDING
-        // ============================================
-        
-        await tx.user.update({
-          where: { id: user.id },
-          data: { 
-            refreshTokenHash: newRefreshTokenHash,
-            refreshTokenVersion: newVersion,
-            refreshTokenIssuedAt: new Date(),
-            tokenVersion: user.tokenVersion + 1,
-          },
-        });
+        // Bridge will handle storing new jti and hash
+        await tokenRepository.updateTokenVersion(
+          userWithOrg.id,
+          tokenJti, // Old jti (for atomic check)
+          undefined, // New jti will be generated by auth-core in bridge
+          newRefreshTokenHash
+        );
 
-        console.log('  ✅ Database updated with new version');
-        console.log('  Old version:', payload.version);
-        console.log('  New version:', newVersion);
+        this.logger.debug('Token rotation completed', {
+          userId: userWithOrg.id,
+          oldTokenVersion: userWithOrg.tokenVersion,
+          newTokenVersion: userWithOrg.tokenVersion + 1
+        });
 
         // Set cookies
         res.cookie('access_token', newAccessToken, SecurityConfig.cookies.accessToken());
@@ -483,43 +506,49 @@ export class AuthService {
 
         // Log token refresh to audit log
         if (request) {
-          await this.auditLogService.logAuthEvent(
+          await this.auditLogService.logAuthEvent({
             request,
-            AuditAction.TOKEN_REFRESH,
-            user.email,
-            user.id,
-            { 
-              oldTokenVersion: user.tokenVersion,
-              newTokenVersion: user.tokenVersion + 1 
-            }
-          );
+            action: AuditAction.TOKEN_REFRESH,
+            actorEmail: userWithOrg.email,
+            actorUserId: userWithOrg.id,
+            metadata: { 
+              oldTokenVersion: userWithOrg.tokenVersion,
+              newTokenVersion: userWithOrg.tokenVersion + 1 
+            },
+            organizationId: userWithOrg.organizationId,
+            severity: AuditSeverity.MEDIUM
+          });
         }
 
         return { 
           access_token: newAccessToken,
           user: {
-            id: user.id,
-            email: user.email,
-            organizationId: user.organizationId,
+            id: userWithOrg.id,
+            email: userWithOrg.email,
+            firstName: userWithOrg.firstName,
+            lastName: userWithOrg.lastName,
+            organizationId: userWithOrg.organizationId,
             permissions,
             roles,
           }
         };
-        
-      }, {
-        maxWait: 10000,
-        timeout: 30000,
-        isolationLevel: 'Serializable',
       });
       
     } catch (error: any) {
-      console.log('  ❌ Error:', error.message);
+      this.logger.error('Refresh token error', {
+        error: error.message,
+        errorType: error.name,
+        stack: error.stack?.split('\n')[0]
+      });
+      
       if (error instanceof UnauthorizedException) {
         throw error;
       }
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
   }
+
+  // ==================== REGISTRATION FLOW ====================
 
   async register(registerDto: {
     email: string;
@@ -537,11 +566,10 @@ export class AuthService {
       throw new ConflictException('User already exists');
     }
 
-    // Hash password
-    const saltRounds = 10;
-    const passwordHash = await bcrypt.hash(registerDto.password, saltRounds);
+    // Hash password using auth-core
+    const passwordHash = await this.authCoreAdapter.getPasswordService().hash(registerDto.password);
 
-    // Create organization first
+    // Create organization
     const organization = await this.prisma.organization.create({
       data: {
         name: registerDto.organizationName || `${registerDto.firstName}'s Organization`,
@@ -566,14 +594,10 @@ export class AuthService {
       },
     });
 
-    // ============================================
-    // NEW: CREATE DEFAULT RBAC ROLES FOR ORGANIZATION
-    // ============================================
+    // Create default RBAC roles for organization
     await this.createDefaultRolesForOrganization(organization.id);
     
-    // ============================================
-    // NEW: ASSIGN SYSTEMADMIN ROLE TO NEW USER
-    // ============================================
+    // Assign SystemAdmin role to new user
     await this.assignSystemAdminRoleToUser(user.id, organization.id);
 
     this.logger.log(`New user registered: ${user.email}`, {
@@ -596,7 +620,9 @@ export class AuthService {
           lastName: user.lastName,
           organizationName: organization.name,
           roles: ['SystemAdmin']
-        }
+        },
+        AuditSeverity.LOW,
+        user.organizationId
       );
     }
 
@@ -608,32 +634,219 @@ export class AuthService {
     };
   }
 
+  // ==================== TOKEN MANAGEMENT ====================
+
+  async invalidateAllTokens(userId: string, request?: any) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { 
+        email: true,
+        organizationId: true 
+      }
+    });
+
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        tokenVersion: { increment: 1 },
+        refreshTokenHash: null,
+        refreshTokenVersion: null,
+        refreshTokenIssuedAt: null,
+      },
+    });
+
+    this.logger.log(`All tokens invalidated for user ${userId}`, {
+      userId,
+      email: user.email,
+      event: 'all_tokens_invalidated',
+    });
+
+    // Log token invalidation to audit log
+    if (request) {
+      await this.auditLogService.logAuthEvent({
+        request,
+        action: AuditAction.TOKEN_REFRESH,
+        actorEmail: user.email,
+        actorUserId: userId,
+        metadata: { action: 'invalidate_all_tokens' },
+        organizationId: user.organizationId,
+        severity: AuditSeverity.MEDIUM
+      });
+    }
+  }
+
+  async getUserSessions(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        refreshTokenIssuedAt: true,
+        lastLoginAt: true,
+        tokenVersion: true,
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    const sessions = [];
+
+    // Current session (if exists)
+    if (user.refreshTokenIssuedAt) {
+      sessions.push({
+        id: 'current',
+        issuedAt: user.refreshTokenIssuedAt,
+        lastUsed: user.lastLoginAt,
+        isCurrent: true,
+        deviceInfo: 'Current Device',
+      });
+    }
+
+    return {
+      userId: user.id,
+      email: user.email,
+      tokenVersion: user.tokenVersion,
+      activeSessions: sessions,
+      totalSessions: sessions.length,
+    };
+  }
+
+  async invalidateOtherSessions(userId: string, keepCurrent: boolean = true, request?: any) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { 
+        email: true,
+        organizationId: true 
+      }
+    });
+
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        tokenVersion: { increment: 1 },
+        ...(keepCurrent ? {} : {
+          refreshTokenHash: null,
+          refreshTokenVersion: null,
+          refreshTokenIssuedAt: null,
+        }),
+      },
+    });
+
+    this.logger.log(`Other sessions invalidated for user ${userId}`, {
+      userId,
+      keepCurrent,
+      event: 'other_sessions_invalidated',
+    });
+
+    // Log session invalidation to audit log
+    if (request) {
+      await this.auditLogService.logAuthEvent({
+        request,
+        action: AuditAction.TOKEN_REFRESH,
+        actorEmail: user.email,
+        actorUserId: userId,
+        metadata: { action: 'invalidate_other_sessions', keepCurrent },
+        organizationId: user.organizationId,
+        severity: AuditSeverity.MEDIUM
+      });
+    }
+
+    return { 
+      message: keepCurrent 
+        ? 'All other sessions have been invalidated' 
+        : 'All sessions have been invalidated' 
+    };
+  }
+
+  async validateRefreshToken(userId: string, token: string): Promise<boolean> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { refreshTokenHash: true },
+    });
+
+    if (!user || !user.refreshTokenHash) {
+      this.logger.debug(`No refresh token hash found for user ${userId}`);
+      return false;
+    }
+
+    return await this.authCoreAdapter.getPasswordService().compare(token, user.refreshTokenHash);
+  }
+
+  async changePassword(userId: string, oldPassword: string, newPassword: string, request?: any) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    // Verify old password
+    const isValid = await this.authCoreAdapter.getPasswordService().compare(oldPassword, user.passwordHash);
+    if (!isValid) {
+      throw new UnauthorizedException('Invalid current password');
+    }
+
+    // Hash new password
+    const newPasswordHash = await this.authCoreAdapter.getPasswordService().hash(newPassword);
+
+    // Update password and invalidate all tokens
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        passwordHash: newPasswordHash,
+        lastPasswordChange: new Date(),
+        tokenVersion: { increment: 1 },
+        refreshTokenHash: null,
+        refreshTokenVersion: null,
+        refreshTokenIssuedAt: null,
+      },
+    });
+
+    // Log password change to audit log
+    if (request) {
+      await this.auditLogService.logAuthEvent({
+        request,
+        action: AuditAction.PASSWORD_CHANGE,
+        actorEmail: user.email,
+        actorUserId: userId,
+        metadata: {},
+        organizationId: user.organizationId,
+        severity: AuditSeverity.MEDIUM
+      });
+    }
+
+    return { message: 'Password changed successfully' };
+  }
+
+  // ==================== HELPER METHODS ====================
+
   /**
    * Create default system roles for a new organization
-   * Extracted from the RBAC initialization script
    */
   private async createDefaultRolesForOrganization(organizationId: string): Promise<void> {
     this.logger.log(`Creating default roles for organization: ${organizationId.substring(0, 8)}...`);
 
-    // 1. Ensure core permissions exist (they should from global initialization)
+    // Ensure core permissions exist
     const corePermissions = [
-      // Users module
       'users.read', 'users.create', 'users.update', 'users.delete',
-      // Contacts module
       'contacts.read', 'contacts.write', 'contacts.delete',
-      // Deals module  
       'deals.read', 'deals.write', 'deals.delete',
-      // Leads module
       'leads.read', 'leads.write', 'leads.delete',
-      // Pipelines module
       'pipelines.read', 'pipelines.write', 'pipelines.manage',
-      // Analytics module
       'analytics.read', 'analytics.export',
-      // RBAC module
       'rbac.read', 'rbac.manage',
-      // Dashboard module
       'dashboard.read',
-      // Audit module - ADDED FOR PHASE 6
       'audit.read',
     ];
 
@@ -650,7 +863,7 @@ export class AuthService {
       });
     }
 
-    // 2. Create SystemAdmin Role
+    // Create SystemAdmin Role
     const adminRole = await this.prisma.role.upsert({
       where: {
         organizationId_name: {
@@ -687,9 +900,9 @@ export class AuthService {
         },
       });
     }
-    this.logger.log(`  ✓ SystemAdmin role with ${allPermissions.length} permissions`);
+    this.logger.debug(`SystemAdmin role created with ${allPermissions.length} permissions`);
 
-    // 3. Create Manager Role
+    // Create Manager Role
     const managerRole = await this.prisma.role.upsert({
       where: {
         organizationId_name: {
@@ -740,9 +953,9 @@ export class AuthService {
         },
       });
     }
-    this.logger.log(`    ✓ Manager role with ${managerPermissions.length} permissions`);
+    this.logger.debug(`Manager role created with ${managerPermissions.length} permissions`);
 
-    // 4. Create User Role
+    // Create User Role
     const userRole = await this.prisma.role.upsert({
       where: {
         organizationId_name: {
@@ -790,9 +1003,9 @@ export class AuthService {
         },
       });
     }
-    this.logger.log(`    ✓ User role with ${userPermissions.length} permissions`);
+    this.logger.debug(`User role created with ${userPermissions.length} permissions`);
 
-    // 5. Create Viewer Role
+    // Create Viewer Role
     const viewerRole = await this.prisma.role.upsert({
       where: {
         organizationId_name: {
@@ -842,7 +1055,7 @@ export class AuthService {
         },
       });
     }
-    this.logger.log(`    ✓ Viewer role with ${viewerPermissions.length} permissions`);
+    this.logger.debug(`Viewer role created with ${viewerPermissions.length} permissions`);
   }
 
   /**
@@ -888,214 +1101,56 @@ export class AuthService {
    */
   private getPermissionDescription(code: string): string {
     const descriptions: Record<string, string> = {
-      // Users module
       'users.read': 'View users in organization',
       'users.create': 'Create new users',
       'users.update': 'Update user information',
       'users.delete': 'Delete users',
-      // Contacts module
       'contacts.read': 'View contacts',
       'contacts.write': 'Create and update contacts',
       'contacts.delete': 'Delete contacts',
-      // Deals module
       'deals.read': 'View deals',
       'deals.write': 'Create and update deals',
       'deals.delete': 'Delete deals',
-      // Leads module
       'leads.read': 'View leads',
       'leads.write': 'Create and update leads',
       'leads.delete': 'Delete leads',
-      // Pipelines module
       'pipelines.read': 'View pipelines',
       'pipelines.write': 'Create and update pipelines',
       'pipelines.manage': 'Manage pipeline stages and settings',
-      // Analytics module
       'analytics.read': 'View analytics data',
       'analytics.export': 'Export analytics data',
-      // RBAC module
       'rbac.read': 'View roles and permissions',
       'rbac.manage': 'Manage roles and permissions',
-      // Dashboard module
       'dashboard.read': 'View dashboard',
-      // Audit module - ADDED FOR PHASE 6
       'audit.read': 'View audit logs',
     };
     
     return descriptions[code] || `${code} permission`;
   }
 
-  async invalidateAllTokens(userId: string, request?: any) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { email: true }
-    });
-
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: {
-        tokenVersion: { increment: 1 },
-        refreshTokenHash: null,
-        refreshTokenVersion: null,
-        refreshTokenIssuedAt: null,
-      },
-    });
-
-    this.logger.log(`All tokens invalidated for user ${userId}`, {
-      userId,
-      event: 'all_tokens_invalidated',
-    });
-
-    // Log token invalidation to audit log
-    if (request && user) {
-      await this.auditLogService.logAuthEvent(
-        request,
-        AuditAction.TOKEN_REFRESH,
-        user.email,
-        userId,
-        { action: 'invalidate_all_tokens' }
-      );
-    }
+  /**
+   * Helper: Analyze jti mismatch for security logging
+   */
+  private analyzeJtiMismatch(dbJti: string | null, tokenJti: string): string {
+    if (!dbJti && !tokenJti) return 'BOTH_NULL';
+    if (!dbJti) return 'DB_JTI_NULL';
+    if (!tokenJti) return 'TOKEN_JTI_NULL';
+    if (dbJti === tokenJti) return 'ACTUALLY_MATCHES';
+    
+    const dbFormat = this.describeJtiFormat(dbJti);
+    const tokenFormat = this.describeJtiFormat(tokenJti);
+    
+    return `JTI_FORMAT_MISMATCH: DB=${dbFormat}(${dbJti.length}), TOKEN=${tokenFormat}(${tokenJti.length})`;
   }
 
-  async getUserSessions(userId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        email: true,
-        refreshTokenIssuedAt: true,
-        lastLoginAt: true,
-        tokenVersion: true,
-      },
-    });
-
-    if (!user) {
-      throw new BadRequestException('User not found');
-    }
-
-    const sessions = [];
-
-    // Current session (if exists)
-    if (user.refreshTokenIssuedAt) {
-      sessions.push({
-        id: 'current',
-        issuedAt: user.refreshTokenIssuedAt,
-        lastUsed: user.lastLoginAt,
-        isCurrent: true,
-        deviceInfo: 'Current Device',
-      });
-    }
-
-    return {
-      userId: user.id,
-      email: user.email,
-      tokenVersion: user.tokenVersion,
-      activeSessions: sessions,
-      totalSessions: sessions.length,
-    };
-  }
-
-  async invalidateOtherSessions(userId: string, keepCurrent: boolean = true, request?: any) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { email: true }
-    });
-
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: {
-        tokenVersion: { increment: 1 },
-        ...(keepCurrent ? {} : {
-          refreshTokenHash: null,
-          refreshTokenVersion: null,
-          refreshTokenIssuedAt: null,
-        }),
-      },
-    });
-
-    this.logger.log(`Other sessions invalidated for user ${userId}`, {
-      userId,
-      keepCurrent,
-      event: 'other_sessions_invalidated',
-    });
-
-    // Log session invalidation to audit log
-    if (request && user) {
-      await this.auditLogService.logAuthEvent(
-        request,
-        AuditAction.TOKEN_REFRESH,
-        user.email,
-        userId,
-        { action: 'invalidate_other_sessions', keepCurrent }
-      );
-    }
-
-    return { 
-      message: keepCurrent 
-        ? 'All other sessions have been invalidated' 
-        : 'All sessions have been invalidated' 
-    };
-  }
-
-  async validateRefreshToken(userId: string, token: string): Promise<boolean> {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { refreshTokenHash: true },
-    });
-
-    if (!user || !user.refreshTokenHash) {
-      this.logger.debug(`No refresh token hash found for user ${userId}`);
-      return false;
-    }
-
-    if (SecurityConfig.refreshToken.hashTokens) {
-      return await bcrypt.compare(token, user.refreshTokenHash);
-    }
-
-    // Fallback for non-hashed tokens
-    return user.refreshTokenHash === token;
-  }
-
-  async changePassword(userId: string, oldPassword: string, newPassword: string, request?: any) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-    });
-
-    if (!user) {
-      throw new BadRequestException('User not found');
-    }
-
-    // Verify old password
-    const isValid = await bcrypt.compare(oldPassword, user.passwordHash);
-    if (!isValid) {
-      throw new UnauthorizedException('Invalid current password');
-    }
-
-    // Hash new password
-    const saltRounds = 10;
-    const newPasswordHash = await bcrypt.hash(newPassword, saltRounds);
-
-    // Update password
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: {
-        passwordHash: newPasswordHash,
-        lastPasswordChange: new Date(),
-        tokenVersion: { increment: 1 }, // Invalidate existing tokens
-      },
-    });
-
-    // Log password change to audit log
-    if (request) {
-      await this.auditLogService.logAuthEvent(
-        request,
-        AuditAction.PASSWORD_CHANGE,
-        user.email,
-        userId,
-        {}
-      );
-    }
-
-    return { message: 'Password changed successfully' };
+  /**
+   * Helper: Describe jti format for debugging
+   */
+  private describeJtiFormat(jti: string | null): string {
+    if (!jti) return 'NULL';
+    if (/^[a-f0-9]{64}$/i.test(jti)) return '64-CHAR-HEX-HASH';
+    if (jti.includes('-') && jti.length > 20) return 'TIMESTAMP-UUID';
+    if (jti.includes(':')) return 'USERID:JTI';
+    return `UNKNOWN_FORMAT_LEN_${jti.length}`;
   }
 }

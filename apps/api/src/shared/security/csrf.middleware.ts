@@ -28,13 +28,14 @@ export class CsrfMiddleware implements NestMiddleware {
 
   use(req: Request, res: Response, next: NextFunction) {
     // Skip CSRF entirely for certain endpoints
-    const skipCsrfPaths = [
-      '/api/v1/auth/login',
-      '/api/v1/auth/register', 
-      '/api/v1/auth/refresh',
-      '/api/v1/auth/logout',
-      '/api/v1/health',
-    ];
+const skipCsrfPaths = [
+  '/api/auth/login',
+  '/api/auth/register', 
+  '/api/auth/refresh',
+  '/api/auth/logout',
+  '/api/health',
+  '/health',
+];
 
     if (skipCsrfPaths.some(path => req.path.startsWith(path))) {
       return next();
@@ -61,7 +62,7 @@ export class CsrfMiddleware implements NestMiddleware {
               path: req.path,
               requestId: (req as any).requestId,
               code: 'INVALID_CSRF_TOKEN',
-              suggestion: 'Get a new CSRF token from /api/v1/auth/csrf-token',
+              suggestion: 'Get a new CSRF token from /api/auth/csrf-token',
             });
           }
           

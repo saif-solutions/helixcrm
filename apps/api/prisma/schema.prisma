@@ -139,7 +139,7 @@ model RefreshToken {
 model Contact {
   id         String  @id @default(uuid())
   firstName  String
-  lastName   String
+  lastName  String
   email      String?
   phone      String?
   title      String?
@@ -255,6 +255,7 @@ model Activity {
   @@index([deletedAt])  // Added for soft delete queries
   @@map("activities")
 }
+
 // ==================== AUDIT LOG ENUMS ====================
 enum AuditAction {
   // Auth events
@@ -289,6 +290,21 @@ enum AuditAction {
   CSRF_FAILURE
   RATE_LIMIT_TRIGGERED
   SYSTEM_ERROR
+  
+  // ================ ADDED: ANALYTICS ACTIONS ================
+  ANALYTICS_EXPORT_REQUESTED
+  ANALYTICS_EXPORT_DOWNLOADED
+  ANALYTICS_EXPORT_COMPLETED
+  ANALYTICS_EXPORT_FAILED
+  
+  // ================ ADDED: RBAC ACTIONS ================
+  ROLE_CREATED
+  ROLE_UPDATED
+  ROLE_DELETED
+  ROLE_ASSIGNED
+  ROLE_REMOVED
+  PERMISSION_GRANTED
+  PERMISSION_REVOKED
 }
 
 enum AuditEntityType {
@@ -301,6 +317,15 @@ enum AuditEntityType {
   ACCOUNT
   ACTIVITY
   SYSTEM
+  // ================ ADDED ENTITY TYPES ================
+  ANALYTICS
+  ROLE
+  PERMISSION
+  ORGANIZATION
+  SESSION
+  TOKEN
+  API_KEY
+  CONFIGURATION
 }
 
 // ==================== AUDIT LOG MODEL ====================
@@ -567,4 +592,3 @@ model UserRole {
   @@index([deletedAt])  // Added for soft delete queries
   @@map("user_roles")
 }
-
