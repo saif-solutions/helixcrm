@@ -1,0 +1,38 @@
+{
+  "salesMorningPeak": {
+    "description": "500 concurrent sales users during morning peak",
+    "p95Latency": 800,
+    "errorRate": 1.0,
+    "throughput": 100,
+    "concurrentUsers": 500,
+    "duration": "15m",
+    "justification": "Based on 100 sales reps × 5 simultaneous sessions"
+  },
+  "monthEndReporting": {
+    "description": "300 concurrent managers during month-end reporting",
+    "p95Latency": 1500,
+    "errorRate": 0.5,
+    "throughput": 50,
+    "concurrentUsers": 300,
+    "duration": "30m",
+    "justification": "Month-end reporting with heavy analytics queries"
+  },
+  "executiveDashboard": {
+    "description": "200 executives viewing real-time dashboards",
+    "p95Latency": 500,
+    "errorRate": 0.1,
+    "throughput": 200,
+    "concurrentUsers": 200,
+    "duration": "10m",
+    "justification": "Executive dashboard requires near-instant updates"
+  },
+  "dataExportOperations": {
+    "description": "Large data export operations",
+    "p95Latency": 30000,
+    "errorRate": 2.0,
+    "throughput": 5,
+    "concurrentUsers": 50,
+    "duration": "1h",
+    "justification": "Large exports are IO-bound operations"
+  }
+}

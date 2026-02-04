@@ -3,7 +3,6 @@ import { Injectable, InternalServerErrorException, Logger, Optional, Inject } fr
 import { Request } from 'express';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditQueueService, AuditJobData } from './audit-queue.service';
-import { AuditIntegrityService } from '../audit-integrity/audit-integrity.service';
 
 // Import Prisma enums
 import { $Enums } from '.prisma/client';
@@ -105,10 +104,6 @@ export enum AuditMode {
  * - Critical events (security breaches, failures) are always synchronous
  * - Non-critical events (user actions, reads) go to async queue
  * - Queue unavailable → automatic fallback to synchronous mode
- * 
- * INTEGRITY ENHANCEMENTS:
- * - All audit events are also added to append-only integrity chain
- * - Hash chaining ensures tamper detection
  */
 @Injectable()
 export class AuditLogService {
@@ -143,8 +138,6 @@ export class AuditLogService {
     private prisma: PrismaService,
     @Optional() @Inject(AuditQueueService)
     private readonly auditQueueService?: AuditQueueService,
-    @Optional() @Inject(AuditIntegrityService)
-    private readonly auditIntegrityService?: AuditIntegrityService,
   ) {
     this.initializeAuditMode();
   }
@@ -505,7 +498,7 @@ export class AuditLogService {
   // ==================== PRIVATE HELPER METHODS ====================
 
   /**
-   * Synchronous audit log creation with integrity chain integration
+   * Synchronous audit log creation (original implementation)
    */
   private async createAuditLogEntrySync(auditData: AuditLogData) {
     try {
@@ -538,9 +531,6 @@ export class AuditLogService {
         data
       });
 
-      // INTEGRITY: Add to append-only chain
-      await this.appendToIntegrityChain(auditLog, auditData);
-
       this.logger.debug(`Audit log created synchronously: ${auditData.action} for ${auditData.entityType}`, {
         auditId: auditLog.id,
         actorEmail: auditData.actorEmail,
@@ -562,43 +552,6 @@ export class AuditLogService {
 
       // Re-throw other errors
       throw error;
-    }
-  }
-
-  /**
-   * Add audit event to integrity chain
-   */
-  private async appendToIntegrityChain(auditLog: any, auditData: AuditLogData): Promise<void> {
-    try {
-      if (!this.auditIntegrityService) {
-        this.logger.debug('Audit integrity service not available, skipping chain append');
-        return;
-      }
-
-      const integrityEvent = {
-        action: auditData.action,
-        entityType: auditData.entityType,
-        entityId: auditData.entityId,
-        userId: auditData.actorUserId,
-        tenantId: auditData.organizationId,
-        details: auditData.metadata,
-        timestamp: new Date(),
-        metadata: {
-          auditLogId: auditLog.id,
-          ipAddress: auditData.ipAddress,
-          userAgent: auditData.userAgent,
-          requestId: auditData.requestId,
-          severity: auditData.severity,
-          actorEmail: auditData.actorEmail
-        }
-      };
-
-      const hash = await this.auditIntegrityService.appendEvent(integrityEvent);
-      
-      this.logger.debug(`Audit event added to integrity chain: ${hash.substring(0, 16)}...`);
-    } catch (error) {
-      // Don't fail the main audit operation if integrity chain fails
-      this.logger.error(`Failed to append to integrity chain: ${error.message}`, error.stack);
     }
   }
 

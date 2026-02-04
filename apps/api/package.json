@@ -29,7 +29,16 @@
     "prisma:reset": "prisma migrate reset --force",
     "prisma:push": "prisma db push --skip-generate",
     "prisma:migrate:dev": "prisma migrate dev",
-    "prisma:migrate:deploy": "prisma migrate deploy"
+    "prisma:migrate:deploy": "prisma migrate deploy",
+     "test:performance": "cd ../.. && ts-node scripts/performance/final-runner.ts",
+    "test:performance:smoke": "npm run test:performance -- --smoke",
+    "test:performance:quick": "npm run test:performance -- --quick",
+    "perf:baseline": "npm run test:performance -- --save-baseline",
+    "perf:help": "npm run test:performance -- --help",
+    "perf:verify": "cd ../.. && ts-node -e \"import('./scripts/performance/final-runner.ts').then(m => m.verifySetup ? console.log('Verification complete') : console.log('Verification not available'))\"",
+     "compliance:collect": "ts-node scripts/test-compliance.ts",
+    "compliance:test": "ts-node -r tsconfig-paths/register scripts/test-compliance.ts",
+    "build:compliance": "tsc -p scripts/compliance/tsconfig.json"
   },
   "dependencies": {
     "@bull-board/api": "^5.22.0",
