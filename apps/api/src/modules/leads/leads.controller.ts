@@ -37,10 +37,8 @@ export class LeadsController {
   @UsePipes(ValidationPipe)
   @RequirePermission('leads.write')
   create(@Body() createLeadDto: CreateLeadDto, @Req() req: Request) {
-    return this.leadsService.create({
-      ...createLeadDto,
-      organizationId: (req as any).user.organizationId,
-    });
+    const user = (req as any).user;
+    return this.leadsService.create(createLeadDto, user.sub);
   }
 
   @Get()
@@ -53,7 +51,6 @@ export class LeadsController {
     @Query('search') search?: string,
   ) {
     return this.leadsService.findAll({
-      organizationId: (req as any).user.organizationId,
       page,
       limit: Math.min(limit, 100),
       status,
@@ -63,14 +60,14 @@ export class LeadsController {
 
   @Get('stats')
   @RequirePermission('leads.read')
-  getStats(@Req() req: Request) {
-    return this.leadsService.getStats((req as any).user.organizationId);
+  getStats() {
+    return this.leadsService.getStats();
   }
 
   @Get(":id")
   @RequirePermission('leads.read')
-  findOne(@Param("id") id: string, @Req() req: Request) {
-    return this.leadsService.findOne(id, (req as any).user.organizationId);
+  findOne(@Param("id") id: string) {
+    return this.leadsService.findOne(id);
   }
 
   @Put(":id")
@@ -81,17 +78,15 @@ export class LeadsController {
     @Body() updateLeadDto: UpdateLeadDto,
     @Req() req: Request,
   ) {
-    return this.leadsService.update(
-      id,
-      updateLeadDto,
-      (req as any).user.organizationId,
-    );
+    const user = (req as any).user;
+    return this.leadsService.update(id, updateLeadDto, user.sub);
   }
 
   @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
   @RequirePermission('leads.delete')
   remove(@Param("id") id: string, @Req() req: Request) {
-    return this.leadsService.remove(id, (req as any).user.organizationId);
+    const user = (req as any).user;
+    return this.leadsService.remove(id, user.sub);
   }
 }
