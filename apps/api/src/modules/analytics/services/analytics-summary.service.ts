@@ -30,7 +30,7 @@ export class AnalyticsSummaryService implements OnModuleInit {
   private async updateAllSummariesIfStale() {
     try {
       // Check when the last summary was updated
-      const latestSummary = await this.prisma.dealDailySummary.findFirst({
+      const latestSummary = await this.prisma.dealSummaryDaily.findFirst({
         orderBy: { summarizedAt: 'desc' },
         select: { summarizedAt: true },
       });
@@ -119,15 +119,12 @@ export class AnalyticsSummaryService implements OnModuleInit {
         // Let's use a simpler approach for now - find and update
         
         // First, try to find existing summary
-        const existing = await this.prisma.dealDailySummary.findFirst({
-          where: {
-            organizationId: org.id,
-            date: today,
-            currency: 'USD',
-            pipelineId: null,
-            stageId: null,
-          },
-        });
+const existing = await this.prisma.dealSummaryDaily.findFirst({
+  where: {
+    organizationId: org.id,
+    date: today,
+  },
+});
 
         const summaryData = {
           organizationId: org.id,
@@ -147,12 +144,12 @@ export class AnalyticsSummaryService implements OnModuleInit {
         };
 
         if (existing) {
-          await this.prisma.dealDailySummary.update({
+          await this.prisma.dealSummaryDaily.update({
             where: { id: existing.id },
             data: summaryData,
           });
         } else {
-          await this.prisma.dealDailySummary.create({
+          await this.prisma.dealSummaryDaily.create({
             data: summaryData,
           });
         }
@@ -409,18 +406,16 @@ export class AnalyticsSummaryService implements OnModuleInit {
     const { startDate, endDate, groupBy = 'day' } = query;
     
     // Use summary tables for faster queries
-    const summaries = await this.prisma.dealDailySummary.findMany({
-      where: {
-        organizationId,
-        date: {
-          gte: startDate ? new Date(startDate) : undefined,
-          lte: endDate ? new Date(endDate) : undefined,
-        },
-        pipelineId: null, // Get only general summaries for now
-        stageId: null,
-      },
-      orderBy: { date: 'asc' },
-    });
+const summaries = await this.prisma.dealSummaryDaily.findMany({
+  where: {
+    organizationId,
+    date: {
+      gte: startDate ? new Date(startDate) : undefined,
+      lte: endDate ? new Date(endDate) : undefined,
+    },
+  },
+  orderBy: { date: 'asc' },
+});
 
     // Aggregate based on groupBy
     return this.aggregateSummaries(summaries, groupBy, 'deal');

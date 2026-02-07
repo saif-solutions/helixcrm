@@ -8,13 +8,12 @@ import { Deal, Prisma, DealStatus } from '@prisma/client';
 export class DealRepository extends TenantAwareRepository {
   private readonly logger = new Logger(DealRepository.name);
 
-  constructor(private prisma: PrismaService) {
-    super();
+  constructor(prisma: PrismaService) { // REMOVE "private"
+    super(prisma); // PASS prisma to parent
   }
 
-  /**
-   * PRODUCTION READY: Find deal by ID with comprehensive error handling
-   */
+  // All methods can continue using this.prisma
+  // The parent class provides the prisma property
   async findById(id: string, includeDeleted = false): Promise<Deal | null> {
     try {
       const where: any = this.withTenantFilter({ id });
@@ -23,7 +22,7 @@ export class DealRepository extends TenantAwareRepository {
         where.deletedAt = null;
       }
 
-      const deal = await this.prisma.deal.findFirst({
+      const deal = await this.prisma.deal.findFirst({ // ✅ Works - from parent
         where,
         include: {
           contact: true,

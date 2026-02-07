@@ -293,6 +293,16 @@ export class AnalyticsExportQueryDto {
   @ValidateDateRange()
   endDate?: string;
 
+  // ADD THIS STATUS PROPERTY:
+  @ApiPropertyOptional({
+    description: 'Filter by export status',
+    enum: ['pending', 'processing', 'completed', 'failed'],
+    example: 'completed',
+  })
+  @IsOptional()
+  @IsEnum(['pending', 'processing', 'completed', 'failed'])
+  status?: string;
+
   @ApiPropertyOptional({
     description: 'Export format',
     enum: ExportFormat,

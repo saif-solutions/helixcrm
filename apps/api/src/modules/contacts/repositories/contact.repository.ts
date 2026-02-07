@@ -6,8 +6,9 @@ import { Contact, Prisma } from '@prisma/client';
 
 @Injectable()
 export class ContactRepository extends TenantAwareRepository {
-  constructor(private prisma: PrismaService) {
-    super();
+  // Remove "private" from constructor parameter
+  constructor(prisma: PrismaService) {
+    super(prisma);
   }
 
   /**

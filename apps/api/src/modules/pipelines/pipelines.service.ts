@@ -1,16 +1,28 @@
-import { Injectable, NotFoundException, ConflictException, ForbiddenException } from "@nestjs/common";
+import { 
+  Injectable, 
+  NotFoundException, 
+  ConflictException, 
+  ForbiddenException,
+  BadRequestException 
+} from "@nestjs/common";
 import { PrismaService } from "../../shared/prisma/prisma.service";
 import { AppLogger } from "../../shared/logging/logger.service";
-import { CreatePipelineDto } from "./dto/create-pipeline.dto";
-import { UpdatePipelineDto } from "./dto/update-pipeline.dto";
-import { CreatePipelineStageDto } from "./dto/create-pipeline-stage.dto";
-import { UpdatePipelineStageDto } from "./dto/update-pipeline-stage.dto";
+import { TenantContextService } from "../../shared/tenant/context/tenant-context.service";
+import { PermissionContextService } from "../../shared/permissions/context/permission-context.service";
+import { AuditLogService } from "../../shared/audit-log/audit-log.service";
+import { PipelineRepository } from "./repositories/pipeline.repository";
+import type { CreatePipelineDto } from "./dto/create-pipeline.dto";
+import type { UpdatePipelineDto } from "./dto/update-pipeline.dto";
+import type { CreatePipelineStageDto } from "./dto/create-pipeline-stage.dto";
+import type { UpdatePipelineStageDto } from "./dto/update-pipeline-stage.dto";
 
 interface FindAllOptions {
-  organizationId: string;
   page?: number;
   limit?: number;
   search?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  isDefault?: boolean;
 }
 
 @Injectable()
@@ -18,490 +30,829 @@ export class PipelinesService {
   constructor(
     private prisma: PrismaService,
     private logger: AppLogger,
+    private readonly tenantContext: TenantContextService,
+    private readonly permissionContext: PermissionContextService,
+    private readonly auditLogService: AuditLogService,
+    private readonly pipelineRepository: PipelineRepository,
   ) {}
 
   // ==================== PIPELINE METHODS ====================
 
-  async create(data: { organizationId: string } & CreatePipelineDto) {
+  async create(data: CreatePipelineDto) {
+    // 1. PERMISSION CHECK
+    if (!this.permissionContext.hasPermission('pipelines.write')) {
+      throw new ForbiddenException('Insufficient permissions: pipelines.write required');
+    }
+
+    const startTime = Date.now();
+    const tenantId = this.tenantContext.getTenantId();
+    const userId = this.tenantContext.getUserId();
+
     try {
-      // Check if pipeline with same name already exists in organization
-      const existing = await this.prisma.pipeline.findFirst({
-        where: {
-          organizationId: data.organizationId,
-          name: data.name,
-        },
+      // 2. CHECK FOR EXISTING PIPELINE WITH SAME NAME
+      const existing = await this.pipelineRepository.findFirst({
+        name: data.name,
       });
 
       if (existing) {
         throw new ConflictException(`Pipeline with name "${data.name}" already exists`);
       }
 
-      // If setting as default, unset any existing default
+      // 3. IF SETTING AS DEFAULT, UNSET ANY EXISTING DEFAULT
       if (data.isDefault) {
-        await this.prisma.pipeline.updateMany({
-          where: {
-            organizationId: data.organizationId,
-            isDefault: true,
-          },
-          data: {
-            isDefault: false,
-          },
-        });
+        await this.pipelineRepository.updateMany(
+          { isDefault: true },
+          { isDefault: false }
+        );
       }
 
-      const pipeline = await this.prisma.pipeline.create({
-        data: {
-          ...data,
-          isDefault: data.isDefault || false,
+      // 4. CREATE PIPELINE USING REPOSITORY
+      const pipeline = await this.pipelineRepository.create({
+        name: data.name,
+        description: data.description,
+        isDefault: data.isDefault || false,
+      });
+
+      // 5. AUDIT LOG
+      await this.auditLogService.logEvent({
+        action: 'PIPELINE_CREATED',
+        entityType: 'PIPELINE',
+        actorEmail: await this.getUserEmail(userId),
+        actorUserId: userId,
+        entityId: pipeline.id,
+        metadata: {
+          pipelineName: pipeline.name,
+          isDefault: pipeline.isDefault,
         },
-        include: {
-          stages: {
-            orderBy: {
-              order: 'asc',
-            },
-          },
-        },
+        severity: 'INFO' as any,
+        organizationId: tenantId,
       });
 
       this.logger.log("Pipeline created", {
         pipelineId: pipeline.id,
-        organizationId: data.organizationId,
+        tenantId,
         event: 'pipeline_created',
       });
 
       return pipeline;
-    } catch (error) {
+      
+    } catch (error: any) {
+      // 6. ERROR HANDLING
       this.logger.error("Failed to create pipeline", error.stack, {
-        organizationId: data.organizationId,
+        tenantId,
+        userId,
+        method: 'create',
+        data
       });
-      throw error;
+      
+      if (error instanceof ConflictException || 
+          error instanceof ForbiddenException || 
+          error instanceof BadRequestException) {
+        throw error;
+      }
+      
+      throw new BadRequestException('Failed to create pipeline');
+      
+    } finally {
+      // 7. PERFORMANCE MONITORING
+      const duration = Date.now() - startTime;
+      this.logger.log(`Pipeline.create completed in ${duration}ms`, {
+        duration,
+        tenantId,
+        performance: duration > 2000 ? 'slow' : 'normal'
+      });
     }
   }
 
-  async findAll({ organizationId, page = 1, limit = 20, search }: FindAllOptions) {
-    const skip = (page - 1) * limit;
-    const take = limit;
-
-    // Build where clause with tenant isolation
-    const where: any = { 
-      organizationId,
-    };
-
-    // Add search filter if provided
-    if (search) {
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-      ];
+  async findAll({ page = 1, limit = 20, search, sortBy, sortOrder, isDefault }: FindAllOptions) {
+    // 1. PERMISSION CHECK
+    if (!this.permissionContext.hasPermission('pipelines.read')) {
+      throw new ForbiddenException('Insufficient permissions: pipelines.read required');
     }
 
+    const startTime = Date.now();
+    const tenantId = this.tenantContext.getTenantId();
+    const userId = this.tenantContext.getUserId();
+
     try {
+      const skip = (page - 1) * limit;
+      const take = Math.min(limit, 100);
+
+      // Build where clause
+      const where: any = {};
+      
+      // Add search filter if provided
+      if (search) {
+        where.OR = [
+          { name: { contains: search, mode: 'insensitive' } },
+          { description: { contains: search, mode: 'insensitive' } },
+        ];
+      }
+
+      // Add isDefault filter if provided
+      if (isDefault !== undefined) {
+        where.isDefault = isDefault;
+      }
+
+      // 2. BUSINESS LOGIC USING REPOSITORY
       const [pipelines, total] = await Promise.all([
-        this.prisma.pipeline.findMany({
+        this.pipelineRepository.findMany({
           where,
           skip,
           take,
-          include: {
-            stages: {
-              orderBy: {
-                order: 'asc',
-              },
-            },
-            _count: {
-              select: {
-                deals: true,
-              },
-            },
-          },
-          orderBy: [
-            { isDefault: 'desc' },
-            { createdAt: 'desc' },
-          ],
+          includeStages: true,
+          includeDealCount: true,
         }),
-        this.prisma.pipeline.count({ where }),
+        this.pipelineRepository.count(where),
       ]);
 
-      return {
+      const result = {
         data: pipelines,
         meta: {
           page,
-          limit,
+          limit: take,
           total,
-          pages: Math.ceil(total / limit),
+          pages: Math.ceil(total / take),
         },
       };
-    } catch (error) {
-      this.logger.error("Failed to fetch pipelines", error.stack, {
-        organizationId,
+
+      return result;
+      
+    } catch (error: any) {
+      // 3. ERROR HANDLING
+      this.logger.error("findAll failed", error.stack, {
+        tenantId,
+        userId,
+        method: 'findAll',
+        page,
+        limit,
+        search
       });
-      throw error;
+      
+      throw new BadRequestException('Failed to fetch pipelines');
+      
+    } finally {
+      // 4. PERFORMANCE MONITORING
+      const duration = Date.now() - startTime;
+      this.logger.log(`Pipeline.findAll completed in ${duration}ms`, {
+        duration,
+        tenantId,
+        performance: duration > 2000 ? 'slow' : 'normal'
+      });
     }
   }
 
-  async findOne(id: string, organizationId: string) {
-    const pipeline = await this.prisma.pipeline.findFirst({
-      where: {
-        id,
-        organizationId,
-      },
-      include: {
-        stages: {
-          orderBy: {
-            order: 'asc',
-          },
-        },
-        _count: {
-          select: {
-            deals: true,
-          },
-        },
-      },
-    });
-
-    if (!pipeline) {
-      throw new NotFoundException(`Pipeline ${id} not found`);
+  async findOne(id: string) {
+    // 1. PERMISSION CHECK
+    if (!this.permissionContext.hasPermission('pipelines.read')) {
+      throw new ForbiddenException('Insufficient permissions: pipelines.read required');
     }
 
-    return pipeline;
-  }
+    const startTime = Date.now();
+    const tenantId = this.tenantContext.getTenantId();
+    const userId = this.tenantContext.getUserId();
 
-  async update(id: string, updatePipelineDto: UpdatePipelineDto, organizationId: string) {
     try {
-      // First verify pipeline belongs to organization
-      await this.findOne(id, organizationId);
-
-      // If setting as default, unset any existing default
-      if (updatePipelineDto.isDefault === true) {
-        await this.prisma.pipeline.updateMany({
-          where: {
-            organizationId,
-            isDefault: true,
-            id: { not: id }, // Don't unset the current pipeline
-          },
-          data: {
-            isDefault: false,
-          },
-        });
+      // 2. BUSINESS LOGIC USING REPOSITORY
+      const pipeline = await this.pipelineRepository.findById(id, true);
+      
+      if (!pipeline) {
+        throw new NotFoundException(`Pipeline ${id} not found`);
       }
 
-      const pipeline = await this.prisma.pipeline.update({
-        where: { id },
-        data: updatePipelineDto,
-        include: {
-          stages: {
-            orderBy: {
-              order: 'asc',
-            },
-          },
+      return pipeline;
+      
+    } catch (error: any) {
+      // 3. ENTERPRISE ERROR HANDLING
+      this.logger.error(`findOne failed: ${error.message}`, error.stack, {
+        tenantId,
+        userId,
+        method: 'findOne',
+        id
+      });
+      
+      if (error instanceof NotFoundException || 
+          error instanceof ForbiddenException) {
+        throw error;
+      }
+      
+      throw new BadRequestException('Failed to fetch pipeline');
+      
+    } finally {
+      // 4. PERFORMANCE MONITORING
+      const duration = Date.now() - startTime;
+      this.logger.log(`Pipeline.findOne completed in ${duration}ms`, {
+        duration,
+        tenantId,
+        performance: duration > 2000 ? 'slow' : 'normal'
+      });
+    }
+  }
+
+  async update(id: string, updatePipelineDto: UpdatePipelineDto) {
+    // 1. PERMISSION CHECK
+    if (!this.permissionContext.hasPermission('pipelines.write')) {
+      throw new ForbiddenException('Insufficient permissions: pipelines.write required');
+    }
+
+    const startTime = Date.now();
+    const tenantId = this.tenantContext.getTenantId();
+    const userId = this.tenantContext.getUserId();
+
+    try {
+      // 2. VERIFY PIPELINE EXISTS AND BELONGS TO TENANT
+      const existingPipeline = await this.pipelineRepository.findById(id, false);
+      if (!existingPipeline) {
+        throw new NotFoundException(`Pipeline ${id} not found`);
+      }
+
+      // 3. PRESERVE BUSINESS LOGIC: DEFAULT PIPELINE HANDLING
+      if (updatePipelineDto.isDefault === true) {
+        await this.pipelineRepository.updateMany(
+          { isDefault: true },
+          { isDefault: false }
+        );
+      }
+
+      // 4. UPDATE PIPELINE
+      const pipeline = await this.pipelineRepository.update(id, updatePipelineDto);
+
+      // 5. AUDIT LOG
+      await this.auditLogService.logEvent({
+        action: 'PIPELINE_UPDATED',
+        entityType: 'PIPELINE',
+        actorEmail: await this.getUserEmail(userId),
+        actorUserId: userId,
+        entityId: pipeline.id,
+        metadata: {
+          pipelineName: pipeline.name,
+          isDefault: pipeline.isDefault,
         },
+        severity: 'INFO' as any,
+        organizationId: tenantId,
       });
 
       this.logger.log("Pipeline updated", {
         pipelineId: pipeline.id,
-        organizationId,
+        tenantId,
         event: 'pipeline_updated',
       });
 
       return pipeline;
-    } catch (error) {
-      this.logger.error("Failed to update pipeline", error.stack, {
-        pipelineId: id,
-        organizationId,
+      
+    } catch (error: any) {
+      // 6. ERROR HANDLING
+      this.logger.error(`update failed: ${error.message}`, error.stack, {
+        tenantId,
+        userId,
+        method: 'update',
+        id,
+        data: updatePipelineDto
       });
-      throw error;
+      
+      if (error instanceof NotFoundException || 
+          error instanceof ForbiddenException) {
+        throw error;
+      }
+      
+      throw new BadRequestException('Failed to update pipeline');
+      
+    } finally {
+      // 7. PERFORMANCE MONITORING
+      const duration = Date.now() - startTime;
+      this.logger.log(`Pipeline.update completed in ${duration}ms`, {
+        duration,
+        tenantId,
+        performance: duration > 2000 ? 'slow' : 'normal'
+      });
     }
   }
 
-  async remove(id: string, organizationId: string) {
+  async remove(id: string) {
+    // 1. PERMISSION CHECK
+    if (!this.permissionContext.hasPermission('pipelines.manage')) {
+      throw new ForbiddenException('Insufficient permissions: pipelines.manage required');
+    }
+
+    const startTime = Date.now();
+    const tenantId = this.tenantContext.getTenantId();
+    const userId = this.tenantContext.getUserId();
+
     try {
-      // First verify pipeline belongs to organization
-      const pipeline = await this.findOne(id, organizationId);
+      // 2. GET PIPELINE WITH DEAL COUNT
+      const pipeline = await this.pipelineRepository.findById(id, false);
+      if (!pipeline) {
+        throw new NotFoundException(`Pipeline ${id} not found`);
+      }
 
-      // Check if pipeline has deals
-      const dealCount = await this.prisma.deal.count({
-        where: {
-          pipelineId: id,
-          organizationId,
-        },
-      });
-
+      // 3. PRESERVE BUSINESS LOGIC: DEAL COUNT VALIDATION
+      // Type assertion to access deal count
+      const pipelineWithCount = pipeline as any;
+      const dealCount = pipelineWithCount._count?.deals || 0;
+      
       if (dealCount > 0) {
         throw new ConflictException(
           `Cannot delete pipeline with ${dealCount} deal(s). Move deals to another pipeline first.`
         );
       }
 
-      // If deleting default pipeline, set another as default
+      // 4. PRESERVE BUSINESS LOGIC: DEFAULT PIPELINE REASSIGNMENT
       if (pipeline.isDefault) {
-        const anotherPipeline = await this.prisma.pipeline.findFirst({
-          where: {
-            organizationId,
-            id: { not: id },
-          },
+        const anotherPipeline = await this.pipelineRepository.findFirst({
+          id: { not: id }
         });
 
         if (anotherPipeline) {
-          await this.prisma.pipeline.update({
-            where: { id: anotherPipeline.id },
-            data: { isDefault: true },
-          });
+          await this.pipelineRepository.update(anotherPipeline.id, { isDefault: true });
         }
       }
 
-      await this.prisma.pipeline.delete({
-        where: { id },
+      // 5. DELETE PIPELINE
+      await this.pipelineRepository.delete(id);
+
+      // 6. AUDIT LOG
+      await this.auditLogService.logEvent({
+        action: 'PIPELINE_DELETED',
+        entityType: 'PIPELINE',
+        actorEmail: await this.getUserEmail(userId),
+        actorUserId: userId,
+        entityId: id,
+        metadata: {
+          pipelineName: pipeline.name,
+          wasDefault: pipeline.isDefault,
+        },
+        severity: 'INFO' as any,
+        organizationId: tenantId,
       });
 
       this.logger.log("Pipeline deleted", {
         pipelineId: pipeline.id,
-        organizationId,
+        tenantId,
         event: 'pipeline_deleted',
       });
 
       return { message: 'Pipeline deleted successfully' };
-    } catch (error) {
-      this.logger.error("Failed to delete pipeline", error.stack, {
-        pipelineId: id,
-        organizationId,
+      
+    } catch (error: any) {
+      // 7. ERROR HANDLING
+      this.logger.error(`remove failed: ${error.message}`, error.stack, {
+        tenantId,
+        userId,
+        method: 'remove',
+        id
       });
-      throw error;
+      
+      if (error instanceof NotFoundException || 
+          error instanceof ConflictException || 
+          error instanceof ForbiddenException) {
+        throw error;
+      }
+      
+      throw new BadRequestException('Failed to delete pipeline');
+      
+    } finally {
+      // 8. PERFORMANCE MONITORING
+      const duration = Date.now() - startTime;
+      this.logger.log(`Pipeline.remove completed in ${duration}ms`, {
+        duration,
+        tenantId,
+        performance: duration > 2000 ? 'slow' : 'normal'
+      });
     }
   }
 
-  async getDefaultPipeline(organizationId: string) {
-    const pipeline = await this.prisma.pipeline.findFirst({
-      where: {
-        organizationId,
-        isDefault: true,
-      },
-      include: {
-        stages: {
-          orderBy: {
-            order: 'asc',
-          },
-        },
-      },
-    });
-
-    if (!pipeline) {
-      throw new NotFoundException('No default pipeline found');
+  async getDefaultPipeline() {
+    // 1. PERMISSION CHECK
+    if (!this.permissionContext.hasPermission('pipelines.read')) {
+      throw new ForbiddenException('Insufficient permissions: pipelines.read required');
     }
 
-    return pipeline;
+    const startTime = Date.now();
+    const tenantId = this.tenantContext.getTenantId();
+    const userId = this.tenantContext.getUserId();
+
+    try {
+      // 2. BUSINESS LOGIC USING REPOSITORY
+      const pipeline = await this.pipelineRepository.getDefaultPipeline();
+      
+      if (!pipeline) {
+        throw new NotFoundException('No default pipeline found');
+      }
+
+      return pipeline;
+      
+    } catch (error: any) {
+      // 3. ERROR HANDLING
+      this.logger.error(`getDefaultPipeline failed: ${error.message}`, error.stack, {
+        tenantId,
+        userId,
+        method: 'getDefaultPipeline'
+      });
+      
+      if (error instanceof NotFoundException || 
+          error instanceof ForbiddenException) {
+        throw error;
+      }
+      
+      throw new BadRequestException('Failed to fetch default pipeline');
+      
+    } finally {
+      // 4. PERFORMANCE MONITORING
+      const duration = Date.now() - startTime;
+      this.logger.log(`Pipeline.getDefaultPipeline completed in ${duration}ms`, {
+        duration,
+        tenantId,
+        performance: duration > 2000 ? 'slow' : 'normal'
+      });
+    }
   }
 
   // ==================== PIPELINE STAGE METHODS ====================
 
-  async createStage(pipelineId: string, data: CreatePipelineStageDto, organizationId: string) {
+  async createStage(pipelineId: string, data: CreatePipelineStageDto) {
+    // 1. PERMISSION CHECK
+    if (!this.permissionContext.hasPermission('pipelines.write')) {
+      throw new ForbiddenException('Insufficient permissions: pipelines.write required');
+    }
+
+    const startTime = Date.now();
+    const tenantId = this.tenantContext.getTenantId();
+    const userId = this.tenantContext.getUserId();
+
     try {
-      // Verify pipeline belongs to organization
-      await this.findOne(pipelineId, organizationId);
+      // 2. VERIFY PIPELINE EXISTS
+      const pipeline = await this.pipelineRepository.findById(pipelineId, false);
+      if (!pipeline) {
+        throw new NotFoundException(`Pipeline ${pipelineId} not found`);
+      }
 
-      // Check if stage with same order already exists
-      const existingStage = await this.prisma.pipelineStage.findFirst({
-        where: {
-          pipelineId,
-          order: data.order,
-        },
-      });
-
+      // 3. CHECK FOR EXISTING STAGE WITH SAME ORDER
+      const existingStage = await this.pipelineRepository.findStageByOrder(pipelineId, data.order);
       if (existingStage) {
         throw new ConflictException(`Stage with order ${data.order} already exists in this pipeline`);
       }
 
-      const stage = await this.prisma.pipelineStage.create({
-        data: {
-          ...data,
-          pipelineId,
-        },
+      // 4. CREATE STAGE
+      const stage = await this.pipelineRepository.createStage({
+        ...data,
+        pipelineId,
       });
+
+      // 5. AUDIT LOG - Use pipeline audit actions since stage-specific ones don't exist
+await this.auditLogService.logEvent({
+  action: 'PIPELINE_UPDATED', // Revert to original
+  entityType: 'PIPELINE', // Revert to original
+  actorEmail: await this.getUserEmail(userId),
+  actorUserId: userId,
+  entityId: pipelineId, // Pipeline ID (not stage ID)
+  metadata: {
+    stageName: stage.name,
+    stageId: stage.id, // Add stage ID to metadata
+    pipelineId,
+    order: stage.order,
+    action: 'stage_created' // Add action type to metadata
+  },
+  severity: 'INFO' as any,
+  organizationId: tenantId,
+});
 
       this.logger.log("Pipeline stage created", {
         stageId: stage.id,
         pipelineId,
-        organizationId,
+        tenantId,
         event: 'pipeline_stage_created',
       });
 
       return stage;
-    } catch (error) {
-      this.logger.error("Failed to create pipeline stage", error.stack, {
+      
+    } catch (error: any) {
+      // 6. ERROR HANDLING
+      this.logger.error(`createStage failed: ${error.message}`, error.stack, {
+        tenantId,
+        userId,
+        method: 'createStage',
         pipelineId,
-        organizationId,
+        data
       });
-      throw error;
+      
+      if (error instanceof NotFoundException || 
+          error instanceof ConflictException || 
+          error instanceof ForbiddenException) {
+        throw error;
+      }
+      
+      throw new BadRequestException('Failed to create pipeline stage');
+      
+    } finally {
+      // 7. PERFORMANCE MONITORING
+      const duration = Date.now() - startTime;
+      this.logger.log(`Pipeline.createStage completed in ${duration}ms`, {
+        duration,
+        tenantId,
+        performance: duration > 2000 ? 'slow' : 'normal'
+      });
     }
   }
 
-  async updateStage(stageId: string, updateDto: UpdatePipelineStageDto, organizationId: string) {
-    try {
-      // First get the stage and verify it belongs to organization
-      const stage = await this.prisma.pipelineStage.findFirst({
-        where: {
-          id: stageId,
-          pipeline: {
-            organizationId,
-          },
-        },
-        include: {
-          pipeline: true,
-        },
-      });
+  async updateStage(stageId: string, updateDto: UpdatePipelineStageDto) {
+    // 1. PERMISSION CHECK
+    if (!this.permissionContext.hasPermission('pipelines.write')) {
+      throw new ForbiddenException('Insufficient permissions: pipelines.write required');
+    }
 
-      if (!stage) {
+    const startTime = Date.now();
+    const tenantId = this.tenantContext.getTenantId();
+    const userId = this.tenantContext.getUserId();
+
+    try {
+      // 2. GET STAGE WITH PIPELINE INFO
+      const stage = await this.pipelineRepository.findStageById(stageId, true);
+      if (!stage || !(stage as any).pipeline) {
         throw new NotFoundException(`Pipeline stage ${stageId} not found`);
       }
 
-      // If updating order, check for conflicts
-      if (updateDto.order !== undefined && updateDto.order !== stage.order) {
-        const existingStage = await this.prisma.pipelineStage.findFirst({
-          where: {
-            pipelineId: stage.pipelineId,
-            order: updateDto.order,
-            id: { not: stageId },
-          },
-        });
+      const stageWithPipeline = stage as any;
+      const pipeline = stageWithPipeline.pipeline;
 
-        if (existingStage) {
+      // 3. CHECK TENANT OWNERSHIP
+      if (pipeline.organizationId !== tenantId) {
+        throw new ForbiddenException('Stage does not belong to your organization');
+      }
+
+      // 4. CHECK FOR ORDER CONFLICT IF ORDER IS CHANGING
+      if (updateDto.order !== undefined && updateDto.order !== stage.order) {
+        const existingStage = await this.pipelineRepository.findStageByOrder(
+          stage.pipelineId,
+          updateDto.order
+        );
+        
+        if (existingStage && existingStage.id !== stageId) {
           throw new ConflictException(`Stage with order ${updateDto.order} already exists in this pipeline`);
         }
       }
 
-      const updatedStage = await this.prisma.pipelineStage.update({
-        where: { id: stageId },
-        data: updateDto,
-      });
+      // 5. UPDATE STAGE
+      const updatedStage = await this.pipelineRepository.updateStage(stageId, updateDto);
+
+      // 6. AUDIT LOG - Use pipeline audit actions
+await this.auditLogService.logEvent({
+  action: 'PIPELINE_UPDATED', // Revert to original
+  entityType: 'PIPELINE', // Revert to original
+  actorEmail: await this.getUserEmail(userId),
+  actorUserId: userId,
+  entityId: stage.pipelineId, // Pipeline ID
+  metadata: {
+    stageName: updatedStage.name,
+    stageId: updatedStage.id,
+    pipelineId: stage.pipelineId,
+    order: updatedStage.order,
+    action: 'stage_updated'
+  },
+  severity: 'INFO' as any,
+  organizationId: tenantId,
+});
 
       this.logger.log("Pipeline stage updated", {
         stageId: updatedStage.id,
         pipelineId: stage.pipelineId,
-        organizationId,
+        tenantId,
         event: 'pipeline_stage_updated',
       });
 
       return updatedStage;
-    } catch (error) {
-      this.logger.error("Failed to update pipeline stage", error.stack, {
+      
+    } catch (error: any) {
+      // 7. ERROR HANDLING
+      this.logger.error(`updateStage failed: ${error.message}`, error.stack, {
+        tenantId,
+        userId,
+        method: 'updateStage',
         stageId,
-        organizationId,
+        data: updateDto
       });
-      throw error;
+      
+      if (error instanceof NotFoundException || 
+          error instanceof ConflictException || 
+          error instanceof ForbiddenException) {
+        throw error;
+      }
+      
+      throw new BadRequestException('Failed to update pipeline stage');
+      
+    } finally {
+      // 8. PERFORMANCE MONITORING
+      const duration = Date.now() - startTime;
+      this.logger.log(`Pipeline.updateStage completed in ${duration}ms`, {
+        duration,
+        tenantId,
+        performance: duration > 2000 ? 'slow' : 'normal'
+      });
     }
   }
 
-  async removeStage(stageId: string, organizationId: string) {
-    try {
-      // First get the stage and verify it belongs to organization
-      const stage = await this.prisma.pipelineStage.findFirst({
-        where: {
-          id: stageId,
-          pipeline: {
-            organizationId,
-          },
-        },
-        include: {
-          pipeline: true,
-          _count: {
-            select: {
-              deals: true,
-            },
-          },
-        },
-      });
+  async removeStage(stageId: string) {
+    // 1. PERMISSION CHECK
+    if (!this.permissionContext.hasPermission('pipelines.manage')) {
+      throw new ForbiddenException('Insufficient permissions: pipelines.manage required');
+    }
 
-      if (!stage) {
+    const startTime = Date.now();
+    const tenantId = this.tenantContext.getTenantId();
+    const userId = this.tenantContext.getUserId();
+
+    try {
+      // 2. GET STAGE WITH DEAL COUNT
+      const stage = await this.pipelineRepository.findStageById(stageId, true);
+      if (!stage || !(stage as any).pipeline) {
         throw new NotFoundException(`Pipeline stage ${stageId} not found`);
       }
 
-      // Check if stage has deals
-      if (stage._count.deals > 0) {
+      const stageWithPipeline = stage as any;
+      const pipeline = stageWithPipeline.pipeline;
+
+      // 3. CHECK TENANT OWNERSHIP
+      if (pipeline.organizationId !== tenantId) {
+        throw new ForbiddenException('Stage does not belong to your organization');
+      }
+
+      // 4. CHECK FOR ACTIVE DEALS
+      const dealCount = stageWithPipeline._count?.deals || 0;
+      if (dealCount > 0) {
         throw new ConflictException(
-          `Cannot delete stage with ${stage._count.deals} deal(s). Move deals to another stage first.`
+          `Cannot delete stage with ${dealCount} deal(s). Move deals to another stage first.`
         );
       }
 
-      await this.prisma.pipelineStage.delete({
-        where: { id: stageId },
-      });
+      // 5. DELETE STAGE
+      await this.pipelineRepository.deleteStage(stageId);
 
-      // Reorder remaining stages
-      const remainingStages = await this.prisma.pipelineStage.findMany({
-        where: {
-          pipelineId: stage.pipelineId,
-        },
-        orderBy: {
-          order: 'asc',
-        },
-      });
-
+      // 6. PRESERVE BUSINESS LOGIC: REORDER REMAINING STAGES
+      const remainingStages = await this.pipelineRepository.findStagesByPipeline(stage.pipelineId);
+      
       // Update orders to be sequential
       for (let i = 0; i < remainingStages.length; i++) {
         if (remainingStages[i].order !== i) {
-          await this.prisma.pipelineStage.update({
-            where: { id: remainingStages[i].id },
-            data: { order: i },
-          });
+          await this.pipelineRepository.updateStage(remainingStages[i].id, { order: i });
         }
       }
+
+      // 7. AUDIT LOG - Use pipeline audit actions
+await this.auditLogService.logEvent({
+  action: 'PIPELINE_UPDATED', // Revert to original
+  entityType: 'PIPELINE', // Revert to original
+  actorEmail: await this.getUserEmail(userId),
+  actorUserId: userId,
+  entityId: stage.pipelineId, // Pipeline ID
+  metadata: {
+    stageName: stage.name,
+    stageId: stageId,
+    pipelineId: stage.pipelineId,
+    reorderedStages: remainingStages.length,
+    action: 'stage_deleted'
+  },
+  severity: 'INFO' as any,
+  organizationId: tenantId,
+});
 
       this.logger.log("Pipeline stage deleted", {
         stageId: stage.id,
         pipelineId: stage.pipelineId,
-        organizationId,
+        tenantId,
         event: 'pipeline_stage_deleted',
       });
 
       return { message: 'Pipeline stage deleted successfully' };
-    } catch (error) {
-      this.logger.error("Failed to delete pipeline stage", error.stack, {
-        stageId,
-        organizationId,
+      
+    } catch (error: any) {
+      // 8. ERROR HANDLING
+      this.logger.error(`removeStage failed: ${error.message}`, error.stack, {
+        tenantId,
+        userId,
+        method: 'removeStage',
+        stageId
       });
-      throw error;
+      
+      if (error instanceof NotFoundException || 
+          error instanceof ConflictException || 
+          error instanceof ForbiddenException) {
+        throw error;
+      }
+      
+      throw new BadRequestException('Failed to delete pipeline stage');
+      
+    } finally {
+      // 9. PERFORMANCE MONITORING
+      const duration = Date.now() - startTime;
+      this.logger.log(`Pipeline.removeStage completed in ${duration}ms`, {
+        duration,
+        tenantId,
+        performance: duration > 2000 ? 'slow' : 'normal'
+      });
     }
   }
 
-  async reorderStages(pipelineId: string, stageIds: string[], organizationId: string) {
+  async reorderStages(pipelineId: string, stageIds: string[]) {
+    // 1. PERMISSION CHECK
+    if (!this.permissionContext.hasPermission('pipelines.manage')) {
+      throw new ForbiddenException('Insufficient permissions: pipelines.manage required');
+    }
+
+    const startTime = Date.now();
+    const tenantId = this.tenantContext.getTenantId();
+    const userId = this.tenantContext.getUserId();
+
     try {
-      // Verify pipeline belongs to organization
-      await this.findOne(pipelineId, organizationId);
-
-      // Verify all stages belong to this pipeline
-      const stages = await this.prisma.pipelineStage.findMany({
-        where: {
-          id: { in: stageIds },
-          pipelineId,
-        },
-      });
-
-      if (stages.length !== stageIds.length) {
-        throw new NotFoundException('One or more stages not found in this pipeline');
+      // 2. VERIFY PIPELINE EXISTS AND BELONGS TO TENANT
+      const pipeline = await this.pipelineRepository.findById(pipelineId, false);
+      if (!pipeline) {
+        throw new NotFoundException(`Pipeline ${pipelineId} not found`);
       }
 
-      // Update stages with new order
-      const updates = stageIds.map((id, index) =>
-        this.prisma.pipelineStage.update({
-          where: { id },
-          data: { order: index },
-        })
-      );
+      // 3. VERIFY ALL STAGES BELONG TO THIS PIPELINE
+      const stages = await this.pipelineRepository.findStagesByPipeline(pipelineId);
+      const stageMap = new Map(stages.map(stage => [stage.id, stage]));
+      
+      const invalidStages = stageIds.filter(id => !stageMap.has(id));
+      if (invalidStages.length > 0) {
+        throw new NotFoundException(`One or more stages not found in this pipeline: ${invalidStages.join(', ')}`);
+      }
 
-      await this.prisma.$transaction(updates);
+      // 4. REORDER STAGES USING TRANSACTION
+      await this.pipelineRepository.transaction(async (prisma) => {
+        const updates = stageIds.map((id, index) => 
+          prisma.pipelineStage.update({
+            where: { id },
+            data: { order: index },
+          })
+        );
+        
+        await Promise.all(updates);
+      });
+
+      // 5. AUDIT LOG
+await this.auditLogService.logEvent({
+  action: 'PIPELINE_UPDATED', // Revert to original (not PIPELINE_STAGE_REORDERED)
+  entityType: 'PIPELINE',
+  actorEmail: await this.getUserEmail(userId),
+  actorUserId: userId,
+  entityId: pipelineId,
+  metadata: {
+    pipelineName: pipeline.name,
+    stageCount: stageIds.length,
+    newOrder: stageIds,
+    action: 'stages_reordered'
+  },
+  severity: 'INFO' as any,
+  organizationId: tenantId,
+});
 
       this.logger.log("Pipeline stages reordered", {
         pipelineId,
-        organizationId,
+        tenantId,
         stageCount: stageIds.length,
         event: 'pipeline_stages_reordered',
       });
 
       return { message: 'Stages reordered successfully' };
-    } catch (error) {
-      this.logger.error("Failed to reorder pipeline stages", error.stack, {
+      
+    } catch (error: any) {
+      // 6. ERROR HANDLING
+      this.logger.error(`reorderStages failed: ${error.message}`, error.stack, {
+        tenantId,
+        userId,
+        method: 'reorderStages',
         pipelineId,
-        organizationId,
+        stageIds
       });
-      throw error;
+      
+      if (error instanceof NotFoundException || 
+          error instanceof ForbiddenException) {
+        throw error;
+      }
+      
+      throw new BadRequestException('Failed to reorder stages');
+      
+    } finally {
+      // 7. PERFORMANCE MONITORING
+      const duration = Date.now() - startTime;
+      this.logger.log(`Pipeline.reorderStages completed in ${duration}ms`, {
+        duration,
+        tenantId,
+        performance: duration > 2000 ? 'slow' : 'normal'
+      });
+    }
+  }
+
+  private async getUserEmail(userId: string): Promise<string> {
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { email: true }
+      });
+      return user?.email || 'system@unknown';
+    } catch (error) {
+      this.logger.warn(`Failed to fetch user email for ${userId}: ${error.message}`);
+      return 'system@unknown';
     }
   }
 }

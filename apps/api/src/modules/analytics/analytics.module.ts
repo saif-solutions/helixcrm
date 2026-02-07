@@ -7,9 +7,13 @@ import { AnalyticsController } from './analytics.controller';
 import { AnalyticsService } from './analytics.service';
 import { AnalyticsSummaryService } from './services/analytics-summary.service';
 import { AnalyticsExportProcessor } from './processors/analytics-export.processor';
+import { AnalyticsRepository } from './repositories/analytics.repository';
+import { AnalyticsSummaryRepository } from './repositories/analytics-summary.repository';
 import { AuditLogModule } from '../../shared/audit-log/audit-log.module';
 import { PrismaModule } from '../../shared/prisma/prisma.module';
 import { LoggingModule } from '../../shared/logging/logging.module';
+import { TenantModule } from '../../shared/tenant/tenant.module';
+import { PermissionsModule } from '../../shared/permissions/permissions.module';
 import { DateRangeConstraint } from '../../shared/validators/date-range.validator';
 import { CurrencyCodeConstraint } from '../../shared/validators/currency-code.validator';
 
@@ -24,6 +28,8 @@ export class AnalyticsModule {
         PrismaModule,
         AuditLogModule,
         LoggingModule,
+        TenantModule,           // ADDED: For TenantContextService
+        PermissionsModule,      // ADDED: For PermissionContextService
         ScheduleModule.forRoot(), // Add scheduling for background jobs
         
         // Caching with namespace isolation
@@ -34,7 +40,7 @@ export class AnalyticsModule {
             const ttl = configService.get<number>('ANALYTICS_CACHE_TTL', 300);
             const max = configService.get<number>('ANALYTICS_CACHE_MAX', 100);
 
-            console.log(`Ì≥ä Analytics cache configured: TTL=${ttl}s, Max=${max} entries`);
+            console.log(`‚úÖ Analytics cache configured: TTL=${ttl}s, Max=${max} entries`);
 
             return {
               ttl: ttl * 1000, // Convert seconds to milliseconds
@@ -48,6 +54,9 @@ export class AnalyticsModule {
       providers: [
         AnalyticsService,
         AnalyticsSummaryService,
+        // ADD REPOSITORIES:
+        AnalyticsRepository,
+        AnalyticsSummaryRepository,
         // Register validators for dependency injection
         DateRangeConstraint,
         CurrencyCodeConstraint,
@@ -64,11 +73,11 @@ export class AnalyticsModule {
     const redisHost = process.env.REDIS_HOST || 'localhost';
 
     if (!exportsEnabled) {
-      console.log('Ì≥ä Analytics exports disabled via ANALYTICS_EXPORT_ENABLED=false');
+      console.log('‚ÑπÔ∏è Analytics exports disabled via ANALYTICS_EXPORT_ENABLED=false');
       return baseModule;
     }
 
-    console.log(`Ì≥ä Analytics exports enabled, Redis host: ${redisHost}`);
+    console.log(`‚úÖ Analytics exports enabled, Redis host: ${redisHost}`);
 
     // Add BullMQ export queue with enterprise Redis configuration
     const bullImports = [
@@ -92,16 +101,16 @@ export class AnalyticsModule {
           // Add Redis password if configured
           if (redisPassword) {
             redisConfig.password = redisPassword;
-            console.log('Ì≥ä Redis password configured (TLS:', useTls ? 'enabled' : 'disabled', ')');
+            console.log('‚úÖ Redis password configured (TLS:', useTls ? 'enabled' : 'disabled', ')');
           }
 
           // Add TLS configuration if enabled
           if (useTls) {
             redisConfig.tls = {};
-            console.log('Ì≥ä Redis TLS enabled');
+            console.log('‚úÖ Redis TLS enabled');
           }
 
-          console.log(`Ì≥ä BullMQ queue configured: host=${redisHost}:${redisPort}, attempts=${jobAttempts}, timeout=${jobTimeout}ms`);
+          console.log(`‚úÖ BullMQ queue configured: host=${redisHost}:${redisPort}, attempts=${jobAttempts}, timeout=${jobTimeout}ms`);
 
           return {
             connection: redisConfig,

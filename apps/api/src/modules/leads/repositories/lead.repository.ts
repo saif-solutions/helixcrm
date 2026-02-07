@@ -8,8 +8,8 @@ import { Lead, Prisma, LeadStatus } from '@prisma/client';
 export class LeadRepository extends TenantAwareRepository {
   private readonly logger = new Logger(LeadRepository.name);
 
-  constructor(private prisma: PrismaService) {
-    super();
+  constructor(prisma: PrismaService) { // REMOVE "private"
+    super(prisma); // PASS prisma to parent
   }
 
   /**
@@ -23,7 +23,7 @@ export class LeadRepository extends TenantAwareRepository {
         where.deletedAt = null;
       }
 
-      const lead = await this.prisma.lead.findFirst({
+      const lead = await this.prisma.lead.findFirst({ // ✅ Works - from parent
         where,
       });
 
