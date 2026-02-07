@@ -1,3 +1,4 @@
+// src/modules/rbac/permissions.controller.ts
 import { Controller, Get } from '@nestjs/common';
 import {
   ApiTags,
@@ -11,7 +12,6 @@ import { RequirePermission } from '../../shared/decorators/require-permission.de
 @ApiTags('RBAC - Permissions')
 @ApiBearerAuth()
 @Controller('rbac/permissions')
-// REMOVE: @UseGuards(AuthGuard, PermissionGuard)
 export class PermissionsController {
   constructor(private readonly permissionsService: PermissionsService) {}
 
@@ -20,6 +20,7 @@ export class PermissionsController {
   @ApiResponse({ status: 200, description: 'List of all permissions' })
   @RequirePermission('rbac.read')
   async findAll() {
+    // No parameters needed - service gets everything from context
     return this.permissionsService.findAll();
   }
 
@@ -28,6 +29,7 @@ export class PermissionsController {
   @ApiResponse({ status: 200, description: 'Permissions grouped by module' })
   @RequirePermission('rbac.read')
   async findGrouped() {
+    // No parameters needed
     return this.permissionsService.findGrouped();
   }
 
@@ -36,6 +38,7 @@ export class PermissionsController {
   @ApiResponse({ status: 200, description: 'Permission hierarchy structure' })
   @RequirePermission('rbac.read')
   async getHierarchy() {
+    // No parameters needed
     return this.permissionsService.getPermissionHierarchy();
   }
 }

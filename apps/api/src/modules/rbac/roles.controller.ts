@@ -1,3 +1,4 @@
+// src/modules/rbac/roles.controller.ts
 import {
   Controller,
   Get,
@@ -31,7 +32,6 @@ import { RequirePermission } from '../../shared/decorators/require-permission.de
 @ApiTags('RBAC - Roles')
 @ApiBearerAuth()
 @Controller('rbac/roles')
-// REMOVE: @UseGuards(AuthGuard, PermissionGuard)
 export class RolesController {
   constructor(private readonly rolesService: RolesService) {}
 
@@ -41,7 +41,8 @@ export class RolesController {
   @ApiQuery({ type: RoleQueryDto })
   @RequirePermission('rbac.read')
   async findAll(@Request() req: any, @Query() query: RoleQueryDto) {
-    return this.rolesService.findAll(req.user.organizationId, query);
+    // REMOVED: organizationId parameter
+    return this.rolesService.findAll(query);
   }
 
   @Get(':id')
@@ -50,11 +51,9 @@ export class RolesController {
   @ApiResponse({ status: 404, description: 'Role not found' })
   @ApiParam({ name: 'id', description: 'Role ID' })
   @RequirePermission('rbac.read')
-  async findOne(
-    @Request() req: any,
-    @Param('id', ParseUUIDPipe) id: string,
-  ) {
-    return this.rolesService.findOne(req.user.organizationId, id);
+  async findOne(@Request() req: any, @Param('id', ParseUUIDPipe) id: string) {
+    // REMOVED: organizationId parameter
+    return this.rolesService.findOne(id);
   }
 
   @Post()
@@ -62,15 +61,9 @@ export class RolesController {
   @ApiResponse({ status: 201, description: 'Role created successfully' })
   @ApiResponse({ status: 409, description: 'Role name already exists' })
   @RequirePermission('rbac.manage')
-  async create(
-    @Request() req: any,
-    @Body() createRoleDto: CreateRoleDto,
-  ) {
-    return this.rolesService.create(
-      req.user.organizationId,
-      createRoleDto,
-      req.user.id,
-    );
+  async create(@Request() req: any, @Body() createRoleDto: CreateRoleDto) {
+    // REMOVED: organizationId and userId parameters
+    return this.rolesService.create(createRoleDto);
   }
 
   @Put(':id')
@@ -85,12 +78,8 @@ export class RolesController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateRoleDto: UpdateRoleDto,
   ) {
-    return this.rolesService.update(
-      req.user.organizationId,
-      id,
-      updateRoleDto,
-      req.user.id,
-    );
+    // REMOVED: organizationId and userId parameters
+    return this.rolesService.update(id, updateRoleDto);
   }
 
   @Delete(':id')
@@ -102,11 +91,9 @@ export class RolesController {
   @ApiResponse({ status: 409, description: 'Role has assigned users' })
   @ApiParam({ name: 'id', description: 'Role ID' })
   @RequirePermission('rbac.manage')
-  async remove(
-    @Request() req: any,
-    @Param('id', ParseUUIDPipe) id: string,
-  ) {
-    return this.rolesService.remove(req.user.organizationId, id, req.user.id);
+  async remove(@Request() req: any, @Param('id', ParseUUIDPipe) id: string) {
+    // REMOVED: organizationId and userId parameters
+    return this.rolesService.remove(id);
   }
 
   @Post('assign')
@@ -115,15 +102,9 @@ export class RolesController {
   @ApiResponse({ status: 404, description: 'User or role not found' })
   @ApiResponse({ status: 409, description: 'Role already assigned' })
   @RequirePermission('rbac.manage')
-  async assignRole(
-    @Request() req: any,
-    @Body() assignRoleDto: AssignRoleDto,
-  ) {
-    return this.rolesService.assignRole(
-      req.user.organizationId,
-      assignRoleDto,
-      req.user.id,
-    );
+  async assignRole(@Request() req: any, @Body() assignRoleDto: AssignRoleDto) {
+    // REMOVED: organizationId and userId parameters
+    return this.rolesService.assignRole(assignRoleDto);
   }
 
   @Post('remove')
@@ -132,15 +113,9 @@ export class RolesController {
   @ApiResponse({ status: 404, description: 'Role assignment not found' })
   @ApiResponse({ status: 403, description: 'Cannot remove last admin' })
   @RequirePermission('rbac.manage')
-  async removeRole(
-    @Request() req: any,
-    @Body() removeRoleDto: RemoveRoleDto,
-  ) {
-    return this.rolesService.removeRole(
-      req.user.organizationId,
-      removeRoleDto,
-      req.user.id,
-    );
+  async removeRole(@Request() req: any, @Body() removeRoleDto: RemoveRoleDto) {
+    // REMOVED: organizationId and userId parameters
+    return this.rolesService.removeRole(removeRoleDto);
   }
 
   @Get('user/:userId')
@@ -153,6 +128,7 @@ export class RolesController {
     @Request() req: any,
     @Param('userId', ParseUUIDPipe) userId: string,
   ) {
-    return this.rolesService.getUserRoles(req.user.organizationId, userId);
+    // REMOVED: organizationId parameter
+    return this.rolesService.getUserRoles(userId);
   }
 }
