@@ -35,23 +35,19 @@ export class ContactsController {
   @UsePipes(ValidationPipe)
   @UsePipes(new ValidationPipe({ transform: true }))
   @RequirePermission('contacts.write')
-  create(@Body() createContactDto: CreateContactDto, @Req() req: Request) {
-    return this.contactsService.create({
-      ...createContactDto,
-      organizationId: (req as any).user.organizationId,
-    });
+  create(@Body() createContactDto: CreateContactDto) {
+    // OrganizationId is now handled by tenant context in service
+    return this.contactsService.create(createContactDto);
   }
 
   @Get()
   @RequirePermission('contacts.read')
   findAll(
-    @Req() req: Request,
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
     @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
     @Query('search') search?: string,
   ) {
     return this.contactsService.findAll({
-      organizationId: (req as any).user.organizationId,
       page,
       limit: Math.min(limit, 100),
       search,
@@ -60,8 +56,8 @@ export class ContactsController {
 
   @Get(":id")
   @RequirePermission('contacts.read')
-  findOne(@Param("id") id: string, @Req() req: Request) {
-    return this.contactsService.findOne(id, (req as any).user.organizationId);
+  findOne(@Param("id") id: string) {
+    return this.contactsService.findOne(id);
   }
 
   @Put(":id")
@@ -70,19 +66,14 @@ export class ContactsController {
   update(
     @Param("id") id: string,
     @Body() updateContactDto: UpdateContactDto,
-    @Req() req: Request,
   ) {
-    return this.contactsService.update(
-      id,
-      updateContactDto,
-      (req as any).user.organizationId,
-    );
+    return this.contactsService.update(id, updateContactDto);
   }
 
   @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
   @RequirePermission('contacts.delete')
-  remove(@Param("id") id: string, @Req() req: Request) {
-    return this.contactsService.remove(id, (req as any).user.organizationId);
+  remove(@Param("id") id: string) {
+    return this.contactsService.remove(id);
   }
 }

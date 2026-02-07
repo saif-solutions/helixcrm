@@ -1,4 +1,4 @@
-// apps/api/src/shared/tenant/context/tenant-context.interface.ts
+// apps/api/src/shared/tenant/tenant.types.ts
 
 import { Request } from 'express';
 
@@ -21,7 +21,7 @@ export interface JwtUser {
 
 /**
  * TenantContext - Represents tenant isolation for a request
- * SINGLE SOURCE OF TRUTH for TenantContext type
+ * SINGLE SOURCE OF TRUTH for application layer TenantContext
  */
 export interface TenantContext {
   // Core tenant identification

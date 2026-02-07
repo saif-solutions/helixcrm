@@ -1,38 +1,78 @@
 // apps/api/src/shared/tenant/context/tenant-context.service.ts
 
-import { Injectable, Logger } from '@nestjs/common';
-import { TenantContext, TenantContextOptions, ITenantContextService } from './tenant-context.interface';
-import { TenantUser } from './tenant-types.interface';
+import { Injectable, Logger, Scope, Inject } from '@nestjs/common';
+import { REQUEST } from '@nestjs/core';
 import { Request } from 'express';
+import { 
+  TenantContext, 
+  TenantContextOptions, 
+  ITenantContextService,
+  TenantUser,
+  TenantContextValidationError,
+  TenantIsolationViolationError,
+  JwtUser,
+  toRLSContext
+} from '../tenant.types';
+import { 
+  withTenantContext, 
+  getTenantContext,
+  requireTenantContext,
+  TenantContextStorage,
+  TenantContextMissingError
+} from '../tenant.context';
 
-@Injectable()
+@Injectable({ scope: Scope.REQUEST })
 export class TenantContextService implements ITenantContextService {
   private readonly logger = new Logger(TenantContextService.name);
-  
-  // Store context by request ID
-  private contexts: Map<string, TenantContext> = new Map();
-  // Track which request ID is "current" for this service instance
-  private currentRequestId: string | null = null;
 
-  constructor() {}
+  constructor(
+    @Inject(REQUEST) private readonly request: Request
+  ) {}
+
+/**
+ * Get user role (if available)
+ */
+getUserRole(): string | undefined {
+  const context = getTenantContext();
+  return context?.userRole;
+}
+
+/**
+ * Get RLS-compatible context
+ */
+getRLSContext(): { organizationId: string; userId?: string; role?: string } {
+  const context = getTenantContext();
+  if (!context) {
+    throw new TenantContextValidationError('Tenant context not resolved');
+  }
+  
+  return {
+    organizationId: context.organizationId,
+    userId: context.userId,
+    role: context.userRole,
+  };
+}
+
 
   /**
    * Resolve tenant context for the current request
    * Called by TenantGuard - sets this as the current request
    */
   resolveContext(request: Request, options: TenantContextOptions = {}): TenantContext {
-    const requestId = this.getRequestId(request);
-    this.currentRequestId = requestId;
-    
-    if (this.contexts.has(requestId)) {
-      return this.contexts.get(requestId)!;
-    }
-
     const { allowSystemContext = false, requireTenantContext = true } = options;
     
+    // Check if context already exists in AsyncLocalStorage for this request
+    const existingContext = getTenantContext();
+    if (existingContext) {
+      this.logger.debug(`Reusing existing tenant context: ${existingContext.tenantId}`);
+      return existingContext;
+    }
+
     // Try to get tenant from various sources
     let tenantId: string | undefined;
     let source: 'header' | 'token' | 'system' = 'header';
+    let userId: string | undefined;
+    let userEmail: string | undefined;
     
     // 1. Check request organizationId (set by middleware)
     if ((request as any).organizationId) {
@@ -41,7 +81,10 @@ export class TenantContextService implements ITenantContextService {
     }
     // 2. Check user token (from auth guard)
     else if ((request.user as TenantUser)?.organizationId) {
-      tenantId = (request.user as TenantUser).organizationId;
+      const user = request.user as TenantUser;
+      tenantId = user.organizationId;
+      userId = user.id || user.sub;
+      userEmail = user.email;
       source = 'token';
     }
     // 3. Check if this is a system context
@@ -55,8 +98,10 @@ export class TenantContextService implements ITenantContextService {
         this.logger.error('Tenant context required but not found', {
           path: request.path,
           method: request.method,
+          hasUser: !!request.user,
+          userHasOrgId: !!(request.user as TenantUser)?.organizationId,
         });
-        throw new Error('Tenant context required');
+        throw new TenantContextValidationError('Tenant context required but not found');
       }
       // Allow without tenant (system context)
       tenantId = 'SYSTEM';
@@ -64,41 +109,60 @@ export class TenantContextService implements ITenantContextService {
     }
 
     const context: TenantContext = {
-      tenantId,
+      tenantId: tenantId!,
+      organizationId: tenantId!,
       isSystemContext: source === 'system',
       resolvedAt: new Date(),
       source,
+      userId,
+      userEmail,
     };
 
-    // Store context
-    this.contexts.set(requestId, context);
+    // Store in AsyncLocalStorage
+    const wrappedFn = () => {
+      // Also keep in request for debugging/backward compatibility
+      (request as any).tenantContext = context;
+      
+      this.logger.debug(`Tenant context resolved: ${tenantId} (${source})`, {
+        userId,
+        userEmail,
+        isSystem: source === 'system',
+      });
+      
+      return context;
+    };
 
-    // Store in request for debugging
-    (request as any).tenantContext = context;
-
-    this.logger.debug(`Tenant context resolved: ${tenantId} (${source})`);
-    
-    // Clean up old contexts (simple cleanup)
-    if (this.contexts.size > 1000) {
-      this.cleanupOldContexts();
-    }
-    
-    return context;
+    return withTenantContext(context, wrappedFn);
   }
 
   /**
    * Get tenant ID (throws if not resolved)
    */
   getTenantId(): string {
-    const context = this.getCurrentContext();
+    const context = getTenantContext();
+    if (!context) {
+      throw new TenantContextValidationError(
+        'Tenant context not resolved. Ensure TenantGuard runs before using TenantContextService methods.'
+      );
+    }
     return context.tenantId;
+  }
+
+  /**
+   * Get organization ID (alias for getTenantId)
+   */
+  getOrganizationId(): string {
+    return this.getTenantId();
   }
 
   /**
    * Get tenant name (if available)
    */
   getTenantName(): string | undefined {
-    const context = this.getCurrentContext();
+    const context = getTenantContext();
+    if (!context) {
+      throw new TenantContextValidationError('Tenant context not resolved');
+    }
     return context.tenantName;
   }
 
@@ -106,17 +170,55 @@ export class TenantContextService implements ITenantContextService {
    * Check if this is a system context
    */
   isSystemContext(): boolean {
-    const context = this.getCurrentContext();
+    const context = getTenantContext();
+    if (!context) {
+      throw new TenantContextValidationError('Tenant context not resolved');
+    }
     return context.isSystemContext;
+  }
+
+  /**
+   * Get user ID (if available)
+   */
+  getUserId(): string | undefined {
+    const context = getTenantContext();
+    return context?.userId;
+  }
+
+  /**
+   * Get user email (if available)
+   */
+  getUserEmail(): string | undefined {
+    const context = getTenantContext();
+    return context?.userEmail;
+  }
+
+  /**
+   * Get user roles (if available)
+   */
+  getUserRoles(): string[] | undefined {
+    const context = getTenantContext();
+    return context?.roles;
+  }
+
+  /**
+   * Get user permissions (if available)
+   */
+  getUserPermissions(): string[] | undefined {
+    const context = getTenantContext();
+    return context?.permissions;
   }
 
   /**
    * Assert that tenant context exists (non-system)
    */
   assertTenantContext(): void {
-    const context = this.getCurrentContext();
+    const context = getTenantContext();
+    if (!context) {
+      throw new TenantContextValidationError('Tenant context not resolved');
+    }
     if (context.isSystemContext) {
-      throw new Error('Tenant context required but system context found');
+      throw new TenantContextValidationError('Tenant context required but system context found');
     }
   }
 
@@ -124,9 +226,27 @@ export class TenantContextService implements ITenantContextService {
    * Assert that this is NOT a system context
    */
   assertNotSystemContext(): void {
-    const context = this.getCurrentContext();
+    const context = getTenantContext();
+    if (!context) {
+      throw new TenantContextValidationError('Tenant context not resolved');
+    }
     if (context.isSystemContext) {
-      throw new Error('System context not allowed for this operation');
+      throw new TenantContextValidationError('System context not allowed for this operation');
+    }
+  }
+
+  /**
+   * Validate entity belongs to current tenant
+   */
+  validateTenantOwnership(entity: { organizationId: string }, entityType?: string, entityId?: string): void {
+    const currentTenantId = this.getTenantId();
+    if (entity.organizationId !== currentTenantId) {
+      throw new TenantIsolationViolationError(
+        currentTenantId,
+        entity.organizationId,
+        entityType,
+        entityId
+      );
     }
   }
 
@@ -134,7 +254,11 @@ export class TenantContextService implements ITenantContextService {
    * Get raw context (for debugging)
    */
   getRawContext(): TenantContext {
-    return this.getCurrentContext();
+    const context = getTenantContext();
+    if (!context) {
+      throw new TenantContextValidationError('Tenant context not resolved');
+    }
+    return { ...context }; // Return copy to prevent mutation
   }
 
   /**
@@ -152,49 +276,24 @@ export class TenantContextService implements ITenantContextService {
       '/admin/',
       '/migration',
       '/seed',
+      '/public/',
+      '/docs',
+      '/api-docs',
     ];
     
-    return systemPaths.some(systemPath => path.startsWith(systemPath));
+    // System methods on any path
+    const systemMethods = ['OPTIONS', 'HEAD'];
+    
+    return systemPaths.some(systemPath => path.startsWith(systemPath)) ||
+           systemMethods.includes(method);
   }
 
   /**
-   * Get context for current request
+   * Clear tenant context (for testing)
    */
-  private getCurrentContext(): TenantContext {
-    if (!this.currentRequestId) {
-      throw new Error('No current request context. Ensure TenantGuard runs before using TenantContextService methods.');
-    }
-    
-    const context = this.contexts.get(this.currentRequestId);
-    
-    if (!context) {
-      throw new Error('Tenant context not resolved. Ensure TenantGuard runs before using TenantContextService.');
-    }
-    
-    return context;
-  }
-
-  /**
-   * Get unique request ID
-   */
-  private getRequestId(request: Request): string {
-    // Use correlation ID if available, otherwise generate one
-    return (request as any).id || 
-           (request as any).correlationId || 
-           `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-  }
-
-  /**
-   * Clean up old contexts
-   */
-  private cleanupOldContexts(): void {
-    const now = Date.now();
-    const oneHourAgo = now - (60 * 60 * 1000);
-    
-    for (const [requestId, context] of this.contexts.entries()) {
-      if (context.resolvedAt.getTime() < oneHourAgo) {
-        this.contexts.delete(requestId);
-      }
-    }
+  clearContext(): void {
+    // AsyncLocalStorage automatically clears at request end
+    // This is mainly for testing
+    this.logger.debug('Tenant context cleared');
   }
 }

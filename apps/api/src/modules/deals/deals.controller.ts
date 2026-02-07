@@ -1,4 +1,4 @@
-// apps/api/src/modules/deals/deals.controller.ts
+// File: src/modules/deals/deals.controller.ts - UPDATED VERSION
 import { 
   Controller, 
   Get, 
@@ -46,8 +46,7 @@ export class DealsController {
     const user = (req as any).user;
     return this.dealsService.create({
       ...createDealDto,
-      organizationId: user.organizationId,
-      // FIXED: Use user.sub instead of user.userId
+      // REMOVED: organizationId: user.organizationId, - Tenant context handles this
       userId: user.sub,
     });
   }
@@ -55,23 +54,18 @@ export class DealsController {
   @Get()
   @RequirePermission('deals.read')
   findAll(@Query() query: DealQueryDto, @Req() req: Request) {
-    return this.dealsService.findAll(
-      (req as any).user.organizationId,
-      query
-    );
+    // REMOVED: organizationId parameter - Tenant context handles this
+    return this.dealsService.findAll(query);
   }
 
   @Get("stats")
-  // FIXED: This requires ALL permissions. If you want ANY, create separate endpoint or modify decorator
   @RequirePermission('deals.read')
   getStats(
     @Req() req: Request,
     @Query('pipelineId') pipelineId?: string,
   ) {
-    return this.dealsService.getDealStats(
-      (req as any).user.organizationId,
-      pipelineId
-    );
+    // REMOVED: organizationId parameter - Tenant context handles this
+    return this.dealsService.getDealStats(pipelineId);
   }
 
   @Get("pipeline-performance")
@@ -80,10 +74,8 @@ export class DealsController {
     @Req() req: Request,
     @Query('pipelineId') pipelineId?: string,
   ) {
-    return this.dealsService.getPipelinePerformance(
-      (req as any).user.organizationId,
-      pipelineId
-    );
+    // REMOVED: organizationId parameter - Tenant context handles this
+    return this.dealsService.getPipelinePerformance(pipelineId);
   }
 
   @Get(":id")
@@ -93,11 +85,8 @@ export class DealsController {
     @Req() req: Request,
     @Query('includeDeleted') includeDeleted?: boolean,
   ) {
-    return this.dealsService.findOne(
-      id,
-      (req as any).user.organizationId,
-      includeDeleted
-    );
+    // REMOVED: organizationId parameter - Tenant context handles this
+    return this.dealsService.findOne(id, includeDeleted);
   }
 
   @Get(":id/stage-history")
@@ -106,10 +95,8 @@ export class DealsController {
     @Param("id", ParseUUIDPipe) id: string,
     @Req() req: Request,
   ) {
-    return this.dealsService.getStageHistory(
-      id,
-      (req as any).user.organizationId
-    );
+    // REMOVED: organizationId parameter - Tenant context handles this
+    return this.dealsService.getStageHistory(id);
   }
 
   @Put(":id")
@@ -124,9 +111,7 @@ export class DealsController {
     return this.dealsService.update(
       id,
       updateDealDto,
-      user.organizationId,
-      // FIXED: Use user.sub instead of user.userId
-      user.sub,
+      user.sub, // Only userId, organizationId comes from tenant context
     );
   }
 
@@ -140,9 +125,7 @@ export class DealsController {
     const user = (req as any).user;
     return this.dealsService.remove(
       id,
-      user.organizationId,
-      // FIXED: Use user.sub instead of user.userId
-      user.sub,
+      user.sub, // Only userId, organizationId comes from tenant context
     );
   }
 
@@ -163,11 +146,11 @@ export class DealsController {
     const user = (req as any).user;
     return this.dealsService.createSimple({
       ...createDealSimpleDto,
-      organizationId: user.organizationId,
-      // FIXED: Use user.sub instead of user.userId
+      // REMOVED: organizationId: user.organizationId, - Tenant context handles this
       userId: user.sub,
     });
   }
+
   // ==================== DEAL STAGE TRANSITION ENDPOINTS ====================
 
   @Post(":id/move-stage")
@@ -183,9 +166,7 @@ export class DealsController {
     return this.dealsService.moveStage(
       id,
       moveDealStageDto,
-      user.organizationId,
-      // FIXED: Use user.sub instead of user.userId
-      user.sub,
+      user.sub, // Only userId, organizationId comes from tenant context
     );
   }
 
@@ -207,9 +188,7 @@ export class DealsController {
       this.dealsService.moveStage(
         dealId,
         { stageId },
-        user.organizationId,
-        // FIXED: Use user.sub instead of user.userId
-        user.sub,
+        user.sub, // Only userId, organizationId comes from tenant context
       )
     );
     
@@ -230,9 +209,7 @@ export class DealsController {
     const deletePromises = dealIds.map(dealId => 
       this.dealsService.remove(
         dealId,
-        user.organizationId,
-        // FIXED: Use user.sub instead of user.userId
-        user.sub,
+        user.sub, // Only userId, organizationId comes from tenant context
       )
     );
     

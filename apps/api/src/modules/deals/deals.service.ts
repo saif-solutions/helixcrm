@@ -1,12 +1,28 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from "@nestjs/common";
+// File: src/modules/deals/deals.service.ts - FINAL VERSION
+import { 
+  Injectable, 
+  NotFoundException, 
+  ConflictException, 
+  BadRequestException,
+  ForbiddenException 
+} from "@nestjs/common";
 import { PrismaService } from "../../shared/prisma/prisma.service";
 import { AppLogger } from "../../shared/logging/logger.service";
-import { AuditLogService, AuditAction, AuditSeverity, AuditEntityType } from "../../shared/audit-log/audit-log.service";
+import { 
+  AuditLogService, 
+  AuditAction, 
+  AuditSeverity, 
+  AuditEntityType 
+} from "../../shared/audit-log/audit-log.service";
 import { CreateDealDto } from "./dto/create-deal.dto";
 import { UpdateDealDto } from "./dto/update-deal.dto";
 import { MoveDealStageDto } from "./dto/move-deal-stage.dto";
 import { DealQueryDto } from "./dto/deal-query.dto";
 import { CreateDealSimpleDto } from "./dto/create-deal-simple.dto";
+import { DealRepository } from "./repositories/deal.repository";
+import { PermissionContextService } from "../../shared/permissions/context/permission-context.service";
+import { TenantContextService } from "../../shared/tenant/context/tenant-context.service";
+import { DealStatus } from "@prisma/client";
 
 @Injectable()
 export class DealsService {
@@ -14,6 +30,9 @@ export class DealsService {
     private prisma: PrismaService,
     private logger: AppLogger,
     private auditLogService: AuditLogService,
+    private dealRepository: DealRepository,
+    private permissionContext: PermissionContextService,
+    private tenantContext: TenantContextService,
   ) {}
 
   private async getUserEmail(userId: string): Promise<string> {
@@ -29,7 +48,9 @@ export class DealsService {
     }
   }
 
-    private async getOrCreateDefaultPipeline(organizationId: string, userId: string) {
+  private async getOrCreateDefaultPipeline(userId: string) {
+    const organizationId = this.tenantContext.getTenantId();
+    
     // Use transaction for atomic operation to prevent race conditions
     return this.prisma.$transaction(async (tx) => {
       // Try to find existing default pipeline
@@ -88,18 +109,23 @@ export class DealsService {
     });
   }
 
-    async createSimple(data: { 
-    organizationId: string; 
-    userId: string;
-  } & CreateDealSimpleDto) {
-    const { organizationId, userId, ...dealData } = data;
+  // ==================== CRUD METHODS USING REPOSITORY ====================
+
+  async createSimple(data: { userId: string } & CreateDealSimpleDto) {
+    const { userId, ...dealData } = data;
+    const organizationId = this.tenantContext.getTenantId();
 
     try {
+      // ENTERPRISE: Permission check
+      if (!this.permissionContext.hasPermission('deals.write')) {
+        throw new ForbiddenException('Insufficient permissions to create deals');
+      }
+
       // Get user email for audit logging
       const actorEmail = await this.getUserEmail(userId);
 
       // Get or create default pipeline with transaction safety
-      const defaultPipeline = await this.getOrCreateDefaultPipeline(organizationId, userId);
+      const defaultPipeline = await this.getOrCreateDefaultPipeline(userId);
 
       // Validate stage belongs to default pipeline AND organization
       const stage = await this.prisma.pipelineStage.findFirst({
@@ -136,59 +162,18 @@ export class DealsService {
         throw new ConflictException(`Deal with title "${dealData.title}" already exists in this pipeline`);
       }
 
-      // Create the deal with Phase 3.4 field mapping
-      const deal = await this.prisma.deal.create({
-        data: {
-          name: dealData.title, // Phase 3.4: title → name
-          amount: dealData.value, // Phase 3.4: value → amount
-          pipelineId: defaultPipeline.id,
-          stageId: dealData.stageId,
-          ownerUserId,
-          organizationId,
-          contactId: dealData.contactId,
-          accountId: dealData.accountId,
-          currency: dealData.currency || 'USD',
-          probability: stage.probability,
-          status: 'open' as any, // Cast to any for Prisma enum
-        },
-        include: {
-          pipeline: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-          stage: {
-            select: {
-              id: true,
-              name: true,
-              order: true,
-              probability: true,
-            },
-          },
-          contact: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true,
-            },
-          },
-          account: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-          owner: {
-            select: {
-              id: true,
-              email: true,
-              firstName: true,
-              lastName: true,
-            },
-          },
-        },
+      // Create the deal with Phase 3.4 field mapping USING REPOSITORY
+      const deal = await this.dealRepository.create({
+        name: dealData.title, // Phase 3.4: title → name
+        amount: dealData.value, // Phase 3.4: value → amount
+        pipeline: { connect: { id: defaultPipeline.id } },
+        stage: { connect: { id: dealData.stageId } },
+        owner: { connect: { id: ownerUserId } },
+        contact: dealData.contactId ? { connect: { id: dealData.contactId } } : undefined,
+        account: dealData.accountId ? { connect: { id: dealData.accountId } } : undefined,
+        currency: dealData.currency || 'USD',
+        probability: stage.probability,
+        status: 'open' as DealStatus,
       });
 
       // Audit logging
@@ -205,13 +190,13 @@ export class DealsService {
           source: 'phase_3_4_compatibility_layer',
           after: deal,
         },
-        
       });
 
       this.logger.log("Deal created via Phase 3.4 simple API", {
         dealId: deal.id,
         organizationId,
         userId,
+        tenantId: this.tenantContext.getTenantId(),
         event: 'deal_created_simple',
       });
 
@@ -231,6 +216,7 @@ export class DealsService {
       this.logger.error("Failed to create deal via Phase 3.4 simple API", error.stack, {
         organizationId,
         userId,
+        tenantId: this.tenantContext.getTenantId(),
         dealTitle: dealData.title,
         stageId: dealData.stageId,
       });
@@ -238,12 +224,16 @@ export class DealsService {
     }
   }
 
-  // ==================== CRUD METHODS ====================
-
-  async create(data: { organizationId: string; userId: string } & CreateDealDto) {
-    const { organizationId, userId, ...dealData } = data;
+  async create(data: { userId: string } & CreateDealDto) {
+    const { userId, ...dealData } = data;
+    const organizationId = this.tenantContext.getTenantId();
 
     try {
+      // ENTERPRISE: Permission check
+      if (!this.permissionContext.hasPermission('deals.write')) {
+        throw new ForbiddenException('Insufficient permissions to create deals');
+      }
+
       // Get user email for audit logging
       const actorEmail = await this.getUserEmail(userId);
 
@@ -299,29 +289,17 @@ export class DealsService {
         throw new ConflictException(`Deal with name "${dealData.name}" already exists in this pipeline`);
       }
 
-      const deal = await this.prisma.deal.create({
-        data: {
-          ...dealData,
-          organizationId,
-          ownerUserId,
-          probability: dealData.probability || stage.probability,
-          status: (dealData.status as any) || 'open', // Cast to any for Prisma enum
-          currency: dealData.currency || 'USD',
-        },
-        include: {
-          pipeline: true,
-          stage: true,
-          contact: true,
-          account: true,
-          owner: {
-            select: {
-              id: true,
-              email: true,
-              firstName: true,
-              lastName: true,
-            },
-          },
-        },
+      // Create deal USING REPOSITORY
+      const deal = await this.dealRepository.create({
+        ...dealData,
+        pipeline: { connect: { id: dealData.pipelineId } },
+        stage: { connect: { id: dealData.stageId } },
+        owner: { connect: { id: ownerUserId } },
+        contact: dealData.contactId ? { connect: { id: dealData.contactId } } : undefined,
+        account: dealData.accountId ? { connect: { id: dealData.accountId } } : undefined,
+        probability: dealData.probability || stage.probability,
+        status: (dealData.status as DealStatus) || 'open',
+        currency: dealData.currency || 'USD',
       });
 
       // Audit logging
@@ -333,8 +311,8 @@ export class DealsService {
         actorUserId: userId,
         actorEmail,
         metadata: {
-  after: deal,
-},
+          after: deal,
+        },
         severity: AuditSeverity.LOW,
       });
 
@@ -342,6 +320,7 @@ export class DealsService {
         dealId: deal.id,
         organizationId,
         userId,
+        tenantId: this.tenantContext.getTenantId(),
         event: 'deal_created',
       });
 
@@ -350,13 +329,21 @@ export class DealsService {
       this.logger.error("Failed to create deal", error.stack, {
         organizationId,
         userId,
+        tenantId: this.tenantContext.getTenantId(),
         dealName: dealData.name,
       });
       throw error;
     }
   }
 
-  async findAll(organizationId: string, query: DealQueryDto) {
+  async findAll(query: DealQueryDto) {
+    const organizationId = this.tenantContext.getTenantId();
+    
+    // ENTERPRISE: Permission check
+    if (!this.permissionContext.hasPermission('deals.read')) {
+      throw new ForbiddenException('Insufficient permissions to read deals');
+    }
+
     const {
       page = 1,
       limit = 20,
@@ -379,15 +366,8 @@ export class DealsService {
     const skip = (page - 1) * limit;
     const take = Math.min(limit, 100); // Cap at 100
 
-    // Build where clause with tenant isolation
-    const where: any = { 
-      organizationId,
-    };
-
-    // Add soft delete filter
-    if (!includeDeleted) {
-      where.deletedAt = null;
-    }
+    // Build where clause
+    const where: any = {};
 
     // Add search filter if provided
     if (search) {
@@ -461,54 +441,16 @@ export class DealsService {
     const sortField = validSortFields.includes(sortBy) ? sortBy : 'createdAt';
 
     try {
+      // USING REPOSITORY for both find and count
       const [deals, total] = await Promise.all([
-        this.prisma.deal.findMany({
-          where,
+        this.dealRepository.findAll({
           skip,
           take,
-          include: {
-            pipeline: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-            stage: {
-              select: {
-                id: true,
-                name: true,
-                order: true,
-                probability: true,
-              },
-            },
-            contact: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-                email: true,
-              },
-            },
-            account: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-            owner: {
-              select: {
-                id: true,
-                email: true,
-                firstName: true,
-                lastName: true,
-              },
-            },
-          },
-          orderBy: {
-            [sortField]: sortOrder,
-          },
+          where,
+          orderBy: { [sortField]: sortOrder },
+          includeDeleted,
         }),
-        this.prisma.deal.count({ where }),
+        this.dealRepository.count(where, includeDeleted),
       ]);
 
       return {
@@ -523,76 +465,57 @@ export class DealsService {
     } catch (error) {
       this.logger.error("Failed to fetch deals", error.stack, {
         organizationId,
+        tenantId: this.tenantContext.getTenantId(),
         query,
       });
       throw error;
     }
   }
 
-  async findOne(id: string, organizationId: string, includeDeleted = false) {
-    const where: any = {
-      id,
-      organizationId,
-    };
-
-    if (!includeDeleted) {
-      where.deletedAt = null;
+  async findOne(id: string, includeDeleted = false) {
+    const organizationId = this.tenantContext.getTenantId();
+    
+    // ENTERPRISE: Permission check
+    if (!this.permissionContext.hasPermission('deals.read')) {
+      throw new ForbiddenException('Insufficient permissions to read deals');
     }
 
-    const deal = await this.prisma.deal.findFirst({
-      where,
-      include: {
-        pipeline: {
-          include: {
-            stages: {
-              orderBy: {
-                order: 'asc',
-              },
-            },
-          },
-        },
-        stage: true,
-        contact: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-            phone: true,
-          },
-        },
-        account: {
-          select: {
-            id: true,
-            name: true,
-            industry: true,
-          },
-        },
-        owner: {
-          select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-      },
-    });
-
+    // USING REPOSITORY
+    const deal = await this.dealRepository.findById(id, includeDeleted);
+    
     if (!deal) {
       throw new NotFoundException(`Deal ${id} not found`);
+    }
+
+    // Additional tenant check (belt-and-suspenders approach)
+    if (deal.organizationId !== organizationId) {
+      throw new ForbiddenException(`Access to deal ${id} denied`);
     }
 
     return deal;
   }
 
-  async update(id: string, updateDealDto: UpdateDealDto, organizationId: string, userId: string) {
+  async update(id: string, updateDealDto: UpdateDealDto, userId: string) {
+    const organizationId = this.tenantContext.getTenantId();
+    
     try {
+      // ENTERPRISE: Permission check
+      if (!this.permissionContext.hasPermission('deals.write')) {
+        throw new ForbiddenException('Insufficient permissions to update deals');
+      }
+
       // Get user email for audit logging
       const actorEmail = await this.getUserEmail(userId);
 
-      // First verify deal belongs to organization
-      const existingDeal = await this.findOne(id, organizationId);
+      // First verify deal belongs to organization USING REPOSITORY
+      const existingDeal = await this.dealRepository.findById(id);
+      if (!existingDeal) {
+        throw new NotFoundException(`Deal ${id} not found`);
+      }
+
+      if (existingDeal.organizationId !== organizationId) {
+        throw new ForbiddenException(`Access to deal ${id} denied`);
+      }
 
       // If updating pipeline or stage, validate they belong to organization
       if (updateDealDto.pipelineId || updateDealDto.stageId) {
@@ -643,26 +566,13 @@ export class DealsService {
       
       // Handle status enum type
       if (updateDealDto.status) {
-        updateData.status = updateDealDto.status as any;
+        updateData.status = updateDealDto.status as DealStatus;
       }
 
-      const deal = await this.prisma.deal.update({
-        where: { id },
+      // Update USING REPOSITORY
+      const deal = await this.dealRepository.update({
+        id,
         data: updateData,
-        include: {
-          pipeline: true,
-          stage: true,
-          contact: true,
-          account: true,
-          owner: {
-            select: {
-              id: true,
-              email: true,
-              firstName: true,
-              lastName: true,
-            },
-          },
-        },
       });
 
       // Audit logging
@@ -674,9 +584,9 @@ export class DealsService {
         actorUserId: userId,
         actorEmail,
         metadata: {
-  before: existingDeal,
-  after: deal,
-},
+          before: existingDeal,
+          after: deal,
+        },
         severity: AuditSeverity.LOW,
       });
 
@@ -684,6 +594,7 @@ export class DealsService {
         dealId: deal.id,
         organizationId,
         userId,
+        tenantId: this.tenantContext.getTenantId(),
         event: 'deal_updated',
       });
 
@@ -693,26 +604,36 @@ export class DealsService {
         dealId: id,
         organizationId,
         userId,
+        tenantId: this.tenantContext.getTenantId(),
       });
       throw error;
     }
   }
 
-  async remove(id: string, organizationId: string, userId: string) {
+  async remove(id: string, userId: string) {
+    const organizationId = this.tenantContext.getTenantId();
+    
     try {
+      // ENTERPRISE: Permission check
+      if (!this.permissionContext.hasPermission('deals.delete')) {
+        throw new ForbiddenException('Insufficient permissions to delete deals');
+      }
+
       // Get user email for audit logging
       const actorEmail = await this.getUserEmail(userId);
 
-      // First verify deal belongs to organization
-      const deal = await this.findOne(id, organizationId);
+      // First verify deal belongs to organization USING REPOSITORY
+      const deal = await this.dealRepository.findById(id);
+      if (!deal) {
+        throw new NotFoundException(`Deal ${id} not found`);
+      }
 
-      // Soft delete: set deletedAt timestamp
-      const deletedDeal = await this.prisma.deal.update({
-        where: { id },
-        data: {
-          deletedAt: new Date(),
-        },
-      });
+      if (deal.organizationId !== organizationId) {
+        throw new ForbiddenException(`Access to deal ${id} denied`);
+      }
+
+      // Soft delete USING REPOSITORY
+      const deletedDeal = await this.dealRepository.softDelete(id);
 
       // Audit logging
       await this.auditLogService.logEvent({
@@ -723,9 +644,9 @@ export class DealsService {
         actorUserId: userId,
         actorEmail,
         metadata: {
-  before: deal,
-  after: deletedDeal,
-},
+          before: deal,
+          after: deletedDeal,
+        },
         severity: AuditSeverity.MEDIUM,
       });
 
@@ -733,6 +654,7 @@ export class DealsService {
         dealId: deal.id,
         organizationId,
         userId,
+        tenantId: this.tenantContext.getTenantId(),
         event: 'deal_deleted',
       });
 
@@ -742,6 +664,7 @@ export class DealsService {
         dealId: id,
         organizationId,
         userId,
+        tenantId: this.tenantContext.getTenantId(),
       });
       throw error;
     }
@@ -749,7 +672,14 @@ export class DealsService {
 
   // ==================== DEAL STAGE TRANSITION METHODS ====================
 
-  async moveStage(id: string, moveData: MoveDealStageDto, organizationId: string, userId: string) {
+  async moveStage(id: string, moveData: MoveDealStageDto, userId: string) {
+    const organizationId = this.tenantContext.getTenantId();
+    
+    // ENTERPRISE: Permission check
+    if (!this.permissionContext.hasPermission('deals.write')) {
+      throw new ForbiddenException('Insufficient permissions to update deals');
+    }
+
     // Use transaction for atomic update
     return this.prisma.$transaction(async (tx) => {
       // Get user email for audit logging
@@ -790,11 +720,11 @@ export class DealsService {
       // Auto-update status based on stage probability
       let newStatus = deal.status;
       if (newStage.probability === 100) {
-        newStatus = 'won' as any;
+        newStatus = 'won' as DealStatus;
       } else if (newStage.probability === 0) {
-        newStatus = 'lost' as any;
+        newStatus = 'lost' as DealStatus;
       } else if (deal.status === 'lost') {
-        newStatus = 'open' as any;
+        newStatus = 'open' as DealStatus;
       }
 
       // Update deal with new stage and probability
@@ -845,6 +775,7 @@ export class DealsService {
         toStageId: moveData.stageId,
         organizationId,
         userId,
+        tenantId: this.tenantContext.getTenantId(),
         event: 'deal_stage_moved',
       });
 
@@ -852,163 +783,44 @@ export class DealsService {
     });
   }
 
-  async getStageHistory(dealId: string, organizationId: string) {
+  async getStageHistory(dealId: string) {
+    const organizationId = this.tenantContext.getTenantId();
+    
+    // ENTERPRISE: Permission check
+    if (!this.permissionContext.hasPermission('deals.read')) {
+      throw new ForbiddenException('Insufficient permissions to read deals');
+    }
+
     // Verify deal belongs to organization
-    await this.findOne(dealId, organizationId);
+    const deal = await this.dealRepository.findById(dealId);
+    if (!deal || deal.organizationId !== organizationId) {
+      throw new NotFoundException(`Deal ${dealId} not found`);
+    }
 
-    const history = await this.prisma.dealStageHistory.findMany({
-      where: {
-        dealId,
-        deal: {
-          organizationId,
-        },
-      },
-      include: {
-        fromStage: {
-          select: {
-            id: true,
-            name: true,
-            order: true,
-          },
-        },
-        toStage: {
-          select: {
-            id: true,
-            name: true,
-            order: true,
-            probability: true,
-          },
-        },
-        changedBy: {
-          select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-      },
-      orderBy: {
-        changedAt: 'desc',
-      },
-    });
-
+    // USING REPOSITORY
+    const history = await this.dealRepository.getStageHistory(dealId);
     return history;
   }
 
   // ==================== ANALYTICS METHODS ====================
 
-  async getDealStats(organizationId: string, pipelineId?: string) {
-    const where: any = {
-      organizationId,
-      deletedAt: null,
-    };
-
-    if (pipelineId) {
-      where.pipelineId = pipelineId;
+  async getDealStats(pipelineId?: string) {
+    // ENTERPRISE: Permission check
+    if (!this.permissionContext.hasPermission('deals.read')) {
+      throw new ForbiddenException('Insufficient permissions to read deals');
     }
 
-    const [
-      totalCount,
-      totalValue,
-      wonCount,
-      wonValue,
-      lostCount,
-      openCount,
-    ] = await Promise.all([
-      this.prisma.deal.count({ where }),
-      this.prisma.deal.aggregate({
-        where,
-        _sum: { amount: true },
-      }),
-      this.prisma.deal.count({ where: { ...where, status: 'won' } }),
-      this.prisma.deal.aggregate({
-        where: { ...where, status: 'won' },
-        _sum: { amount: true },
-      }),
-      this.prisma.deal.count({ where: { ...where, status: 'lost' } }),
-      this.prisma.deal.count({ where: { ...where, status: 'open' } }),
-    ]);
-
-    // Convert Decimal to number for calculations
-    const totalAmount = totalValue._sum.amount ? Number(totalValue._sum.amount) : 0;
-    const wonAmount = wonValue._sum.amount ? Number(wonValue._sum.amount) : 0;
-
-    const averageDealValue = totalCount > 0 
-      ? totalAmount / totalCount 
-      : 0;
-
-    const winRate = totalCount > 0 
-      ? (wonCount / totalCount) * 100 
-      : 0;
-
-    return {
-      totalCount,
-      totalValue: totalAmount,
-      wonCount,
-      wonValue: wonAmount,
-      lostCount,
-      openCount,
-      averageDealValue,
-      winRate,
-    };
+    // USING REPOSITORY
+    return this.dealRepository.getDealStats(pipelineId);
   }
 
-  async getPipelinePerformance(organizationId: string, pipelineId?: string) {
-    const where: any = {
-      organizationId,
-      deletedAt: null,
-    };
-
-    if (pipelineId) {
-      where.pipelineId = pipelineId;
+  async getPipelinePerformance(pipelineId?: string) {
+    // ENTERPRISE: Permission check
+    if (!this.permissionContext.hasPermission('deals.read')) {
+      throw new ForbiddenException('Insufficient permissions to read deals');
     }
 
-    // Get deals grouped by stage
-    const stageStats = await this.prisma.deal.groupBy({
-      by: ['stageId'],
-      where,
-      _count: {
-        id: true,
-      },
-      _sum: {
-        amount: true,
-      },
-    });
-
-    // Get stage details
-    const stageDetails = await this.prisma.pipelineStage.findMany({
-      where: {
-        pipeline: {
-          organizationId,
-        },
-      },
-      select: {
-        id: true,
-        name: true,
-        order: true,
-        probability: true,
-      },
-      orderBy: {
-        order: 'asc',
-      },
-    });
-
-    // Map stats to stages
-    const stages = stageDetails.map(stage => {
-      const stat = stageStats.find(s => s.stageId === stage.id);
-      const totalValue = stat?._sum.amount ? Number(stat._sum.amount) : 0;
-      
-      return {
-        id: stage.id,
-        name: stage.name,
-        order: stage.order,
-        probability: stage.probability,
-        dealCount: stat?._count.id || 0,
-        totalValue,
-      };
-    });
-
-    return stages;
+    // USING REPOSITORY
+    return this.dealRepository.getPipelinePerformance(pipelineId);
   }
 }

@@ -1,16 +1,16 @@
 import { 
   Controller, 
-  Get, 
-  Post, 
-  Body, 
-  Patch, 
-  Param, 
-  Delete, 
-  Query, 
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
   UseGuards,
   Request,
   HttpCode,
-  HttpStatus 
+  HttpStatus
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -32,23 +32,20 @@ export class UsersController {
     @Body() createUserDto: CreateUserDto,
     @Request() req: any,
   ) {
-    const organizationId = req.organizationId;
     const userId = req.user.sub;
-    return this.usersService.create(organizationId, createUserDto, userId);
+    return this.usersService.create(createUserDto, userId); // Removed organizationId
   }
 
   @Get()
   @RequirePermission('users.read')
   findAll(
     @Query() query: UserQueryDto,
-    @Request() req: any,
   ) {
-    const organizationId = req.organizationId;
-    return this.usersService.findAll(organizationId, query);
+    return this.usersService.findAll(query); // Removed organizationId
   }
 
   @Get('me')
-  @HttpCode(HttpStatus.OK)
+  @RequirePermission('users.read_own')
   getProfile(@Request() req: any) {
     const userId = req.user.sub;
     return this.usersService.getProfile(userId);
@@ -56,12 +53,8 @@ export class UsersController {
 
   @Get(':id')
   @RequirePermission('users.read')
-  findOne(
-    @Param('id') id: string,
-    @Request() req: any,
-  ) {
-    const organizationId = req.organizationId;
-    return this.usersService.findOne(organizationId, id);
+  findOne(@Param('id') id: string) {
+    return this.usersService.findOne(id); // Removed organizationId
   }
 
   @Patch(':id')
@@ -71,20 +64,18 @@ export class UsersController {
     @Body() updateUserDto: UpdateUserDto,
     @Request() req: any,
   ) {
-    const organizationId = req.organizationId;
     const userId = req.user.sub;
-    return this.usersService.update(organizationId, id, updateUserDto, userId);
+    return this.usersService.update(id, updateUserDto, userId); // Removed organizationId
   }
 
   @Delete(':id')
   @RequirePermission('users.delete')
-  @HttpCode(HttpStatus.OK)
+  @HttpCode(HttpStatus.NO_CONTENT)
   remove(
     @Param('id') id: string,
     @Request() req: any,
   ) {
-    const organizationId = req.organizationId;
     const userId = req.user.sub;
-    return this.usersService.remove(organizationId, id, userId);
+    return this.usersService.remove(id, userId); // Removed organizationId
   }
 }
