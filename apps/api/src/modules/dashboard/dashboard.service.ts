@@ -1,90 +1,49 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, ForbiddenException, BadRequestException } from "@nestjs/common";
 import { PrismaService } from "../../shared/prisma/prisma.service";
 import { AppLogger } from "../../shared/logging/logger.service";
+import { DashboardRepository } from "./repositories/dashboard.repository";
+import { TenantContextService } from "../../shared/tenant/context/tenant-context.service";
+import { PermissionContextService } from "../../shared/permissions/context/permission-context.service";
+import { AuditLogService } from "../../shared/audit-log/audit-log.service";
 
 @Injectable()
 export class DashboardService {
   constructor(
     private prisma: PrismaService,
     private logger: AppLogger,
+    private readonly dashboardRepository: DashboardRepository,           // ✅ ADDED
+    private readonly tenantContext: TenantContextService,               // ✅ ADDED
+    private readonly permissionContext: PermissionContextService,       // ✅ ADDED
+    private readonly auditLogService: AuditLogService,                  // ✅ ADDED
   ) {}
 
-  async getStats(organizationId: string) {
+  async getStats() {
+    // 1. PERMISSION CHECK
+    if (!this.permissionContext.hasPermission('dashboard.read')) {
+      throw new ForbiddenException('Insufficient permissions: dashboard.read required');
+    }
+
+    const startTime = Date.now();
+    const tenantId = this.tenantContext.getTenantId();
+    const userId = this.tenantContext.getUserId();
+    
     try {
-      // Parallel queries for performance
+      // 2. PARALLEL QUERIES USING REPOSITORY (PRESERVE PERFORMANCE PATTERN)
       const [leads, contacts, deals, dealValue, defaultPipeline] = await Promise.all([
-        // Count leads
-        this.prisma.lead.count({ 
-          where: { organizationId } 
-        }),
-        
-        // Count contacts
-        this.prisma.contact.count({ 
-          where: { organizationId } 
-        }),
-        
-        // Count active deals
-        this.prisma.deal.count({ 
-          where: { 
-            organizationId,
-            deletedAt: null
-          } 
-        }),
-        
-        // Sum of won deal values
-        this.prisma.deal.aggregate({
-          where: { 
-            organizationId,
-            deletedAt: null,
-            status: 'won'
-          },
-          _sum: {
-            amount: true
-          }
-        }),
-        
-        // Get default pipeline with stage statistics
-        this.prisma.pipeline.findFirst({
-          where: {
-            organizationId,
-            isDefault: true
-          },
-          include: {
-            stages: {
-              include: {
-                _count: {
-                  select: {
-                    deals: {
-                      where: {
-                        organizationId,
-                        deletedAt: null
-                      }
-                    }
-                  }
-                }
-              },
-              orderBy: {
-                order: 'asc'
-              }
-            },
-            _count: {
-              select: {
-                deals: {
-                  where: {
-                    organizationId,
-                    deletedAt: null
-                  }
-                }
-              }
-            }
-          }
-        })
+        this.dashboardRepository.getLeadCount(),
+        this.dashboardRepository.getContactCount(),
+        this.dashboardRepository.getDealCount(),
+        this.dashboardRepository.getDealValueSum(),
+        this.dashboardRepository.getDefaultPipelineWithStats()
       ]);
 
-      // Calculate statistics
+      // 3. GET DEAL STATUS DISTRIBUTION
+      const statusStats = await this.dashboardRepository.getDealStatusDistribution();
+
+      // 4. CALCULATE STATISTICS (PRESERVE ORIGINAL BUSINESS LOGIC)
       const totalWonValue = dealValue._sum.amount ? Number(dealValue._sum.amount) : 0;
       
-      // Get deal stage distribution
+      // 5. GET DEAL STAGE DISTRIBUTION
       const stageStats = defaultPipeline ? defaultPipeline.stages.map(stage => ({
         id: stage.id,
         name: stage.name,
@@ -93,18 +52,7 @@ export class DashboardService {
         dealCount: stage._count.deals
       })) : [];
 
-      // Get deal status distribution
-      const statusStats = await this.prisma.deal.groupBy({
-        by: ['status'],
-        where: {
-          organizationId,
-          deletedAt: null
-        },
-        _count: {
-          id: true
-        }
-      });
-
+      // 6. BUILD STATS RESPONSE (PRESERVE ORIGINAL STRUCTURE)
       const stats = {
         summary: {
           leads,
@@ -126,7 +74,7 @@ export class DashboardService {
       };
 
       this.logger.log("Dashboard stats fetched", {
-        organizationId,
+        organizationId: tenantId,
         leads,
         contacts,
         deals,
@@ -136,11 +84,44 @@ export class DashboardService {
       return {
         data: stats,
       };
-    } catch (error) {
-      this.logger.error("Failed to fetch dashboard stats", error.stack, {
-        organizationId,
+      
+    } catch (error: any) {
+      // 7. ENTERPRISE ERROR HANDLING
+      this.logger.error(`Dashboard.getStats failed: ${error.message}`, error.stack, {
+        organizationId: tenantId,
+        userId,
+        method: 'getStats'
       });
-      throw error;
+      
+      // 8. PRESERVE EXISTING ERROR TYPES
+      if (error instanceof ForbiddenException) {
+        throw error;
+      }
+      
+      throw new BadRequestException('Failed to fetch dashboard stats');
+      
+    } finally {
+      // 9. PERFORMANCE MONITORING
+      const duration = Date.now() - startTime;
+      this.logger.log(`Dashboard.getStats completed in ${duration}ms`, {
+        duration,
+        organizationId: tenantId,
+        userId,
+        performance: duration > 2000 ? 'slow' : 'normal'
+      });
+    }
+  }
+
+    private async getUserEmail(userId: string): Promise<string> {
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { email: true }
+      });
+      return user?.email || 'system@unknown';
+    } catch (error) {
+      this.logger.warn(`Failed to fetch user email for ${userId}: ${error.message}`);
+      return 'system@unknown';
     }
   }
 }

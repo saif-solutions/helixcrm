@@ -27,16 +27,14 @@ export class DashboardController {
   @RequirePermission('dashboard.read')
   async getStats(@Req() req: Request) {
     try {
-      const organizationId = (req as any).user.organizationId;
       const userId = (req as any).user.sub;
       
-      this.logger.log(`Fetching dashboard stats for organization: ${organizationId}`, {
+      this.logger.log(`Fetching dashboard stats`, {
         userId,
-        organizationId,
         event: 'dashboard_stats_request'
       });
       
-      const stats = await this.dashboardService.getStats(organizationId);
+      const stats = await this.dashboardService.getStats();
       
       // Safely extract stats for logging
       let dealsCount = 0;
@@ -82,7 +80,6 @@ export class DashboardController {
       
       this.logger.debug(`Dashboard stats retrieved`, {
         userId,
-        organizationId,
         dealsCount,
         contactsCount,
         leadsCount,
@@ -95,7 +92,6 @@ export class DashboardController {
       };
     } catch (error) {
       this.logger.error(`Failed to fetch dashboard stats: ${error.message}`, error.stack, {
-        organizationId: (req as any).user?.organizationId,
         userId: (req as any).user?.sub,
         event: 'dashboard_stats_error'
       });
@@ -109,10 +105,8 @@ export class DashboardController {
   @RequirePermission('dashboard.read')
   async getDashboardHealth(@Req() req: Request) {
     try {
-      const organizationId = (req as any).user.organizationId;
-      
       // Try to get basic stats as health check
-      const stats = await this.dashboardService.getStats(organizationId);
+      const stats = await this.dashboardService.getStats();
       
       const health = {
         status: stats ? 'healthy' : 'degraded',
@@ -132,7 +126,6 @@ export class DashboardController {
       };
     } catch (error) {
       this.logger.error(`Dashboard health check failed: ${error.message}`, {
-        organizationId: (req as any).user?.organizationId,
         error: error.name,
         event: 'dashboard_health_error'
       });
