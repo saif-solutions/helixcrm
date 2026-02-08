@@ -21,13 +21,14 @@ export class JwtRefreshStrategy {
     try {
       // Extract token from cookies (existing pattern from auth.controller.ts)
       const refreshToken = req.cookies?.refresh_token;
-      
+
       if (!refreshToken) {
         throw new UnauthorizedException('No refresh token provided');
       }
 
       // Verify the refresh token exists and is valid
-      const tokenInfo = await this.refreshTokenService.verifyAndExtract(refreshToken);
+      const tokenInfo =
+        await this.refreshTokenService.verifyAndExtract(refreshToken);
       if (!tokenInfo) {
         throw new UnauthorizedException('Refresh token not found or revoked');
       }
@@ -37,7 +38,7 @@ export class JwtRefreshStrategy {
         issuer: SecurityConfig.jwt.issuer,
         audience: SecurityConfig.jwt.audience,
       });
-      
+
       if (payload.type !== 'refresh') {
         throw new UnauthorizedException('Invalid token type');
       }

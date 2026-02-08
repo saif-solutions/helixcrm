@@ -1,8 +1,17 @@
 // apps/api/src/contracts/auth.contract.ts
-import { IsString, IsNotEmpty, IsEmail, IsOptional, IsEnum, Length, IsBoolean, IsJWT, IsUrl } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsEmail,
+  IsOptional,
+  IsEnum,
+  Length,
+  IsBoolean,
+  IsJWT,
+  IsUrl,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { PasswordPolicy } from './_shared/password.policy';
-
 
 export enum AuthAction {
   LOGIN = 'login',
@@ -142,12 +151,12 @@ export class ResetPasswordInput {
   @Length(8, 100)
   confirmPassword: string;
 
-validateInvariants(): string[] {
-  return [
-    ...PasswordPolicy.validateMatch(this.newPassword, this.confirmPassword),
-    ...PasswordPolicy.validateStrength(this.newPassword),
-  ];
-}
+  validateInvariants(): string[] {
+    return [
+      ...PasswordPolicy.validateMatch(this.newPassword, this.confirmPassword),
+      ...PasswordPolicy.validateStrength(this.newPassword),
+    ];
+  }
 }
 
 export class LogoutInput {
@@ -194,30 +203,38 @@ export class AuthInvariants {
    */
   static validateEmailFormat(input: { email: string }): string[] {
     const errors: string[] = [];
-    
+
     // Defensive check
     if (!input.email) {
       return errors;
     }
-    
+
     const email = input.email.toLowerCase();
-    
+
     // Check for common typos
-    if (email.includes('@gmail.cm') || email.includes('@gmil.com') || email.includes('@gmal.com')) {
+    if (
+      email.includes('@gmail.cm') ||
+      email.includes('@gmil.com') ||
+      email.includes('@gmal.com')
+    ) {
       errors.push('Email domain appears to have a typo');
     }
-    
+
     // Check for disposable emails
     const disposableDomains = [
-      'tempmail.com', 'throwaway.com', 'mailinator.com',
-      'guerrillamail.com', '10minutemail.com', 'yopmail.com'
+      'tempmail.com',
+      'throwaway.com',
+      'mailinator.com',
+      'guerrillamail.com',
+      '10minutemail.com',
+      'yopmail.com',
     ];
-    
+
     const domain = email.split('@')[1];
-    if (domain && disposableDomains.some(d => domain.includes(d))) {
+    if (domain && disposableDomains.some((d) => domain.includes(d))) {
       errors.push('Disposable email addresses are not allowed');
     }
-    
+
     return errors;
   }
 
@@ -231,10 +248,12 @@ export class AuthInvariants {
   /**
    * Invariant: Password confirmation match (using shared policy)
    */
-  static validatePasswordMatch(input: { password: string; confirmPassword: string }): string[] {
+  static validatePasswordMatch(input: {
+    password: string;
+    confirmPassword: string;
+  }): string[] {
     return PasswordPolicy.validateMatch(input.password, input.confirmPassword);
   }
-  
 
   /**
    * Invariant: Token format validation (structural only)
@@ -242,17 +261,17 @@ export class AuthInvariants {
   static validateTokenFormat(input: { refresh_token: string }): string[] {
     const errors: string[] = [];
     const token = input.refresh_token;
-    
+
     if (!token) {
       return errors;
     }
-    
+
     // Basic JWT format validation (3 parts separated by dots)
     const parts = token.split('.');
     if (parts.length !== 3) {
       errors.push('Invalid token format');
     }
-    
+
     return errors;
   }
 
@@ -270,7 +289,10 @@ export class AuthInvariants {
    * Invariant: Rate limiting check (requires external state)
    * This is a placeholder for actual rate limiting implementation
    */
-  static validateRateLimit(context: { ipAddress?: string; email?: string }): string[] {
+  static validateRateLimit(context: {
+    ipAddress?: string;
+    email?: string;
+  }): string[] {
     // This would require external state (Redis, etc.)
     // For Phase 1, we just document the invariant
     return [];

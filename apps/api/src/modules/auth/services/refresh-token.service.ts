@@ -19,7 +19,11 @@ export class RefreshTokenService {
   /**
    * Validate a refresh token against User table
    */
-  async validate(token: string, userId: string, organizationId: string): Promise<boolean> {
+  async validate(
+    token: string,
+    userId: string,
+    organizationId: string,
+  ): Promise<boolean> {
     try {
       const user = await this.prisma.user.findUnique({
         where: {
@@ -60,7 +64,10 @@ export class RefreshTokenService {
       });
 
       for (const user of allUsers) {
-        if (user.refreshTokenHash && await bcrypt.compare(token, user.refreshTokenHash)) {
+        if (
+          user.refreshTokenHash &&
+          (await bcrypt.compare(token, user.refreshTokenHash))
+        ) {
           await this.prisma.user.update({
             where: { id: user.id },
             data: {
@@ -69,12 +76,16 @@ export class RefreshTokenService {
               refreshTokenIssuedAt: null,
             },
           });
-          this.logger.debug(`Refresh token revoked for user ${user.id}: ${reason || 'manual_revocation'}`);
+          this.logger.debug(
+            `Refresh token revoked for user ${user.id}: ${reason || 'manual_revocation'}`,
+          );
           return;
         }
       }
 
-      this.logger.warn(`Refresh token not found for revocation: ${token.substring(0, 20)}...`);
+      this.logger.warn(
+        `Refresh token not found for revocation: ${token.substring(0, 20)}...`,
+      );
     } catch (error) {
       this.logger.error('Failed to revoke refresh token:', error);
       throw error;
@@ -84,14 +95,16 @@ export class RefreshTokenService {
   /**
    * Verify and extract user info from refresh token
    */
-  async verifyAndExtract(token: string): Promise<{ userId: string; organizationId: string } | null> {
+  async verifyAndExtract(
+    token: string,
+  ): Promise<{ userId: string; organizationId: string } | null> {
     try {
       // Verify JWT
       const payload = this.jwtService.verify(token, {
         issuer: SecurityConfig.jwt.issuer,
         audience: SecurityConfig.jwt.audience,
       });
-      
+
       if (payload.type !== 'refresh') {
         return null;
       }

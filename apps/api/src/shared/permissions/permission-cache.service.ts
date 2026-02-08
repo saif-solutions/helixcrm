@@ -14,7 +14,7 @@ export class PermissionCacheService {
 
   async get(userId: string): Promise<string[] | null> {
     const cached = this.cache.get(userId);
-    
+
     if (!cached) {
       return null;
     }
@@ -33,9 +33,11 @@ export class PermissionCacheService {
       permissions,
       expiresAt: Date.now() + this.TTL,
     };
-    
+
     this.cache.set(userId, cached);
-    this.logger.debug(`Cached permissions for user ${userId} (${permissions.length} permissions)`);
+    this.logger.debug(
+      `Cached permissions for user ${userId} (${permissions.length} permissions)`,
+    );
   }
 
   async invalidate(userId: string): Promise<void> {

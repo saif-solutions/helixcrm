@@ -1,7 +1,7 @@
-﻿import { Injectable } from "@nestjs/common";
-import { ThrottlerGuard, ThrottlerStorage } from "@nestjs/throttler";
-import { Reflector } from "@nestjs/core";
-import type { ThrottlerModuleOptions } from "@nestjs/throttler";
+﻿import { Injectable } from '@nestjs/common';
+import { ThrottlerGuard, ThrottlerStorage } from '@nestjs/throttler';
+import { Reflector } from '@nestjs/core';
+import type { ThrottlerModuleOptions } from '@nestjs/throttler';
 
 @Injectable()
 export class AuthThrottlerGuard extends ThrottlerGuard {

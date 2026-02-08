@@ -63,14 +63,18 @@ describe('DashboardService', () => {
 
     service = module.get<DashboardService>(DashboardService);
     dashboardRepository = module.get<DashboardRepository>(DashboardRepository);
-    permissionContext = module.get<PermissionContextService>(PermissionContextService);
+    permissionContext = module.get<PermissionContextService>(
+      PermissionContextService,
+    );
     tenantContext = module.get<TenantContextService>(TenantContextService);
 
     // Setup default mocks
     mockPermissionContext.hasPermission.mockReturnValue(true);
     mockTenantContext.getTenantId.mockReturnValue('test-org-123');
     mockTenantContext.getUserId.mockReturnValue('test-user-456');
-    mockPrismaService.user.findUnique.mockResolvedValue({ email: 'test@example.com' });
+    mockPrismaService.user.findUnique.mockResolvedValue({
+      email: 'test@example.com',
+    });
   });
 
   afterEach(() => {
@@ -84,7 +88,9 @@ describe('DashboardService', () => {
 
       // Act & Assert
       await expect(service.getStats()).rejects.toThrow(ForbiddenException);
-      expect(mockPermissionContext.hasPermission).toHaveBeenCalledWith('dashboard.read');
+      expect(mockPermissionContext.hasPermission).toHaveBeenCalledWith(
+        'dashboard.read',
+      );
     });
 
     it('should return dashboard stats when permission is granted', async () => {
@@ -104,22 +110,30 @@ describe('DashboardService', () => {
               name: 'Lead',
               order: 1,
               probability: 10,
-              _count: { deals: 2 }
-            }
-          ]
+              _count: { deals: 2 },
+            },
+          ],
         },
         statusStats: [
           { status: 'won', _count: { id: 3 } },
-          { status: 'lost', _count: { id: 2 } }
-        ]
+          { status: 'lost', _count: { id: 2 } },
+        ],
       };
 
       mockDashboardRepository.getLeadCount.mockResolvedValue(mockStats.leads);
-      mockDashboardRepository.getContactCount.mockResolvedValue(mockStats.contacts);
+      mockDashboardRepository.getContactCount.mockResolvedValue(
+        mockStats.contacts,
+      );
       mockDashboardRepository.getDealCount.mockResolvedValue(mockStats.deals);
-      mockDashboardRepository.getDealValueSum.mockResolvedValue(mockStats.dealValue);
-      mockDashboardRepository.getDefaultPipelineWithStats.mockResolvedValue(mockStats.defaultPipeline);
-      mockDashboardRepository.getDealStatusDistribution.mockResolvedValue(mockStats.statusStats);
+      mockDashboardRepository.getDealValueSum.mockResolvedValue(
+        mockStats.dealValue,
+      );
+      mockDashboardRepository.getDefaultPipelineWithStats.mockResolvedValue(
+        mockStats.defaultPipeline,
+      );
+      mockDashboardRepository.getDealStatusDistribution.mockResolvedValue(
+        mockStats.statusStats,
+      );
 
       // Act
       const result = await service.getStats();
@@ -132,14 +146,18 @@ describe('DashboardService', () => {
       expect(result.data.summary).toHaveProperty('deals', 5);
       expect(result.data.summary).toHaveProperty('totalWonValue', 10000);
       expect(result.data.summary).toHaveProperty('averageDealValue', 2000); // 10000 / 5
-      
+
       // Verify repository methods were called
       expect(mockDashboardRepository.getLeadCount).toHaveBeenCalled();
       expect(mockDashboardRepository.getContactCount).toHaveBeenCalled();
       expect(mockDashboardRepository.getDealCount).toHaveBeenCalled();
       expect(mockDashboardRepository.getDealValueSum).toHaveBeenCalled();
-      expect(mockDashboardRepository.getDefaultPipelineWithStats).toHaveBeenCalled();
-      expect(mockDashboardRepository.getDealStatusDistribution).toHaveBeenCalled();
+      expect(
+        mockDashboardRepository.getDefaultPipelineWithStats,
+      ).toHaveBeenCalled();
+      expect(
+        mockDashboardRepository.getDealStatusDistribution,
+      ).toHaveBeenCalled();
     });
 
     it('should handle missing default pipeline gracefully', async () => {
@@ -147,8 +165,12 @@ describe('DashboardService', () => {
       mockDashboardRepository.getLeadCount.mockResolvedValue(5);
       mockDashboardRepository.getContactCount.mockResolvedValue(10);
       mockDashboardRepository.getDealCount.mockResolvedValue(3);
-      mockDashboardRepository.getDealValueSum.mockResolvedValue({ _sum: { amount: 5000 } });
-      mockDashboardRepository.getDefaultPipelineWithStats.mockResolvedValue(null);
+      mockDashboardRepository.getDealValueSum.mockResolvedValue({
+        _sum: { amount: 5000 },
+      });
+      mockDashboardRepository.getDefaultPipelineWithStats.mockResolvedValue(
+        null,
+      );
       mockDashboardRepository.getDealStatusDistribution.mockResolvedValue([]);
 
       // Act
@@ -164,8 +186,12 @@ describe('DashboardService', () => {
       mockDashboardRepository.getLeadCount.mockResolvedValue(1);
       mockDashboardRepository.getContactCount.mockResolvedValue(2);
       mockDashboardRepository.getDealCount.mockResolvedValue(3);
-      mockDashboardRepository.getDealValueSum.mockResolvedValue({ _sum: { amount: 1000 } });
-      mockDashboardRepository.getDefaultPipelineWithStats.mockResolvedValue(null);
+      mockDashboardRepository.getDealValueSum.mockResolvedValue({
+        _sum: { amount: 1000 },
+      });
+      mockDashboardRepository.getDefaultPipelineWithStats.mockResolvedValue(
+        null,
+      );
       mockDashboardRepository.getDealStatusDistribution.mockResolvedValue([]);
 
       // Act
@@ -178,8 +204,8 @@ describe('DashboardService', () => {
           duration: expect.any(Number),
           organizationId: 'test-org-123',
           userId: 'test-user-456',
-          performance: expect.stringMatching(/normal|slow|warning/)
-        })
+          performance: expect.stringMatching(/normal|slow|warning/),
+        }),
       );
     });
   });

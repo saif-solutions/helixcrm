@@ -13,14 +13,22 @@ export class AccountLockoutService {
     private prisma: PrismaService,
     private configService: ConfigService,
   ) {
-    this.maxAttempts = parseInt(this.configService.get<string>('ACCOUNT_LOCKOUT_ATTEMPTS', '5'));
-    this.lockoutMinutes = parseInt(this.configService.get<string>('ACCOUNT_LOCKOUT_MINUTES', '15'));
+    this.maxAttempts = parseInt(
+      this.configService.get<string>('ACCOUNT_LOCKOUT_ATTEMPTS', '5'),
+    );
+    this.lockoutMinutes = parseInt(
+      this.configService.get<string>('ACCOUNT_LOCKOUT_MINUTES', '15'),
+    );
   }
 
   /**
    * Record a failed login attempt
    */
-  async recordFailedAttempt(userId: string): Promise<{ isLocked: boolean; lockedUntil?: Date; attemptsRemaining: number }> {
+  async recordFailedAttempt(userId: string): Promise<{
+    isLocked: boolean;
+    lockedUntil?: Date;
+    attemptsRemaining: number;
+  }> {
     try {
       const user = await this.prisma.user.findUnique({
         where: { id: userId },
@@ -56,7 +64,9 @@ export class AccountLockoutService {
       // Check if we should lock the account
       if (failedAttempts >= this.maxAttempts) {
         lockedUntil = new Date(Date.now() + this.lockoutMinutes * 60 * 1000);
-        this.logger.warn(`Account locked for user ${userId} until ${lockedUntil}`);
+        this.logger.warn(
+          `Account locked for user ${userId} until ${lockedUntil}`,
+        );
       }
 
       // Update user record
@@ -104,15 +114,17 @@ export class AccountLockoutService {
   /**
    * Check if account is locked
    */
-  async isAccountLocked(userIdOrEmail: string): Promise<{ isLocked: boolean; lockedUntil?: Date }> {
+  async isAccountLocked(
+    userIdOrEmail: string,
+  ): Promise<{ isLocked: boolean; lockedUntil?: Date }> {
     try {
       // Check if input is email or userId
       const isEmail = userIdOrEmail.includes('@');
-      
+
       let user: any;
       if (isEmail) {
         user = await this.prisma.user.findFirst({
-          where: { 
+          where: {
             email: userIdOrEmail.toLowerCase().trim(),
             deletedAt: null,
           },
@@ -157,7 +169,9 @@ export class AccountLockoutService {
         },
       });
 
-      this.logger.warn(`Manually locked account for user ${userId} until ${lockedUntil}`);
+      this.logger.warn(
+        `Manually locked account for user ${userId} until ${lockedUntil}`,
+      );
       return lockedUntil;
     } catch (error) {
       this.logger.error('Failed to lock account:', error);

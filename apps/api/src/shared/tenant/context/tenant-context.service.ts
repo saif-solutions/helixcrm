@@ -3,68 +3,70 @@
 import { Injectable, Logger, Scope, Inject } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import { Request } from 'express';
-import { 
-  TenantContext, 
-  TenantContextOptions, 
+import {
+  TenantContext,
+  TenantContextOptions,
   ITenantContextService,
   TenantUser,
   TenantContextValidationError,
   TenantIsolationViolationError,
   JwtUser,
-  toRLSContext
+  toRLSContext,
 } from '../tenant.types';
-import { 
-  withTenantContext, 
+import {
+  withTenantContext,
   getTenantContext,
   requireTenantContext,
   TenantContextStorage,
-  TenantContextMissingError
+  TenantContextMissingError,
 } from '../tenant.context';
 
 @Injectable({ scope: Scope.REQUEST })
 export class TenantContextService implements ITenantContextService {
   private readonly logger = new Logger(TenantContextService.name);
 
-  constructor(
-    @Inject(REQUEST) private readonly request: Request
-  ) {}
+  constructor(@Inject(REQUEST) private readonly request: Request) {}
 
-/**
- * Get user role (if available)
- */
-getUserRole(): string | undefined {
-  const context = getTenantContext();
-  return context?.userRole;
-}
-
-/**
- * Get RLS-compatible context
- */
-getRLSContext(): { organizationId: string; userId?: string; role?: string } {
-  const context = getTenantContext();
-  if (!context) {
-    throw new TenantContextValidationError('Tenant context not resolved');
+  /**
+   * Get user role (if available)
+   */
+  getUserRole(): string | undefined {
+    const context = getTenantContext();
+    return context?.userRole;
   }
-  
-  return {
-    organizationId: context.organizationId,
-    userId: context.userId,
-    role: context.userRole,
-  };
-}
 
+  /**
+   * Get RLS-compatible context
+   */
+  getRLSContext(): { organizationId: string; userId?: string; role?: string } {
+    const context = getTenantContext();
+    if (!context) {
+      throw new TenantContextValidationError('Tenant context not resolved');
+    }
+
+    return {
+      organizationId: context.organizationId,
+      userId: context.userId,
+      role: context.userRole,
+    };
+  }
 
   /**
    * Resolve tenant context for the current request
    * Called by TenantGuard - sets this as the current request
    */
-  resolveContext(request: Request, options: TenantContextOptions = {}): TenantContext {
+  resolveContext(
+    request: Request,
+    options: TenantContextOptions = {},
+  ): TenantContext {
     const { allowSystemContext = false, requireTenantContext = true } = options;
-    
+
     // Check if context already exists in AsyncLocalStorage for this request
     const existingContext = getTenantContext();
     if (existingContext) {
-      this.logger.debug(`Reusing existing tenant context: ${existingContext.tenantId}`);
+      this.logger.debug(
+        `Reusing existing tenant context: ${existingContext.tenantId}`,
+      );
       return existingContext;
     }
 
@@ -73,7 +75,7 @@ getRLSContext(): { organizationId: string; userId?: string; role?: string } {
     let source: 'header' | 'token' | 'system' = 'header';
     let userId: string | undefined;
     let userEmail: string | undefined;
-    
+
     // 1. Check request organizationId (set by middleware)
     if ((request as any).organizationId) {
       tenantId = (request as any).organizationId;
@@ -101,7 +103,9 @@ getRLSContext(): { organizationId: string; userId?: string; role?: string } {
           hasUser: !!request.user,
           userHasOrgId: !!(request.user as TenantUser)?.organizationId,
         });
-        throw new TenantContextValidationError('Tenant context required but not found');
+        throw new TenantContextValidationError(
+          'Tenant context required but not found',
+        );
       }
       // Allow without tenant (system context)
       tenantId = 'SYSTEM';
@@ -109,8 +113,8 @@ getRLSContext(): { organizationId: string; userId?: string; role?: string } {
     }
 
     const context: TenantContext = {
-      tenantId: tenantId!,
-      organizationId: tenantId!,
+      tenantId: tenantId,
+      organizationId: tenantId,
       isSystemContext: source === 'system',
       resolvedAt: new Date(),
       source,
@@ -122,13 +126,13 @@ getRLSContext(): { organizationId: string; userId?: string; role?: string } {
     const wrappedFn = () => {
       // Also keep in request for debugging/backward compatibility
       (request as any).tenantContext = context;
-      
+
       this.logger.debug(`Tenant context resolved: ${tenantId} (${source})`, {
         userId,
         userEmail,
         isSystem: source === 'system',
       });
-      
+
       return context;
     };
 
@@ -142,7 +146,7 @@ getRLSContext(): { organizationId: string; userId?: string; role?: string } {
     const context = getTenantContext();
     if (!context) {
       throw new TenantContextValidationError(
-        'Tenant context not resolved. Ensure TenantGuard runs before using TenantContextService methods.'
+        'Tenant context not resolved. Ensure TenantGuard runs before using TenantContextService methods.',
       );
     }
     return context.tenantId;
@@ -218,7 +222,9 @@ getRLSContext(): { organizationId: string; userId?: string; role?: string } {
       throw new TenantContextValidationError('Tenant context not resolved');
     }
     if (context.isSystemContext) {
-      throw new TenantContextValidationError('Tenant context required but system context found');
+      throw new TenantContextValidationError(
+        'Tenant context required but system context found',
+      );
     }
   }
 
@@ -231,21 +237,27 @@ getRLSContext(): { organizationId: string; userId?: string; role?: string } {
       throw new TenantContextValidationError('Tenant context not resolved');
     }
     if (context.isSystemContext) {
-      throw new TenantContextValidationError('System context not allowed for this operation');
+      throw new TenantContextValidationError(
+        'System context not allowed for this operation',
+      );
     }
   }
 
   /**
    * Validate entity belongs to current tenant
    */
-  validateTenantOwnership(entity: { organizationId: string }, entityType?: string, entityId?: string): void {
+  validateTenantOwnership(
+    entity: { organizationId: string },
+    entityType?: string,
+    entityId?: string,
+  ): void {
     const currentTenantId = this.getTenantId();
     if (entity.organizationId !== currentTenantId) {
       throw new TenantIsolationViolationError(
         currentTenantId,
         entity.organizationId,
         entityType,
-        entityId
+        entityId,
       );
     }
   }
@@ -267,7 +279,7 @@ getRLSContext(): { organizationId: string; userId?: string; role?: string } {
   private isSystemRequest(request: Request): boolean {
     const path = request.path;
     const method = request.method;
-    
+
     // System paths (adjust as needed)
     const systemPaths = [
       '/health',
@@ -280,12 +292,14 @@ getRLSContext(): { organizationId: string; userId?: string; role?: string } {
       '/docs',
       '/api-docs',
     ];
-    
+
     // System methods on any path
     const systemMethods = ['OPTIONS', 'HEAD'];
-    
-    return systemPaths.some(systemPath => path.startsWith(systemPath)) ||
-           systemMethods.includes(method);
+
+    return (
+      systemPaths.some((systemPath) => path.startsWith(systemPath)) ||
+      systemMethods.includes(method)
+    );
   }
 
   /**

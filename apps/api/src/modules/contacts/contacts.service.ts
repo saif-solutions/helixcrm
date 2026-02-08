@@ -1,8 +1,8 @@
-﻿import { Injectable, NotFoundException, Logger } from "@nestjs/common";
-import { UpdateContactDto } from "./dto/update-contact.dto";
-import { ContactRepository } from "./repositories/contact.repository";
-import { TenantContextService } from "../../shared/tenant/context/tenant-context.service";
-import { PermissionContextService } from "../../shared/permissions/context/permission-context.service";
+﻿import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { UpdateContactDto } from './dto/update-contact.dto';
+import { ContactRepository } from './repositories/contact.repository';
+import { TenantContextService } from '../../shared/tenant/context/tenant-context.service';
+import { PermissionContextService } from '../../shared/permissions/context/permission-context.service';
 
 interface FindAllOptions {
   page?: number;
@@ -23,26 +23,28 @@ export class ContactsService {
   async create(data: any) {
     // Permission check
     if (!this.permissionContext.hasPermission('contacts.create')) {
-      this.logger.warn(`Permission denied: User ${this.permissionContext.getUserId()} lacks contacts.create permission`);
+      this.logger.warn(
+        `Permission denied: User ${this.permissionContext.getUserId()} lacks contacts.create permission`,
+      );
       throw new Error('Insufficient permissions to create contacts');
     }
 
     try {
       // Split name into firstName and lastName for Phase 3.4 compatibility
       const { name, ...restData } = data;
-      
+
       // Split name: first word = firstName, rest = lastName
       const nameParts = name ? name.trim().split(/\s+/) : [];
       const firstName = nameParts[0] || '';
       const lastName = nameParts.slice(1).join(' ') || '';
-      
+
       const contact = await this.contactRepository.create({
         ...restData,
         firstName,
         lastName,
       });
 
-      this.logger.log("Contact created", {
+      this.logger.log('Contact created', {
         contactId: contact.id,
         organizationId: this.tenantContext.getTenantId(),
         event: 'contact_created',
@@ -50,7 +52,7 @@ export class ContactsService {
 
       return contact;
     } catch (error) {
-      this.logger.error("Failed to create contact", error.stack, {
+      this.logger.error('Failed to create contact', error.stack, {
         organizationId: this.tenantContext.getTenantId(),
       });
       throw error;
@@ -68,7 +70,7 @@ export class ContactsService {
 
     // Build where clause
     const where: any = {};
-    
+
     // Add search filter if provided
     if (search) {
       where.OR = [
@@ -101,7 +103,7 @@ export class ContactsService {
         },
       };
     } catch (error) {
-      this.logger.error("Failed to fetch contacts", error.stack, {
+      this.logger.error('Failed to fetch contacts', error.stack, {
         organizationId: this.tenantContext.getTenantId(),
       });
       throw error;
@@ -135,9 +137,9 @@ export class ContactsService {
 
       // Handle name splitting if name is provided in update
       const { name, ...updateData } = updateContactDto as any;
-      
+
       const updatePayload: any = { ...updateData };
-      
+
       if (name !== undefined) {
         // Split name: first word = firstName, rest = lastName
         const nameParts = name.trim().split(/\s+/);
@@ -150,7 +152,7 @@ export class ContactsService {
         data: updatePayload,
       });
 
-      this.logger.log("Contact updated", {
+      this.logger.log('Contact updated', {
         contactId: contact.id,
         organizationId: this.tenantContext.getTenantId(),
         event: 'contact_updated',
@@ -158,7 +160,7 @@ export class ContactsService {
 
       return contact;
     } catch (error) {
-      this.logger.error("Failed to update contact", error.stack, {
+      this.logger.error('Failed to update contact', error.stack, {
         contactId: id,
         organizationId: this.tenantContext.getTenantId(),
       });
@@ -166,35 +168,35 @@ export class ContactsService {
     }
   }
 
-async remove(id: string) {
-  // Permission check
-  if (!this.permissionContext.hasPermission('contacts.delete')) {
-    throw new Error('Insufficient permissions to delete contacts');
+  async remove(id: string) {
+    // Permission check
+    if (!this.permissionContext.hasPermission('contacts.delete')) {
+      throw new Error('Insufficient permissions to delete contacts');
+    }
+
+    try {
+      // First verify contact exists in current tenant
+      await this.findOne(id);
+
+      const contact = await this.contactRepository.delete({
+        id, // Changed from where: { id } to just id
+      });
+
+      this.logger.log('Contact deleted', {
+        contactId: contact.id,
+        organizationId: this.tenantContext.getTenantId(),
+        event: 'contact_deleted',
+      });
+
+      return contact;
+    } catch (error) {
+      this.logger.error('Failed to delete contact', error.stack, {
+        contactId: id,
+        organizationId: this.tenantContext.getTenantId(),
+      });
+      throw error;
+    }
   }
-
-  try {
-    // First verify contact exists in current tenant
-    await this.findOne(id);
-
-    const contact = await this.contactRepository.delete({
-      id, // Changed from where: { id } to just id
-    });
-
-    this.logger.log("Contact deleted", {
-      contactId: contact.id,
-      organizationId: this.tenantContext.getTenantId(),
-      event: 'contact_deleted',
-    });
-
-    return contact;
-  } catch (error) {
-    this.logger.error("Failed to delete contact", error.stack, {
-      contactId: id,
-      organizationId: this.tenantContext.getTenantId(),
-    });
-    throw error;
-  }
-}
 
   async search(searchTerm: string, limit: number = 20) {
     // Permission check
@@ -213,7 +215,7 @@ async remove(id: string) {
 
     const contact = await this.contactRepository.softDelete(id);
 
-    this.logger.log("Contact archived", {
+    this.logger.log('Contact archived', {
       contactId: contact.id,
       organizationId: this.tenantContext.getTenantId(),
       event: 'contact_archived',

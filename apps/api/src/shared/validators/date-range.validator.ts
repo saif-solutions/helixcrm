@@ -12,7 +12,7 @@ import { Injectable } from '@nestjs/common';
 export class DateRangeConstraint implements ValidatorConstraintInterface {
   validate(value: any, args: ValidationArguments): boolean {
     const obj = args.object as any;
-    
+
     // If either date is missing, validation passes (they're optional)
     if (!obj.startDate || !obj.endDate) {
       return true;
@@ -32,7 +32,7 @@ export class DateRangeConstraint implements ValidatorConstraintInterface {
 }
 
 export function ValidateDateRange(validationOptions?: ValidationOptions) {
-  return function (object: Object, propertyName: string) {
+  return function (object: object, propertyName: string) {
     registerDecorator({
       target: object.constructor,
       propertyName: propertyName,

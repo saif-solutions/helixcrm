@@ -1,9 +1,9 @@
-import { 
-  Injectable, 
-  NotFoundException, 
-  ConflictException, 
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
   BadRequestException,
-  Logger 
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -20,8 +20,19 @@ export class UsersService {
   /**
    * Create a new user in the organization
    */
-  async create(organizationId: string, createUserDto: CreateUserDto, createdById: string) {
-    const { email, password, firstName, lastName, isActive = true, role = 'user' } = createUserDto;
+  async create(
+    organizationId: string,
+    createUserDto: CreateUserDto,
+    createdById: string,
+  ) {
+    const {
+      email,
+      password,
+      firstName,
+      lastName,
+      isActive = true,
+      role = 'user',
+    } = createUserDto;
 
     // Check if user already exists in this organization
     const existingUser = await this.prisma.user.findFirst({
@@ -32,7 +43,9 @@ export class UsersService {
     });
 
     if (existingUser) {
-      throw new ConflictException(`User with email ${email} already exists in this organization`);
+      throw new ConflictException(
+        `User with email ${email} already exists in this organization`,
+      );
     }
 
     // Hash password
@@ -53,12 +66,15 @@ export class UsersService {
       },
     });
 
-    this.logger.log(`User created: ${user.email} in organization ${organizationId}`, {
-      userId: user.id,
-      organizationId,
-      createdBy: createdById,
-      event: 'user_created',
-    });
+    this.logger.log(
+      `User created: ${user.email} in organization ${organizationId}`,
+      {
+        userId: user.id,
+        organizationId,
+        createdBy: createdById,
+        event: 'user_created',
+      },
+    );
 
     // Return user without password hash
     const { passwordHash: _, ...userWithoutPassword } = user;
@@ -138,7 +154,9 @@ export class UsersService {
     });
 
     if (!user) {
-      throw new NotFoundException(`User with ID ${id} not found in this organization`);
+      throw new NotFoundException(
+        `User with ID ${id} not found in this organization`,
+      );
     }
 
     return user;
@@ -147,7 +165,12 @@ export class UsersService {
   /**
    * Update a user
    */
-  async update(organizationId: string, id: string, updateUserDto: UpdateUserDto, updatedById: string) {
+  async update(
+    organizationId: string,
+    id: string,
+    updateUserDto: UpdateUserDto,
+    updatedById: string,
+  ) {
     // Verify user exists in organization
     const existingUser = await this.prisma.user.findFirst({
       where: {
@@ -157,7 +180,9 @@ export class UsersService {
     });
 
     if (!existingUser) {
-      throw new NotFoundException(`User with ID ${id} not found in this organization`);
+      throw new NotFoundException(
+        `User with ID ${id} not found in this organization`,
+      );
     }
 
     // Check if email is being changed and if new email already exists
@@ -171,7 +196,9 @@ export class UsersService {
       });
 
       if (emailUser) {
-        throw new ConflictException(`User with email ${updateUserDto.email} already exists`);
+        throw new ConflictException(
+          `User with email ${updateUserDto.email} already exists`,
+        );
       }
     }
 
@@ -181,7 +208,10 @@ export class UsersService {
     // Hash new password if provided (should normally go through password reset flow)
     if (updateUserDto.password) {
       const saltRounds = 10;
-      updateData.passwordHash = await bcrypt.hash(updateUserDto.password, saltRounds);
+      updateData.passwordHash = await bcrypt.hash(
+        updateUserDto.password,
+        saltRounds,
+      );
       // Increment token version to invalidate existing tokens
       updateData.tokenVersion = { increment: 1 };
       delete updateData.password; // Remove plain password
@@ -222,7 +252,9 @@ export class UsersService {
     });
 
     if (!user) {
-      throw new NotFoundException(`User with ID ${id} not found in this organization`);
+      throw new NotFoundException(
+        `User with ID ${id} not found in this organization`,
+      );
     }
 
     // Check if trying to delete yourself
@@ -250,7 +282,7 @@ export class UsersService {
       event: 'user_deleted',
     });
 
-    return { 
+    return {
       message: 'User deleted successfully',
       userId: deletedUser.id,
     };

@@ -12,18 +12,20 @@ import {
   AuditSeverity,
   AuditLogEnumMapper,
   AuditLogTypes,
-  fromPrismaAction, 
+  fromPrismaAction,
 } from '../../domain';
 
 @Injectable()
 export class AuditLogRepository implements IAuditLogRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(data: Omit<AuditLog, 'id' | 'createdAt' | 'updatedAt'>): Promise<void> {
+  async create(
+    data: Omit<AuditLog, 'id' | 'createdAt' | 'updatedAt'>,
+  ): Promise<void> {
     try {
       // Map domain enums to database enums - need to cast to Prisma enum type
       const dbAction = AuditLogEnumMapper.toDatabaseAction(data.action) as any;
-      
+
       await this.prisma.auditLog.create({
         data: {
           organizationId: data.organizationId,
@@ -74,7 +76,7 @@ export class AuditLogRepository implements IAuditLogRepository {
     if (query.action) {
       const dbAction = AuditLogEnumMapper.toDatabaseAction(query.action) as any;
       where.action = dbAction;
-      
+
       // For extended actions, also filter by metadata
       if (!AuditLogTypes.isAuditAction(query.action)) {
         where.AND = where.AND || [];
@@ -89,7 +91,8 @@ export class AuditLogRepository implements IAuditLogRepository {
 
     // Apply other filters
     if (query.entityType) where.entityType = query.entityType as any;
-    if (query.actorEmail) where.actorEmail = { contains: query.actorEmail, mode: 'insensitive' };
+    if (query.actorEmail)
+      where.actorEmail = { contains: query.actorEmail, mode: 'insensitive' };
     if (query.severity) where.severity = query.severity as any;
     if (query.actorType) where.actorType = query.actorType as any;
 
@@ -131,7 +134,7 @@ export class AuditLogRepository implements IAuditLogRepository {
       ]);
 
       // Transform logs to use domain actions
-      const transformedLogs = logs.map(log => {
+      const transformedLogs = logs.map((log) => {
         const metadata = log.metadata as any;
         return {
           ...log,
@@ -156,7 +159,10 @@ export class AuditLogRepository implements IAuditLogRepository {
     }
   }
 
-  async getStatistics(organizationId: string, days: number = 30): Promise<AuditStatistics> {
+  async getStatistics(
+    organizationId: string,
+    days: number = 30,
+  ): Promise<AuditStatistics> {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
@@ -194,14 +200,14 @@ export class AuditLogRepository implements IAuditLogRepository {
 
       // For statistics, we'll use the raw actions (can't access metadata in groupBy)
       // In a production app, you might need a separate query for extended actions
-const transformedActions = topActions.map(item => ({
-  action: fromPrismaAction(item.action),
-  count: item._count,
-}));
+      const transformedActions = topActions.map((item) => ({
+        action: fromPrismaAction(item.action),
+        count: item._count,
+      }));
 
       return {
         totalLogs,
-        logsBySeverity: logsBySeverity.map(item => ({
+        logsBySeverity: logsBySeverity.map((item) => ({
           severity: item.severity as AuditSeverity,
           count: item._count,
         })),
@@ -223,65 +229,75 @@ const transformedActions = topActions.map(item => ({
     }
   }
 
-  async getAvailableActions(): Promise<Array<{ value: string; count: number }>> {
+  async getAvailableActions(): Promise<
+    Array<{ value: string; count: number }>
+  > {
     const actions = await this.prisma.auditLog.groupBy({
       by: ['action'],
       _count: true,
     });
 
-    return actions.map(item => ({
+    return actions.map((item) => ({
       value: item.action,
       count: item._count,
     }));
   }
 
-  async getAvailableEntityTypes(): Promise<Array<{ value: string; count: number }>> {
+  async getAvailableEntityTypes(): Promise<
+    Array<{ value: string; count: number }>
+  > {
     const entityTypes = await this.prisma.auditLog.groupBy({
       by: ['entityType'],
       _count: true,
     });
 
-    return entityTypes.map(item => ({
+    return entityTypes.map((item) => ({
       value: item.entityType,
       count: item._count,
     }));
   }
 
-  async getAvailableSeverityLevels(): Promise<Array<{ value: string; count: number }>> {
+  async getAvailableSeverityLevels(): Promise<
+    Array<{ value: string; count: number }>
+  > {
     const severityLevels = await this.prisma.auditLog.groupBy({
       by: ['severity'],
       _count: true,
     });
 
-    return severityLevels.map(item => ({
+    return severityLevels.map((item) => ({
       value: item.severity,
       count: item._count,
     }));
   }
 
-  async getAvailableActorTypes(): Promise<Array<{ value: string; count: number }>> {
+  async getAvailableActorTypes(): Promise<
+    Array<{ value: string; count: number }>
+  > {
     const actorTypes = await this.prisma.auditLog.groupBy({
       by: ['actorType'],
       _count: true,
     });
 
-    return actorTypes.map(item => ({
+    return actorTypes.map((item) => ({
       value: item.actorType,
       count: item._count,
     }));
   }
 
-  async cleanupOldLogs(daysToKeep: number = 90): Promise<{ deletedCount: number }> {
+  async cleanupOldLogs(
+    daysToKeep: number = 90,
+  ): Promise<{ deletedCount: number }> {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
-    
+
     try {
       const result = await this.prisma.auditLog.deleteMany({
         where: {
           createdAt: { lt: cutoffDate },
         },
       });
-      
+
       return { deletedCount: result.count };
     } catch (error) {
       console.error('Failed to cleanup old audit logs:', error);

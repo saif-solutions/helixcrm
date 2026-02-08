@@ -3,10 +3,10 @@
 import { Injectable, Scope, Inject } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import { Request } from 'express';
-import { 
-  RequestPermissionContext, 
+import {
+  RequestPermissionContext,
   IPermissionContext,
-  PermissionContextOptions 
+  PermissionContextOptions,
 } from './permission-context.interface';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Logger } from '@nestjs/common';
@@ -14,7 +14,7 @@ import { Logger } from '@nestjs/common';
 @Injectable({ scope: Scope.REQUEST })
 export class PermissionContextService implements IPermissionContext {
   private readonly logger = new Logger(PermissionContextService.name);
-  
+
   // Store the context for this request
   private context: RequestPermissionContext | null = null;
 
@@ -27,31 +27,41 @@ export class PermissionContextService implements IPermissionContext {
    * Build permission context for the current request
    * Called ONCE by PermissionGuard
    */
-  async buildContext(options: PermissionContextOptions): Promise<RequestPermissionContext> {
+  async buildContext(
+    options: PermissionContextOptions,
+  ): Promise<RequestPermissionContext> {
     if (this.context) {
       this.logger.warn(`Permission context already built for current request`);
       return this.context;
     }
 
     const { userId, tenantId, jwtPermissions, skipCache = false } = options;
-    
+
     let permissions: string[];
     let source: 'jwt' | 'database' | 'cache' = 'database';
     let roles: string[] = [];
 
     // 1. Try JWT permissions first (fastest)
-    if (jwtPermissions && Array.isArray(jwtPermissions) && jwtPermissions.length > 0) {
+    if (
+      jwtPermissions &&
+      Array.isArray(jwtPermissions) &&
+      jwtPermissions.length > 0
+    ) {
       permissions = jwtPermissions;
       source = 'jwt';
-      this.logger.debug(`Using JWT permissions for user ${userId} (${permissions.length} permissions)`);
-    } 
+      this.logger.debug(
+        `Using JWT permissions for user ${userId} (${permissions.length} permissions)`,
+      );
+    }
     // 2. Fall back to database
     else {
       const result = await this.fetchPermissionsFromDatabase(userId, tenantId);
       permissions = result.permissions;
       roles = result.roles;
       source = 'database';
-      this.logger.debug(`Fetched permissions from DB for user ${userId} (${permissions.length} permissions)`);
+      this.logger.debug(
+        `Fetched permissions from DB for user ${userId} (${permissions.length} permissions)`,
+      );
     }
 
     // Build the context
@@ -72,8 +82,8 @@ export class PermissionContextService implements IPermissionContext {
    * Fetch permissions and roles from database
    */
   private async fetchPermissionsFromDatabase(
-    userId: string, 
-    tenantId: string
+    userId: string,
+    tenantId: string,
   ): Promise<{ permissions: string[]; roles: string[] }> {
     try {
       const userWithRoles = await this.prisma.user.findUnique({
@@ -119,7 +129,10 @@ export class PermissionContextService implements IPermissionContext {
         roles: Array.from(roles),
       };
     } catch (error) {
-      this.logger.error(`Failed to fetch permissions from DB: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to fetch permissions from DB: ${error.message}`,
+        error.stack,
+      );
       return { permissions: [], roles: [] };
     }
   }
@@ -130,7 +143,7 @@ export class PermissionContextService implements IPermissionContext {
   hasPermission(permission: string | string[]): boolean {
     const context = this.getContext();
     if (Array.isArray(permission)) {
-      return permission.some(p => context.allowedPermissions.has(p));
+      return permission.some((p) => context.allowedPermissions.has(p));
     }
     return context.allowedPermissions.has(permission);
   }
@@ -140,7 +153,7 @@ export class PermissionContextService implements IPermissionContext {
    */
   hasAllPermissions(permissions: string[]): boolean {
     const context = this.getContext();
-    return permissions.every(p => context.allowedPermissions.has(p));
+    return permissions.every((p) => context.allowedPermissions.has(p));
   }
 
   /**
@@ -148,7 +161,7 @@ export class PermissionContextService implements IPermissionContext {
    */
   hasAnyPermission(permissions: string[]): boolean {
     const context = this.getContext();
-    return permissions.some(p => context.allowedPermissions.has(p));
+    return permissions.some((p) => context.allowedPermissions.has(p));
   }
 
   getPermissions(): string[] {
@@ -187,7 +200,9 @@ export class PermissionContextService implements IPermissionContext {
 
   private getContext(): RequestPermissionContext {
     if (!this.context) {
-      throw new Error(`Permission context not built. Ensure PermissionGuard runs before using PermissionContextService.`);
+      throw new Error(
+        `Permission context not built. Ensure PermissionGuard runs before using PermissionContextService.`,
+      );
     }
     return this.context;
   }

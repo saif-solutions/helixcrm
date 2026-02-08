@@ -58,6 +58,10 @@ model Organization {
   UserRole           UserRole[]
   RefreshToken       RefreshToken[]
 
+exportJobs ExportJob[]
+webhooks      Webhook[]
+webhookDeliveries WebhookDelivery[]
+
   @@map("organizations")
 }
 
@@ -916,4 +920,110 @@ model PipelineStageSummary {
   @@index([pipelineId, stageId])
   @@index([isBottleneck])
   @@map("pipeline_stage_summaries")
+}
+
+
+model ExportJob {
+  id                  String   @id @default(uuid())
+  userId              String
+  organizationId      String
+  organization        Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  exportType          String   // 'contacts', 'deals', 'leads', 'all'
+  format              String   // 'csv', 'excel', 'pdf'
+  filters             Json?
+  options             Json?
+  
+  status              String   // 'pending', 'processing', 'completed', 'failed', 'cancelled'
+  fileUrl             String?
+  fileName            String?
+  fileSize            Int?
+  error               String?
+  
+  requestedAt         DateTime @default(now())
+  processingStartedAt DateTime?
+  completedAt         DateTime?
+  
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  
+  @@index([organizationId])
+  @@index([userId])
+  @@index([status])
+  @@index([requestedAt])
+  @@index([organizationId, status])
+  @@index([organizationId, userId])
+  
+  @@map("export_jobs")
+}
+
+
+model Webhook {
+  id            String   @id @default(uuid())
+  name          String   @unique(map: "webhook_name_organization_unique") // Unique within organization
+  url           String
+  events        String[] // Array of event names, '*' for all events
+  secret        String   // For signing payloads
+  isActive      Boolean  @default(true)
+  retryCount    Int      @default(3)    // Max retry attempts
+  timeoutMs     Int      @default(10000) // Request timeout in milliseconds
+  headers       Json?    // Custom headers as JSON
+  
+  // Tenant isolation
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  // Timestamps
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relations
+  deliveries   WebhookDelivery[]
+  
+  // Indexes
+  @@index([organizationId])
+  @@index([organizationId, name])
+  @@index([organizationId, isActive])
+  @@index([organizationId, createdAt])
+  @@unique([organizationId, name], name: "webhook_name_organization_unique")
+  @@map("webhooks")
+}
+
+model WebhookDelivery {
+  id            String   @id @default(uuid())
+  
+  // Webhook reference
+  webhookId     String
+  webhook       Webhook  @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+  
+  // Delivery details
+  event         String   // Event that triggered this delivery
+  payload       Json     // Payload sent to webhook
+  status        String   // 'pending', 'processing', 'success', 'failed'
+  statusCode    Int?     // HTTP status code from webhook response
+  response      String?  // Response body from webhook
+  error         String?  // Error message if failed
+  retryCount    Int      @default(0)
+  
+  // Timing
+  attemptedAt   DateTime @default(now())
+  completedAt   DateTime?
+  
+  // Tenant isolation (via webhook, but denormalized for performance)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  // Timestamps
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Indexes
+  @@index([organizationId])
+  @@index([webhookId])
+  @@index([status])
+  @@index([attemptedAt])
+  @@index([organizationId, status])
+  @@index([organizationId, webhookId])
+  @@index([organizationId, attemptedAt])
+  @@map("webhook_deliveries")
 }

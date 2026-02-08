@@ -38,7 +38,9 @@ export class PerformanceMetricsService {
     setInterval(() => this.flushMetrics(), this.flushInterval);
   }
 
-  async recordMetric(metric: Omit<PerformanceMetric, 'timestamp'>): Promise<void> {
+  async recordMetric(
+    metric: Omit<PerformanceMetric, 'timestamp'>,
+  ): Promise<void> {
     const fullMetric: PerformanceMetric = {
       ...metric,
       timestamp: new Date(),
@@ -61,8 +63,10 @@ export class PerformanceMetricsService {
     try {
       // In production, you'd write to a time-series database
       // For now, we'll log and store in PostgreSQL
-      this.logger.debug(`Flushing ${metricsToFlush.length} performance metrics`);
-      
+      this.logger.debug(
+        `Flushing ${metricsToFlush.length} performance metrics`,
+      );
+
       // Store in audit_logs for now (we'll create a dedicated table later)
       for (const metric of metricsToFlush) {
         await this.prisma.auditLog.create({
@@ -87,7 +91,9 @@ export class PerformanceMetricsService {
         });
       }
     } catch (error) {
-      this.logger.error(`Failed to flush performance metrics: ${error.message}`);
+      this.logger.error(
+        `Failed to flush performance metrics: ${error.message}`,
+      );
       // Put metrics back in buffer to retry
       this.metricsBuffer.unshift(...metricsToFlush);
     }
@@ -98,8 +104,11 @@ export class PerformanceMetricsService {
       // Load from config file
       const fs = require('fs');
       const path = require('path');
-      const sloPath = path.join(process.cwd(), 'configs/performance/slo-definitions.json');
-      
+      const sloPath = path.join(
+        process.cwd(),
+        'configs/performance/slo-definitions.json',
+      );
+
       if (fs.existsSync(sloPath)) {
         return JSON.parse(fs.readFileSync(sloPath, 'utf8'));
       }
@@ -126,11 +135,11 @@ export class PerformanceMetricsService {
       p95Latency?: number;
       errorRate?: number;
       throughput?: number;
-    }
+    },
   ): Promise<{ compliant: boolean; violations: string[]; details: any }> {
     const sloDefinitions = await this.getSLODefinitions();
     const slo = sloDefinitions[scenario];
-    
+
     if (!slo) {
       return {
         compliant: false,
@@ -141,16 +150,28 @@ export class PerformanceMetricsService {
 
     const violations: string[] = [];
 
-    if (metrics.p95Latency !== undefined && metrics.p95Latency > slo.p95Latency) {
-      violations.push(`p95 Latency ${metrics.p95Latency}ms exceeds SLO ${slo.p95Latency}ms`);
+    if (
+      metrics.p95Latency !== undefined &&
+      metrics.p95Latency > slo.p95Latency
+    ) {
+      violations.push(
+        `p95 Latency ${metrics.p95Latency}ms exceeds SLO ${slo.p95Latency}ms`,
+      );
     }
 
     if (metrics.errorRate !== undefined && metrics.errorRate > slo.errorRate) {
-      violations.push(`Error rate ${metrics.errorRate}% exceeds SLO ${slo.errorRate}%`);
+      violations.push(
+        `Error rate ${metrics.errorRate}% exceeds SLO ${slo.errorRate}%`,
+      );
     }
 
-    if (metrics.throughput !== undefined && metrics.throughput < slo.throughput) {
-      violations.push(`Throughput ${metrics.throughput} req/sec below SLO ${slo.throughput} req/sec`);
+    if (
+      metrics.throughput !== undefined &&
+      metrics.throughput < slo.throughput
+    ) {
+      violations.push(
+        `Throughput ${metrics.throughput} req/sec below SLO ${slo.throughput} req/sec`,
+      );
     }
 
     return {
@@ -183,13 +204,17 @@ export class PerformanceMetricsService {
     }
 
     // Calculate baseline statistics
-    const durations = metrics.map(m => (m.metadata as any)?.duration || 0);
-    const statusCodes = metrics.map(m => (m.metadata as any)?.statusCode || 200);
+    const durations = metrics.map((m) => (m.metadata as any)?.duration || 0);
+    const statusCodes = metrics.map(
+      (m) => (m.metadata as any)?.statusCode || 200,
+    );
 
-    const meanDuration = durations.reduce((a, b) => a + b, 0) / durations.length;
+    const meanDuration =
+      durations.reduce((a, b) => a + b, 0) / durations.length;
     const sortedDurations = [...durations].sort((a, b) => a - b);
-    const p95Duration = sortedDurations[Math.floor(sortedDurations.length * 0.95)];
-    const errorCount = statusCodes.filter(code => code >= 400).length;
+    const p95Duration =
+      sortedDurations[Math.floor(sortedDurations.length * 0.95)];
+    const errorCount = statusCodes.filter((code) => code >= 400).length;
     const errorRate = (errorCount / statusCodes.length) * 100;
 
     return {

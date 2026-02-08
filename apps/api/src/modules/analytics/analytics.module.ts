@@ -28,10 +28,10 @@ export class AnalyticsModule {
         PrismaModule,
         AuditLogModule,
         LoggingModule,
-        TenantModule,           // ADDED: For TenantContextService
-        PermissionsModule,      // ADDED: For PermissionContextService
+        TenantModule, // ADDED: For TenantContextService
+        PermissionsModule, // ADDED: For PermissionContextService
         ScheduleModule.forRoot(), // Add scheduling for background jobs
-        
+
         // Caching with namespace isolation
         CacheModule.registerAsync({
           imports: [ConfigModule],
@@ -40,7 +40,9 @@ export class AnalyticsModule {
             const ttl = configService.get<number>('ANALYTICS_CACHE_TTL', 300);
             const max = configService.get<number>('ANALYTICS_CACHE_MAX', 100);
 
-            console.log(`✅ Analytics cache configured: TTL=${ttl}s, Max=${max} entries`);
+            console.log(
+              `✅ Analytics cache configured: TTL=${ttl}s, Max=${max} entries`,
+            );
 
             return {
               ttl: ttl * 1000, // Convert seconds to milliseconds
@@ -73,7 +75,9 @@ export class AnalyticsModule {
     const redisHost = process.env.REDIS_HOST || 'localhost';
 
     if (!exportsEnabled) {
-      console.log('ℹ️ Analytics exports disabled via ANALYTICS_EXPORT_ENABLED=false');
+      console.log(
+        'ℹ️ Analytics exports disabled via ANALYTICS_EXPORT_ENABLED=false',
+      );
       return baseModule;
     }
 
@@ -90,8 +94,14 @@ export class AnalyticsModule {
           const redisPort = configService.get<number>('REDIS_PORT', 6379);
           const redisPassword = configService.get('REDIS_PASSWORD');
           const useTls = configService.get('REDIS_TLS', 'false') === 'true';
-          const jobAttempts = configService.get<number>('EXPORT_JOB_ATTEMPTS', 3);
-          const jobTimeout = configService.get<number>('EXPORT_JOB_TIMEOUT', 300000);
+          const jobAttempts = configService.get<number>(
+            'EXPORT_JOB_ATTEMPTS',
+            3,
+          );
+          const jobTimeout = configService.get<number>(
+            'EXPORT_JOB_TIMEOUT',
+            300000,
+          );
 
           const redisConfig: any = {
             host: redisHost,
@@ -101,7 +111,11 @@ export class AnalyticsModule {
           // Add Redis password if configured
           if (redisPassword) {
             redisConfig.password = redisPassword;
-            console.log('✅ Redis password configured (TLS:', useTls ? 'enabled' : 'disabled', ')');
+            console.log(
+              '✅ Redis password configured (TLS:',
+              useTls ? 'enabled' : 'disabled',
+              ')',
+            );
           }
 
           // Add TLS configuration if enabled
@@ -110,7 +124,9 @@ export class AnalyticsModule {
             console.log('✅ Redis TLS enabled');
           }
 
-          console.log(`✅ BullMQ queue configured: host=${redisHost}:${redisPort}, attempts=${jobAttempts}, timeout=${jobTimeout}ms`);
+          console.log(
+            `✅ BullMQ queue configured: host=${redisHost}:${redisPort}, attempts=${jobAttempts}, timeout=${jobTimeout}ms`,
+          );
 
           return {
             connection: redisConfig,
@@ -127,14 +143,8 @@ export class AnalyticsModule {
 
     return {
       ...baseModule,
-      imports: [
-        ...(baseModule.imports || []),
-        ...bullImports,
-      ],
-      providers: [
-        ...(baseModule.providers || []),
-        AnalyticsExportProcessor,
-      ],
+      imports: [...(baseModule.imports || []), ...bullImports],
+      providers: [...(baseModule.providers || []), AnalyticsExportProcessor],
     };
   }
 }
@@ -145,10 +155,14 @@ export function getAnalyticsModule() {
   const exportsEnabled = process.env.ANALYTICS_EXPORT_ENABLED !== 'false';
 
   if (redisHost && exportsEnabled) {
-    console.log('✅ Analytics module configured with Redis export capabilities');
+    console.log(
+      '✅ Analytics module configured with Redis export capabilities',
+    );
     return AnalyticsModule.registerWithExports();
   } else {
-    console.log('ℹ️  Analytics module configured without Redis (read-only analytics)');
+    console.log(
+      'ℹ️  Analytics module configured without Redis (read-only analytics)',
+    );
     return AnalyticsModule.register();
   }
 }

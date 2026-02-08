@@ -14,15 +14,11 @@ import { ComplianceSchedulerService } from './compliance-scheduler.service';
   ],
   providers: [
     // Order matters: services without dependencies first
-    Soc2EvidenceService,      // Only depends on PrismaService
-    EvidenceStorageService,   // Only depends on PrismaService
-    Soc2ControlsService,      // Only depends on PrismaService
+    Soc2EvidenceService, // Only depends on PrismaService
+    EvidenceStorageService, // Only depends on PrismaService
+    Soc2ControlsService, // Only depends on PrismaService
     ComplianceSchedulerService, // Depends on Soc2EvidenceService, so must be last
   ],
-  exports: [
-    Soc2EvidenceService,
-    EvidenceStorageService,
-    Soc2ControlsService,
-  ],
+  exports: [Soc2EvidenceService, EvidenceStorageService, Soc2ControlsService],
 })
 export class ComplianceModule {}

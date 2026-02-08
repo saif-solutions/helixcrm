@@ -1,22 +1,30 @@
-import { IsString, IsInt, IsOptional, Min, Max, MinLength, MaxLength } from "class-validator";
-import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import {
+  IsString,
+  IsInt,
+  IsOptional,
+  Min,
+  Max,
+  MinLength,
+  MaxLength,
+} from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreatePipelineStageDto {
   @ApiProperty({
     description: 'Stage name',
     example: 'Qualification',
     minLength: 2,
-    maxLength: 100
+    maxLength: 100,
   })
   @IsString({ message: 'Name must be a string' })
   @MinLength(2, { message: 'Name must be at least 2 characters' })
   @MaxLength(100, { message: 'Name cannot exceed 100 characters' })
-  name: string = '';  // Initialize with default value
+  name: string = ''; // Initialize with default value
 
   @ApiPropertyOptional({
     description: 'Stage description',
     example: 'Initial contact and qualification',
-    maxLength: 500
+    maxLength: 500,
   })
   @IsOptional()
   @IsString({ message: 'Description must be a string' })
@@ -26,20 +34,20 @@ export class CreatePipelineStageDto {
   @ApiProperty({
     description: 'Stage order (position in pipeline)',
     example: 0,
-    minimum: 0
+    minimum: 0,
   })
   @IsInt({ message: 'Order must be an integer' })
   @Min(0, { message: 'Order must be at least 0' })
-  order: number = 0;  // Initialize with default value
+  order: number = 0; // Initialize with default value
 
   @ApiProperty({
     description: 'Probability percentage (0-100)',
     example: 10,
     minimum: 0,
-    maximum: 100
+    maximum: 100,
   })
   @IsInt({ message: 'Probability must be an integer' })
   @Min(0, { message: 'Probability must be at least 0' })
   @Max(100, { message: 'Probability cannot exceed 100' })
-  probability: number = 0;  // Initialize with default value
+  probability: number = 0; // Initialize with default value
 }

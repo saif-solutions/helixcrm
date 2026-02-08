@@ -8,34 +8,36 @@ import { PermissionContextService } from './permission-context.service';
 export class ExampleService {
   private readonly logger = new Logger(ExampleService.name);
 
-  constructor(
-    private readonly permissionContext: PermissionContextService,
-  ) {}
+  constructor(private readonly permissionContext: PermissionContextService) {}
 
   async doSomethingRequiringPermission(): Promise<string> {
     // OLD WAY: Would need to recompute permissions or make DB calls
     // NEW WAY: Just check against the already-built context
-    
+
     // Check single permission
     if (!this.permissionContext.hasPermission('user:read')) {
-      this.logger.warn(`User ${this.permissionContext.getUserId()} lacks user:read permission`);
+      this.logger.warn(
+        `User ${this.permissionContext.getUserId()} lacks user:read permission`,
+      );
       throw new Error('Insufficient permissions');
     }
 
     // Check multiple permissions (any)
     const allowed = this.permissionContext.hasAnyPermission([
       'user:write',
-      'admin:full_access'
+      'admin:full_access',
     ]);
-    
+
     if (!allowed) {
       this.logger.warn(`User lacks required permissions for this operation`);
       throw new Error('Insufficient permissions');
     }
 
     // Get user info for audit/logging
-    this.logger.debug(`Operation performed by user ${this.permissionContext.getUserId()} in tenant ${this.permissionContext.getTenantId()}`);
-    
+    this.logger.debug(
+      `Operation performed by user ${this.permissionContext.getUserId()} in tenant ${this.permissionContext.getTenantId()}`,
+    );
+
     // Get all permissions (for debugging)
     const allPermissions = this.permissionContext.getPermissions();
     this.logger.debug(`User has ${allPermissions.length} total permissions`);

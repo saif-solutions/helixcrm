@@ -39,7 +39,7 @@ export class ContactRepository extends TenantAwareRepository {
     orderBy?: Prisma.ContactOrderByWithRelationInput;
   }): Promise<Contact[]> {
     const { skip, take, where, orderBy } = params;
-    
+
     return this.prisma.contact.findMany({
       skip,
       take,
@@ -71,7 +71,7 @@ export class ContactRepository extends TenantAwareRepository {
         },
       },
     };
-    
+
     return this.prisma.contact.create({
       data: tenantData,
     });
@@ -85,19 +85,19 @@ export class ContactRepository extends TenantAwareRepository {
     data: Prisma.ContactUpdateInput;
   }): Promise<Contact> {
     const { where, data } = params;
-    
+
     // First verify the contact belongs to current tenant
-    const existingContact = await this.findById(where.id as string);
+    const existingContact = await this.findById(where.id);
     if (!existingContact) {
       throw new Error('Contact not found or does not belong to current tenant');
     }
-    
+
     // Manually add tenant filter for Prisma's complex types
     const tenantWhere = {
       ...where,
       organizationId: this.tenantId,
     };
-    
+
     return this.prisma.contact.update({
       where: tenantWhere,
       data,
@@ -109,17 +109,17 @@ export class ContactRepository extends TenantAwareRepository {
    */
   async delete(where: Prisma.ContactWhereUniqueInput): Promise<Contact> {
     // First verify the contact belongs to current tenant
-    const existingContact = await this.findById(where.id as string);
+    const existingContact = await this.findById(where.id);
     if (!existingContact) {
       throw new Error('Contact not found or does not belong to current tenant');
     }
-    
+
     // Manually add tenant filter
     const tenantWhere = {
       ...where,
       organizationId: this.tenantId,
     };
-    
+
     return this.prisma.contact.delete({
       where: tenantWhere,
     });
@@ -133,13 +133,13 @@ export class ContactRepository extends TenantAwareRepository {
     if (!existingContact) {
       throw new Error('Contact not found or does not belong to current tenant');
     }
-    
+
     // Manually add tenant filter
     const tenantWhere = {
       id,
       organizationId: this.tenantId,
     };
-    
+
     return this.prisma.contact.update({
       where: tenantWhere,
       data: { deletedAt: new Date() },

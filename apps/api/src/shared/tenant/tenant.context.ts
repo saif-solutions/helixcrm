@@ -4,7 +4,9 @@ import { TenantContext } from './tenant.types';
 
 export class TenantContextMissingError extends Error {
   constructor() {
-    super('Tenant context is missing. Ensure TenantGuard runs before accessing tenant context.');
+    super(
+      'Tenant context is missing. Ensure TenantGuard runs before accessing tenant context.',
+    );
     this.name = 'TenantContextMissingError';
   }
 }

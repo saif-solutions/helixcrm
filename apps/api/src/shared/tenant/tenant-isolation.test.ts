@@ -12,7 +12,8 @@ describe('Tenant Isolation - AsyncLocalStorage', () => {
       providers: [TenantContextService],
     }).compile();
 
-    tenantContextService = module.get<TenantContextService>(TenantContextService);
+    tenantContextService =
+      module.get<TenantContextService>(TenantContextService);
   });
 
   afterEach(() => {
@@ -73,13 +74,15 @@ describe('Tenant Isolation - AsyncLocalStorage', () => {
 
         const innerResult = withTenantContext(innerContext, () => {
           // Inner context should override outer context
-          expect(TenantContextStorage.getStore()?.tenantId).toBe('inner-tenant');
+          expect(TenantContextStorage.getStore()?.tenantId).toBe(
+            'inner-tenant',
+          );
           return 'inner';
         });
 
         // After inner block, should be back to outer context
         expect(TenantContextStorage.getStore()?.tenantId).toBe('outer-tenant');
-        
+
         return `outer-${innerResult}`;
       });
 
@@ -89,14 +92,14 @@ describe('Tenant Isolation - AsyncLocalStorage', () => {
     it('should throw error when requiring context without one', () => {
       // Import requireTenantContext
       const { requireTenantContext } = require('./tenant.context');
-      
+
       expect(() => requireTenantContext()).toThrow('Tenant context is missing');
     });
 
     it('should not throw when getting context without one', () => {
       // Import getTenantContext
       const { getTenantContext } = require('./tenant.context');
-      
+
       const context = getTenantContext();
       expect(context).toBeUndefined();
     });
@@ -116,8 +119,10 @@ describe('Tenant Isolation - AsyncLocalStorage', () => {
       withTenantContext(mockTenantContext, () => {
         // In a real test, we would inject and test a TenantAwareRepository
         // For now, just verify the pattern works
-        expect(TenantContextStorage.getStore()?.tenantId).toBe('repo-test-tenant');
-        
+        expect(TenantContextStorage.getStore()?.tenantId).toBe(
+          'repo-test-tenant',
+        );
+
         // The key insight: Any repository extending TenantAwareRepository
         // would automatically filter by organizationId = 'repo-test-tenant'
         // without manual filtering

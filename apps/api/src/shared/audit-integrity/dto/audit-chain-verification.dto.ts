@@ -1,134 +1,134 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class AuditChainVerificationDto {
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Whether the chain is valid',
-    example: true 
+    example: true,
   })
   valid: boolean;
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Verification timestamp',
-    example: '2024-02-04T10:30:00.000Z'
+    example: '2024-02-04T10:30:00.000Z',
   })
   verifiedAt: Date;
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Total events in the chain',
-    example: 150 
+    example: 150,
   })
   totalEvents: number;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Index where chain is broken (if invalid)',
-    example: 125 
+    example: 125,
   })
   brokenAtIndex?: number;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Hash at broken index (if invalid)',
-    example: 'abc123def456...'
+    example: 'abc123def456...',
   })
   brokenAtHash?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Expected hash at broken index (if invalid)',
-    example: 'def456abc123...'
+    example: 'def456abc123...',
   })
   expectedHash?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Actual hash at broken index (if invalid)',
-    example: 'abc123def456...'
+    example: 'abc123def456...',
   })
   actualHash?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Additional details about verification',
-    example: { warning: 'Chain contains bootstrap events' }
+    example: { warning: 'Chain contains bootstrap events' },
   })
   details?: any;
 }
 
 export class AuditChainStatsDto {
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Total events in chain',
-    example: 150 
+    example: 150,
   })
   totalEvents: number;
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Timestamp of first block',
-    example: '2024-01-01T00:00:00.000Z'
+    example: '2024-01-01T00:00:00.000Z',
   })
   firstBlockTimestamp: Date;
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Timestamp of last block',
-    example: '2024-02-04T10:00:00.000Z'
+    example: '2024-02-04T10:00:00.000Z',
   })
   lastBlockTimestamp: Date;
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Last successful verification',
-    example: '2024-02-04T02:00:00.000Z'
+    example: '2024-02-04T02:00:00.000Z',
   })
   lastSuccessfulVerification: Date;
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Chain length in days',
-    example: 34 
+    example: 34,
   })
   chainLengthDays: number;
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Verification success rate in percentage',
-    example: 100 
+    example: 100,
   })
   verificationSuccessRate: number;
 }
 
 export class VerificationHistoryDto {
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Verification ID',
-    example: 'uuid-123'
+    example: 'uuid-123',
   })
   id: string;
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Verification timestamp',
-    example: '2024-02-04T02:00:00.000Z'
+    example: '2024-02-04T02:00:00.000Z',
   })
   verificationTimestamp: Date;
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Verification status',
     enum: ['SUCCESS', 'FAILURE', 'WARNING'],
-    example: 'SUCCESS'
+    example: 'SUCCESS',
   })
   status: string;
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Total events at time of verification',
-    example: 150 
+    example: 150,
   })
   totalEvents: number;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Block index where chain was broken',
-    example: 125 
+    example: 125,
   })
   brokenAtIndex?: number;
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Verification duration in milliseconds',
-    example: 250 
+    example: 250,
   })
   verificationDurationMs: number;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Additional verification details',
-    example: { note: 'Automatic daily verification' }
+    example: { note: 'Automatic daily verification' },
   })
   details?: any;
 }

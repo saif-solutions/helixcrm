@@ -6,10 +6,12 @@ import { Pipeline, PipelineStage, Prisma } from '@prisma/client';
 @Injectable()
 export class PipelineRepository extends TenantAwareRepository {
   // Constructor will be handled by base class
-  
+
   // ==================== PIPELINE METHODS ====================
 
-  async create(data: Omit<Prisma.PipelineUncheckedCreateInput, 'organizationId'>) {
+  async create(
+    data: Omit<Prisma.PipelineUncheckedCreateInput, 'organizationId'>,
+  ) {
     return this.prisma.pipeline.create({
       data: {
         ...data,
@@ -30,8 +32,14 @@ export class PipelineRepository extends TenantAwareRepository {
     includeStages?: boolean;
     includeDealCount?: boolean;
   }) {
-    const { skip, take, where, includeStages = true, includeDealCount = false } = options;
-    
+    const {
+      skip,
+      take,
+      where,
+      includeStages = true,
+      includeDealCount = false,
+    } = options;
+
     const include: any = {};
     if (includeStages) {
       include.stages = { orderBy: { order: 'asc' } };
@@ -48,10 +56,7 @@ export class PipelineRepository extends TenantAwareRepository {
       skip,
       take,
       include,
-      orderBy: [
-        { isDefault: 'desc' },
-        { createdAt: 'desc' },
-      ],
+      orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
     });
   }
 
@@ -92,7 +97,10 @@ export class PipelineRepository extends TenantAwareRepository {
     });
   }
 
-  async updateMany(where: Prisma.PipelineWhereInput, data: Prisma.PipelineUpdateInput) {
+  async updateMany(
+    where: Prisma.PipelineWhereInput,
+    data: Prisma.PipelineUpdateInput,
+  ) {
     return this.prisma.pipeline.updateMany({
       where: {
         ...where,

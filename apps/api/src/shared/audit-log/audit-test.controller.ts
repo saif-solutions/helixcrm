@@ -1,5 +1,11 @@
 import { Controller, Get, Post, Logger, Query } from '@nestjs/common';
-import { AuditLogService, AuditAction, AuditEntityType, AuditSeverity, AuditMode } from './audit-log.service';
+import {
+  AuditLogService,
+  AuditAction,
+  AuditEntityType,
+  AuditSeverity,
+  AuditMode,
+} from './audit-log.service';
 import { AuditQueueService } from './audit-queue.service';
 
 @Controller('audit-test')
@@ -29,7 +35,7 @@ export class AuditTestController {
         AuditSeverity.LOW,
         `org-test-${i}`,
         '127.0.0.1',
-        'AuditTest/1.0'
+        'AuditTest/1.0',
       );
       const duration = Date.now() - start;
       results.push({ iteration: i, duration, result });
@@ -60,7 +66,7 @@ export class AuditTestController {
         AuditSeverity.LOW,
         `org-test-${i}`,
         '127.0.0.1',
-        'AuditTest/1.0'
+        'AuditTest/1.0',
       );
       const duration = Date.now() - start;
       results.push({ iteration: i, duration, result });
@@ -87,7 +93,7 @@ export class AuditTestController {
       AuditSeverity.HIGH,
       'org-security',
       '192.168.1.100',
-      'MaliciousBot/1.0'
+      'MaliciousBot/1.0',
     );
     const duration = Date.now() - start;
 
@@ -121,14 +127,18 @@ export class AuditTestController {
   }
 
   @Post('toggle-mode')
-  async toggleMode(@Query('mode') mode: 'SYNC_MODE' | 'ASYNC_MODE' | 'QUEUE_DISABLED') {
+  async toggleMode(
+    @Query('mode') mode: 'SYNC_MODE' | 'ASYNC_MODE' | 'QUEUE_DISABLED',
+  ) {
     const validModes = ['SYNC_MODE', 'ASYNC_MODE', 'QUEUE_DISABLED'];
     if (!validModes.includes(mode)) {
-      return { error: `Invalid mode. Must be one of: ${validModes.join(', ')}` };
+      return {
+        error: `Invalid mode. Must be one of: ${validModes.join(', ')}`,
+      };
     }
 
     this.auditLogService.setAuditMode(mode as AuditMode);
-    
+
     return {
       message: `Audit mode changed to ${mode}`,
       currentMode: this.auditLogService.getAuditMode(),

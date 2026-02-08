@@ -1,5 +1,15 @@
 // apps/api/src/contracts/user.contract.ts
-import { IsString, IsNotEmpty, IsEmail, IsOptional, IsEnum, Length, IsBoolean, IsArray, ValidateNested } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsEmail,
+  IsOptional,
+  IsEnum,
+  Length,
+  IsBoolean,
+  IsArray,
+  ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { PasswordPolicy } from './_shared/password.policy';
 
@@ -78,18 +88,18 @@ export class CreateUserInput {
    */
   validateInvariants(): string[] {
     const errors: string[] = [];
-    
+
     // Email domain validation
     errors.push(...UserInvariants.validateEmailDomain(this));
-    
+
     // Password validation (only if password is provided)
     if (this.password) {
       errors.push(...PasswordPolicy.validateStrength(this.password));
     }
-    
+
     // Role validation (documentation only - actual validation in service layer)
     errors.push(...UserInvariants.validateRoleAssignment(this));
-    
+
     return errors;
   }
 }
@@ -189,25 +199,29 @@ export class UserInvariants {
    */
   static validateEmailDomain(input: { email: string }): string[] {
     const errors: string[] = [];
-    
+
     if (!input.email) {
       return errors;
     }
-    
+
     const email = input.email.toLowerCase();
     const domain = email.split('@')[1];
-    
+
     if (!domain) {
       return errors;
     }
-    
+
     // Block disposable email domains
-    const disposableDomains = ['tempmail.com', 'throwaway.com', 'mailinator.com'];
-    
-    if (disposableDomains.some(d => domain.includes(d))) {
+    const disposableDomains = [
+      'tempmail.com',
+      'throwaway.com',
+      'mailinator.com',
+    ];
+
+    if (disposableDomains.some((d) => domain.includes(d))) {
       errors.push('Disposable email domains are not allowed');
     }
-    
+
     return errors;
   }
 
@@ -215,7 +229,10 @@ export class UserInvariants {
    * Invariant: Role assignment rules
    * NOTE: Last-admin and permission checks enforced at service layer
    */
-  static validateRoleAssignment(_input: { role?: UserRole; updatedBy?: string }): string[] {
+  static validateRoleAssignment(_input: {
+    role?: UserRole;
+    updatedBy?: string;
+  }): string[] {
     // Role validation requires runtime context (database state, permissions)
     // This is documented here but enforced at service layer
     return [];
@@ -234,23 +251,29 @@ export class BatchUserInput {
 
   validateInvariants(): string[] {
     const errors: string[] = [];
-    
+
     // Check for duplicate emails
-    const emails = this.users.map(u => u.email.toLowerCase());
-    const duplicates = emails.filter((email, index) => emails.indexOf(email) !== index);
-    
+    const emails = this.users.map((u) => u.email.toLowerCase());
+    const duplicates = emails.filter(
+      (email, index) => emails.indexOf(email) !== index,
+    );
+
     if (duplicates.length > 0) {
-      errors.push(`Duplicate emails found: ${Array.from(new Set(duplicates)).join(', ')}`);
+      errors.push(
+        `Duplicate emails found: ${Array.from(new Set(duplicates)).join(', ')}`,
+      );
     }
-    
+
     // Validate each user
     this.users.forEach((user, index) => {
       const userErrors = user.validateInvariants();
       if (userErrors.length > 0) {
-        errors.push(`User ${index + 1} (${user.email}): ${userErrors.join(', ')}`);
+        errors.push(
+          `User ${index + 1} (${user.email}): ${userErrors.join(', ')}`,
+        );
       }
     });
-    
+
     return errors;
   }
 }

@@ -1,4 +1,11 @@
-﻿import { IsEmail, IsNotEmpty, IsOptional, IsString, MaxLength, MinLength } from "class-validator";
+﻿import {
+  IsEmail,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 
 export class CreateContactDto {
   @IsNotEmpty({ message: 'Name is required' })

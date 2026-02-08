@@ -1,9 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
-import {
-  UserRepository,
-  User as AuthCoreUser,
-} from '@helixcrm/auth-core';
+import { UserRepository, User as AuthCoreUser } from '@helixcrm/auth-core';
 
 @Injectable()
 export class PrismaUserRepositoryBridge implements UserRepository {
@@ -13,32 +10,32 @@ export class PrismaUserRepositoryBridge implements UserRepository {
    * Find user by ID (auth-core contract)
    * Returns minimal auth-core User object
    */
-async findById(userId: string): Promise<AuthCoreUser | null> {
-  const user = await this.prisma.user.findUnique({
-    where: { id: userId },
-    select: {
-      id: true,
-      email: true,
-      passwordHash: true,
-      failedLoginAttempts: true,
-      lockedUntil: true,
-      organizationId: true,
-    },
-  });
+  async findById(userId: string): Promise<AuthCoreUser | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        passwordHash: true,
+        failedLoginAttempts: true,
+        lockedUntil: true,
+        organizationId: true,
+      },
+    });
 
-  if (!user) {
-    return null;
+    if (!user) {
+      return null;
+    }
+
+    return {
+      id: user.id,
+      email: user.email,
+      passwordHash: user.passwordHash,
+      failedLoginAttempts: user.failedLoginAttempts,
+      accountLockedUntil: user.lockedUntil || undefined,
+      organizationId: user.organizationId,
+    };
   }
-
-  return {
-    id: user.id,
-    email: user.email,
-    passwordHash: user.passwordHash,
-    failedLoginAttempts: user.failedLoginAttempts,
-    accountLockedUntil: user.lockedUntil || undefined,
-    organizationId: user.organizationId,
-  };
-}
 
   /**
    * Update login attempts count
@@ -98,7 +95,7 @@ async findById(userId: string): Promise<AuthCoreUser | null> {
     if (!user) return;
 
     const newAttempts = (user.failedLoginAttempts || 0) + 1;
-    
+
     // Update failed attempts
     await this.prisma.user.update({
       where: { id: userId },
@@ -132,9 +129,12 @@ async findById(userId: string): Promise<AuthCoreUser | null> {
   /**
    * Find user by email with permissions/roles (API business logic)
    */
-  async findByEmailWithPermissions(email: string, organizationId: string): Promise<any> {
+  async findByEmailWithPermissions(
+    email: string,
+    organizationId: string,
+  ): Promise<any> {
     const normalizedEmail = email.toLowerCase().trim();
-    
+
     const user = await this.prisma.user.findUnique({
       where: { email: normalizedEmail },
       include: {
@@ -168,7 +168,7 @@ async findById(userId: string): Promise<AuthCoreUser | null> {
     user.UserRoles.forEach((userRole) => {
       if (userRole.role) {
         roles.add(userRole.role.name);
-        
+
         if (userRole.role.permissions) {
           userRole.role.permissions.forEach((rolePermission) => {
             if (rolePermission.permission) {
@@ -207,40 +207,40 @@ async findById(userId: string): Promise<AuthCoreUser | null> {
    */
   async updateUser(params: any): Promise<any> {
     const updateData: any = {};
-    
+
     if (params.passwordHash !== undefined) {
       updateData.passwordHash = params.passwordHash;
       updateData.lastPasswordChange = new Date();
     }
-    
+
     if (params.tokenVersion !== undefined) {
       updateData.tokenVersion = params.tokenVersion;
     }
-    
+
     if (params.refreshTokenHash !== undefined) {
       updateData.refreshTokenHash = params.refreshTokenHash;
     }
-    
+
     if (params.refreshTokenVersion !== undefined) {
       updateData.refreshTokenVersion = params.refreshTokenVersion;
     }
-    
+
     if (params.refreshTokenIssuedAt !== undefined) {
       updateData.refreshTokenIssuedAt = params.refreshTokenIssuedAt;
     }
-    
+
     if (params.lastLoginAt !== undefined) {
       updateData.lastLoginAt = params.lastLoginAt;
     }
-    
+
     if (params.isActive !== undefined) {
       updateData.isActive = params.isActive;
     }
-    
+
     if (params.failedLoginAttempts !== undefined) {
       updateData.failedLoginAttempts = params.failedLoginAttempts;
     }
-    
+
     if (params.lockedUntil !== undefined) {
       updateData.lockedUntil = params.lockedUntil;
     }

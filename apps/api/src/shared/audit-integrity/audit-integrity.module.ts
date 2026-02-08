@@ -9,6 +9,6 @@ import { AuditIntegrityController } from './audit-integrity.controller';
   imports: [PrismaModule],
   controllers: [AuditIntegrityController],
   providers: [AuditIntegrityService, DailyVerificationJob],
-  exports: [AuditIntegrityService]
+  exports: [AuditIntegrityService],
 })
 export class AuditIntegrityModule {}

@@ -39,7 +39,7 @@ export class UserRepository extends TenantAwareRepository {
     orderBy?: Prisma.UserOrderByWithRelationInput;
   }): Promise<User[]> {
     const { skip, take, where, orderBy } = params;
-    
+
     return this.prisma.user.findMany({
       skip,
       take,
@@ -71,7 +71,7 @@ export class UserRepository extends TenantAwareRepository {
         },
       },
     };
-    
+
     return this.prisma.user.create({
       data: tenantData,
     });
@@ -85,19 +85,19 @@ export class UserRepository extends TenantAwareRepository {
     data: Prisma.UserUpdateInput;
   }): Promise<User> {
     const { where, data } = params;
-    
+
     // First verify the user belongs to current tenant
     const existingUser = await this.findById(where.id as string);
     if (!existingUser) {
       throw new Error('User not found or does not belong to current tenant');
     }
-    
+
     // Manually add tenant filter to where clause for Prisma's complex types
     const tenantWhere = {
       ...where,
       organizationId: this.tenantId,
     };
-    
+
     return this.prisma.user.update({
       where: tenantWhere,
       data,
@@ -113,13 +113,13 @@ export class UserRepository extends TenantAwareRepository {
     if (!existingUser) {
       throw new Error('User not found or does not belong to current tenant');
     }
-    
+
     // Manually add tenant filter for Prisma's complex types
     const tenantWhere = {
       ...where,
       organizationId: this.tenantId,
     };
-    
+
     return this.prisma.user.delete({
       where: tenantWhere,
     });
@@ -133,13 +133,13 @@ export class UserRepository extends TenantAwareRepository {
     if (!existingUser) {
       throw new Error('User not found or does not belong to current tenant');
     }
-    
+
     // Manually add tenant filter for Prisma's complex types
     const tenantWhere = {
       id,
       organizationId: this.tenantId,
     };
-    
+
     return this.prisma.user.update({
       where: tenantWhere,
       data: { deletedAt: new Date() },

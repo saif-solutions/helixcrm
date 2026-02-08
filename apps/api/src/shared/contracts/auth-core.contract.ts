@@ -3,7 +3,7 @@
  * Version: @helixcrm/auth-core@0.1.0
  * Date: $(date)
  * Status: FROZEN for MVP-1 - DO NOT MODIFY WITHOUT MIGRATION PLAN
- * 
+ *
  * This file defines the REAL contract with @helixcrm/auth-core
  * All adapters MUST implement this exact interface.
  */
@@ -86,37 +86,37 @@ export interface RefreshTokenInput {
  * Verified Access Token - Our application's normalized format
  */
 export interface VerifiedAccessToken {
-  sub: string;            // user id
+  sub: string; // user id
   organizationId: string; // org id (mapped from 'org')
-  email?: string;         // email (from metadata)
-  tokenVersion: number;   // token version (mapped from 'version')
-  permissions: string[];  // user permissions
-  roles: string[];        // user roles
-  iat: number;           // issued at
-  exp: number;           // expires at
+  email?: string; // email (from metadata)
+  tokenVersion: number; // token version (mapped from 'version')
+  permissions: string[]; // user permissions
+  roles: string[]; // user roles
+  iat: number; // issued at
+  exp: number; // expires at
 }
 
 /**
  * Verified Refresh Token - Our application's normalized format
  */
 export interface VerifiedRefreshToken {
-  jti: string;            // token id
-  sub: string;            // user id
+  jti: string; // token id
+  sub: string; // user id
   organizationId: string; // org id (mapped from 'org')
-  type: 'refresh';        // token type
-  version?: string;       // custom version (from metadata)
-  iat: number;           // issued at
-  exp: number;           // expires at
+  type: 'refresh'; // token type
+  version?: string; // custom version (from metadata)
+  iat: number; // issued at
+  exp: number; // expires at
 }
 
 /**
  * Configuration for controlled degradation
  */
 export interface AuthAdapterConfig {
-  allowFallbacks: boolean;     // Whether to allow fallback token issuance
+  allowFallbacks: boolean; // Whether to allow fallback token issuance
   logAuthCoreFailures: boolean; // Whether to log auth-core failures
-  fallbackIssuer: string;      // Issuer for fallback tokens
-  fallbackAudience: string;    // Audience for fallback tokens
+  fallbackIssuer: string; // Issuer for fallback tokens
+  fallbackAudience: string; // Audience for fallback tokens
 }
 
 /**

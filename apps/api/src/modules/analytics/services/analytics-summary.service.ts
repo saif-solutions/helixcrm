@@ -11,7 +11,8 @@ export class AnalyticsSummaryService implements OnModuleInit {
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
   ) {
-    this.isEnabled = this.configService.get('ANALYTICS_SUMMARY_ENABLED', 'true') === 'true';
+    this.isEnabled =
+      this.configService.get('ANALYTICS_SUMMARY_ENABLED', 'true') === 'true';
   }
 
   async onModuleInit() {
@@ -36,12 +37,14 @@ export class AnalyticsSummaryService implements OnModuleInit {
       });
 
       const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-      
+
       if (!latestSummary || latestSummary.summarizedAt < oneHourAgo) {
         this.logger.log('Summary tables are stale, updating...');
         await this.updateAllSummaries();
       } else {
-        this.logger.log(`Summary tables are fresh (last updated: ${latestSummary.summarizedAt})`);
+        this.logger.log(
+          `Summary tables are fresh (last updated: ${latestSummary.summarizedAt})`,
+        );
       }
     } catch (error) {
       this.logger.error('Error checking summary staleness:', error);
@@ -68,7 +71,9 @@ export class AnalyticsSummaryService implements OnModuleInit {
       await this.updateActivityDailySummaries();
 
       const duration = Date.now() - startTime;
-      this.logger.log(`Completed update of all analytics summary tables in ${duration}ms`);
+      this.logger.log(
+        `Completed update of all analytics summary tables in ${duration}ms`,
+      );
     } catch (error) {
       this.logger.error('Error updating analytics summaries:', error);
       throw error;
@@ -80,7 +85,7 @@ export class AnalyticsSummaryService implements OnModuleInit {
    */
   async updateDealDailySummaries(): Promise<void> {
     this.logger.debug('Updating deal daily summaries...');
-    
+
     // Get all organizations
     const organizations = await this.prisma.organization.findMany({
       select: { id: true },
@@ -117,14 +122,14 @@ export class AnalyticsSummaryService implements OnModuleInit {
         // For DealDailySummary: @@unique([organizationId, date, pipelineId, stageId, currency])
         // Since pipelineId and stageId can be null, we need to handle this differently
         // Let's use a simpler approach for now - find and update
-        
+
         // First, try to find existing summary
-const existing = await this.prisma.dealSummaryDaily.findFirst({
-  where: {
-    organizationId: org.id,
-    date: today,
-  },
-});
+        const existing = await this.prisma.dealSummaryDaily.findFirst({
+          where: {
+            organizationId: org.id,
+            date: today,
+          },
+        });
 
         const summaryData = {
           organizationId: org.id,
@@ -154,7 +159,10 @@ const existing = await this.prisma.dealSummaryDaily.findFirst({
           });
         }
       } catch (error) {
-        this.logger.error(`Error updating deal summaries for organization ${org.id}:`, error);
+        this.logger.error(
+          `Error updating deal summaries for organization ${org.id}:`,
+          error,
+        );
       }
     }
   }
@@ -164,7 +172,7 @@ const existing = await this.prisma.dealSummaryDaily.findFirst({
    */
   async updateRevenueDailySummaries(): Promise<void> {
     this.logger.debug('Updating revenue daily summaries...');
-    
+
     const organizations = await this.prisma.organization.findMany({
       select: { id: true },
     });
@@ -228,7 +236,10 @@ const existing = await this.prisma.dealSummaryDaily.findFirst({
           });
         }
       } catch (error) {
-        this.logger.error(`Error updating revenue summaries for organization ${org.id}:`, error);
+        this.logger.error(
+          `Error updating revenue summaries for organization ${org.id}:`,
+          error,
+        );
       }
     }
   }
@@ -238,7 +249,7 @@ const existing = await this.prisma.dealSummaryDaily.findFirst({
    */
   async updatePipelineStageSummaries(): Promise<void> {
     this.logger.debug('Updating pipeline stage summaries...');
-    
+
     // Get all pipelines with their stages
     const pipelines = await this.prisma.pipeline.findMany({
       include: {
@@ -270,9 +281,10 @@ const existing = await this.prisma.dealSummaryDaily.findFirst({
 
           const stats = stageStats[0] as any;
           const dealCount = parseInt(stats.deal_count) || 0;
-          
+
           // Simple bottleneck detection: stage has more than 10 deals or average duration > 30 days
-          const isBottleneck = dealCount > 10 || parseFloat(stats.avg_duration_days) > 30;
+          const isBottleneck =
+            dealCount > 10 || parseFloat(stats.avg_duration_days) > 30;
 
           // For PipelineStageSummary: @@unique([organizationId, pipelineId, stageId, date])
           const existing = await this.prisma.pipelineStageSummary.findFirst({
@@ -292,8 +304,12 @@ const existing = await this.prisma.dealSummaryDaily.findFirst({
             dealCount,
             totalAmount: parseFloat(stats.total_amount) || 0,
             averageAmount: parseFloat(stats.average_amount) || 0,
-            avgStageDuration: Math.round(parseFloat(stats.avg_duration_days) || 0),
-            maxStageDuration: Math.round(parseFloat(stats.max_duration_days) || 0),
+            avgStageDuration: Math.round(
+              parseFloat(stats.avg_duration_days) || 0,
+            ),
+            maxStageDuration: Math.round(
+              parseFloat(stats.max_duration_days) || 0,
+            ),
             isBottleneck,
             summarizedAt: new Date(),
           };
@@ -309,7 +325,10 @@ const existing = await this.prisma.dealSummaryDaily.findFirst({
             });
           }
         } catch (error) {
-          this.logger.error(`Error updating pipeline stage summary for stage ${stage.id}:`, error);
+          this.logger.error(
+            `Error updating pipeline stage summary for stage ${stage.id}:`,
+            error,
+          );
         }
       }
     }
@@ -320,7 +339,7 @@ const existing = await this.prisma.dealSummaryDaily.findFirst({
    */
   async updateActivityDailySummaries(): Promise<void> {
     this.logger.debug('Updating activity daily summaries...');
-    
+
     const organizations = await this.prisma.organization.findMany({
       select: { id: true },
     });
@@ -390,7 +409,10 @@ const existing = await this.prisma.dealSummaryDaily.findFirst({
           });
         }
       } catch (error) {
-        this.logger.error(`Error updating activity summaries for organization ${org.id}:`, error);
+        this.logger.error(
+          `Error updating activity summaries for organization ${org.id}:`,
+          error,
+        );
       }
     }
   }
@@ -404,18 +426,18 @@ const existing = await this.prisma.dealSummaryDaily.findFirst({
     }
 
     const { startDate, endDate, groupBy = 'day' } = query;
-    
+
     // Use summary tables for faster queries
-const summaries = await this.prisma.dealSummaryDaily.findMany({
-  where: {
-    organizationId,
-    date: {
-      gte: startDate ? new Date(startDate) : undefined,
-      lte: endDate ? new Date(endDate) : undefined,
-    },
-  },
-  orderBy: { date: 'asc' },
-});
+    const summaries = await this.prisma.dealSummaryDaily.findMany({
+      where: {
+        organizationId,
+        date: {
+          gte: startDate ? new Date(startDate) : undefined,
+          lte: endDate ? new Date(endDate) : undefined,
+        },
+      },
+      orderBy: { date: 'asc' },
+    });
 
     // Aggregate based on groupBy
     return this.aggregateSummaries(summaries, groupBy, 'deal');
@@ -430,7 +452,7 @@ const summaries = await this.prisma.dealSummaryDaily.findMany({
     }
 
     const { startDate, endDate, groupBy = 'day' } = query;
-    
+
     const summaries = await this.prisma.revenueDailySummary.findMany({
       where: {
         organizationId,
@@ -449,22 +471,26 @@ const summaries = await this.prisma.dealSummaryDaily.findMany({
   /**
    * Helper method to aggregate summaries by time period
    */
-  private aggregateSummaries(summaries: any[], groupBy: string, type: 'deal' | 'revenue'): any {
+  private aggregateSummaries(
+    summaries: any[],
+    groupBy: string,
+    type: 'deal' | 'revenue',
+  ): any {
     if (groupBy === 'day') {
       return {
         data: summaries,
         source: 'summary-tables',
-        period: 'day'
+        period: 'day',
       };
     }
 
     // Group by week, month, etc.
     const aggregated: any = {};
-    
-    summaries.forEach(summary => {
+
+    summaries.forEach((summary) => {
       const date = new Date(summary.date);
       let key: string;
-      
+
       if (groupBy === 'week') {
         // Get week number
         const week = this.getWeekNumber(date);
@@ -476,7 +502,7 @@ const summaries = await this.prisma.dealSummaryDaily.findMany({
       } else {
         key = date.toISOString().split('T')[0]; // Default to day
       }
-      
+
       if (!aggregated[key]) {
         aggregated[key] = {
           period: key,
@@ -492,7 +518,7 @@ const summaries = await this.prisma.dealSummaryDaily.findMany({
           count: 0,
         };
       }
-      
+
       const agg = aggregated[key];
       agg.totalDeals += summary.totalDeals || 0;
       agg.wonDeals += summary.wonDeals || 0;
@@ -505,11 +531,11 @@ const summaries = await this.prisma.dealSummaryDaily.findMany({
       agg.forecastRevenue += parseFloat(summary.forecastRevenue || 0);
       agg.count += 1;
     });
-    
+
     return {
       data: Object.values(aggregated),
       source: 'summary-tables',
-      period: groupBy
+      period: groupBy,
     };
   }
 
@@ -518,7 +544,8 @@ const summaries = await this.prisma.dealSummaryDaily.findMany({
    */
   private getWeekNumber(date: Date): number {
     const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
-    const pastDaysOfYear = (date.getTime() - firstDayOfYear.getTime()) / 86400000;
+    const pastDaysOfYear =
+      (date.getTime() - firstDayOfYear.getTime()) / 86400000;
     return Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
   }
 }

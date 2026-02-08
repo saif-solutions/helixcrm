@@ -1,35 +1,40 @@
 // File: apps/api/src/modules/auth/auth.controller.ts
-import { 
-  Controller, 
-  Post, 
-  Body, 
-  UnauthorizedException, 
-  HttpCode, 
-  HttpStatus, 
+import {
+  Controller,
+  Post,
+  Body,
+  UnauthorizedException,
+  HttpCode,
+  HttpStatus,
   UseGuards,
   Res,
   Req,
   Get,
   BadRequestException,
-  Query
-} from "@nestjs/common";
+  Query,
+} from '@nestjs/common';
 import type { Response, Request } from 'express';
-import { Throttle } from "@nestjs/throttler";
-import { AuthService } from "./auth.service";
-import { AuthGuard } from "../../shared/guards/auth.guard";
-import { Public } from "../../shared/decorators/require-permission.decorator";
-import SecurityConfig from "../../config/security.config";
+import { Throttle } from '@nestjs/throttler';
+import { AuthService } from './auth.service';
+import { AuthGuard } from '../../shared/guards/auth.guard';
+import { Public } from '../../shared/decorators/require-permission.decorator';
+import SecurityConfig from '../../config/security.config';
 // ADD THESE IMPORTS:
-import { AuditLogService, AuditAction, AuditEntityType, AuditSeverity } from "../../shared/audit-log/audit-log.service";
+import {
+  AuditLogService,
+  AuditAction,
+  AuditEntityType,
+  AuditSeverity,
+} from '../../shared/audit-log/audit-log.service';
 
-@Controller("auth")
+@Controller('auth')
 export class AuthController {
   constructor(
     private authService: AuthService,
-    private auditLogService: AuditLogService // ADD THIS
+    private auditLogService: AuditLogService, // ADD THIS
   ) {}
 
-  @Get("csrf-token")
+  @Get('csrf-token')
   @Public()
   @HttpCode(HttpStatus.OK)
   getCsrfToken(@Req() req: Request) {
@@ -44,12 +49,16 @@ export class AuthController {
           path: '/api/v1/auth/csrf-token',
         });
       }
-      
+
       // Generate the CSRF token
       const csrfToken = (req as any).csrfToken();
-      
+
       // Validate the token
-      if (!csrfToken || typeof csrfToken !== 'string' || csrfToken.length < 10) {
+      if (
+        !csrfToken ||
+        typeof csrfToken !== 'string' ||
+        csrfToken.length < 10
+      ) {
         throw new BadRequestException({
           message: 'Invalid CSRF token generated',
           details: 'Generated token is invalid or too short',
@@ -58,30 +67,31 @@ export class AuthController {
           path: '/api/v1/auth/csrf-token',
         });
       }
-      
+
       // CRITICAL: Ensure we never return 'development-mode'
       if (csrfToken === 'development-mode') {
         throw new BadRequestException({
           message: 'CSRF configuration error',
-          details: 'CSRF is still in development mode. Check middleware configuration.',
+          details:
+            'CSRF is still in development mode. Check middleware configuration.',
           code: 'CSRF_DEVELOPMENT_MODE_ERROR',
           timestamp: new Date().toISOString(),
           path: '/api/v1/auth/csrf-token',
         });
       }
-      
+
       return {
         csrfToken,
         timestamp: new Date().toISOString(),
         expiresIn: 'Session',
-        note: 'Include this token in X-CSRF-Token header for state-changing requests (POST, PUT, DELETE, PATCH)'
+        note: 'Include this token in X-CSRF-Token header for state-changing requests (POST, PUT, DELETE, PATCH)',
       };
     } catch (error) {
       // If it's already a BadRequestException, re-throw it
       if (error instanceof BadRequestException) {
         throw error;
       }
-      
+
       // Otherwise, wrap in a BadRequestException with proper structure
       throw new BadRequestException({
         message: 'CSRF token generation failed',
@@ -94,14 +104,14 @@ export class AuthController {
     }
   }
 
-  @Post("login")
+  @Post('login')
   @Public()
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   async login(
     @Body() loginDto: { email: string; password: string },
     @Req() req: Request,
-    @Res({ passthrough: true }) res: Response
+    @Res({ passthrough: true }) res: Response,
   ) {
     const user = await this.authService.validateUser(
       loginDto.email,
@@ -120,8 +130,8 @@ export class AuthController {
         { reason: 'Invalid credentials' },
         AuditSeverity.MEDIUM,
       );
-      
-      throw new UnauthorizedException("Invalid credentials");
+
+      throw new UnauthorizedException('Invalid credentials');
     }
 
     // Log successful login
@@ -139,15 +149,12 @@ export class AuthController {
     return this.authService.login(user, res, req);
   }
 
-  @Post("logout")
+  @Post('logout')
   @HttpCode(HttpStatus.OK)
   @UseGuards(AuthGuard)
-  async logout(
-    @Req() req: any,
-    @Res({ passthrough: true }) res: Response
-  ) {
+  async logout(@Req() req: any, @Res({ passthrough: true }) res: Response) {
     const userId = req.user.sub;
-    
+
     // Log logout event
     await this.auditLogService.logWithRequest(
       req,
@@ -159,19 +166,19 @@ export class AuthController {
       { method: 'manual' },
       AuditSeverity.MEDIUM,
     );
-    
+
     return this.authService.logout(userId, res, req);
   }
 
-  @Post("refresh")
+  @Post('refresh')
   @Public()
   @HttpCode(HttpStatus.OK)
   async refreshToken(
     @Req() req: Request,
-    @Res({ passthrough: true }) res: Response
+    @Res({ passthrough: true }) res: Response,
   ) {
     const refreshToken = req.cookies?.refresh_token;
-    
+
     if (!refreshToken) {
       throw new UnauthorizedException('No refresh token provided');
     }
@@ -179,7 +186,7 @@ export class AuthController {
     return this.authService.refreshToken(refreshToken, res, req);
   }
 
-  @Get("me")
+  @Get('me')
   @UseGuards(AuthGuard)
   async getCurrentUser(@Req() req: any) {
     return {
@@ -187,11 +194,11 @@ export class AuthController {
         id: req.user.sub,
         email: req.user.email,
         organizationId: req.user.organizationId,
-      }
+      },
     };
   }
 
-   @Post("register")
+  @Post('register')
   @Public()
   @Throttle({ default: { limit: 3, ttl: 60000 } })
   async register(
@@ -203,15 +210,16 @@ export class AuthController {
       lastName: string;
       organizationName: string;
     },
-    @Req() req: Request
+    @Req() req: Request,
   ) {
     const result = await this.authService.register(registerDto, req);
-    
+
     // Log user registration - check if result has user property
     // The register method might return different structure, so we need to handle it
     const userEmail = registerDto.email;
-    const userId = (result as any).user?.id || (result as any).userId || 'unknown';
-    
+    const userId =
+      (result as any).user?.id || (result as any).userId || 'unknown';
+
     await this.auditLogService.logWithRequest(
       req,
       AuditAction.USER_CREATED,
@@ -219,20 +227,20 @@ export class AuthController {
       userEmail,
       userId,
       userId,
-      { 
+      {
         firstName: registerDto.firstName,
         lastName: registerDto.lastName,
-        organizationName: registerDto.organizationName
+        organizationName: registerDto.organizationName,
       },
       AuditSeverity.LOW,
     );
-    
+
     return result;
   }
 
   // ============== NEW SESSION MANAGEMENT ENDPOINTS ==============
 
-  @Get("sessions")
+  @Get('sessions')
   @UseGuards(AuthGuard)
   @HttpCode(HttpStatus.OK)
   async getSessions(@Req() req: any) {
@@ -240,22 +248,19 @@ export class AuthController {
     return this.authService.getUserSessions(userId);
   }
 
-  @Post("logout/all")
+  @Post('logout/all')
   @UseGuards(AuthGuard)
   @HttpCode(HttpStatus.OK)
-  async logoutAll(
-    @Req() req: any,
-    @Res({ passthrough: true }) res: Response
-  ) {
+  async logoutAll(@Req() req: any, @Res({ passthrough: true }) res: Response) {
     const userId = req.user.sub;
-    
+
     // Clear cookies
     res.clearCookie('access_token', SecurityConfig.cookies.accessToken());
     res.clearCookie('refresh_token', SecurityConfig.cookies.refreshToken());
-    
+
     // Invalidate all tokens
     await this.authService.invalidateAllTokens(userId);
-    
+
     // Log logout from all devices
     await this.auditLogService.logWithRequest(
       req,
@@ -271,21 +276,25 @@ export class AuthController {
     return { message: 'Logged out from all devices' };
   }
 
-  @Post("sessions/invalidate-others")
+  @Post('sessions/invalidate-others')
   @UseGuards(AuthGuard)
   @HttpCode(HttpStatus.OK)
   async invalidateOtherSessions(
     @Req() req: any,
-    @Query('keepCurrent') keepCurrent: string = 'true'
+    @Query('keepCurrent') keepCurrent: string = 'true',
   ) {
     const userId = req.user.sub;
     const shouldKeepCurrent = keepCurrent.toLowerCase() === 'true';
-    
-    const result = await this.authService.invalidateOtherSessions(userId, shouldKeepCurrent);
-    
+
+    const result = await this.authService.invalidateOtherSessions(
+      userId,
+      shouldKeepCurrent,
+    );
+
     // Log session invalidation - handle different return types
-    const invalidatedCount = (result as any).invalidatedCount || (result as any).count || 0;
-    
+    const invalidatedCount =
+      (result as any).invalidatedCount || (result as any).count || 0;
+
     await this.auditLogService.logWithRequest(
       req,
       AuditAction.LOGOUT,
@@ -293,14 +302,14 @@ export class AuthController {
       req.user.email,
       userId,
       undefined,
-      { 
+      {
         scope: 'other_sessions',
         keepCurrent: shouldKeepCurrent,
-        invalidatedCount: invalidatedCount
+        invalidatedCount: invalidatedCount,
       },
       AuditSeverity.MEDIUM,
     );
-    
+
     return result;
   }
 }

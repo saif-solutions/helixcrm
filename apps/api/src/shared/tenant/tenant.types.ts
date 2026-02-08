@@ -7,7 +7,7 @@ import { Request } from 'express';
  * This matches what's in jwt-payload.interface.ts
  */
 export interface JwtUser {
-  sub: string;            // user id
+  sub: string; // user id
   email: string;
   organizationId: string;
   role: string;
@@ -16,7 +16,7 @@ export interface JwtUser {
   roles: string[];
   iat?: number;
   exp?: number;
-  [key: string]: any;     // Allow additional JWT claims
+  [key: string]: any; // Allow additional JWT claims
 }
 
 /**
@@ -27,17 +27,17 @@ export interface TenantContext {
   // Core tenant identification
   tenantId: string;
   organizationId: string; // Same as tenantId, for clarity
-  
+
   // Tenant metadata
   tenantName?: string;
-  
+
   // User information (if authenticated)
   userId?: string;
   userEmail?: string;
   userRole?: string;
   roles?: string[];
   permissions?: string[];
-  
+
   // Context metadata
   isSystemContext: boolean;
   resolvedAt: Date;
@@ -63,21 +63,21 @@ export interface ITenantContextService {
   getOrganizationId(): string;
   getTenantName(): string | undefined;
   isSystemContext(): boolean;
-  
+
   // Context validation
   assertTenantContext(): void;
   assertNotSystemContext(): void;
-  
+
   // User context (if available)
   getUserId(): string | undefined;
   getUserEmail(): string | undefined;
   getUserRole(): string | undefined;
   getUserRoles(): string[] | undefined;
   getUserPermissions(): string[] | undefined;
-  
+
   // Raw context access
   getRawContext(): TenantContext;
-  
+
   // RLS compatibility
   getRLSContext(): { organizationId: string; userId?: string; role?: string };
 }
@@ -126,12 +126,12 @@ export class TenantIsolationViolationError extends Error {
     public readonly expectedTenantId: string,
     public readonly actualTenantId: string,
     public readonly entityType?: string,
-    public readonly entityId?: string
+    public readonly entityId?: string,
   ) {
     super(
       `Tenant isolation violation: Expected tenant ${expectedTenantId}, ` +
-      `but entity belongs to tenant ${actualTenantId}` +
-      (entityType ? ` (${entityType}: ${entityId})` : '')
+        `but entity belongs to tenant ${actualTenantId}` +
+        (entityType ? ` (${entityType}: ${entityId})` : ''),
     );
     this.name = 'TenantIsolationViolationError';
   }
@@ -140,9 +140,9 @@ export class TenantIsolationViolationError extends Error {
 /**
  * Convert application TenantContext to RLS TenantContext
  */
-export function toRLSContext(context: TenantContext): { 
-  organizationId: string; 
-  userId?: string; 
+export function toRLSContext(context: TenantContext): {
+  organizationId: string;
+  userId?: string;
   role?: string;
   userRole?: string;
 } {

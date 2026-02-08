@@ -1,5 +1,5 @@
-import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { PipelineStageResponseDto } from "./pipeline-stage-response.dto";
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { PipelineStageResponseDto } from './pipeline-stage-response.dto';
 
 export class PipelineResponseDto {
   @ApiProperty({ example: '123e4567-e89b-12d3-a456-426614174000' })

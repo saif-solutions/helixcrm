@@ -1,18 +1,23 @@
 // File: apps/api/src/modules/auth/auth.service.ts
-import { 
-  Injectable, 
-  UnauthorizedException, 
-  ConflictException, 
-  BadRequestException, 
-  Logger, 
+import {
+  Injectable,
+  UnauthorizedException,
+  ConflictException,
+  BadRequestException,
+  Logger,
   ForbiddenException,
-  InternalServerErrorException 
-} from "@nestjs/common";
-import { AuditLogService, AuditAction, AuditEntityType, AuditSeverity } from "../../shared/audit-log/audit-log.service";
-import { PrismaService } from "../../shared/prisma/prisma.service";
-import SecurityConfig from "../../config/security.config";
-import { AccountLockoutService } from "./services/account-lockout.service";
-import { AuthCoreAdapter } from "./adapters/AuthCoreAdapter";
+  InternalServerErrorException,
+} from '@nestjs/common';
+import {
+  AuditLogService,
+  AuditAction,
+  AuditEntityType,
+  AuditSeverity,
+} from '../../shared/audit-log/audit-log.service';
+import { PrismaService } from '../../shared/prisma/prisma.service';
+import SecurityConfig from '../../config/security.config';
+import { AccountLockoutService } from './services/account-lockout.service';
+import { AuthCoreAdapter } from './adapters/AuthCoreAdapter';
 
 @Injectable()
 export class AuthService {
@@ -29,51 +34,53 @@ export class AuthService {
 
   async validateUser(email: string, password: string, request?: any) {
     const normalizedEmail = email.toLowerCase().trim();
-    
+
     // Check if account is locked
     const lockStatus = await this.accountLockoutService.isAccountLocked(email);
-    
+
     if (lockStatus.isLocked) {
       this.logger.warn(`Login attempt for locked account: ${email}`, {
         lockedUntil: lockStatus.lockedUntil,
         event: 'account_locked_login_attempt',
       });
-      
+
       // Log failed login attempt due to locked account
       if (request) {
         await this.auditLogService.logAuthEvent({
           request,
           action: AuditAction.LOGIN_FAILURE,
           actorEmail: normalizedEmail,
-          metadata: { 
-            reason: 'Account locked', 
-            lockedUntil: lockStatus.lockedUntil 
+          metadata: {
+            reason: 'Account locked',
+            lockedUntil: lockStatus.lockedUntil,
           },
-          severity: AuditSeverity.HIGH
+          severity: AuditSeverity.HIGH,
         });
       }
-      
-      throw new ForbiddenException(`Account is locked until ${lockStatus.lockedUntil}`);
+
+      throw new ForbiddenException(
+        `Account is locked until ${lockStatus.lockedUntil}`,
+      );
     }
 
-    const user = await this.prisma.user.findUnique({ 
+    const user = await this.prisma.user.findUnique({
       where: { email: normalizedEmail },
       include: {
         organization: {
           select: {
             id: true,
-            name: true
-          }
-        }
-      }
+            name: true,
+          },
+        },
+      },
     });
-    
+
     if (!user || !user.isActive) {
       // Record failed attempt even if user doesn't exist (security through obscurity)
       if (user) {
         await this.accountLockoutService.recordFailedAttempt(user.id);
       }
-      
+
       // Log failed login attempt
       if (request) {
         await this.auditLogService.logAuthEvent({
@@ -81,18 +88,20 @@ export class AuthService {
           action: AuditAction.LOGIN_FAILURE,
           actorEmail: normalizedEmail,
           metadata: { reason: 'Invalid credentials or inactive account' },
-          severity: AuditSeverity.MEDIUM
+          severity: AuditSeverity.MEDIUM,
         });
       }
-      
+
       return null;
     }
 
-    const isValid = await this.authCoreAdapter.getPasswordService().compare(password, user.passwordHash);
+    const isValid = await this.authCoreAdapter
+      .getPasswordService()
+      .compare(password, user.passwordHash);
     if (!isValid) {
       // Record failed attempt
       await this.accountLockoutService.recordFailedAttempt(user.id);
-      
+
       // Log failed login attempt
       if (request) {
         await this.auditLogService.logAuthEvent({
@@ -102,10 +111,10 @@ export class AuthService {
           actorUserId: user.id,
           metadata: { reason: 'Invalid password' },
           organizationId: user.organizationId,
-          severity: AuditSeverity.MEDIUM
+          severity: AuditSeverity.MEDIUM,
         });
       }
-      
+
       return null;
     }
 
@@ -128,7 +137,10 @@ export class AuthService {
 
   // ==================== PERMISSIONS & ROLES ====================
 
-  private async getUserPermissions(userId: string, organizationId: string): Promise<{ permissions: string[], roles: string[] }> {
+  private async getUserPermissions(
+    userId: string,
+    organizationId: string,
+  ): Promise<{ permissions: string[]; roles: string[] }> {
     try {
       const userWithRoles = await this.prisma.user.findUnique({
         where: { id: userId },
@@ -162,7 +174,7 @@ export class AuthService {
       userWithRoles.UserRoles.forEach((userRole) => {
         if (userRole.role) {
           roles.add(userRole.role.name);
-          
+
           if (userRole.role.permissions) {
             userRole.role.permissions.forEach((rolePermission) => {
               if (rolePermission.permission) {
@@ -188,44 +200,59 @@ export class AuthService {
   async login(user: any, res: any, request?: any) {
     try {
       // Get user permissions
-      const { permissions, roles } = await this.getUserPermissions(user.id, user.organizationId);
-      
+      const { permissions, roles } = await this.getUserPermissions(
+        user.id,
+        user.organizationId,
+      );
+
       // Use auth-core token manager service for access token
-      const accessToken = await this.authCoreAdapter.getTokenManagerService().issueAccessToken({
-        userId: user.id,
-        email: user.email,
-        organizationId: user.organizationId,
-        tokenVersion: user.tokenVersion,
-        permissions: permissions,
-        roles: roles,
-        metadata: {
-          firstName: user.firstName || '',
-          lastName: user.lastName || '',
-          isActive: true,
-        },
-      });
-      
+      const accessToken = await this.authCoreAdapter
+        .getTokenManagerService()
+        .issueAccessToken({
+          userId: user.id,
+          email: user.email,
+          organizationId: user.organizationId,
+          tokenVersion: user.tokenVersion,
+          permissions: permissions,
+          roles: roles,
+          metadata: {
+            firstName: user.firstName || '',
+            lastName: user.lastName || '',
+            isActive: true,
+          },
+        });
+
       // IMPORTANT: Let auth-core generate refresh token with its own jti
       // DO NOT pass version parameter - auth-core will create jti automatically
-      const refreshToken = await this.authCoreAdapter.getTokenManagerService().issueRefreshToken({
-        userId: user.id,
-        organizationId: user.organizationId,
-        // version: undefined, // Let auth-core handle jti generation
-      });
+      const refreshToken = await this.authCoreAdapter
+        .getTokenManagerService()
+        .issueRefreshToken({
+          userId: user.id,
+          organizationId: user.organizationId,
+          // version: undefined, // Let auth-core handle jti generation
+        });
 
       // CRITICAL: DO NOT update refreshTokenVersion or refreshTokenHash here!
       // The PrismaTokenRepositoryBridge.saveRefreshToken() handles this via auth-core
       // Only update lastLoginAt - bridge handles token storage
       await this.prisma.user.update({
         where: { id: user.id },
-        data: { 
+        data: {
           lastLoginAt: new Date(),
         },
       });
 
       // Set cookies (plain token in cookie, hash in database via bridge)
-      res.cookie('access_token', accessToken, SecurityConfig.cookies.accessToken());
-      res.cookie('refresh_token', refreshToken, SecurityConfig.cookies.refreshToken());
+      res.cookie(
+        'access_token',
+        accessToken,
+        SecurityConfig.cookies.accessToken(),
+      );
+      res.cookie(
+        'refresh_token',
+        refreshToken,
+        SecurityConfig.cookies.refreshToken(),
+      );
 
       this.logger.log(`User ${user.email} logged in`, {
         userId: user.id,
@@ -248,7 +275,7 @@ export class AuthService {
             tokenVersion: user.tokenVersion,
           },
           organizationId: user.organizationId,
-          severity: AuditSeverity.MEDIUM
+          severity: AuditSeverity.MEDIUM,
         });
       }
 
@@ -270,7 +297,7 @@ export class AuthService {
         stack: error.stack?.split('\n')[0],
         event: 'login_error',
       });
-      
+
       // Log login failure to audit log
       if (request && user?.email) {
         await this.auditLogService.logAuthEvent({
@@ -278,15 +305,15 @@ export class AuthService {
           action: AuditAction.LOGIN_FAILURE,
           actorEmail: user.email,
           actorUserId: user?.id,
-          metadata: { 
+          metadata: {
             error: error.message,
-            errorType: error.name 
+            errorType: error.name,
           },
           organizationId: user?.organizationId,
-          severity: AuditSeverity.HIGH
+          severity: AuditSeverity.HIGH,
         });
       }
-      
+
       throw error;
     }
   }
@@ -297,10 +324,10 @@ export class AuthService {
     // Get user with organization for audit log
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { 
+      select: {
         email: true,
-        organizationId: true
-      }
+        organizationId: true,
+      },
     });
 
     if (!user) {
@@ -311,11 +338,11 @@ export class AuthService {
     // Clear cookies
     res.clearCookie('access_token', SecurityConfig.cookies.accessToken());
     res.clearCookie('refresh_token', SecurityConfig.cookies.refreshToken());
-    
+
     // Invalidate refresh token in database
     await this.prisma.user.update({
       where: { id: userId },
-      data: { 
+      data: {
         refreshTokenHash: null,
         refreshTokenVersion: null,
         refreshTokenIssuedAt: null,
@@ -338,7 +365,7 @@ export class AuthService {
         actorUserId: userId,
         metadata: {},
         organizationId: user.organizationId,
-        severity: AuditSeverity.MEDIUM
+        severity: AuditSeverity.MEDIUM,
       });
     }
 
@@ -349,23 +376,27 @@ export class AuthService {
 
   async refreshToken(oldRefreshToken: string, res: any, request?: any) {
     this.logger.debug('Refresh token process started', {
-      tokenPrefix: oldRefreshToken.substring(0, 10) + '...'
+      tokenPrefix: oldRefreshToken.substring(0, 10) + '...',
     });
-    
+
     try {
-    this.logger.log('[CRITICAL-DEBUG] refreshToken method called', {
-      oldRefreshTokenLength: oldRefreshToken?.length,
-      oldRefreshTokenFirst100: oldRefreshToken?.substring(0, 100) + '...',
-      oldRefreshTokenIsJWT: oldRefreshToken?.includes('.') && oldRefreshToken.split('.').length === 3,
-      caller: 'auth/refresh endpoint'
-    });
-    this.logger.debug('[DEBUG] Refresh token flow started', {
-      tokenPrefix: oldRefreshToken.substring(0, 30) + '...',
-      tokenLength: oldRefreshToken.length,
-    });
+      this.logger.log('[CRITICAL-DEBUG] refreshToken method called', {
+        oldRefreshTokenLength: oldRefreshToken?.length,
+        oldRefreshTokenFirst100: oldRefreshToken?.substring(0, 100) + '...',
+        oldRefreshTokenIsJWT:
+          oldRefreshToken?.includes('.') &&
+          oldRefreshToken.split('.').length === 3,
+        caller: 'auth/refresh endpoint',
+      });
+      this.logger.debug('[DEBUG] Refresh token flow started', {
+        tokenPrefix: oldRefreshToken.substring(0, 30) + '...',
+        tokenLength: oldRefreshToken.length,
+      });
       // Verify JWT using auth-core
-      const payload = this.authCoreAdapter.getTokenManagerService().verifyRefreshToken(oldRefreshToken);
-      
+      const payload = this.authCoreAdapter
+        .getTokenManagerService()
+        .verifyRefreshToken(oldRefreshToken);
+
       // Security validation
       if (payload.type !== 'refresh') {
         this.logger.warn(`Invalid token type in refresh flow: ${payload.type}`);
@@ -379,168 +410,196 @@ export class AuthService {
       });
 
       // CRITICAL: TRANSACTION WITH VERSION BINDING
-      return await this.authCoreAdapter.withTransaction(async ({ tokenRepository, userRepository }) => {
-        // Find user using auth-core repository
-        const authCoreUser = await userRepository.findById(payload.sub);
-        if (!authCoreUser) {
-          throw new UnauthorizedException('User not found');
-        }
-
-        // Fetch full user from database for business logic
-        const fullUser = await this.prisma.user.findUnique({
-          where: { id: payload.sub },
-          include: {
-            organization: {
-              select: {
-                id: true,
-                name: true
-              }
-            }
+      return await this.authCoreAdapter.withTransaction(
+        async ({ tokenRepository, userRepository }) => {
+          // Find user using auth-core repository
+          const authCoreUser = await userRepository.findById(payload.sub);
+          if (!authCoreUser) {
+            throw new UnauthorizedException('User not found');
           }
-        });
 
-        if (!fullUser || !fullUser.isActive) {
-          throw new UnauthorizedException('User not found or inactive');
-        }
-
-        const userWithOrg = {
-          ...fullUser,
-          organization: fullUser.organization,
-        };
-
-        this.logger.debug('User found for refresh', {
-          email: userWithOrg.email,
-          tokenVersion: userWithOrg.tokenVersion,
-          refreshTokenVersionLength: userWithOrg.refreshTokenVersion?.length,
-          refreshTokenVersionPrefix: userWithOrg.refreshTokenVersion?.substring(0, 10),
-        });
-
-        // ==================== CRITICAL: VERSION BINDING CHECK ====================
-        // Auth-core uses jti (JWT ID) for version binding
-        const tokenJti = payload.jti;
-        
-        if (!tokenJti) {
-          this.logger.error('Refresh token missing jti', { userId: payload.sub });
-          throw new UnauthorizedException('Invalid refresh token');
-        }
-
-// Validate current refresh token hash
-if (!userWithOrg.refreshTokenHash) {
-  throw new UnauthorizedException('No active refresh token');
-}
-
-// FIX: Auth-core provides SHA256 hash, not raw JWT
-// We need to SHA256 hash the JWT before bcrypt comparison
-const crypto = await import('crypto');
-const jwtHash = crypto.createHash('sha256').update(oldRefreshToken).digest('hex');
-
-const isTokenValid = await this.authCoreAdapter.getPasswordService().compare(
-  jwtHash,  // Compare SHA256 hash of JWT
-  userWithOrg.refreshTokenHash
-);
-
-// Debug logging
-this.logger.debug('[FIX] SHA256 Hash Comparison', {
-  jwtHashLength: jwtHash.length,
-  jwtHashPrefix: jwtHash.substring(0, 20),
-  storedHashPrefix: userWithOrg.refreshTokenHash?.substring(0, 30),
-  comparisonType: 'bcrypt.compare(SHA256(JWT), storedHash)'
-});
-
-if (!isTokenValid) {
-  this.logger.log('[DEBUG] Token validation FAILED - entering error block');
-  this.logger.log('[DEBUG] Hash comparison result', {
-    isValid: isTokenValid,
-    comparisonType: 'bcrypt.compare(rawToken, hash)'
-  });
-  throw new UnauthorizedException('Invalid refresh token');
-}
-        // ==================== GENERATE NEW TOKENS ====================
-        
-        // Get user permissions for the new token
-        const { permissions, roles } = await this.getUserPermissions(userWithOrg.id, userWithOrg.organizationId);
-
-        // Generate new refresh token (auth-core will create new jti)
-        const newRefreshToken = await this.authCoreAdapter.getTokenManagerService().issueRefreshToken({
-          userId: userWithOrg.id,
-          organizationId: userWithOrg.organizationId,
-          // version: undefined, // Let auth-core handle jti generation
-        });
-
-        // Generate new access token
-        const newAccessToken = await this.authCoreAdapter.getTokenManagerService().issueAccessToken({
-          userId: userWithOrg.id,
-          email: userWithOrg.email,
-          organizationId: userWithOrg.organizationId,
-          tokenVersion: userWithOrg.tokenVersion + 1, // Increment token version
-          permissions: permissions,
-          roles: roles,
-          metadata: {
-            firstName: userWithOrg.firstName || '',
-            lastName: userWithOrg.lastName || '',
-            isActive: true,
-          },
-        });
-
-        // Hash the NEW token (bridge will handle this via auth-core)
-        const newRefreshTokenHash = await this.authCoreAdapter.getPasswordService().hash(newRefreshToken);
-
-        // ATOMIC UPDATE WITH VERSION BINDING
-        // Bridge will handle storing new jti and hash
-        await tokenRepository.updateTokenVersion(
-          userWithOrg.id,
-          tokenJti, // Old jti (for atomic check)
-          undefined, // New jti will be generated by auth-core in bridge
-          newRefreshTokenHash
-        );
-
-        this.logger.debug('Token rotation completed', {
-          userId: userWithOrg.id,
-          oldTokenVersion: userWithOrg.tokenVersion,
-          newTokenVersion: userWithOrg.tokenVersion + 1
-        });
-
-        // Set cookies
-        res.cookie('access_token', newAccessToken, SecurityConfig.cookies.accessToken());
-        res.cookie('refresh_token', newRefreshToken, SecurityConfig.cookies.refreshToken());
-
-        // Log token refresh to audit log
-        if (request) {
-          await this.auditLogService.logAuthEvent({
-            request,
-            action: AuditAction.TOKEN_REFRESH,
-            actorEmail: userWithOrg.email,
-            actorUserId: userWithOrg.id,
-            metadata: { 
-              oldTokenVersion: userWithOrg.tokenVersion,
-              newTokenVersion: userWithOrg.tokenVersion + 1 
+          // Fetch full user from database for business logic
+          const fullUser = await this.prisma.user.findUnique({
+            where: { id: payload.sub },
+            include: {
+              organization: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
             },
-            organizationId: userWithOrg.organizationId,
-            severity: AuditSeverity.MEDIUM
           });
-        }
 
-        return { 
-          access_token: newAccessToken,
-          user: {
-            id: userWithOrg.id,
-            email: userWithOrg.email,
-            firstName: userWithOrg.firstName,
-            lastName: userWithOrg.lastName,
-            organizationId: userWithOrg.organizationId,
-            permissions,
-            roles,
+          if (!fullUser || !fullUser.isActive) {
+            throw new UnauthorizedException('User not found or inactive');
           }
-        };
-      });
-      
+
+          const userWithOrg = {
+            ...fullUser,
+            organization: fullUser.organization,
+          };
+
+          this.logger.debug('User found for refresh', {
+            email: userWithOrg.email,
+            tokenVersion: userWithOrg.tokenVersion,
+            refreshTokenVersionLength: userWithOrg.refreshTokenVersion?.length,
+            refreshTokenVersionPrefix:
+              userWithOrg.refreshTokenVersion?.substring(0, 10),
+          });
+
+          // ==================== CRITICAL: VERSION BINDING CHECK ====================
+          // Auth-core uses jti (JWT ID) for version binding
+          const tokenJti = payload.jti;
+
+          if (!tokenJti) {
+            this.logger.error('Refresh token missing jti', {
+              userId: payload.sub,
+            });
+            throw new UnauthorizedException('Invalid refresh token');
+          }
+
+          // Validate current refresh token hash
+          if (!userWithOrg.refreshTokenHash) {
+            throw new UnauthorizedException('No active refresh token');
+          }
+
+          // FIX: Auth-core provides SHA256 hash, not raw JWT
+          // We need to SHA256 hash the JWT before bcrypt comparison
+          const crypto = await import('crypto');
+          const jwtHash = crypto
+            .createHash('sha256')
+            .update(oldRefreshToken)
+            .digest('hex');
+
+          const isTokenValid = await this.authCoreAdapter
+            .getPasswordService()
+            .compare(
+              jwtHash, // Compare SHA256 hash of JWT
+              userWithOrg.refreshTokenHash,
+            );
+
+          // Debug logging
+          this.logger.debug('[FIX] SHA256 Hash Comparison', {
+            jwtHashLength: jwtHash.length,
+            jwtHashPrefix: jwtHash.substring(0, 20),
+            storedHashPrefix: userWithOrg.refreshTokenHash?.substring(0, 30),
+            comparisonType: 'bcrypt.compare(SHA256(JWT), storedHash)',
+          });
+
+          if (!isTokenValid) {
+            this.logger.log(
+              '[DEBUG] Token validation FAILED - entering error block',
+            );
+            this.logger.log('[DEBUG] Hash comparison result', {
+              isValid: isTokenValid,
+              comparisonType: 'bcrypt.compare(rawToken, hash)',
+            });
+            throw new UnauthorizedException('Invalid refresh token');
+          }
+          // ==================== GENERATE NEW TOKENS ====================
+
+          // Get user permissions for the new token
+          const { permissions, roles } = await this.getUserPermissions(
+            userWithOrg.id,
+            userWithOrg.organizationId,
+          );
+
+          // Generate new refresh token (auth-core will create new jti)
+          const newRefreshToken = await this.authCoreAdapter
+            .getTokenManagerService()
+            .issueRefreshToken({
+              userId: userWithOrg.id,
+              organizationId: userWithOrg.organizationId,
+              // version: undefined, // Let auth-core handle jti generation
+            });
+
+          // Generate new access token
+          const newAccessToken = await this.authCoreAdapter
+            .getTokenManagerService()
+            .issueAccessToken({
+              userId: userWithOrg.id,
+              email: userWithOrg.email,
+              organizationId: userWithOrg.organizationId,
+              tokenVersion: userWithOrg.tokenVersion + 1, // Increment token version
+              permissions: permissions,
+              roles: roles,
+              metadata: {
+                firstName: userWithOrg.firstName || '',
+                lastName: userWithOrg.lastName || '',
+                isActive: true,
+              },
+            });
+
+          // Hash the NEW token (bridge will handle this via auth-core)
+          const newRefreshTokenHash = await this.authCoreAdapter
+            .getPasswordService()
+            .hash(newRefreshToken);
+
+          // ATOMIC UPDATE WITH VERSION BINDING
+          // Bridge will handle storing new jti and hash
+          await tokenRepository.updateTokenVersion(
+            userWithOrg.id,
+            tokenJti, // Old jti (for atomic check)
+            undefined, // New jti will be generated by auth-core in bridge
+            newRefreshTokenHash,
+          );
+
+          this.logger.debug('Token rotation completed', {
+            userId: userWithOrg.id,
+            oldTokenVersion: userWithOrg.tokenVersion,
+            newTokenVersion: userWithOrg.tokenVersion + 1,
+          });
+
+          // Set cookies
+          res.cookie(
+            'access_token',
+            newAccessToken,
+            SecurityConfig.cookies.accessToken(),
+          );
+          res.cookie(
+            'refresh_token',
+            newRefreshToken,
+            SecurityConfig.cookies.refreshToken(),
+          );
+
+          // Log token refresh to audit log
+          if (request) {
+            await this.auditLogService.logAuthEvent({
+              request,
+              action: AuditAction.TOKEN_REFRESH,
+              actorEmail: userWithOrg.email,
+              actorUserId: userWithOrg.id,
+              metadata: {
+                oldTokenVersion: userWithOrg.tokenVersion,
+                newTokenVersion: userWithOrg.tokenVersion + 1,
+              },
+              organizationId: userWithOrg.organizationId,
+              severity: AuditSeverity.MEDIUM,
+            });
+          }
+
+          return {
+            access_token: newAccessToken,
+            user: {
+              id: userWithOrg.id,
+              email: userWithOrg.email,
+              firstName: userWithOrg.firstName,
+              lastName: userWithOrg.lastName,
+              organizationId: userWithOrg.organizationId,
+              permissions,
+              roles,
+            },
+          };
+        },
+      );
     } catch (error: any) {
       this.logger.error('Refresh token error', {
         error: error.message,
         errorType: error.name,
-        stack: error.stack?.split('\n')[0]
+        stack: error.stack?.split('\n')[0],
       });
-      
+
       if (error instanceof UnauthorizedException) {
         throw error;
       }
@@ -550,13 +609,16 @@ if (!isTokenValid) {
 
   // ==================== REGISTRATION FLOW ====================
 
-  async register(registerDto: {
-    email: string;
-    password: string;
-    firstName: string;
-    lastName: string;
-    organizationName: string;
-  }, request?: any) {
+  async register(
+    registerDto: {
+      email: string;
+      password: string;
+      firstName: string;
+      lastName: string;
+      organizationName: string;
+    },
+    request?: any,
+  ) {
     // Check if user exists
     const existingUser = await this.prisma.user.findUnique({
       where: { email: registerDto.email },
@@ -567,13 +629,20 @@ if (!isTokenValid) {
     }
 
     // Hash password using auth-core
-    const passwordHash = await this.authCoreAdapter.getPasswordService().hash(registerDto.password);
+    const passwordHash = await this.authCoreAdapter
+      .getPasswordService()
+      .hash(registerDto.password);
 
     // Create organization
     const organization = await this.prisma.organization.create({
       data: {
-        name: registerDto.organizationName || `${registerDto.firstName}'s Organization`,
-        slug: registerDto.email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '-'),
+        name:
+          registerDto.organizationName ||
+          `${registerDto.firstName}'s Organization`,
+        slug: registerDto.email
+          .split('@')[0]
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, '-'),
         status: 'active',
       },
     });
@@ -596,7 +665,7 @@ if (!isTokenValid) {
 
     // Create default RBAC roles for organization
     await this.createDefaultRolesForOrganization(organization.id);
-    
+
     // Assign SystemAdmin role to new user
     await this.assignSystemAdminRoleToUser(user.id, organization.id);
 
@@ -619,10 +688,10 @@ if (!isTokenValid) {
           firstName: user.firstName,
           lastName: user.lastName,
           organizationName: organization.name,
-          roles: ['SystemAdmin']
+          roles: ['SystemAdmin'],
         },
         AuditSeverity.LOW,
-        user.organizationId
+        user.organizationId,
       );
     }
 
@@ -630,7 +699,8 @@ if (!isTokenValid) {
       id: user.id,
       email: user.email,
       organizationId: user.organizationId,
-      message: 'Organization created successfully. Default roles and permissions have been set up.',
+      message:
+        'Organization created successfully. Default roles and permissions have been set up.',
     };
   }
 
@@ -639,10 +709,10 @@ if (!isTokenValid) {
   async invalidateAllTokens(userId: string, request?: any) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { 
+      select: {
         email: true,
-        organizationId: true 
-      }
+        organizationId: true,
+      },
     });
 
     if (!user) {
@@ -674,7 +744,7 @@ if (!isTokenValid) {
         actorUserId: userId,
         metadata: { action: 'invalidate_all_tokens' },
         organizationId: user.organizationId,
-        severity: AuditSeverity.MEDIUM
+        severity: AuditSeverity.MEDIUM,
       });
     }
   }
@@ -717,13 +787,17 @@ if (!isTokenValid) {
     };
   }
 
-  async invalidateOtherSessions(userId: string, keepCurrent: boolean = true, request?: any) {
+  async invalidateOtherSessions(
+    userId: string,
+    keepCurrent: boolean = true,
+    request?: any,
+  ) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { 
+      select: {
         email: true,
-        organizationId: true 
-      }
+        organizationId: true,
+      },
     });
 
     if (!user) {
@@ -734,11 +808,13 @@ if (!isTokenValid) {
       where: { id: userId },
       data: {
         tokenVersion: { increment: 1 },
-        ...(keepCurrent ? {} : {
-          refreshTokenHash: null,
-          refreshTokenVersion: null,
-          refreshTokenIssuedAt: null,
-        }),
+        ...(keepCurrent
+          ? {}
+          : {
+              refreshTokenHash: null,
+              refreshTokenVersion: null,
+              refreshTokenIssuedAt: null,
+            }),
       },
     });
 
@@ -757,14 +833,14 @@ if (!isTokenValid) {
         actorUserId: userId,
         metadata: { action: 'invalidate_other_sessions', keepCurrent },
         organizationId: user.organizationId,
-        severity: AuditSeverity.MEDIUM
+        severity: AuditSeverity.MEDIUM,
       });
     }
 
-    return { 
-      message: keepCurrent 
-        ? 'All other sessions have been invalidated' 
-        : 'All sessions have been invalidated' 
+    return {
+      message: keepCurrent
+        ? 'All other sessions have been invalidated'
+        : 'All sessions have been invalidated',
     };
   }
 
@@ -779,10 +855,17 @@ if (!isTokenValid) {
       return false;
     }
 
-    return await this.authCoreAdapter.getPasswordService().compare(token, user.refreshTokenHash);
+    return await this.authCoreAdapter
+      .getPasswordService()
+      .compare(token, user.refreshTokenHash);
   }
 
-  async changePassword(userId: string, oldPassword: string, newPassword: string, request?: any) {
+  async changePassword(
+    userId: string,
+    oldPassword: string,
+    newPassword: string,
+    request?: any,
+  ) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
     });
@@ -792,13 +875,17 @@ if (!isTokenValid) {
     }
 
     // Verify old password
-    const isValid = await this.authCoreAdapter.getPasswordService().compare(oldPassword, user.passwordHash);
+    const isValid = await this.authCoreAdapter
+      .getPasswordService()
+      .compare(oldPassword, user.passwordHash);
     if (!isValid) {
       throw new UnauthorizedException('Invalid current password');
     }
 
     // Hash new password
-    const newPasswordHash = await this.authCoreAdapter.getPasswordService().hash(newPassword);
+    const newPasswordHash = await this.authCoreAdapter
+      .getPasswordService()
+      .hash(newPassword);
 
     // Update password and invalidate all tokens
     await this.prisma.user.update({
@@ -822,7 +909,7 @@ if (!isTokenValid) {
         actorUserId: userId,
         metadata: {},
         organizationId: user.organizationId,
-        severity: AuditSeverity.MEDIUM
+        severity: AuditSeverity.MEDIUM,
       });
     }
 
@@ -834,18 +921,35 @@ if (!isTokenValid) {
   /**
    * Create default system roles for a new organization
    */
-  private async createDefaultRolesForOrganization(organizationId: string): Promise<void> {
-    this.logger.log(`Creating default roles for organization: ${organizationId.substring(0, 8)}...`);
+  private async createDefaultRolesForOrganization(
+    organizationId: string,
+  ): Promise<void> {
+    this.logger.log(
+      `Creating default roles for organization: ${organizationId.substring(0, 8)}...`,
+    );
 
     // Ensure core permissions exist
     const corePermissions = [
-      'users.read', 'users.create', 'users.update', 'users.delete',
-      'contacts.read', 'contacts.write', 'contacts.delete',
-      'deals.read', 'deals.write', 'deals.delete',
-      'leads.read', 'leads.write', 'leads.delete',
-      'pipelines.read', 'pipelines.write', 'pipelines.manage',
-      'analytics.read', 'analytics.export',
-      'rbac.read', 'rbac.manage',
+      'users.read',
+      'users.create',
+      'users.update',
+      'users.delete',
+      'contacts.read',
+      'contacts.write',
+      'contacts.delete',
+      'deals.read',
+      'deals.write',
+      'deals.delete',
+      'leads.read',
+      'leads.write',
+      'leads.delete',
+      'pipelines.read',
+      'pipelines.write',
+      'pipelines.manage',
+      'analytics.read',
+      'analytics.export',
+      'rbac.read',
+      'rbac.manage',
       'dashboard.read',
       'audit.read',
     ];
@@ -900,7 +1004,9 @@ if (!isTokenValid) {
         },
       });
     }
-    this.logger.debug(`SystemAdmin role created with ${allPermissions.length} permissions`);
+    this.logger.debug(
+      `SystemAdmin role created with ${allPermissions.length} permissions`,
+    );
 
     // Create Manager Role
     const managerRole = await this.prisma.role.upsert({
@@ -927,10 +1033,14 @@ if (!isTokenValid) {
       where: {
         code: {
           in: [
-            'contacts.read', 'contacts.write',
-            'deals.read', 'deals.write',
-            'leads.read', 'leads.write',
-            'pipelines.read', 'pipelines.write',
+            'contacts.read',
+            'contacts.write',
+            'deals.read',
+            'deals.write',
+            'leads.read',
+            'leads.write',
+            'pipelines.read',
+            'pipelines.write',
             'analytics.read',
             'dashboard.read',
           ],
@@ -953,7 +1063,9 @@ if (!isTokenValid) {
         },
       });
     }
-    this.logger.debug(`Manager role created with ${managerPermissions.length} permissions`);
+    this.logger.debug(
+      `Manager role created with ${managerPermissions.length} permissions`,
+    );
 
     // Create User Role
     const userRole = await this.prisma.role.upsert({
@@ -979,9 +1091,12 @@ if (!isTokenValid) {
       where: {
         code: {
           in: [
-            'contacts.read', 'contacts.write',
-            'deals.read', 'deals.write',
-            'leads.read', 'leads.write',
+            'contacts.read',
+            'contacts.write',
+            'deals.read',
+            'deals.write',
+            'leads.read',
+            'leads.write',
             'dashboard.read',
           ],
         },
@@ -1003,7 +1118,9 @@ if (!isTokenValid) {
         },
       });
     }
-    this.logger.debug(`User role created with ${userPermissions.length} permissions`);
+    this.logger.debug(
+      `User role created with ${userPermissions.length} permissions`,
+    );
 
     // Create Viewer Role
     const viewerRole = await this.prisma.role.upsert({
@@ -1055,13 +1172,18 @@ if (!isTokenValid) {
         },
       });
     }
-    this.logger.debug(`Viewer role created with ${viewerPermissions.length} permissions`);
+    this.logger.debug(
+      `Viewer role created with ${viewerPermissions.length} permissions`,
+    );
   }
 
   /**
    * Assign SystemAdmin role to a user
    */
-  private async assignSystemAdminRoleToUser(userId: string, organizationId: string): Promise<void> {
+  private async assignSystemAdminRoleToUser(
+    userId: string,
+    organizationId: string,
+  ): Promise<void> {
     const adminRole = await this.prisma.role.findFirst({
       where: {
         organizationId,
@@ -1070,7 +1192,9 @@ if (!isTokenValid) {
     });
 
     if (!adminRole) {
-      throw new Error(`SystemAdmin role not found for organization ${organizationId}`);
+      throw new Error(
+        `SystemAdmin role not found for organization ${organizationId}`,
+      );
     }
 
     await this.prisma.userRole.create({
@@ -1124,7 +1248,7 @@ if (!isTokenValid) {
       'dashboard.read': 'View dashboard',
       'audit.read': 'View audit logs',
     };
-    
+
     return descriptions[code] || `${code} permission`;
   }
 
@@ -1136,10 +1260,10 @@ if (!isTokenValid) {
     if (!dbJti) return 'DB_JTI_NULL';
     if (!tokenJti) return 'TOKEN_JTI_NULL';
     if (dbJti === tokenJti) return 'ACTUALLY_MATCHES';
-    
+
     const dbFormat = this.describeJtiFormat(dbJti);
     const tokenFormat = this.describeJtiFormat(tokenJti);
-    
+
     return `JTI_FORMAT_MISMATCH: DB=${dbFormat}(${dbJti.length}), TOKEN=${tokenFormat}(${tokenJti.length})`;
   }
 

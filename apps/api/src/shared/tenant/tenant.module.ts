@@ -7,15 +7,7 @@ import { SystemGuard } from '../guards/system.guard';
 
 @Global()
 @Module({
-  providers: [
-    TenantContextService,
-    TenantGuard,
-    SystemGuard,
-  ],
-  exports: [
-    TenantContextService,
-    TenantGuard,
-    SystemGuard,
-  ],
+  providers: [TenantContextService, TenantGuard, SystemGuard],
+  exports: [TenantContextService, TenantGuard, SystemGuard],
 })
 export class TenantModule {}

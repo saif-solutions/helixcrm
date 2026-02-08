@@ -14,21 +14,23 @@ import {
 export class PrismaTokenRepository implements TokenRepository {
   constructor(private prisma: PrismaService) {}
 
-  async createRefreshToken(params: CreateRefreshTokenParams): Promise<RefreshToken> {
+  async createRefreshToken(
+    params: CreateRefreshTokenParams,
+  ): Promise<RefreshToken> {
     // Note: In current implementation, refresh tokens are stored in user.refreshTokenHash
     // This method needs to adapt to existing schema
     const crypto = await import('crypto');
     const uniqueId = crypto.randomBytes(16).toString('hex');
     const version = `${Date.now()}-${uniqueId}`;
-    
+
     // Generate a JWT-like token string (will be signed by JWT service)
     // This matches the existing pattern in auth.service.ts
     const tokenValue = crypto.randomBytes(32).toString('hex');
-    
+
     // Hash the token for storage (matching existing security practice)
     const hashedToken = await bcrypt.hash(
       tokenValue,
-      SecurityConfig.refreshToken.bcryptRounds || 10
+      SecurityConfig.refreshToken.bcryptRounds || 10,
     );
 
     // Update user with new token hash and version
@@ -54,7 +56,9 @@ export class PrismaTokenRepository implements TokenRepository {
     };
   }
 
-  async validateRefreshToken(params: ValidateRefreshTokenParams): Promise<boolean> {
+  async validateRefreshToken(
+    params: ValidateRefreshTokenParams,
+  ): Promise<boolean> {
     const user = await this.prisma.user.findUnique({
       where: { id: params.userId },
       select: {
@@ -137,7 +141,7 @@ export class PrismaTokenRepository implements TokenRepository {
     userId: string,
     oldVersion: string,
     newVersion: string,
-    newTokenHash: string
+    newTokenHash: string,
   ): Promise<void> {
     // This implements the critical transaction pattern from auth.service.ts
     // Version binding check for replay protection

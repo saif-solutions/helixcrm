@@ -21,14 +21,20 @@ export class ComplianceSchedulerService implements OnModuleInit {
 
   private startScheduledTasks() {
     // Daily evidence collection (24 hours)
-    this.dailyInterval = setInterval(() => {
-      this.collectDailyEvidence();
-    }, 24 * 60 * 60 * 1000);
+    this.dailyInterval = setInterval(
+      () => {
+        this.collectDailyEvidence();
+      },
+      24 * 60 * 60 * 1000,
+    );
 
     // Weekly gap analysis (7 days)
-    this.weeklyInterval = setInterval(() => {
-      this.performWeeklyGapAnalysis();
-    }, 7 * 24 * 60 * 60 * 1000);
+    this.weeklyInterval = setInterval(
+      () => {
+        this.performWeeklyGapAnalysis();
+      },
+      7 * 24 * 60 * 60 * 1000,
+    );
 
     // Run once immediately on startup
     setTimeout(() => {
@@ -52,14 +58,18 @@ export class ComplianceSchedulerService implements OnModuleInit {
    */
   private async collectDailyEvidence() {
     this.logger.log('Starting daily SOC 2 evidence collection...');
-    
+
     try {
       const results = await this.evidenceService.collectAllEvidence();
-      
-      this.logger.log(`Daily evidence collection completed: ${results.length} controls collected`);
-      
+
+      this.logger.log(
+        `Daily evidence collection completed: ${results.length} controls collected`,
+      );
     } catch (error) {
-      this.logger.error(`Daily evidence collection failed: ${error.message}`, error.stack);
+      this.logger.error(
+        `Daily evidence collection failed: ${error.message}`,
+        error.stack,
+      );
     }
   }
 
@@ -68,37 +78,47 @@ export class ComplianceSchedulerService implements OnModuleInit {
    */
   private async performWeeklyGapAnalysis() {
     this.logger.log('Starting weekly SOC 2 gap analysis...');
-    
+
     try {
       const gaps = await this.evidenceService.performGapAnalysis();
-      
-      const completed = gaps.filter(g => g.status === 'COMPLETE').length;
+
+      const completed = gaps.filter((g) => g.status === 'COMPLETE').length;
       const total = gaps.length;
       const completionRate = Math.round((completed / total) * 100);
-      
-      this.logger.log(`Weekly gap analysis completed: ${completionRate}% complete (${completed}/${total} controls)`);
-      
+
+      this.logger.log(
+        `Weekly gap analysis completed: ${completionRate}% complete (${completed}/${total} controls)`,
+      );
+
       // Alert if completion rate drops below 80%
       if (completionRate < 80) {
-        this.logger.warn(`LOW COMPLIANCE COMPLETION: ${completionRate}% - Action required`);
+        this.logger.warn(
+          `LOW COMPLIANCE COMPLETION: ${completionRate}% - Action required`,
+        );
       }
-      
     } catch (error) {
-      this.logger.error(`Weekly gap analysis failed: ${error.message}`, error.stack);
+      this.logger.error(
+        `Weekly gap analysis failed: ${error.message}`,
+        error.stack,
+      );
     }
   }
 
   /**
    * Manual trigger for immediate evidence collection
    */
-  async triggerManualCollection(): Promise<{ success: boolean; message: string; results?: any }> {
+  async triggerManualCollection(): Promise<{
+    success: boolean;
+    message: string;
+    results?: any;
+  }> {
     this.logger.log('Manual evidence collection triggered');
-    
+
     try {
       const startTime = Date.now();
       const results = await this.evidenceService.collectAllEvidence();
       const duration = Date.now() - startTime;
-      
+
       return {
         success: true,
         message: `Evidence collection completed in ${duration}ms`,
@@ -108,7 +128,6 @@ export class ComplianceSchedulerService implements OnModuleInit {
           timestamp: new Date().toISOString(),
         },
       };
-      
     } catch (error) {
       return {
         success: false,
@@ -120,25 +139,31 @@ export class ComplianceSchedulerService implements OnModuleInit {
   /**
    * Manual trigger for gap analysis
    */
-  async triggerManualGapAnalysis(): Promise<{ success: boolean; message: string; gaps?: any }> {
+  async triggerManualGapAnalysis(): Promise<{
+    success: boolean;
+    message: string;
+    gaps?: any;
+  }> {
     this.logger.log('Manual gap analysis triggered');
-    
+
     try {
       const gaps = await this.evidenceService.performGapAnalysis();
-      
+
       return {
         success: true,
         message: 'Gap analysis completed',
         gaps: {
           total: gaps.length,
-          completed: gaps.filter(g => g.status === 'COMPLETE').length,
-          partial: gaps.filter(g => g.status === 'PARTIAL').length,
-          missing: gaps.filter(g => g.status === 'MISSING').length,
-          overallRisk: gaps.some(g => g.riskLevel === 'HIGH') ? 'HIGH' : 
-                      gaps.some(g => g.riskLevel === 'MEDIUM') ? 'MEDIUM' : 'LOW',
+          completed: gaps.filter((g) => g.status === 'COMPLETE').length,
+          partial: gaps.filter((g) => g.status === 'PARTIAL').length,
+          missing: gaps.filter((g) => g.status === 'MISSING').length,
+          overallRisk: gaps.some((g) => g.riskLevel === 'HIGH')
+            ? 'HIGH'
+            : gaps.some((g) => g.riskLevel === 'MEDIUM')
+              ? 'MEDIUM'
+              : 'LOW',
         },
       };
-      
     } catch (error) {
       return {
         success: false,
@@ -152,14 +177,13 @@ export class ComplianceSchedulerService implements OnModuleInit {
    */
   async triggerCleanup(): Promise<{ success: boolean; message: string }> {
     this.logger.log('Manual evidence cleanup triggered');
-    
+
     try {
       await this.evidenceService.cleanupOldEvidence();
       return {
         success: true,
         message: 'Evidence cleanup completed',
       };
-      
     } catch (error) {
       return {
         success: false,

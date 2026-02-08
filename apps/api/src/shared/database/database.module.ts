@@ -15,11 +15,13 @@ export class DatabaseModule implements OnModuleInit {
 
   async onModuleInit() {
     this.logger.log('DatabaseModule initialized');
-    
+
     // RLS will initialize automatically via its onModuleInit
     // We just log the status here
     if (this.rlsService.isEnabled()) {
-      this.logger.log('Row Level Security is enabled and will initialize automatically');
+      this.logger.log(
+        'Row Level Security is enabled and will initialize automatically',
+      );
     } else {
       this.logger.warn('Row Level Security is disabled via configuration');
     }

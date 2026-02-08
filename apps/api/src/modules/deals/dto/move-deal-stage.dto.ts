@@ -1,4 +1,4 @@
-import { IsString, IsUUID, IsOptional } from "class-validator";
+import { IsString, IsUUID, IsOptional } from 'class-validator';
 
 export class MoveDealStageDto {
   @IsString({ message: 'Stage ID must be a string' })

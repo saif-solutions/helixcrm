@@ -15,7 +15,7 @@ export class PrismaUserRepository implements UserRepository {
 
   async findByEmail(params: FindUserByEmailParams): Promise<User | null> {
     const normalizedEmail = params.email.toLowerCase().trim();
-    
+
     const user = await this.prisma.user.findUnique({
       where: { email: normalizedEmail },
       include: {
@@ -49,7 +49,7 @@ export class PrismaUserRepository implements UserRepository {
     user.UserRoles.forEach((userRole) => {
       if (userRole.role) {
         roles.add(userRole.role.name);
-        
+
         if (userRole.role.permissions) {
           userRole.role.permissions.forEach((rolePermission) => {
             if (rolePermission.permission) {
@@ -115,7 +115,7 @@ export class PrismaUserRepository implements UserRepository {
     user.UserRoles.forEach((userRole) => {
       if (userRole.role) {
         roles.add(userRole.role.name);
-        
+
         if (userRole.role.permissions) {
           userRole.role.permissions.forEach((rolePermission) => {
             if (rolePermission.permission) {
@@ -185,32 +185,32 @@ export class PrismaUserRepository implements UserRepository {
 
   async update(params: UpdateUserParams): Promise<User> {
     const updateData: any = {};
-    
+
     if (params.passwordHash !== undefined) {
       updateData.passwordHash = params.passwordHash;
       updateData.lastPasswordChange = new Date();
     }
-    
+
     if (params.tokenVersion !== undefined) {
       updateData.tokenVersion = params.tokenVersion;
     }
-    
+
     if (params.refreshTokenHash !== undefined) {
       updateData.refreshTokenHash = params.refreshTokenHash;
     }
-    
+
     if (params.refreshTokenVersion !== undefined) {
       updateData.refreshTokenVersion = params.refreshTokenVersion;
     }
-    
+
     if (params.refreshTokenIssuedAt !== undefined) {
       updateData.refreshTokenIssuedAt = params.refreshTokenIssuedAt;
     }
-    
+
     if (params.lastLoginAt !== undefined) {
       updateData.lastLoginAt = params.lastLoginAt;
     }
-    
+
     if (params.isActive !== undefined) {
       updateData.isActive = params.isActive;
     }
@@ -226,28 +226,33 @@ export class PrismaUserRepository implements UserRepository {
       organizationId: user.organizationId,
     });
 
-    return userWithPermissions || {
-      id: user.id,
-      email: user.email,
-      passwordHash: user.passwordHash,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      organizationId: user.organizationId,
-      isActive: user.isActive,
-      tokenVersion: user.tokenVersion,
-      refreshTokenHash: user.refreshTokenHash,
-      refreshTokenVersion: user.refreshTokenVersion,
-      refreshTokenIssuedAt: user.refreshTokenIssuedAt,
-      lastLoginAt: user.lastLoginAt,
-      lastPasswordChange: user.lastPasswordChange,
-      permissions: [],
-      roles: [],
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-    };
+    return (
+      userWithPermissions || {
+        id: user.id,
+        email: user.email,
+        passwordHash: user.passwordHash,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        organizationId: user.organizationId,
+        isActive: user.isActive,
+        tokenVersion: user.tokenVersion,
+        refreshTokenHash: user.refreshTokenHash,
+        refreshTokenVersion: user.refreshTokenVersion,
+        refreshTokenIssuedAt: user.refreshTokenIssuedAt,
+        lastLoginAt: user.lastLoginAt,
+        lastPasswordChange: user.lastPasswordChange,
+        permissions: [],
+        roles: [],
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      }
+    );
   }
 
-  async updateTokenVersion(userId: string, increment: number = 1): Promise<void> {
+  async updateTokenVersion(
+    userId: string,
+    increment: number = 1,
+  ): Promise<void> {
     await this.prisma.user.update({
       where: { id: userId },
       data: {

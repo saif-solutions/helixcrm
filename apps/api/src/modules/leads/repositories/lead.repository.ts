@@ -8,7 +8,8 @@ import { Lead, Prisma, LeadStatus } from '@prisma/client';
 export class LeadRepository extends TenantAwareRepository {
   private readonly logger = new Logger(LeadRepository.name);
 
-  constructor(prisma: PrismaService) { // REMOVE "private"
+  constructor(prisma: PrismaService) {
+    // REMOVE "private"
     super(prisma); // PASS prisma to parent
   }
 
@@ -23,7 +24,8 @@ export class LeadRepository extends TenantAwareRepository {
         where.deletedAt = null;
       }
 
-      const lead = await this.prisma.lead.findFirst({ // ✅ Works - from parent
+      const lead = await this.prisma.lead.findFirst({
+        // ✅ Works - from parent
         where,
       });
 
@@ -33,7 +35,10 @@ export class LeadRepository extends TenantAwareRepository {
 
       return lead;
     } catch (error: any) {
-      this.logger.error(`Failed to find lead ${id}: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to find lead ${id}: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -44,7 +49,9 @@ export class LeadRepository extends TenantAwareRepository {
   async findByIdOrThrow(id: string, includeDeleted = false): Promise<Lead> {
     const lead = await this.findById(id, includeDeleted);
     if (!lead) {
-      throw new NotFoundException(`Lead with ID ${id} not found in current tenant`);
+      throw new NotFoundException(
+        `Lead with ID ${id} not found in current tenant`,
+      );
     }
     return lead;
   }
@@ -52,7 +59,9 @@ export class LeadRepository extends TenantAwareRepository {
   /**
    * Create lead with tenant isolation
    */
-  async create(data: Omit<Prisma.LeadCreateInput, 'organization'>): Promise<Lead> {
+  async create(
+    data: Omit<Prisma.LeadCreateInput, 'organization'>,
+  ): Promise<Lead> {
     try {
       const tenantId = this.tenantId;
 
@@ -95,7 +104,10 @@ export class LeadRepository extends TenantAwareRepository {
       this.logger.log(`Lead updated: ${params.id} in tenant: ${this.tenantId}`);
       return lead;
     } catch (error: any) {
-      this.logger.error(`Failed to update lead ${params.id}: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to update lead ${params.id}: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -119,7 +131,10 @@ export class LeadRepository extends TenantAwareRepository {
       this.logger.log(`Lead soft deleted: ${id} in tenant: ${this.tenantId}`);
       return lead;
     } catch (error: any) {
-      this.logger.error(`Failed to soft delete lead ${id}: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to soft delete lead ${id}: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -139,7 +154,10 @@ export class LeadRepository extends TenantAwareRepository {
       this.logger.log(`Lead hard deleted: ${id} in tenant: ${this.tenantId}`);
       return lead;
     } catch (error: any) {
-      this.logger.error(`Failed to hard delete lead ${id}: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to hard delete lead ${id}: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -208,12 +226,18 @@ export class LeadRepository extends TenantAwareRepository {
       });
 
       // Convert to Record<LeadStatus, number> with enum values as keys
-      return stats.reduce((acc, curr) => {
-        acc[curr.status] = curr._count.id;
-        return acc;
-      }, {} as Record<LeadStatus, number>);
+      return stats.reduce(
+        (acc, curr) => {
+          acc[curr.status] = curr._count.id;
+          return acc;
+        },
+        {} as Record<LeadStatus, number>,
+      );
     } catch (error: any) {
-      this.logger.error(`Failed to count leads by status: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to count leads by status: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -235,7 +259,10 @@ export class LeadRepository extends TenantAwareRepository {
 
       return count > 0;
     } catch (error: any) {
-      this.logger.error(`Failed to check email existence: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to check email existence: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }

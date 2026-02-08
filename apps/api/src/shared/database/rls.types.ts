@@ -5,11 +5,11 @@ export interface RLSConfig {
 }
 
 export interface TenantContext {
-  tenantId?: string;        // Optional alias
-  organizationId: string;   // REQUIRED: This is what policies use
+  tenantId?: string; // Optional alias
+  organizationId: string; // REQUIRED: This is what policies use
   userId?: string;
-  role?: string;           // For super_admin bypass
-  userRole?: string;       // Alias for role
+  role?: string; // For super_admin bypass
+  userRole?: string; // Alias for role
   ipAddress?: string;
 }
 
@@ -23,7 +23,7 @@ export class RLSError extends Error {
   constructor(
     public code: RLSErrorCode,
     message: string,
-    public context?: Record<string, any>
+    public context?: Record<string, any>,
   ) {
     super(message);
     this.name = 'RLSError';

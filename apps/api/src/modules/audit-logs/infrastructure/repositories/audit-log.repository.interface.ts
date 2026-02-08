@@ -15,7 +15,9 @@ export interface IAuditLogRepository {
   getStatistics(organizationId: string, days: number): Promise<AuditStatistics>;
   getAvailableActions(): Promise<Array<{ value: string; count: number }>>;
   getAvailableEntityTypes(): Promise<Array<{ value: string; count: number }>>;
-  getAvailableSeverityLevels(): Promise<Array<{ value: string; count: number }>>;
+  getAvailableSeverityLevels(): Promise<
+    Array<{ value: string; count: number }>
+  >;
   getAvailableActorTypes(): Promise<Array<{ value: string; count: number }>>;
   cleanupOldLogs(daysToKeep: number): Promise<{ deletedCount: number }>;
 }

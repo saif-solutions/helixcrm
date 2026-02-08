@@ -8,13 +8,13 @@ export enum AuditAction {
   LOGOUT = 'LOGOUT',
   PASSWORD_CHANGE = 'PASSWORD_CHANGE',
   TOKEN_REFRESH = 'TOKEN_REFRESH',
-  
+
   // User management
   USER_CREATED = 'USER_CREATED',
   USER_UPDATED = 'USER_UPDATED',
   USER_DELETED = 'USER_DELETED',
   ROLE_CHANGED = 'ROLE_CHANGED',
-  
+
   // Data events
   CONTACT_CREATED = 'CONTACT_CREATED',
   CONTACT_UPDATED = 'CONTACT_UPDATED',
@@ -28,19 +28,19 @@ export enum AuditAction {
   LEAD_CREATED = 'LEAD_CREATED',
   LEAD_UPDATED = 'LEAD_UPDATED',
   LEAD_DELETED = 'LEAD_DELETED',
-  
+
   // System events
   PERMISSION_DENIED = 'PERMISSION_DENIED',
   CSRF_FAILURE = 'CSRF_FAILURE',
   RATE_LIMIT_TRIGGERED = 'RATE_LIMIT_TRIGGERED',
   SYSTEM_ERROR = 'SYSTEM_ERROR',
-  
+
   // Extended actions (business-specific)
   ANALYTICS_EXPORT_REQUESTED = 'ANALYTICS_EXPORT_REQUESTED',
   ANALYTICS_EXPORT_DOWNLOADED = 'ANALYTICS_EXPORT_DOWNLOADED',
   ANALYTICS_EXPORT_COMPLETED = 'ANALYTICS_EXPORT_COMPLETED',
   ANALYTICS_EXPORT_FAILED = 'ANALYTICS_EXPORT_FAILED',
-  
+
   ROLE_CREATED = 'ROLE_CREATED',
   ROLE_UPDATED = 'ROLE_UPDATED',
   ROLE_DELETED = 'ROLE_DELETED',
@@ -180,7 +180,7 @@ export class AuditLogEnumMapper {
       [AuditAction.ROLE_ASSIGNED]: 'ROLE_CHANGED',
       [AuditAction.ROLE_REMOVED]: 'ROLE_CHANGED',
     };
-    
+
     return actionMap[action] || action;
   }
 
@@ -189,7 +189,7 @@ export class AuditLogEnumMapper {
     if (isAuditAction(action)) {
       return action;
     }
-    
+
     // Default fallback
     return AuditAction.SYSTEM_ERROR;
   }
@@ -210,13 +210,13 @@ export function fromPrismaAction(prismaAction: string): AuditAction {
   if (allActions.includes(prismaAction)) {
     return prismaAction as AuditAction;
   }
-  
+
   // Try to handle extended actions stored in database
   if (prismaAction === 'SYSTEM_ERROR') {
     // This might be an extended action - need metadata to know
     return AuditAction.SYSTEM_ERROR;
   }
-  
+
   // Default fallback
   return AuditAction.SYSTEM_ERROR;
 }

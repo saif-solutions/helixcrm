@@ -9,7 +9,12 @@ import {
   DefaultValuePipe,
   Res,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiQuery,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { Response } from 'express';
 
 import { AuthGuard } from '../../../../shared/guards/auth.guard';
@@ -87,9 +92,12 @@ export class AuditLogController {
     };
 
     if (action && AuditLogTypes.isAuditAction(action)) query.action = action;
-    if (entityType && AuditLogTypes.isAuditEntityType(entityType)) query.entityType = entityType;
-    if (severity && AuditLogTypes.isAuditSeverity(severity)) query.severity = severity;
-    if (actorType && AuditLogTypes.isActorType(actorType)) query.actorType = actorType;
+    if (entityType && AuditLogTypes.isAuditEntityType(entityType))
+      query.entityType = entityType;
+    if (severity && AuditLogTypes.isAuditSeverity(severity))
+      query.severity = severity;
+    if (actorType && AuditLogTypes.isActorType(actorType))
+      query.actorType = actorType;
 
     return this.auditLogService.getAuditLogs(query);
   }
@@ -110,14 +118,18 @@ export class AuditLogController {
   @ApiOperation({ summary: 'Get available filter options' })
   @RequirePermission('audit:read')
   async getAvailableFilters() {
-    const [actions, entityTypes, severityLevels, actorTypes] = await Promise.all([
-      this.auditLogService.getAvailableActions(),
-      this.auditLogService.getAvailableEntityTypes(),
-      this.auditLogService.getAvailableSeverityLevels(),
-      this.auditLogService.getAvailableActorTypes(),
-    ]);
+    const [actions, entityTypes, severityLevels, actorTypes] =
+      await Promise.all([
+        this.auditLogService.getAvailableActions(),
+        this.auditLogService.getAvailableEntityTypes(),
+        this.auditLogService.getAvailableSeverityLevels(),
+        this.auditLogService.getAvailableActorTypes(),
+      ]);
 
-    return { success: true, data: { actions, entityTypes, severityLevels, actorTypes } };
+    return {
+      success: true,
+      data: { actions, entityTypes, severityLevels, actorTypes },
+    };
   }
 
   @Get('export')

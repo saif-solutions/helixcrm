@@ -1,5 +1,5 @@
-import { 
-  Controller, 
+import {
+  Controller,
   Get,
   Post,
   Body,
@@ -10,7 +10,7 @@ import {
   UseGuards,
   Request,
   HttpCode,
-  HttpStatus
+  HttpStatus,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -28,19 +28,14 @@ export class UsersController {
   @Post()
   @RequirePermission('users.create')
   @HttpCode(HttpStatus.CREATED)
-  create(
-    @Body() createUserDto: CreateUserDto,
-    @Request() req: any,
-  ) {
+  create(@Body() createUserDto: CreateUserDto, @Request() req: any) {
     const userId = req.user.sub;
     return this.usersService.create(createUserDto, userId); // Removed organizationId
   }
 
   @Get()
   @RequirePermission('users.read')
-  findAll(
-    @Query() query: UserQueryDto,
-  ) {
+  findAll(@Query() query: UserQueryDto) {
     return this.usersService.findAll(query); // Removed organizationId
   }
 
@@ -71,10 +66,7 @@ export class UsersController {
   @Delete(':id')
   @RequirePermission('users.delete')
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(
-    @Param('id') id: string,
-    @Request() req: any,
-  ) {
+  remove(@Param('id') id: string, @Request() req: any) {
     const userId = req.user.sub;
     return this.usersService.remove(id, userId); // Removed organizationId
   }

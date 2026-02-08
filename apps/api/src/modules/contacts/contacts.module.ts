@@ -1,7 +1,7 @@
-import { Module } from "@nestjs/common";
-import { ContactsService } from "./contacts.service";
-import { ContactsController } from "./contacts.controller";
-import { LoggingModule } from "../../shared/logging/logging.module";
+import { Module } from '@nestjs/common';
+import { ContactsService } from './contacts.service';
+import { ContactsController } from './contacts.controller';
+import { LoggingModule } from '../../shared/logging/logging.module';
 
 @Module({
   imports: [
@@ -10,9 +10,7 @@ import { LoggingModule } from "../../shared/logging/logging.module";
     // REMOVE: AuthModule (no longer needed for JwtService)
   ],
   controllers: [ContactsController],
-  providers: [
-    ContactsService,
-  ],
+  providers: [ContactsService],
   exports: [ContactsService],
 })
 export class ContactsModule {}

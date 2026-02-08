@@ -1,7 +1,7 @@
-import { 
-  Injectable, 
-  NotFoundException, 
-  ConflictException, 
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
   BadRequestException,
   Logger,
   ForbiddenException,
@@ -28,67 +28,81 @@ export class UsersService {
    * Create a new user in the current tenant
    * DEMONSTRATES: Using repository pattern with automatic tenant filtering
    */
-/**
- * Create a new user in the current tenant
- */
-async create(createUserDto: CreateUserDto, createdById?: string) {
-  // PERMISSION CHECK: Using the pre-computed permission context
-  if (!this.permissionContext.hasPermission('user:create')) {
-    this.logger.warn(`Permission denied: User ${this.permissionContext.getUserId()} lacks user:create permission`);
-    throw new ForbiddenException('Insufficient permissions to create users');
-  }
+  /**
+   * Create a new user in the current tenant
+   */
+  async create(createUserDto: CreateUserDto, createdById?: string) {
+    // PERMISSION CHECK: Using the pre-computed permission context
+    if (!this.permissionContext.hasPermission('user:create')) {
+      this.logger.warn(
+        `Permission denied: User ${this.permissionContext.getUserId()} lacks user:create permission`,
+      );
+      throw new ForbiddenException('Insufficient permissions to create users');
+    }
 
-  const { email, password, firstName, lastName, isActive = true, role = 'user' } = createUserDto;
+    const {
+      email,
+      password,
+      firstName,
+      lastName,
+      isActive = true,
+      role = 'user',
+    } = createUserDto;
 
-  // Check if user already exists in current tenant
-  const existingUser = await this.userRepository.findByEmail(email);
-  
-  if (existingUser) {
-    throw new ConflictException(`User with email ${email} already exists in this organization`);
-  }
+    // Check if user already exists in current tenant
+    const existingUser = await this.userRepository.findByEmail(email);
 
-  // ROLE ASSIGNMENT CHECK: Using permission context
-  if (role === 'admin' && !this.permissionContext.hasPermission('user:assign_admin')) {
-    this.logger.warn(`Permission denied: Cannot assign admin role`);
-    throw new ForbiddenException('Cannot assign admin role');
-  }
+    if (existingUser) {
+      throw new ConflictException(
+        `User with email ${email} already exists in this organization`,
+      );
+    }
 
-  // Hash password
-  const saltRounds = 10;
-  const passwordHash = await bcrypt.hash(password, saltRounds);
+    // ROLE ASSIGNMENT CHECK: Using permission context
+    if (
+      role === 'admin' &&
+      !this.permissionContext.hasPermission('user:assign_admin')
+    ) {
+      this.logger.warn(`Permission denied: Cannot assign admin role`);
+      throw new ForbiddenException('Cannot assign admin role');
+    }
 
-  // Get current tenant ID for organization connection
-  const organizationId = this.tenantContext.getTenantId();
+    // Hash password
+    const saltRounds = 10;
+    const passwordHash = await bcrypt.hash(password, saltRounds);
 
-  // Create user with proper organization connection
-  const user = await this.userRepository.create({
-    email: email.toLowerCase().trim(),
-    passwordHash,
-    firstName,
-    lastName,
-    isActive,
-    role,
-    tokenVersion: 1,
-    organization: {
-      connect: {
-        id: organizationId,
+    // Get current tenant ID for organization connection
+    const organizationId = this.tenantContext.getTenantId();
+
+    // Create user with proper organization connection
+    const user = await this.userRepository.create({
+      email: email.toLowerCase().trim(),
+      passwordHash,
+      firstName,
+      lastName,
+      isActive,
+      role,
+      tokenVersion: 1,
+      organization: {
+        connect: {
+          id: organizationId,
+        },
       },
-    },
-  });
+    });
 
-  // AUDIT LOGGING
-  this.logger.log(`User created successfully`, {
-    event: 'user_created',
-    newUserId: user.id,
-    newUserEmail: user.email,
-    createdByUserId: createdById || this.permissionContext.getUserId(),
-    organizationId,
-  });
+    // AUDIT LOGGING
+    this.logger.log(`User created successfully`, {
+      event: 'user_created',
+      newUserId: user.id,
+      newUserEmail: user.email,
+      createdByUserId: createdById || this.permissionContext.getUserId(),
+      organizationId,
+    });
 
-  // Return without password hash
-  const { passwordHash: _, ...userWithoutPassword } = user;
-  return userWithoutPassword;
-}
+    // Return without password hash
+    const { passwordHash: _, ...userWithoutPassword } = user;
+    return userWithoutPassword;
+  }
 
   /**
    * Find all users in current tenant
@@ -119,7 +133,9 @@ async create(createUserDto: CreateUserDto, createdById?: string) {
     });
 
     // Remove password hash from all users
-    const usersWithoutPasswords = users.map(({ passwordHash: _, ...user }) => user);
+    const usersWithoutPasswords = users.map(
+      ({ passwordHash: _, ...user }) => user,
+    );
 
     // DEBUG LOGGING: Show permission context in action
     this.logger.debug(`User list fetched`, {
@@ -139,9 +155,11 @@ async create(createUserDto: CreateUserDto, createdById?: string) {
     // MULTIPLE PERMISSION OPTIONS: Check different permission combinations
     const canViewAll = this.permissionContext.hasPermission('user:read_all');
     const canViewOwn = this.permissionContext.hasPermission('user:read_own');
-    
+
     if (!canViewAll && !canViewOwn) {
-      throw new ForbiddenException('Insufficient permissions to view user details');
+      throw new ForbiddenException(
+        'Insufficient permissions to view user details',
+      );
     }
 
     // If can only view own, check if this is their own ID
@@ -153,7 +171,9 @@ async create(createUserDto: CreateUserDto, createdById?: string) {
     const user = await this.userRepository.findById(id);
 
     if (!user) {
-      throw new NotFoundException(`User with ID ${id} not found in this organization`);
+      throw new NotFoundException(
+        `User with ID ${id} not found in this organization`,
+      );
     }
 
     // Remove password hash
@@ -164,60 +184,70 @@ async create(createUserDto: CreateUserDto, createdById?: string) {
   /**
    * Update user in current tenant
    */
-/**
- * Update user in current tenant
- */
-async update(id: string, updateUserDto: UpdateUserDto, updatedById?: string) {
-  // PERMISSION CHECK
-  const canUpdateAll = this.permissionContext.hasPermission('user:update_all');
-  const canUpdateOwn = this.permissionContext.hasPermission('user:update_own');
-  
-  if (!canUpdateAll && !canUpdateOwn) {
-    throw new ForbiddenException('Insufficient permissions to update users');
+  /**
+   * Update user in current tenant
+   */
+  async update(id: string, updateUserDto: UpdateUserDto, updatedById?: string) {
+    // PERMISSION CHECK
+    const canUpdateAll =
+      this.permissionContext.hasPermission('user:update_all');
+    const canUpdateOwn =
+      this.permissionContext.hasPermission('user:update_own');
+
+    if (!canUpdateAll && !canUpdateOwn) {
+      throw new ForbiddenException('Insufficient permissions to update users');
+    }
+
+    // If can only update own, check if this is their own ID
+    const currentUserId = this.permissionContext.getUserId();
+    if (!canUpdateAll && canUpdateOwn && id !== currentUserId) {
+      throw new ForbiddenException('Can only update your own user details');
+    }
+
+    // Check if user exists in current tenant
+    const existingUser = await this.userRepository.findById(id);
+    if (!existingUser) {
+      throw new NotFoundException(
+        `User with ID ${id} not found in this organization`,
+      );
+    }
+
+    // ROLE ASSIGNMENT CHECK
+    if (
+      updateUserDto.role === 'admin' &&
+      !this.permissionContext.hasPermission('user:assign_admin')
+    ) {
+      throw new ForbiddenException('Cannot assign admin role');
+    }
+
+    // Prepare update data
+    const updateData: any = {};
+    if (updateUserDto.firstName !== undefined)
+      updateData.firstName = updateUserDto.firstName;
+    if (updateUserDto.lastName !== undefined)
+      updateData.lastName = updateUserDto.lastName;
+    if (updateUserDto.isActive !== undefined)
+      updateData.isActive = updateUserDto.isActive;
+    if (updateUserDto.role !== undefined) updateData.role = updateUserDto.role;
+    // Note: emailVerified was removed since it's not in UpdateUserDto
+
+    // Update user using repository
+    const updatedUser = await this.userRepository.update({
+      where: { id },
+      data: updateData,
+    });
+
+    this.logger.log(`User updated`, {
+      event: 'user_updated',
+      userId: id,
+      updatedBy: updatedById || currentUserId,
+      organizationId: this.tenantContext.getTenantId(),
+    });
+
+    // Remove password hash
+    const { passwordHash: _, ...userWithoutPassword } = updatedUser;
+    return userWithoutPassword;
   }
-
-  // If can only update own, check if this is their own ID
-  const currentUserId = this.permissionContext.getUserId();
-  if (!canUpdateAll && canUpdateOwn && id !== currentUserId) {
-    throw new ForbiddenException('Can only update your own user details');
-  }
-
-  // Check if user exists in current tenant
-  const existingUser = await this.userRepository.findById(id);
-  if (!existingUser) {
-    throw new NotFoundException(`User with ID ${id} not found in this organization`);
-  }
-
-  // ROLE ASSIGNMENT CHECK
-  if (updateUserDto.role === 'admin' && !this.permissionContext.hasPermission('user:assign_admin')) {
-    throw new ForbiddenException('Cannot assign admin role');
-  }
-
-  // Prepare update data
-  const updateData: any = {};
-  if (updateUserDto.firstName !== undefined) updateData.firstName = updateUserDto.firstName;
-  if (updateUserDto.lastName !== undefined) updateData.lastName = updateUserDto.lastName;
-  if (updateUserDto.isActive !== undefined) updateData.isActive = updateUserDto.isActive;
-  if (updateUserDto.role !== undefined) updateData.role = updateUserDto.role;
-  // Note: emailVerified was removed since it's not in UpdateUserDto
-
-  // Update user using repository
-  const updatedUser = await this.userRepository.update({
-    where: { id },
-    data: updateData,
-  });
-
-  this.logger.log(`User updated`, {
-    event: 'user_updated',
-    userId: id,
-    updatedBy: updatedById || currentUserId,
-    organizationId: this.tenantContext.getTenantId(),
-  });
-
-  // Remove password hash
-  const { passwordHash: _, ...userWithoutPassword } = updatedUser;
-  return userWithoutPassword;
-}
 
   /**
    * Remove user from current tenant
@@ -237,7 +267,9 @@ async update(id: string, updateUserDto: UpdateUserDto, updatedById?: string) {
     // Check if user exists in current tenant
     const existingUser = await this.userRepository.findById(id);
     if (!existingUser) {
-      throw new NotFoundException(`User with ID ${id} not found in this organization`);
+      throw new NotFoundException(
+        `User with ID ${id} not found in this organization`,
+      );
     }
 
     // Delete user using repository
@@ -261,7 +293,7 @@ async update(id: string, updateUserDto: UpdateUserDto, updatedById?: string) {
   async getProfile(userId: string) {
     // User can always view their own profile
     const user = await this.userRepository.findById(userId);
-    
+
     if (!user) {
       throw new NotFoundException('User not found');
     }

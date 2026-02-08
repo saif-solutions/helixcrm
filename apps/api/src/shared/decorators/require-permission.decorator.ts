@@ -12,7 +12,7 @@ export const RequirePermission = (
   permissions: string | string[],
 ): CustomDecorator<string> => {
   const permsArray = Array.isArray(permissions) ? permissions : [permissions];
-  
+
   return SetMetadata(PERMISSION_KEY, permsArray);
 };
 

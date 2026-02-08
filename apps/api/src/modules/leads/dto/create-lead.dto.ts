@@ -1,5 +1,13 @@
-import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, MaxLength, MinLength } from "class-validator";
-import { LeadStatus as PrismaLeadStatus } from "@prisma/client";
+import {
+  IsEmail,
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
+import { LeadStatus as PrismaLeadStatus } from '@prisma/client';
 
 export { PrismaLeadStatus as LeadStatus };
 
@@ -21,7 +29,9 @@ export class CreateLeadDto {
   phone?: string;
 
   @IsNotEmpty({ message: 'Status is required' })
-  @IsEnum(PrismaLeadStatus, { message: 'Status must be one of: new, contacted, qualified' })
+  @IsEnum(PrismaLeadStatus, {
+    message: 'Status must be one of: new, contacted, qualified',
+  })
   status: PrismaLeadStatus;
 
   @IsOptional()

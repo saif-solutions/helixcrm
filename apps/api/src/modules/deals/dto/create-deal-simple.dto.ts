@@ -1,5 +1,13 @@
-import { IsString, IsOptional, IsNumber, IsNotEmpty, Min, MaxLength, IsUUID } from "class-validator";
-import { Type } from "class-transformer";
+import {
+  IsString,
+  IsOptional,
+  IsNumber,
+  IsNotEmpty,
+  Min,
+  MaxLength,
+  IsUUID,
+} from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class CreateDealSimpleDto {
   @IsString({ message: 'Title must be a string' })

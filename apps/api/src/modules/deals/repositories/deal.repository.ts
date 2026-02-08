@@ -8,7 +8,8 @@ import { Deal, Prisma, DealStatus } from '@prisma/client';
 export class DealRepository extends TenantAwareRepository {
   private readonly logger = new Logger(DealRepository.name);
 
-  constructor(prisma: PrismaService) { // REMOVE "private"
+  constructor(prisma: PrismaService) {
+    // REMOVE "private"
     super(prisma); // PASS prisma to parent
   }
 
@@ -17,12 +18,13 @@ export class DealRepository extends TenantAwareRepository {
   async findById(id: string, includeDeleted = false): Promise<Deal | null> {
     try {
       const where: any = this.withTenantFilter({ id });
-      
+
       if (!includeDeleted) {
         where.deletedAt = null;
       }
 
-      const deal = await this.prisma.deal.findFirst({ // ✅ Works - from parent
+      const deal = await this.prisma.deal.findFirst({
+        // ✅ Works - from parent
         where,
         include: {
           contact: true,
@@ -45,7 +47,10 @@ export class DealRepository extends TenantAwareRepository {
 
       return deal;
     } catch (error) {
-      this.logger.error(`Failed to find deal ${id}: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to find deal ${id}: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -64,36 +69,38 @@ export class DealRepository extends TenantAwareRepository {
   /**
    * PRODUCTION READY: Create deal with transaction safety
    */
-async create(data: Omit<Prisma.DealCreateInput, 'organization'>): Promise<Deal> {
-  try {
-    const tenantId = this.tenantId;
-    
-    // Manually add organization connection
-    const tenantData: Prisma.DealCreateInput = {
-      ...data,
-      organization: {
-        connect: { id: tenantId },
-      },
-    };
+  async create(
+    data: Omit<Prisma.DealCreateInput, 'organization'>,
+  ): Promise<Deal> {
+    try {
+      const tenantId = this.tenantId;
 
-    const deal = await this.prisma.deal.create({
-      data: tenantData,
-      include: {
-        contact: true,
-        account: true,
-        owner: true,
-        stage: true,
-        pipeline: true,
-      },
-    });
+      // Manually add organization connection
+      const tenantData: Prisma.DealCreateInput = {
+        ...data,
+        organization: {
+          connect: { id: tenantId },
+        },
+      };
 
-    this.logger.log(`Deal created: ${deal.id} in tenant: ${tenantId}`);
-    return deal;
-  } catch (error) {
-    this.logger.error(`Failed to create deal: ${error.message}`, error.stack);
-    throw error;
+      const deal = await this.prisma.deal.create({
+        data: tenantData,
+        include: {
+          contact: true,
+          account: true,
+          owner: true,
+          stage: true,
+          pipeline: true,
+        },
+      });
+
+      this.logger.log(`Deal created: ${deal.id} in tenant: ${tenantId}`);
+      return deal;
+    } catch (error) {
+      this.logger.error(`Failed to create deal: ${error.message}`, error.stack);
+      throw error;
+    }
   }
-}
 
   /**
    * PRODUCTION READY: Update deal with tenant validation
@@ -126,7 +133,10 @@ async create(data: Omit<Prisma.DealCreateInput, 'organization'>): Promise<Deal> 
       this.logger.log(`Deal updated: ${deal.id}`);
       return deal;
     } catch (error) {
-      this.logger.error(`Failed to update deal ${params.id}: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to update deal ${params.id}: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -158,7 +168,10 @@ async create(data: Omit<Prisma.DealCreateInput, 'organization'>): Promise<Deal> 
       this.logger.log(`Deal soft deleted: ${id}`);
       return deal;
     } catch (error) {
-      this.logger.error(`Failed to soft delete deal ${id}: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to soft delete deal ${id}: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -174,10 +187,16 @@ async create(data: Omit<Prisma.DealCreateInput, 'organization'>): Promise<Deal> 
     includeDeleted?: boolean;
   }): Promise<Deal[]> {
     try {
-      const { skip, take, where = {}, orderBy, includeDeleted = false } = params;
-      
+      const {
+        skip,
+        take,
+        where = {},
+        orderBy,
+        includeDeleted = false,
+      } = params;
+
       const tenantWhere = this.withTenantFilter(where);
-      
+
       if (!includeDeleted) {
         (tenantWhere as any).deletedAt = null;
       }
@@ -214,10 +233,13 @@ async create(data: Omit<Prisma.DealCreateInput, 'organization'>): Promise<Deal> 
   /**
    * PRODUCTION READY: Count with filtering
    */
-  async count(where?: Prisma.DealWhereInput, includeDeleted = false): Promise<number> {
+  async count(
+    where?: Prisma.DealWhereInput,
+    includeDeleted = false,
+  ): Promise<number> {
     try {
       const tenantWhere = this.withTenantFilter(where || {});
-      
+
       if (!includeDeleted) {
         (tenantWhere as any).deletedAt = null;
       }
@@ -232,26 +254,32 @@ async create(data: Omit<Prisma.DealCreateInput, 'organization'>): Promise<Deal> 
   /**
    * PRODUCTION READY: Move deal stage with history tracking
    */
-  async moveStage(dealId: string, stageId: string, changedByUserId: string): Promise<Deal> {
+  async moveStage(
+    dealId: string,
+    stageId: string,
+    changedByUserId: string,
+  ): Promise<Deal> {
     try {
       const existingDeal = await this.findByIdOrThrow(dealId);
-      
+
       // Create stage history record
       await this.prisma.dealStageHistory.create({
         data: {
           deal: { connect: { id: dealId } },
-          fromStage: existingDeal.stageId ? { connect: { id: existingDeal.stageId } } : undefined,
+          fromStage: existingDeal.stageId
+            ? { connect: { id: existingDeal.stageId } }
+            : undefined,
           toStage: { connect: { id: stageId } },
           changedBy: { connect: { id: changedByUserId } },
         },
       });
-      
+
       // Update deal stage
       const tenantWhere = {
         id: dealId,
         organizationId: this.tenantId,
       };
-      
+
       const deal = await this.prisma.deal.update({
         where: tenantWhere,
         data: {
@@ -269,7 +297,10 @@ async create(data: Omit<Prisma.DealCreateInput, 'organization'>): Promise<Deal> 
       this.logger.log(`Deal stage moved: ${dealId} to ${stageId}`);
       return deal;
     } catch (error) {
-      this.logger.error(`Failed to move deal stage ${dealId}: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to move deal stage ${dealId}: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -289,35 +320,31 @@ async create(data: Omit<Prisma.DealCreateInput, 'organization'>): Promise<Deal> 
   }> {
     try {
       const where: any = this.withTenantFilter({ deletedAt: null });
-      
+
       if (pipelineId) {
         where.pipelineId = pipelineId;
       }
 
-      const [
-        totalCount,
-        totalValue,
-        wonCount,
-        wonValue,
-        lostCount,
-        openCount,
-      ] = await Promise.all([
-        this.prisma.deal.count({ where }),
-        this.prisma.deal.aggregate({
-          where,
-          _sum: { amount: true },
-        }),
-        this.prisma.deal.count({ where: { ...where, status: 'won' } }),
-        this.prisma.deal.aggregate({
-          where: { ...where, status: 'won' },
-          _sum: { amount: true },
-        }),
-        this.prisma.deal.count({ where: { ...where, status: 'lost' } }),
-        this.prisma.deal.count({ where: { ...where, status: 'open' } }),
-      ]);
+      const [totalCount, totalValue, wonCount, wonValue, lostCount, openCount] =
+        await Promise.all([
+          this.prisma.deal.count({ where }),
+          this.prisma.deal.aggregate({
+            where,
+            _sum: { amount: true },
+          }),
+          this.prisma.deal.count({ where: { ...where, status: 'won' } }),
+          this.prisma.deal.aggregate({
+            where: { ...where, status: 'won' },
+            _sum: { amount: true },
+          }),
+          this.prisma.deal.count({ where: { ...where, status: 'lost' } }),
+          this.prisma.deal.count({ where: { ...where, status: 'open' } }),
+        ]);
 
       // Convert Decimal to number
-      const totalAmount = totalValue._sum.amount ? Number(totalValue._sum.amount) : 0;
+      const totalAmount = totalValue._sum.amount
+        ? Number(totalValue._sum.amount)
+        : 0;
       const wonAmount = wonValue._sum.amount ? Number(wonValue._sum.amount) : 0;
 
       const averageDealValue = totalCount > 0 ? totalAmount / totalCount : 0;
@@ -334,7 +361,10 @@ async create(data: Omit<Prisma.DealCreateInput, 'organization'>): Promise<Deal> 
         winRate,
       };
     } catch (error) {
-      this.logger.error(`Failed to get deal stats: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to get deal stats: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -345,7 +375,7 @@ async create(data: Omit<Prisma.DealCreateInput, 'organization'>): Promise<Deal> 
   async getPipelinePerformance(pipelineId?: string): Promise<any[]> {
     try {
       const where: any = this.withTenantFilter({ deletedAt: null });
-      
+
       if (pipelineId) {
         where.pipelineId = pipelineId;
       }
@@ -376,10 +406,10 @@ async create(data: Omit<Prisma.DealCreateInput, 'organization'>): Promise<Deal> 
       });
 
       // Map stats to stages
-      return stageDetails.map(stage => {
-        const stat = stageStats.find(s => s.stageId === stage.id);
+      return stageDetails.map((stage) => {
+        const stat = stageStats.find((s) => s.stageId === stage.id);
         const totalValue = stat?._sum.amount ? Number(stat._sum.amount) : 0;
-        
+
         return {
           id: stage.id,
           name: stage.name,
@@ -390,7 +420,10 @@ async create(data: Omit<Prisma.DealCreateInput, 'organization'>): Promise<Deal> 
         };
       });
     } catch (error) {
-      this.logger.error(`Failed to get pipeline performance: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to get pipeline performance: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -401,7 +434,7 @@ async create(data: Omit<Prisma.DealCreateInput, 'organization'>): Promise<Deal> 
   async getStageHistory(dealId: string): Promise<any[]> {
     try {
       await this.findByIdOrThrow(dealId); // Verify access
-      
+
       return this.prisma.dealStageHistory.findMany({
         where: { dealId },
         include: {
@@ -418,7 +451,10 @@ async create(data: Omit<Prisma.DealCreateInput, 'organization'>): Promise<Deal> 
         orderBy: { changedAt: 'desc' },
       });
     } catch (error) {
-      this.logger.error(`Failed to get stage history ${dealId}: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to get stage history ${dealId}: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -431,21 +467,28 @@ async create(data: Omit<Prisma.DealCreateInput, 'organization'>): Promise<Deal> 
       return this.prisma.deal.findMany({
         where: this.withTenantFilter({
           deletedAt: null,
-          OR: [
-            { name: { contains: searchTerm, mode: 'insensitive' } },
-          ],
+          OR: [{ name: { contains: searchTerm, mode: 'insensitive' } }],
         }),
         include: {
-          contact: { select: { id: true, firstName: true, lastName: true, email: true } },
+          contact: {
+            select: { id: true, firstName: true, lastName: true, email: true },
+          },
           account: { select: { id: true, name: true } },
-          owner: { select: { id: true, email: true, firstName: true, lastName: true } },
-          stage: { select: { id: true, name: true, order: true, probability: true } },
+          owner: {
+            select: { id: true, email: true, firstName: true, lastName: true },
+          },
+          stage: {
+            select: { id: true, name: true, order: true, probability: true },
+          },
           pipeline: { select: { id: true, name: true } },
         },
         take: Math.min(limit, 100),
       });
     } catch (error) {
-      this.logger.error(`Failed to search deals: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to search deals: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }

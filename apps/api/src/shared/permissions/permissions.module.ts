@@ -12,10 +12,6 @@ import { PrismaModule } from '../prisma/prisma.module';
     PermissionContextService,
     PermissionGuard,
   ],
-  exports: [
-    PermissionCacheService,
-    PermissionContextService,
-    PermissionGuard,
-  ],
+  exports: [PermissionCacheService, PermissionContextService, PermissionGuard],
 })
 export class PermissionsModule {}

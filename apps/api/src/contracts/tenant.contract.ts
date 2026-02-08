@@ -1,5 +1,13 @@
 // apps/api/src/contracts/tenant.contract.ts
-import { IsString, IsNotEmpty, IsOptional, IsUrl, IsEnum, Length, IsBoolean } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsUrl,
+  IsEnum,
+  Length,
+  IsBoolean,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export enum TenantPlan {
@@ -122,11 +130,11 @@ export class TenantInvariants {
    */
   static validateEnterprisePlan(input: CreateTenantInput): string[] {
     const errors: string[] = [];
-    
+
     if (input.plan === TenantPlan.ENTERPRISE && !input.customDomain) {
       errors.push('Enterprise plan requires a custom domain');
     }
-    
+
     return errors;
   }
 
@@ -135,11 +143,13 @@ export class TenantInvariants {
    */
   static validateSlug(input: CreateTenantInput): string[] {
     const errors: string[] = [];
-    
+
     if (input.slug && !/^[a-z0-9-]+$/.test(input.slug)) {
-      errors.push('Slug can only contain lowercase letters, numbers, and hyphens');
+      errors.push(
+        'Slug can only contain lowercase letters, numbers, and hyphens',
+      );
     }
-    
+
     return errors;
   }
 }

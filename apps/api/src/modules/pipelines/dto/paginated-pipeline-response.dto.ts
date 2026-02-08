@@ -1,5 +1,5 @@
-import { ApiProperty } from "@nestjs/swagger";
-import { PipelineResponseDto } from "./pipeline-response.dto";
+import { ApiProperty } from '@nestjs/swagger';
+import { PipelineResponseDto } from './pipeline-response.dto';
 
 export class PaginatedPipelineResponseDto {
   @ApiProperty({ type: [PipelineResponseDto] })

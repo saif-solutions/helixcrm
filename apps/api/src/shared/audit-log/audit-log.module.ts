@@ -25,7 +25,10 @@ import { AuditTestController } from './audit-test.controller';
         const redisPassword = configService.get('REDIS_PASSWORD');
         const useTls = configService.get('REDIS_TLS', 'false') === 'true';
         const jobAttempts = configService.get<number>('AUDIT_JOB_ATTEMPTS', 3);
-        const jobTimeout = configService.get<number>('AUDIT_JOB_TIMEOUT', 30000);
+        const jobTimeout = configService.get<number>(
+          'AUDIT_JOB_TIMEOUT',
+          30000,
+        );
 
         const redisConfig: any = {
           host: redisHost,

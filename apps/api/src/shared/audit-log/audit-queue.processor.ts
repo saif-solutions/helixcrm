@@ -11,27 +11,25 @@ export class AuditQueueProcessor extends WorkerHost {
   private readonly BATCH_SIZE = 10; // Process up to 10 events at once for efficiency
   private processedCount = 0;
 
-  constructor(
-    private readonly prisma: PrismaService,
-  ) {
+  constructor(private readonly prisma: PrismaService) {
     super();
   }
 
   async process(job: Job<AuditJobData>): Promise<any> {
     const startTime = Date.now();
-    const { 
-      action, 
-      entityType, 
-      actorEmail, 
-      actorUserId, 
-      entityId, 
-      metadata, 
-      severity, 
-      organizationId, 
-      ipAddress, 
-      userAgent, 
+    const {
+      action,
+      entityType,
+      actorEmail,
+      actorUserId,
+      entityId,
+      metadata,
+      severity,
+      organizationId,
+      ipAddress,
+      userAgent,
       requestId,
-      isCritical 
+      isCritical,
     } = job.data;
 
     try {
@@ -72,16 +70,20 @@ export class AuditQueueProcessor extends WorkerHost {
       const auditLog = await this.prisma.auditLog.create({ data });
 
       this.processedCount++;
-      
+
       const processingTime = Date.now() - startTime;
-      
+
       // Log performance metrics for slow processing
-      if (processingTime > 100) { // > 100ms is slow for audit
-        this.logger.warn(`Slow audit processing: ${processingTime}ms for ${action}`, {
-          jobId: job.id,
-          processingTime,
-          action,
-        });
+      if (processingTime > 100) {
+        // > 100ms is slow for audit
+        this.logger.warn(
+          `Slow audit processing: ${processingTime}ms for ${action}`,
+          {
+            jobId: job.id,
+            processingTime,
+            action,
+          },
+        );
       }
 
       return {
@@ -92,7 +94,6 @@ export class AuditQueueProcessor extends WorkerHost {
         queuedAt: job.timestamp,
         processedAt: Date.now(),
       };
-
     } catch (error) {
       // Handle specific database constraint errors
       if (error.message.includes('organization') && !organizationId) {
@@ -101,18 +102,21 @@ export class AuditQueueProcessor extends WorkerHost {
           action,
           actorEmail,
         });
-        
+
         // Return null to indicate audit was skipped (expected for bootstrap actions)
         return null;
       }
 
       // Log the error but don't throw - BullMQ will handle retries
-      this.logger.error(`Failed to process audit job ${job.id}: ${error.message}`, {
-        jobId: job.id,
-        action,
-        actorEmail,
-        error: error.stack,
-      });
+      this.logger.error(
+        `Failed to process audit job ${job.id}: ${error.message}`,
+        {
+          jobId: job.id,
+          action,
+          actorEmail,
+          error: error.stack,
+        },
+      );
 
       // Re-throw to trigger BullMQ retry mechanism
       throw error;
@@ -130,13 +134,16 @@ export class AuditQueueProcessor extends WorkerHost {
 
   @OnWorkerEvent('failed')
   onFailed(job: Job<AuditJobData>, error: Error) {
-    this.logger.error(`Audit job failed after ${job.attemptsMade} attempts: ${job.id} - ${job.data.action}`, {
-      jobId: job.id,
-      action: job.data.action,
-      attemptsMade: job.attemptsMade,
-      error: error.message,
-      isCritical: job.data.isCritical,
-    });
+    this.logger.error(
+      `Audit job failed after ${job.attemptsMade} attempts: ${job.id} - ${job.data.action}`,
+      {
+        jobId: job.id,
+        action: job.data.action,
+        attemptsMade: job.attemptsMade,
+        error: error.message,
+        isCritical: job.data.isCritical,
+      },
+    );
   }
 
   @OnWorkerEvent('stalled')

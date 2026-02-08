@@ -1,6 +1,6 @@
 /**
  * Centralized error codes for the HelixCRM API
- * 
+ *
  * Error codes follow the pattern: MODULE_ERROR_TYPE
  * Where:
  * - MODULE: auth, tenant, validation, rate, system

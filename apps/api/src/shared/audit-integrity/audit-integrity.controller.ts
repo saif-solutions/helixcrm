@@ -1,6 +1,9 @@
 import { Controller, Get, Post, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
-import { AuditIntegrityService, VerificationResult } from './audit-integrity.service';
+import {
+  AuditIntegrityService,
+  VerificationResult,
+} from './audit-integrity.service';
 
 @ApiTags('audit-integrity')
 @Controller('audit-integrity')
@@ -8,24 +11,25 @@ export class AuditIntegrityController {
   constructor(private readonly auditIntegrityService: AuditIntegrityService) {}
 
   @Post('verify')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Manually trigger audit chain verification',
-    description: 'Verifies the integrity of the entire audit chain. This is also done automatically daily at 2 AM.'
+    description:
+      'Verifies the integrity of the entire audit chain. This is also done automatically daily at 2 AM.',
   })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Verification completed successfully',
     schema: {
       example: {
         valid: true,
         verifiedAt: '2024-02-04T10:30:00.000Z',
         totalEvents: 150,
-        brokenAtIndex: null
-      }
-    }
+        brokenAtIndex: null,
+      },
+    },
   })
-  @ApiResponse({ 
-    status: 500, 
+  @ApiResponse({
+    status: 500,
     description: 'Verification failed',
     schema: {
       example: {
@@ -35,21 +39,22 @@ export class AuditIntegrityController {
         brokenAtIndex: 125,
         brokenAtHash: 'abc123...',
         expectedHash: 'def456...',
-        actualHash: 'abc123...'
-      }
-    }
+        actualHash: 'abc123...',
+      },
+    },
   })
   async verifyChain(): Promise<VerificationResult> {
     return this.auditIntegrityService.verifyChain();
   }
 
   @Get('status')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Get audit chain status and statistics',
-    description: 'Returns current statistics about the audit chain including total events and verification history.'
+    description:
+      'Returns current statistics about the audit chain including total events and verification history.',
   })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Chain status retrieved successfully',
     schema: {
       example: {
@@ -58,28 +63,29 @@ export class AuditIntegrityController {
         lastBlockTimestamp: '2024-02-04T10:00:00.000Z',
         lastSuccessfulVerification: '2024-02-04T02:00:00.000Z',
         chainLengthDays: 34,
-        verificationSuccessRate: 100
-      }
-    }
+        verificationSuccessRate: 100,
+      },
+    },
   })
   async getStatus() {
     return this.auditIntegrityService.getChainStats();
   }
 
   @Get('verification-history')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Get verification history',
-    description: 'Returns the history of chain verifications, ordered by most recent.'
+    description:
+      'Returns the history of chain verifications, ordered by most recent.',
   })
   @ApiQuery({
     name: 'limit',
     required: false,
     type: Number,
     description: 'Number of verification records to return (default: 30)',
-    example: 30
+    example: 30,
   })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Verification history retrieved successfully',
     schema: {
       example: [
@@ -89,7 +95,7 @@ export class AuditIntegrityController {
           status: 'SUCCESS',
           totalEvents: 150,
           brokenAtIndex: null,
-          verificationDurationMs: 250
+          verificationDurationMs: 250,
         },
         {
           id: 'uuid-124',
@@ -97,10 +103,10 @@ export class AuditIntegrityController {
           status: 'SUCCESS',
           totalEvents: 145,
           brokenAtIndex: null,
-          verificationDurationMs: 240
-        }
-      ]
-    }
+          verificationDurationMs: 240,
+        },
+      ],
+    },
   })
   async getVerificationHistory(@Query('limit') limit: string) {
     const limitNum = parseInt(limit) || 30;
@@ -108,25 +114,27 @@ export class AuditIntegrityController {
   }
 
   @Get('export')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Export audit chain for external verification',
-    description: 'Exports the audit chain in a format suitable for external verification tools.'
+    description:
+      'Exports the audit chain in a format suitable for external verification tools.',
   })
   @ApiQuery({
     name: 'limit',
     required: false,
     type: Number,
     description: 'Maximum number of events to export',
-    example: 1000
+    example: 1000,
   })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Chain exported successfully',
     schema: {
       example: {
         exportedAt: '2024-02-04T10:30:00.000Z',
         totalEvents: 150,
-        genesisHash: '0000000000000000000000000000000000000000000000000000000000000000',
+        genesisHash:
+          '0000000000000000000000000000000000000000000000000000000000000000',
         algorithm: 'sha256',
         chain: [
           {
@@ -134,11 +142,11 @@ export class AuditIntegrityController {
             eventHash: 'hash1...',
             previousHash: 'genesis...',
             timestamp: '2024-01-01T00:00:00.000Z',
-            metadata: { action: 'LOGIN_SUCCESS', entityType: 'AUTH' }
-          }
-        ]
-      }
-    }
+            metadata: { action: 'LOGIN_SUCCESS', entityType: 'AUTH' },
+          },
+        ],
+      },
+    },
   })
   async exportChain(@Query('limit') limit: string) {
     const limitNum = limit ? parseInt(limit) : undefined;
@@ -146,29 +154,30 @@ export class AuditIntegrityController {
   }
 
   @Post('repair')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Attempt to repair audit chain (EMERGENCY USE ONLY)',
-    description: 'Attempts to repair the audit chain if integrity verification fails. This should only be used in emergencies and may require manual intervention.'
+    description:
+      'Attempts to repair the audit chain if integrity verification fails. This should only be used in emergencies and may require manual intervention.',
   })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Repair attempted',
     schema: {
       example: {
         repaired: false,
-        message: 'Chain is already valid, no repair needed'
-      }
-    }
+        message: 'Chain is already valid, no repair needed',
+      },
+    },
   })
-  @ApiResponse({ 
-    status: 500, 
+  @ApiResponse({
+    status: 500,
     description: 'Repair failed',
     schema: {
       example: {
         repaired: false,
-        message: 'Repair failed: Chain broken at block 125'
-      }
-    }
+        message: 'Repair failed: Chain broken at block 125',
+      },
+    },
   })
   async repairChain() {
     return this.auditIntegrityService.repairChain();

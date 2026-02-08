@@ -1,4 +1,9 @@
-import { AnalyticsGroupBy, ExportFormat, AnalyticsExportInclude, ActivityType } from '../dto/analytics-query.dto';
+import {
+  AnalyticsGroupBy,
+  ExportFormat,
+  AnalyticsExportInclude,
+  ActivityType,
+} from '../dto/analytics-query.dto';
 
 // ==================== DEAL ANALYTICS TYPES ====================
 export interface DealAnalyticsData {

@@ -1,5 +1,11 @@
-import { IsOptional, IsString, IsNumber, IsEnum, IsDateString } from "class-validator";
-import { Type } from "class-transformer";
+import {
+  IsOptional,
+  IsString,
+  IsNumber,
+  IsEnum,
+  IsDateString,
+} from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class DealQueryDto {
   @IsOptional()

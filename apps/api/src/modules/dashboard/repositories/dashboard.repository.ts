@@ -10,33 +10,33 @@ export class DashboardRepository extends TenantAwareRepository {
 
   async getLeadCount(): Promise<number> {
     return this.prisma.lead.count({
-      where: { organizationId: this.tenantId }
+      where: { organizationId: this.tenantId },
     });
   }
 
   async getContactCount(): Promise<number> {
     return this.prisma.contact.count({
-      where: { organizationId: this.tenantId }
+      where: { organizationId: this.tenantId },
     });
   }
 
   async getDealCount(): Promise<number> {
     return this.prisma.deal.count({
-      where: { 
+      where: {
         organizationId: this.tenantId,
-        deletedAt: null
-      }
+        deletedAt: null,
+      },
     });
   }
 
   async getDealValueSum(): Promise<{ _sum: { amount: any | null } }> {
     return this.prisma.deal.aggregate({
-      where: { 
+      where: {
         organizationId: this.tenantId,
         deletedAt: null,
-        status: 'won'
+        status: 'won',
       },
-      _sum: { amount: true }
+      _sum: { amount: true },
     });
   }
 
@@ -44,7 +44,7 @@ export class DashboardRepository extends TenantAwareRepository {
     return this.prisma.pipeline.findFirst({
       where: {
         organizationId: this.tenantId,
-        isDefault: true
+        isDefault: true,
       },
       include: {
         stages: {
@@ -54,41 +54,43 @@ export class DashboardRepository extends TenantAwareRepository {
                 deals: {
                   where: {
                     organizationId: this.tenantId,
-                    deletedAt: null
-                  }
-                }
-              }
-            }
+                    deletedAt: null,
+                  },
+                },
+              },
+            },
           },
-          orderBy: { order: 'asc' }
+          orderBy: { order: 'asc' },
         },
         _count: {
           select: {
             deals: {
               where: {
                 organizationId: this.tenantId,
-                deletedAt: null
-              }
-            }
-          }
-        }
-      }
+                deletedAt: null,
+              },
+            },
+          },
+        },
+      },
     });
   }
 
-async getDealStatusDistribution(): Promise<Array<{
-  status: string;
-  _count: { id: number };
-}>> {
-  const result = await this.prisma.deal.groupBy({
-    by: ['status'],
-    where: {
-      organizationId: this.tenantId,
-      deletedAt: null
-    },
-    _count: { id: true }
-  });
+  async getDealStatusDistribution(): Promise<
+    Array<{
+      status: string;
+      _count: { id: number };
+    }>
+  > {
+    const result = await this.prisma.deal.groupBy({
+      by: ['status'],
+      where: {
+        organizationId: this.tenantId,
+        deletedAt: null,
+      },
+      _count: { id: true },
+    });
 
-  return result as Array<{ status: string; _count: { id: number } }>;
-}
+    return result as Array<{ status: string; _count: { id: number } }>;
+  }
 }

@@ -39,51 +39,46 @@ import { PerformanceMetricsModule } from './shared/performance/performance-metri
       cache: true,
       expandVariables: true,
     }),
-    
+
     // Task scheduling for background jobs
     ScheduleModule.forRoot(),
-    
+
     // ============ SHARED INFRASTRUCTURE ============
     // Core shared services (logging, middleware, guards, etc.)
     SharedModule,
-    
+
     // ============ PHASE 2A: COMPLIANCE & SECURITY ============
     // Week 1-2: Audit Integrity (Tamper-evident audit chain)
     AuditIntegrityModule,
-    
+
     // Week 5-6: SOC 2 Compliance (Evidence collection & verification)
     ComplianceModule,
-    
+
     // Week 3-4: Performance Monitoring (SLO validation)
     PerformanceMetricsModule,
-    
+
     // ============ BUSINESS FEATURES ============
     // Authentication & Authorization
     AuthModule,
     UsersModule,
     RbacModule,
-    
+
     // CRM Core Features
     ContactsModule,
     LeadsModule,
     DealsModule,
     PipelinesModule,
-    
+
     // Reporting & Analytics
     DashboardModule,
     AnalyticsModule,
     AuditLogsModule,
   ],
-  
-  controllers: [
-    AppController, 
-    HealthController,
-  ],
-  
-  providers: [
-    AppService,
-  ],
-  
+
+  controllers: [AppController, HealthController],
+
+  providers: [AppService],
+
   exports: [
     // Export modules that might be used in tests or other contexts
     ConfigModule,

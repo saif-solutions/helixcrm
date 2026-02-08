@@ -8,13 +8,7 @@ import { PrismaModule } from '../../prisma/prisma.module';
 @Global()
 @Module({
   imports: [PrismaModule],
-  providers: [
-    PermissionContextService,
-    PermissionCacheService,
-  ],
-  exports: [
-    PermissionContextService,
-    PermissionCacheService,
-  ],
+  providers: [PermissionContextService, PermissionCacheService],
+  exports: [PermissionContextService, PermissionCacheService],
 })
 export class PermissionContextModule {}

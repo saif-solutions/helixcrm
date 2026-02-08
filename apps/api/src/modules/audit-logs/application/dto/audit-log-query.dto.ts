@@ -1,30 +1,30 @@
 // apps/api/src/modules/audit-logs/application/dto/audit-log-query.dto.ts
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { 
-  IsOptional, 
-  IsString, 
-  IsDate, 
-  IsInt, 
-  Min, 
+import {
+  IsOptional,
+  IsString,
+  IsDate,
+  IsInt,
+  Min,
   IsIn,
   IsArray,
   IsEnum,
-  Matches
+  Matches,
 } from 'class-validator';
-import { 
-  AuditAction, 
-  AuditEntityType, 
-  ActorType, 
+import {
+  AuditAction,
+  AuditEntityType,
+  ActorType,
   AuditSeverity,
-  AuditLogTypes 
+  AuditLogTypes,
 } from '../../domain';
 
 export class AuditLogQueryDto {
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Page number',
     default: 1,
-    minimum: 1
+    minimum: 1,
   })
   @IsOptional()
   @Type(() => Number)
@@ -32,11 +32,11 @@ export class AuditLogQueryDto {
   @Min(1)
   page?: number = 1;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Items per page',
     default: 25,
     minimum: 1,
-    maximum: 100
+    maximum: 100,
   })
   @IsOptional()
   @Type(() => Number)
@@ -44,10 +44,10 @@ export class AuditLogQueryDto {
   @Min(1)
   limit?: number = 25;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Filter by action type',
     example: 'USER_CREATED',
-    enum: Object.values(AuditAction)
+    enum: Object.values(AuditAction),
   })
   @IsOptional()
   @IsString()
@@ -57,17 +57,17 @@ export class AuditLogQueryDto {
   @ApiPropertyOptional({
     description: 'Filter by multiple actions',
     type: [String],
-    example: ['USER_CREATED', 'USER_UPDATED']
+    example: ['USER_CREATED', 'USER_UPDATED'],
   })
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
   actions?: string[];
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Filter by entity type',
     example: 'USER',
-    enum: Object.values(AuditEntityType)
+    enum: Object.values(AuditEntityType),
   })
   @IsOptional()
   @IsString()
@@ -77,17 +77,17 @@ export class AuditLogQueryDto {
   @ApiPropertyOptional({
     description: 'Filter by multiple entity types',
     type: [String],
-    example: ['USER', 'CONTACT']
+    example: ['USER', 'CONTACT'],
   })
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
   entityTypes?: string[];
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Filter by actor type',
     example: 'USER',
-    enum: Object.values(ActorType)
+    enum: Object.values(ActorType),
   })
   @IsOptional()
   @IsString()
@@ -97,17 +97,17 @@ export class AuditLogQueryDto {
   @ApiPropertyOptional({
     description: 'Filter by multiple actor types',
     type: [String],
-    example: ['USER', 'SYSTEM']
+    example: ['USER', 'SYSTEM'],
   })
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
   actorTypes?: string[];
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Filter by severity level',
     example: 'HIGH',
-    enum: Object.values(AuditSeverity)
+    enum: Object.values(AuditSeverity),
   })
   @IsOptional()
   @IsString()
@@ -117,113 +117,113 @@ export class AuditLogQueryDto {
   @ApiPropertyOptional({
     description: 'Filter by multiple severity levels',
     type: [String],
-    example: ['HIGH', 'CRITICAL']
+    example: ['HIGH', 'CRITICAL'],
   })
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
   severities?: string[];
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Search term for actor email, entity ID, or action',
-    example: 'admin@example.com'
+    example: 'admin@example.com',
   })
   @IsOptional()
   @IsString()
   search?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Start date for filtering (ISO format)',
-    example: '2024-01-01T00:00:00.000Z'
+    example: '2024-01-01T00:00:00.000Z',
   })
   @IsOptional()
   @IsDate()
   @Type(() => Date)
   from?: Date;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'End date for filtering (ISO format)',
-    example: '2024-12-31T23:59:59.999Z'
+    example: '2024-12-31T23:59:59.999Z',
   })
   @IsOptional()
   @IsDate()
   @Type(() => Date)
   to?: Date;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Sort direction',
     enum: ['asc', 'desc'],
-    default: 'desc'
+    default: 'desc',
   })
   @IsOptional()
   @IsIn(['asc', 'desc'])
   sort?: 'asc' | 'desc' = 'desc';
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Sort by field',
     enum: ['createdAt', 'severity', 'action'],
-    default: 'createdAt'
+    default: 'createdAt',
   })
   @IsOptional()
   @IsIn(['createdAt', 'severity', 'action'])
   sortBy?: 'createdAt' | 'severity' | 'action' = 'createdAt';
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Filter by source',
     enum: ['WEB', 'API', 'MOBILE', 'SYSTEM', 'BATCH_JOB', 'INTEGRATION', 'CLI'],
-    example: 'WEB'
+    example: 'WEB',
   })
   @IsOptional()
   @IsString()
   source?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Filter by outcome',
     enum: ['SUCCESS', 'FAILURE', 'PARTIAL', 'WARNING'],
-    example: 'SUCCESS'
+    example: 'SUCCESS',
   })
   @IsOptional()
   @IsString()
   outcome?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Filter by actor email',
-    example: 'user@example.com'
+    example: 'user@example.com',
   })
   @IsOptional()
   @IsString()
-  @Matches(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, { 
-    message: 'Invalid email format' 
+  @Matches(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, {
+    message: 'Invalid email format',
   })
   actorEmail?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Organization ID',
-    example: 'org_123'
+    example: 'org_123',
   })
   @IsOptional()
   @IsString()
   organizationId?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Filter by entity ID',
-    example: 'user_123'
+    example: 'user_123',
   })
   @IsOptional()
   @IsString()
   entityId?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Filter by request ID',
-    example: 'req_123'
+    example: 'req_123',
   })
   @IsOptional()
   @IsString()
   requestId?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Filter by correlation ID',
-    example: 'corr_123'
+    example: 'corr_123',
   })
   @IsOptional()
   @IsString()
@@ -251,33 +251,33 @@ export class AuditLogQueryDto {
 
     return {
       isValid: errors.length === 0,
-      errors
+      errors,
     };
   }
 }
 
 export class AuditStatsQueryDto {
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Start date for statistics (ISO format)',
-    example: '2024-01-01T00:00:00.000Z'
+    example: '2024-01-01T00:00:00.000Z',
   })
   @IsOptional()
   @IsDate()
   @Type(() => Date)
   from?: Date;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'End date for statistics (ISO format)',
-    example: '2024-12-31T23:59:59.999Z'
+    example: '2024-12-31T23:59:59.999Z',
   })
   @IsOptional()
   @IsDate()
   @Type(() => Date)
   to?: Date;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Organization ID',
-    example: 'org_123'
+    example: 'org_123',
   })
   @IsOptional()
   @IsString()

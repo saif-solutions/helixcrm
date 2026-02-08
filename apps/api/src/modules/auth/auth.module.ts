@@ -18,16 +18,18 @@ import { AuthCoreAdapter } from './adapters/AuthCoreAdapter'; // Add this import
   imports: [
     // PrismaModule is now globally available via SecurityModule
     // JwtModule is now globally available via SecurityModule
-    ThrottlerModule.forRoot([{
-      ttl: 60000,
-      limit: 10,
-    }]),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000,
+        limit: 10,
+      },
+    ]),
     AuditLogModule, // ADD THIS TO IMPORTS ARRAY
     JwtModule, // Add JwtModule to imports for AuthCoreAdapter
   ],
   controllers: [AuthController, PasswordResetController],
   providers: [
-    AuthService, 
+    AuthService,
     PasswordResetService,
     AccountLockoutService,
     RefreshTokenService,
@@ -36,7 +38,7 @@ import { AuthCoreAdapter } from './adapters/AuthCoreAdapter'; // Add this import
     AuthCoreAdapter, // Add AuthCoreAdapter to providers
   ],
   exports: [
-    AuthService, 
+    AuthService,
     PasswordResetService,
     AccountLockoutService,
     RefreshTokenService,

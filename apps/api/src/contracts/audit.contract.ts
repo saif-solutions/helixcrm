@@ -1,5 +1,15 @@
 // apps/api/src/contracts/audit.contract.ts
-import { IsString, IsNotEmpty, IsOptional, IsEnum, IsObject, IsUUID, IsISO8601, IsArray, Max } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsEnum,
+  IsObject,
+  IsUUID,
+  IsISO8601,
+  IsArray,
+  Max,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 // NOTE: New AuditAction values must be backward-compatible
@@ -11,13 +21,13 @@ export enum AuditAction {
   LOGOUT = 'LOGOUT',
   PASSWORD_CHANGE = 'PASSWORD_CHANGE',
   TOKEN_REFRESH = 'TOKEN_REFRESH',
-  
+
   // User Management
   USER_CREATED = 'USER_CREATED',
   USER_UPDATED = 'USER_UPDATED',
   USER_DELETED = 'USER_DELETED',
   ROLE_CHANGED = 'ROLE_CHANGED',
-  
+
   // CRM Operations
   CONTACT_CREATED = 'CONTACT_CREATED',
   CONTACT_UPDATED = 'CONTACT_UPDATED',
@@ -31,7 +41,7 @@ export enum AuditAction {
   LEAD_CREATED = 'LEAD_CREATED',
   LEAD_UPDATED = 'LEAD_UPDATED',
   LEAD_DELETED = 'LEAD_DELETED',
-  
+
   // Security
   PERMISSION_DENIED = 'PERMISSION_DENIED',
   CSRF_FAILURE = 'CSRF_FAILURE',
@@ -216,12 +226,12 @@ export class BulkAuditLogInput {
 
   validateInvariants(): string[] {
     const warnings: string[] = [];
-    
+
     // Check batch size limits (warning only)
     if (this.logs.length > 1000) {
       warnings.push('Batch size exceeds recommended maximum of 1000 logs');
     }
-    
+
     // Validate each log (collect warnings)
     this.logs.forEach((log, index) => {
       const logWarnings = log.validateInvariants();
@@ -229,7 +239,7 @@ export class BulkAuditLogInput {
         warnings.push(`Log ${index + 1}: ${logWarnings.join(', ')}`);
       }
     });
-    
+
     return warnings;
   }
 }
@@ -245,15 +255,17 @@ export class AuditInvariants {
    */
   static validateActorContext(input: CreateAuditLogInput): string[] {
     const warnings: string[] = [];
-    
+
     if (input.actorType === ActorType.USER && !input.actorUserId) {
-      warnings.push('USER actor type typically includes actorUserId for traceability');
+      warnings.push(
+        'USER actor type typically includes actorUserId for traceability',
+      );
     }
-    
+
     if (input.actorType === ActorType.SYSTEM && input.actorUserId) {
       warnings.push('SYSTEM actor type typically does not have actorUserId');
     }
-    
+
     return warnings;
   }
 
@@ -262,12 +274,12 @@ export class AuditInvariants {
    */
   static validateSeverityContext(input: CreateAuditLogInput): string[] {
     const warnings: string[] = [];
-    
+
     // CRITICAL severity should have IP address for investigation
     if (input.severity === AuditSeverity.CRITICAL && !input.ipAddress) {
       warnings.push('CRITICAL severity logs are more useful with IP address');
     }
-    
+
     // Security-related actions typically have higher severity
     const securityActions = [
       AuditAction.LOGIN_FAILURE,
@@ -275,11 +287,16 @@ export class AuditInvariants {
       AuditAction.CSRF_FAILURE,
       AuditAction.RATE_LIMIT_TRIGGERED,
     ];
-    
-    if (securityActions.includes(input.action) && input.severity === AuditSeverity.LOW) {
-      warnings.push('Security actions typically have MEDIUM or higher severity');
+
+    if (
+      securityActions.includes(input.action) &&
+      input.severity === AuditSeverity.LOW
+    ) {
+      warnings.push(
+        'Security actions typically have MEDIUM or higher severity',
+      );
     }
-    
+
     return warnings;
   }
 
@@ -288,7 +305,7 @@ export class AuditInvariants {
    */
   static validateEntityContext(input: CreateAuditLogInput): string[] {
     const warnings: string[] = [];
-    
+
     // Entity-specific actions are more useful with entityId
     const entitySpecificActions = [
       AuditAction.USER_UPDATED,
@@ -302,11 +319,11 @@ export class AuditInvariants {
       AuditAction.LEAD_UPDATED,
       AuditAction.LEAD_DELETED,
     ];
-    
+
     if (entitySpecificActions.includes(input.action) && !input.entityId) {
       warnings.push(`${input.action} is more useful with entityId`);
     }
-    
+
     return warnings;
   }
 
@@ -315,23 +332,26 @@ export class AuditInvariants {
    */
   static validateQueryParams(input: AuditLogQueryParams): string[] {
     const warnings: string[] = [];
-    
+
     // Date range validation
     if (input.startDate && input.endDate) {
       const start = new Date(input.startDate);
       const end = new Date(input.endDate);
-      
+
       if (start > end) {
         warnings.push('startDate should be before endDate');
       }
-      
+
       // Warn about very large date ranges
-      const daysDifference = (end.getTime() - start.getTime()) / (1000 * 3600 * 24);
+      const daysDifference =
+        (end.getTime() - start.getTime()) / (1000 * 3600 * 24);
       if (daysDifference > 365) {
-        warnings.push('Query spans more than 1 year, consider smaller date ranges');
+        warnings.push(
+          'Query spans more than 1 year, consider smaller date ranges',
+        );
       }
     }
-    
+
     return warnings;
   }
 
@@ -360,7 +380,11 @@ export interface AuditSummary {
 // Phase-2 / Alerting layer interface
 export interface SecurityAlert {
   id: string;
-  type: 'BRUTE_FORCE' | 'UNAUTHORIZED_ACCESS' | 'DATA_EXFILTRATION' | 'SYSTEM_BREACH';
+  type:
+    | 'BRUTE_FORCE'
+    | 'UNAUTHORIZED_ACCESS'
+    | 'DATA_EXFILTRATION'
+    | 'SYSTEM_BREACH';
   severity: AuditSeverity;
   description: string;
   affectedEntities: string[];

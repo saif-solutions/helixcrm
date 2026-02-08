@@ -7,21 +7,21 @@ import { ConfigService } from '@nestjs/config';
 @Module({
   imports: [
     PrismaModule,
-   JwtModule.registerAsync({
-  inject: [ConfigService],
-  useFactory: (config: ConfigService) => ({
-    secret: config.get('JWT_SECRET'),
-    signOptions: {
-      expiresIn: config.get('JWT_EXPIRES_IN', '15m'),
-      issuer: config.get('JWT_ISSUER', 'helixcrm'),
-      audience: config.get('JWT_AUDIENCE', 'helixcrm-client'),
-    },
-    verifyOptions: {
-      issuer: config.get('JWT_ISSUER', 'helixcrm'),
-      audience: config.get('JWT_AUDIENCE', 'helixcrm-client'),
-    },
-  }),
-}),
+    JwtModule.registerAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        secret: config.get('JWT_SECRET'),
+        signOptions: {
+          expiresIn: config.get('JWT_EXPIRES_IN', '15m'),
+          issuer: config.get('JWT_ISSUER', 'helixcrm'),
+          audience: config.get('JWT_AUDIENCE', 'helixcrm-client'),
+        },
+        verifyOptions: {
+          issuer: config.get('JWT_ISSUER', 'helixcrm'),
+          audience: config.get('JWT_AUDIENCE', 'helixcrm-client'),
+        },
+      }),
+    }),
   ],
   exports: [JwtModule, PrismaModule],
 })

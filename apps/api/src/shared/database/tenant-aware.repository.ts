@@ -1,6 +1,6 @@
-import { 
-  requireTenantContext, 
-  getTenantContext
+import {
+  requireTenantContext,
+  getTenantContext,
 } from '../tenant/tenant.context';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -50,7 +50,7 @@ export abstract class TenantAwareRepository {
     if (!this.prisma) {
       throw new Error(
         'PrismaService not initialized. ' +
-        'Options: 1) Pass to constructor, 2) Call setPrismaService(), or 3) Ensure NestJS injection'
+          'Options: 1) Pass to constructor, 2) Call setPrismaService(), or 3) Ensure NestJS injection',
       );
     }
     return this.prisma;
@@ -61,11 +61,13 @@ export abstract class TenantAwareRepository {
    */
   protected get tenantId(): string {
     const context = requireTenantContext();
-    
+
     if (!context?.tenantId) {
-      throw new TenantContextMissingError('Tenant context is required for database operations');
+      throw new TenantContextMissingError(
+        'Tenant context is required for database operations',
+      );
     }
-    
+
     return context.tenantId;
   }
 
@@ -81,7 +83,7 @@ export abstract class TenantAwareRepository {
    * Add tenant filter to any WHERE clause
    */
   protected withTenantFilter<T extends Record<string, any>>(
-    where?: T
+    where?: T,
   ): T & { organizationId: string } {
     const tenantId = this.tenantId;
 
@@ -95,7 +97,7 @@ export abstract class TenantAwareRepository {
    * Add tenant ID to data being created
    */
   protected withTenantData<T extends Record<string, any>>(
-    data: Omit<T, 'organizationId'>
+    data: Omit<T, 'organizationId'>,
   ): T & { organizationId: string } {
     const tenantId = this.tenantId;
 
@@ -110,11 +112,11 @@ export abstract class TenantAwareRepository {
    */
   protected assertTenantOwnership(entity: { organizationId: string }): void {
     const tenantId = this.tenantId;
-    
+
     if (entity.organizationId !== tenantId) {
       throw new TenantContextMissingError(
         `Access denied: Entity belongs to organization ${entity.organizationId}, ` +
-        `but current context is organization ${tenantId}`
+          `but current context is organization ${tenantId}`,
       );
     }
   }
@@ -123,7 +125,7 @@ export abstract class TenantAwareRepository {
    * Execute transaction with tenant context preservation
    */
   protected async transaction<T>(
-    fn: (prisma: PrismaService) => Promise<T>
+    fn: (prisma: PrismaService) => Promise<T>,
   ): Promise<T> {
     return this.getPrisma().$transaction(fn);
   }
@@ -133,30 +135,36 @@ export abstract class TenantAwareRepository {
    */
   protected async measurePerformance<T>(
     operationName: string,
-    operation: () => Promise<T>
+    operation: () => Promise<T>,
   ): Promise<T> {
     const startTime = Date.now();
     const tenantId = this.tenantIdOrUndefined;
-    
+
     try {
       const result = await operation();
       const duration = Date.now() - startTime;
-      
+
       if (duration > 1000) {
-        console.warn(`[PERFORMANCE] ${this.constructor.name}.${operationName} took ${duration}ms`, {
-          tenantId,
-          duration,
-        });
+        console.warn(
+          `[PERFORMANCE] ${this.constructor.name}.${operationName} took ${duration}ms`,
+          {
+            tenantId,
+            duration,
+          },
+        );
       }
-      
+
       return result;
     } catch (error: any) {
       const duration = Date.now() - startTime;
-      console.error(`[PERFORMANCE_ERROR] ${this.constructor.name}.${operationName} failed after ${duration}ms`, {
-        tenantId,
-        duration,
-        error: error.message,
-      });
+      console.error(
+        `[PERFORMANCE_ERROR] ${this.constructor.name}.${operationName} failed after ${duration}ms`,
+        {
+          tenantId,
+          duration,
+          error: error.message,
+        },
+      );
       throw error;
     }
   }

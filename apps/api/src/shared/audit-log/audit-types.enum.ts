@@ -1,13 +1,13 @@
 // Re-export Prisma enums with consistent naming
-export { 
-  ActorType, 
-  AuditAction, 
-  AuditEntityType, 
-  AuditSeverity 
+export {
+  ActorType,
+  AuditAction,
+  AuditEntityType,
+  AuditSeverity,
 } from '@prisma/client';
 
 // Extended actions can be added as a separate type
-export type ExtendedAuditAction = 
+export type ExtendedAuditAction =
   | 'ANALYTICS_EXPORT_REQUESTED'
   | 'ANALYTICS_EXPORT_DOWNLOADED'
   | 'ANALYTICS_EXPORT_COMPLETED'

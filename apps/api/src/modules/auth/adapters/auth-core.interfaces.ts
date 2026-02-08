@@ -48,7 +48,7 @@ export interface TokenRepository {
     userId: string,
     oldVersion: string,
     newVersion: string,
-    newTokenHash: string
+    newTokenHash: string,
   ): Promise<void>;
 }
 
@@ -125,7 +125,11 @@ export interface JwtService {
 }
 
 export interface TokenManagerService {
-  createAccessToken(user: User, permissions: string[], roles: string[]): Promise<string>; // Changed to Promise<string>
+  createAccessToken(
+    user: User,
+    permissions: string[],
+    roles: string[],
+  ): Promise<string>; // Changed to Promise<string>
   createRefreshToken(userId: string, version: string): Promise<string>; // Changed to Promise<string>
   verifyAccessToken(token: string): any;
   verifyRefreshToken(token: string): any;

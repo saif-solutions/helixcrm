@@ -1,5 +1,15 @@
-import { IsString, IsOptional, IsNumber, IsEnum, IsDateString, Min, Max, IsNotEmpty, IsUUID } from "class-validator";
-import { Type } from "class-transformer";
+import {
+  IsString,
+  IsOptional,
+  IsNumber,
+  IsEnum,
+  IsDateString,
+  Min,
+  Max,
+  IsNotEmpty,
+  IsUUID,
+} from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class CreateDealDto {
   @IsString({ message: 'Name must be a string' })
@@ -16,7 +26,9 @@ export class CreateDealDto {
   currency?: string = 'USD';
 
   @IsOptional()
-  @IsEnum(['open', 'won', 'lost'], { message: 'Status must be open, won, or lost' })
+  @IsEnum(['open', 'won', 'lost'], {
+    message: 'Status must be open, won, or lost',
+  })
   status?: string = 'open';
 
   @IsOptional()

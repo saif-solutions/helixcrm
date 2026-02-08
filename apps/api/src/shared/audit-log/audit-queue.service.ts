@@ -1,7 +1,11 @@
 import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Job, Queue } from 'bullmq';
-import { AuditAction, AuditEntityType, AuditSeverity } from './audit-log.service';
+import {
+  AuditAction,
+  AuditEntityType,
+  AuditSeverity,
+} from './audit-log.service';
 
 export interface AuditJobData {
   action: AuditAction;
@@ -44,41 +48,44 @@ export class AuditQueueService implements OnModuleInit {
   private async initializeQueue() {
     // Clean stalled jobs on startup
     await this.auditQueue.clean(0, 1000, 'failed');
-    
-    this.logger.log(`Audit queue initialized. Critical actions: ${Array.from(this.CRITICAL_ACTIONS).join(', ')}`);
+
+    this.logger.log(
+      `Audit queue initialized. Critical actions: ${Array.from(this.CRITICAL_ACTIONS).join(', ')}`,
+    );
   }
 
   /**
    * Add an audit event to the queue
    * Critical events get higher priority and are processed immediately
    */
-  async addAuditEvent(data: Omit<AuditJobData, 'isCritical'>): Promise<Job<AuditJobData>> {
+  async addAuditEvent(
+    data: Omit<AuditJobData, 'isCritical'>,
+  ): Promise<Job<AuditJobData>> {
     const isCritical = this.CRITICAL_ACTIONS.has(data.action);
     const jobData: AuditJobData = {
       ...data,
       isCritical,
     };
 
-    const job = await this.auditQueue.add(
-      'audit-event',
-      jobData,
-      {
-        priority: isCritical ? 1 : 3, // Higher number = lower priority
-        attempts: this.MAX_RETRY_ATTEMPTS,
-        backoff: {
-          type: 'exponential',
-          delay: 1000, // Start with 1 second, then 2, 4, etc.
-        },
-        removeOnComplete: 100, // Keep last 100 completed jobs
-        removeOnFail: 50, // Keep last 50 failed jobs
-      }
-    );
-
-    this.logger.debug(`Audit event queued: ${data.action} (${isCritical ? 'CRITICAL' : 'NORMAL'})`, {
-      jobId: job.id,
-      action: data.action,
-      actorEmail: data.actorEmail,
+    const job = await this.auditQueue.add('audit-event', jobData, {
+      priority: isCritical ? 1 : 3, // Higher number = lower priority
+      attempts: this.MAX_RETRY_ATTEMPTS,
+      backoff: {
+        type: 'exponential',
+        delay: 1000, // Start with 1 second, then 2, 4, etc.
+      },
+      removeOnComplete: 100, // Keep last 100 completed jobs
+      removeOnFail: 50, // Keep last 50 failed jobs
     });
+
+    this.logger.debug(
+      `Audit event queued: ${data.action} (${isCritical ? 'CRITICAL' : 'NORMAL'})`,
+      {
+        jobId: job.id,
+        action: data.action,
+        actorEmail: data.actorEmail,
+      },
+    );
 
     return job;
   }
@@ -110,10 +117,12 @@ export class AuditQueueService implements OnModuleInit {
    */
   async retryFailedJobs(count: number = 10) {
     const failedJobs = await this.auditQueue.getFailed(0, count);
-    
+
     for (const job of failedJobs) {
       await job.retry();
-      this.logger.log(`Retried failed audit job: ${job.id} - ${job.data.action}`);
+      this.logger.log(
+        `Retried failed audit job: ${job.id} - ${job.data.action}`,
+      );
     }
 
     return failedJobs.length;

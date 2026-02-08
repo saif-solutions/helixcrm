@@ -1,54 +1,58 @@
 // apps/api/src/modules/dashboard/dashboard.controller.ts
-import { 
-  Controller, 
-  Get, 
+import {
+  Controller,
+  Get,
   UseGuards,
   Req,
   Request,
   Logger,
   HttpCode,
   HttpStatus,
-} from "@nestjs/common";
-import { AuthGuard } from "../../shared/guards/auth.guard";
-import { TenantGuard } from "../../shared/guards/tenant.guard";
-import { PermissionGuard } from "../../shared/guards/permission.guard";
-import { RequirePermission } from "../../shared/decorators/require-permission.decorator";
-import { DashboardService } from "./dashboard.service";
+} from '@nestjs/common';
+import { AuthGuard } from '../../shared/guards/auth.guard';
+import { TenantGuard } from '../../shared/guards/tenant.guard';
+import { PermissionGuard } from '../../shared/guards/permission.guard';
+import { RequirePermission } from '../../shared/decorators/require-permission.decorator';
+import { DashboardService } from './dashboard.service';
 
-@Controller("dashboard")
+@Controller('dashboard')
 @UseGuards(AuthGuard, TenantGuard, PermissionGuard)
 export class DashboardController {
   private readonly logger = new Logger(DashboardController.name);
 
   constructor(private readonly dashboardService: DashboardService) {}
 
-  @Get("stats")
+  @Get('stats')
   @HttpCode(HttpStatus.OK)
   @RequirePermission('dashboard.read')
   async getStats(@Req() req: Request) {
     try {
       const userId = (req as any).user.sub;
-      
+
       this.logger.log(`Fetching dashboard stats`, {
         userId,
-        event: 'dashboard_stats_request'
+        event: 'dashboard_stats_request',
       });
-      
+
       const stats = await this.dashboardService.getStats();
-      
+
       // Safely extract stats for logging
       let dealsCount = 0;
       let contactsCount = 0;
       let leadsCount = 0;
-      
+
       // Handle different possible return structures
       if (stats && typeof stats === 'object') {
         // Check if stats has a 'data' property
         if ('data' in stats && stats.data && typeof stats.data === 'object') {
           const data = stats.data as any;
           // Check if data has a 'summary' property
-          if ('summary' in data && data.summary && typeof data.summary === 'object') {
-            const summary = data.summary as any;
+          if (
+            'summary' in data &&
+            data.summary &&
+            typeof data.summary === 'object'
+          ) {
+            const summary = data.summary;
             dealsCount = summary.deals || 0;
             contactsCount = summary.contacts || 0;
             leadsCount = summary.leads || 0;
@@ -58,7 +62,8 @@ export class DashboardController {
             dealsCount = typeof data.deals === 'number' ? data.deals : 0;
           }
           if ('contacts' in data) {
-            contactsCount = typeof data.contacts === 'number' ? data.contacts : 0;
+            contactsCount =
+              typeof data.contacts === 'number' ? data.contacts : 0;
           }
           if ('leads' in data) {
             leadsCount = typeof data.leads === 'number' ? data.leads : 0;
@@ -67,47 +72,60 @@ export class DashboardController {
         // Check if stats has properties directly
         else {
           if ('deals' in stats) {
-            dealsCount = typeof (stats as any).deals === 'number' ? (stats as any).deals : 0;
+            dealsCount =
+              typeof (stats as any).deals === 'number'
+                ? (stats as any).deals
+                : 0;
           }
           if ('contacts' in stats) {
-            contactsCount = typeof (stats as any).contacts === 'number' ? (stats as any).contacts : 0;
+            contactsCount =
+              typeof (stats as any).contacts === 'number'
+                ? (stats as any).contacts
+                : 0;
           }
           if ('leads' in stats) {
-            leadsCount = typeof (stats as any).leads === 'number' ? (stats as any).leads : 0;
+            leadsCount =
+              typeof (stats as any).leads === 'number'
+                ? (stats as any).leads
+                : 0;
           }
         }
       }
-      
+
       this.logger.debug(`Dashboard stats retrieved`, {
         userId,
         dealsCount,
         contactsCount,
         leadsCount,
       });
-      
+
       return {
         success: true,
         data: stats,
         timestamp: new Date().toISOString(),
       };
     } catch (error) {
-      this.logger.error(`Failed to fetch dashboard stats: ${error.message}`, error.stack, {
-        userId: (req as any).user?.sub,
-        event: 'dashboard_stats_error'
-      });
-      
+      this.logger.error(
+        `Failed to fetch dashboard stats: ${error.message}`,
+        error.stack,
+        {
+          userId: (req as any).user?.sub,
+          event: 'dashboard_stats_error',
+        },
+      );
+
       throw error;
     }
   }
 
-  @Get("health")
+  @Get('health')
   @HttpCode(HttpStatus.OK)
   @RequirePermission('dashboard.read')
   async getDashboardHealth(@Req() req: Request) {
     try {
       // Try to get basic stats as health check
       const stats = await this.dashboardService.getStats();
-      
+
       const health = {
         status: stats ? 'healthy' : 'degraded',
         lastUpdated: new Date().toISOString(),
@@ -117,7 +135,7 @@ export class DashboardController {
         },
         dataFreshness: new Date().toISOString(),
       };
-      
+
       return {
         success: true,
         data: health,
@@ -127,9 +145,9 @@ export class DashboardController {
     } catch (error) {
       this.logger.error(`Dashboard health check failed: ${error.message}`, {
         error: error.name,
-        event: 'dashboard_health_error'
+        event: 'dashboard_health_error',
       });
-      
+
       // Return degraded health status
       return {
         success: false,

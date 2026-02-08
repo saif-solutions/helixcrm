@@ -23,8 +23,14 @@ export class AuditQueueModule {
             const redisPort = configService.get<number>('REDIS_PORT', 6379);
             const redisPassword = configService.get('REDIS_PASSWORD');
             const useTls = configService.get('REDIS_TLS', 'false') === 'true';
-            const jobAttempts = configService.get<number>('AUDIT_JOB_ATTEMPTS', 3);
-            const jobTimeout = configService.get<number>('AUDIT_JOB_TIMEOUT', 30000); // 30 seconds
+            const jobAttempts = configService.get<number>(
+              'AUDIT_JOB_ATTEMPTS',
+              3,
+            );
+            const jobTimeout = configService.get<number>(
+              'AUDIT_JOB_TIMEOUT',
+              30000,
+            ); // 30 seconds
 
             const redisConfig: any = {
               host: redisHost,
@@ -59,10 +65,7 @@ export class AuditQueueModule {
           },
         }),
       ],
-      providers: [
-        AuditQueueService,
-        AuditQueueProcessor,
-      ],
+      providers: [AuditQueueService, AuditQueueProcessor],
       exports: [
         AuditQueueService,
         BullModule, // Export BullModule to make queue injectable
@@ -76,9 +79,7 @@ export class AuditQueueModule {
     // Enable async processing (processor will automatically start)
     return {
       ...baseModule,
-      providers: [
-        ...baseModule.providers,
-      ],
+      providers: [...baseModule.providers],
     };
   }
 }

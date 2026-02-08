@@ -26,8 +26,12 @@ export class PermissionGuard implements CanActivate {
       [context.getHandler(), context.getClass()],
     );
 
-    this.logger.debug(`Checking permissions for route: ${context.getClass().name}.${context.getHandler().name}`);
-    this.logger.debug(`Required permissions: ${JSON.stringify(requiredPermissions)}`);
+    this.logger.debug(
+      `Checking permissions for route: ${context.getClass().name}.${context.getHandler().name}`,
+    );
+    this.logger.debug(
+      `Required permissions: ${JSON.stringify(requiredPermissions)}`,
+    );
 
     // If no permissions metadata is set, allow access
     if (requiredPermissions === undefined) {
@@ -49,7 +53,9 @@ export class PermissionGuard implements CanActivate {
       throw new UnauthorizedException('Authentication required');
     }
 
-    this.logger.debug(`Checking permissions for user: ${user.sub} (org: ${user.organizationId})`);
+    this.logger.debug(
+      `Checking permissions for user: ${user.sub} (org: ${user.organizationId})`,
+    );
 
     // Build permission context ONCE per request
     // This will be cached in PermissionContextService for downstream use
@@ -60,7 +66,8 @@ export class PermissionGuard implements CanActivate {
     });
 
     // Check if user has any of the required permissions
-    const hasPermission = this.permissionContext.hasAnyPermission(requiredPermissions);
+    const hasPermission =
+      this.permissionContext.hasAnyPermission(requiredPermissions);
 
     if (!hasPermission) {
       const userPermissions = this.permissionContext.getPermissions();

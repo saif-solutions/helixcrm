@@ -5,5 +5,5 @@ interface RateLimitOptions {
   duration: number;
 }
 
-export const RateLimit = (options: RateLimitOptions) => 
+export const RateLimit = (options: RateLimitOptions) =>
   SetMetadata('rate-limit', options);

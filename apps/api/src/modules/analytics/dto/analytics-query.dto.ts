@@ -1,20 +1,17 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { 
-  Transform, 
-  Type 
-} from 'class-transformer';
-import { 
-  IsOptional, 
-  IsString, 
-  IsEnum, 
-  IsUUID, 
-  IsDateString, 
-  IsInt, 
-  Min, 
-  Max, 
+import { Transform, Type } from 'class-transformer';
+import {
+  IsOptional,
+  IsString,
+  IsEnum,
+  IsUUID,
+  IsDateString,
+  IsInt,
+  Min,
+  Max,
   IsBoolean,
   IsArray,
-  ArrayNotEmpty
+  ArrayNotEmpty,
 } from 'class-validator';
 import { ValidateDateRange } from '../../../shared/validators/date-range.validator';
 import { IsValidCurrencyCode } from '../../../shared/validators/currency-code.validator';

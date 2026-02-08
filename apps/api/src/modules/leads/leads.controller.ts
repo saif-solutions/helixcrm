@@ -1,12 +1,12 @@
 // apps/api/src/modules/leads/leads.controller.ts
-import { 
-  Controller, 
-  Get, 
-  Post, 
-  Body, 
-  Param, 
-  Put, 
-  Delete, 
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Put,
+  Delete,
   UseGuards,
   Req,
   Request,
@@ -16,18 +16,18 @@ import {
   HttpCode,
   HttpStatus,
   UsePipes,
-  ValidationPipe
-} from "@nestjs/common";
-import { AuthGuard } from "../../shared/guards/auth.guard";
-import { TenantGuard } from "../../shared/guards/tenant.guard";
-import { PermissionGuard } from "../../shared/guards/permission.guard";
-import { RequirePermission } from "../../shared/decorators/require-permission.decorator";
-import { LeadsService } from "./leads.service";
-import { CreateLeadDto, LeadStatus } from "./dto/create-lead.dto";
-import { UpdateLeadDto } from "./dto/update-lead.dto";
-import { LeadStatus as PrismaLeadStatus } from "@prisma/client";
+  ValidationPipe,
+} from '@nestjs/common';
+import { AuthGuard } from '../../shared/guards/auth.guard';
+import { TenantGuard } from '../../shared/guards/tenant.guard';
+import { PermissionGuard } from '../../shared/guards/permission.guard';
+import { RequirePermission } from '../../shared/decorators/require-permission.decorator';
+import { LeadsService } from './leads.service';
+import { CreateLeadDto, LeadStatus } from './dto/create-lead.dto';
+import { UpdateLeadDto } from './dto/update-lead.dto';
+import { LeadStatus as PrismaLeadStatus } from '@prisma/client';
 
-@Controller("leads")
+@Controller('leads')
 @UseGuards(AuthGuard, TenantGuard, PermissionGuard)
 export class LeadsController {
   constructor(private readonly leadsService: LeadsService) {}
@@ -64,17 +64,19 @@ export class LeadsController {
     return this.leadsService.getStats();
   }
 
-  @Get(":id")
+  @Get(':id')
   @RequirePermission('leads.read')
-  findOne(@Param("id") id: string) {
+  findOne(@Param('id') id: string) {
     return this.leadsService.findOne(id);
   }
 
-  @Put(":id")
-  @UsePipes(new ValidationPipe({ transform: true, skipMissingProperties: true }))
+  @Put(':id')
+  @UsePipes(
+    new ValidationPipe({ transform: true, skipMissingProperties: true }),
+  )
   @RequirePermission('leads.write')
   update(
-    @Param("id") id: string,
+    @Param('id') id: string,
     @Body() updateLeadDto: UpdateLeadDto,
     @Req() req: Request,
   ) {
@@ -82,10 +84,10 @@ export class LeadsController {
     return this.leadsService.update(id, updateLeadDto, user.sub);
   }
 
-  @Delete(":id")
+  @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @RequirePermission('leads.delete')
-  remove(@Param("id") id: string, @Req() req: Request) {
+  remove(@Param('id') id: string, @Req() req: Request) {
     const user = (req as any).user;
     return this.leadsService.remove(id, user.sub);
   }

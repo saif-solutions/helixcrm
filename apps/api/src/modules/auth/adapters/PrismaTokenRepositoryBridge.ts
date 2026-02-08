@@ -2,10 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import SecurityConfig from '../../../config/security.config';
-import {
-  TokenRepository,
-  RefreshToken,
-} from '@helixcrm/auth-core';
+import { TokenRepository, RefreshToken } from '@helixcrm/auth-core';
 
 @Injectable()
 export class PrismaTokenRepositoryBridge implements TokenRepository {
@@ -18,11 +15,11 @@ export class PrismaTokenRepositoryBridge implements TokenRepository {
   /**
    * Save a refresh token to the database
    * Maps auth-core RefreshToken to user.refreshTokenHash schema
-   * 
+   *
    * CONTRACT: token.id contains the raw jti (JWT ID) from auth-core
    * This jti MUST be stored as-is in refreshTokenVersion for replay protection
    */
-async saveRefreshToken(token: RefreshToken): Promise<void> {
+  async saveRefreshToken(token: RefreshToken): Promise<void> {
     // DEBUG: Log token structure to understand what auth-core provides
     this.logger.debug('[BRIDGE-DEBUG] Token structure from auth-core', {
       tokenKeys: Object.keys(token),
@@ -30,21 +27,29 @@ async saveRefreshToken(token: RefreshToken): Promise<void> {
       hasTokenHashField: 'tokenHash' in token,
       hasIdField: 'id' in token,
       hasUserIdField: 'userId' in token,
-      tokenValue: 'token' in token ? (token.token as any).substring(0, 30) + '...' : 'NOT PRESENT',
-      tokenHashValue: 'tokenHash' in token ? (token.tokenHash as any).substring(0, 30) + '...' : 'NOT PRESENT',
+      tokenValue:
+        'token' in token
+          ? (token.token as any).substring(0, 30) + '...'
+          : 'NOT PRESENT',
+      tokenHashValue:
+        'tokenHash' in token
+          ? (token.tokenHash as any).substring(0, 30) + '...'
+          : 'NOT PRESENT',
       idValue: 'id' in token ? token.id.substring(0, 20) : 'NOT PRESENT',
     });
 
     // Validate required fields
     if (!token.userId) {
-      this.logger.error('[SECURITY] RefreshToken missing userId', { tokenId: token.id });
+      this.logger.error('[SECURITY] RefreshToken missing userId', {
+        tokenId: token.id,
+      });
       throw new Error('RefreshToken must have userId field');
     }
 
     if (!token.organizationId) {
-      this.logger.error('[SECURITY] RefreshToken missing organizationId', { 
-        userId: token.userId, 
-        tokenId: token.id 
+      this.logger.error('[SECURITY] RefreshToken missing organizationId', {
+        userId: token.userId,
+        tokenId: token.id,
       });
       throw new Error('RefreshToken must have organizationId field');
     }
@@ -58,14 +63,14 @@ async saveRefreshToken(token: RefreshToken): Promise<void> {
     }
 
     // Hash the token for secure storage
-// TEMPORARY DEBUG: Let me see what token contains
-console.log('TOKEN OBJECT KEYS:', Object.keys(token));
-console.log('TOKEN OBJECT:', token);
+    // TEMPORARY DEBUG: Let me see what token contains
+    console.log('TOKEN OBJECT KEYS:', Object.keys(token));
+    console.log('TOKEN OBJECT:', token);
 
-const hashedToken = await bcrypt.hash(
-  token.tokenHash,  // Keep this for now but add debugging
-  SecurityConfig.refreshToken.bcryptRounds || 10
-);
+    const hashedToken = await bcrypt.hash(
+      token.tokenHash, // Keep this for now but add debugging
+      SecurityConfig.refreshToken.bcryptRounds || 10,
+    );
 
     // Update user with new token (atomic operation)
     await this.prisma.user.update({
@@ -82,7 +87,7 @@ const hashedToken = await bcrypt.hash(
         refreshTokenIssuedAt: token.createdAt,
       },
     });
-    
+
     this.logger.debug('[AUTH-CORE] Refresh token saved', {
       userId: token.userId,
       organizationId: token.organizationId,
@@ -133,7 +138,7 @@ const hashedToken = await bcrypt.hash(
     if (!user) {
       this.logger.debug('[AUTH-CORE] Token not found or inactive', {
         jtiPrefix: tokenId.substring(0, 10),
-        reason: user ? 'token_hash_null' : 'no_user_found'
+        reason: user ? 'token_hash_null' : 'no_user_found',
       });
       return null;
     }
@@ -149,9 +154,9 @@ const hashedToken = await bcrypt.hash(
       id: tokenId,
       userId: user.id,
       organizationId: user.organizationId,
-      tokenHash: user.refreshTokenHash!,
-      createdAt: user.refreshTokenIssuedAt!,
-      expiresAt: new Date(user.refreshTokenIssuedAt!.getTime() + 604800000), // 7 days
+      tokenHash: user.refreshTokenHash,
+      createdAt: user.refreshTokenIssuedAt,
+      expiresAt: new Date(user.refreshTokenIssuedAt.getTime() + 604800000), // 7 days
     };
   }
 
@@ -190,7 +195,7 @@ const hashedToken = await bcrypt.hash(
         refreshTokenIssuedAt: null,
       },
     });
-    
+
     this.logger.debug('[AUTH-CORE] Token invalidated', {
       userId: user.id,
       jtiPrefix: tokenId.substring(0, 10),
@@ -216,7 +221,7 @@ const hashedToken = await bcrypt.hash(
         tokenVersion: { increment: 1 }, // Invalidate all access tokens
       },
     });
-    
+
     this.logger.debug('[AUTH-CORE] All tokens revoked', {
       userId,
       reason,
@@ -232,7 +237,7 @@ const hashedToken = await bcrypt.hash(
     userId: string,
     oldVersion: string, // jti of old token
     newVersion: string, // jti of new token
-    newTokenHash: string
+    newTokenHash: string,
   ): Promise<void> {
     this.logger.debug('[AUTH-CORE] Rotating refresh token', {
       userId,
@@ -264,7 +269,7 @@ const hashedToken = await bcrypt.hash(
       });
       throw new Error('Token version mismatch - possible replay attempt');
     }
-    
+
     this.logger.debug('[AUTH-CORE] Token rotated successfully', {
       userId,
       newJtiPrefix: newVersion.substring(0, 10),
@@ -300,11 +305,14 @@ const hashedToken = await bcrypt.hash(
    * @deprecated Auth-core uses raw jti, not "userId:jti" format
    */
   private parseTokenId(tokenId: string): [string, string] {
-    this.logger.warn('[DEPRECATED] parseTokenId called - auth-core uses raw jti', {
-      tokenIdPrefix: tokenId.substring(0, 10),
-      tokenIdLength: tokenId.length,
-    });
-    
+    this.logger.warn(
+      '[DEPRECATED] parseTokenId called - auth-core uses raw jti',
+      {
+        tokenIdPrefix: tokenId.substring(0, 10),
+        tokenIdLength: tokenId.length,
+      },
+    );
+
     // Legacy support: if format is "userId:jti", parse it
     if (tokenId.includes(':')) {
       const parts = tokenId.split(':');
@@ -312,7 +320,7 @@ const hashedToken = await bcrypt.hash(
         return [parts[0], parts[1]];
       }
     }
-    
+
     // Auth-core provides raw jti, userId must come from other context
     return ['unknown', tokenId];
   }
@@ -321,7 +329,9 @@ const hashedToken = await bcrypt.hash(
    * @deprecated Auth-core uses raw jti format
    */
   createTokenId(userId: string, jti: string): string {
-    this.logger.warn('[DEPRECATED] createTokenId called - auth-core uses raw jti');
+    this.logger.warn(
+      '[DEPRECATED] createTokenId called - auth-core uses raw jti',
+    );
     return `${userId}:${jti}`;
   }
 

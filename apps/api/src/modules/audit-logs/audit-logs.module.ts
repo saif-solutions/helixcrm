@@ -5,12 +5,8 @@ import { AuditLogRepository } from './infrastructure/repositories/audit-log.repo
 import { SharedModule } from '../../shared/shared.module';
 
 @Module({
-  imports: [
-    SharedModule,
-  ],
-  controllers: [
-    AuditLogController,
-  ],
+  imports: [SharedModule],
+  controllers: [AuditLogController],
   providers: [
     AuditLogService,
     {
