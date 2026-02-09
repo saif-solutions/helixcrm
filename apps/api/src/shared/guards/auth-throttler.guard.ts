@@ -13,7 +13,7 @@ export class AuthThrottlerGuard extends ThrottlerGuard {
     super(options, storageService, reflector);
   }
 
-  protected async getTracker(req: Record<string, any>): Promise<string> {
+  protected getTracker(req: Record<string, any>): string {
     // Use IP address for auth endpoints to prevent brute force
     return req.ip;
   }

@@ -94,6 +94,8 @@ describe('Webhook Module Integration', () => {
         organizationId: 'test-tenant-id',
         createdAt: new Date(),
         updatedAt: new Date(),
+        deletedAt: null,
+        deletedBy: null,
       };
 
       // Mock repository calls
@@ -136,6 +138,8 @@ describe('Webhook Module Integration', () => {
           organizationId: 'test-tenant-id',
           createdAt: new Date(),
           updatedAt: new Date(),
+          deletedAt: null,
+          deletedBy: null,
         },
         {
           id: 'webhook-id-2',
@@ -150,6 +154,8 @@ describe('Webhook Module Integration', () => {
           organizationId: 'test-tenant-id',
           createdAt: new Date(),
           updatedAt: new Date(),
+          deletedAt: null,
+          deletedBy: null,
         },
       ];
 
@@ -172,19 +178,25 @@ describe('Webhook Module Integration', () => {
     });
 
     it('should get webhook by ID with tenant isolation', async () => {
-      const mockWebhook = {
-        id: 'webhook-id-1',
-        name: 'test-webhook-1',
+      const createDto = {
+        name: 'test-webhook',
         url: 'https://example.com/webhook',
         events: ['contact.created'],
-        secret: 'test-secret',
         isActive: true,
         retryCount: 3,
         timeoutMs: 10000,
+      };
+
+      const mockWebhook = {
+        id: 'webhook-id',
+        ...createDto,
+        secret: 'generated-secret',
         headers: {},
-        organizationId: 'test-tenant-id',
+        organizationId: 'test-tenant',
         createdAt: new Date(),
         updatedAt: new Date(),
+        deletedAt: null,
+        deletedBy: null,
       };
 
       jest.spyOn(webhookRepository, 'findById').mockResolvedValue(mockWebhook);
@@ -218,6 +230,8 @@ describe('Webhook Module Integration', () => {
         organizationId: 'test-tenant-id',
         createdAt: new Date(),
         updatedAt: new Date(),
+        deletedAt: null,
+        deletedBy: null,
       };
 
       const updatedWebhook = {
@@ -276,6 +290,8 @@ describe('Webhook Module Integration', () => {
         organizationId: 'test-tenant-id',
         createdAt: new Date(),
         updatedAt: new Date(),
+        deletedAt: null,
+        deletedBy: null,
       };
 
       jest
@@ -311,6 +327,8 @@ describe('Webhook Module Integration', () => {
         organizationId: 'test-tenant-id',
         createdAt: new Date(),
         updatedAt: new Date(),
+        deletedAt: null,
+        deletedBy: null,
       };
 
       const payload = {
@@ -320,22 +338,26 @@ describe('Webhook Module Integration', () => {
         userId: 'user-123',
       };
 
-const mockDelivery = {
-  id: 'delivery-id-1',
-  webhookId: 'webhook-id-1',
-  event: 'contact.created',
-  payload: payload.data as any, // Cast to any to match JsonValue
-  status: 'pending',
-  statusCode: null,
-  response: null,
-  error: null,
-  retryCount: 0,
-  attemptedAt: new Date(),
-  completedAt: null,
-  organizationId: 'test-tenant-id',
-  createdAt: new Date(),
-  updatedAt: new Date(),
-};
+      const mockDelivery = {
+        id: 'delivery-id-1',
+        webhookId: 'webhook-id-1',
+        event: 'contact.created',
+        payload: payload.data as any, // Cast to any to match JsonValue
+        status: 'pending',
+        statusCode: null,
+        response: null,
+        errorMessage: null,
+        retryCount: 0,
+        attemptedAt: new Date(),
+        completedAt: null,
+        organizationId: 'test-tenant-id',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        attempts: 0,
+        nextAttemptAt: null,
+        deliveredAt: null,
+        
+      };
 
       jest.spyOn(webhookRepository, 'findById').mockResolvedValue(webhook);
       jest
@@ -372,13 +394,16 @@ const mockDelivery = {
           status: 'success',
           statusCode: 200,
           response: 'OK',
-          error: null,
+          errorMessage: null,
           retryCount: 0,
           attemptedAt: new Date(),
           completedAt: new Date(),
           organizationId: 'test-tenant-id',
           createdAt: new Date(),
           updatedAt: new Date(),
+          attempts: 0,
+          nextAttemptAt: null,
+          deliveredAt: null,
         },
         {
           id: 'delivery-2',
@@ -388,13 +413,16 @@ const mockDelivery = {
           status: 'failed',
           statusCode: 500,
           response: 'Internal Server Error',
-          error: 'Timeout',
+          errorMessage: 'Timeout',
           retryCount: 2,
           attemptedAt: new Date(),
           completedAt: new Date(),
           organizationId: 'test-tenant-id',
           createdAt: new Date(),
           updatedAt: new Date(),
+          attempts: 2,
+          nextAttemptAt: null,
+          deliveredAt: null,
         },
       ];
 

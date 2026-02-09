@@ -28,7 +28,7 @@ export class PasswordResetController {
 
   @Post('request')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 3, ttl: 60000 } }) // 3 requests per minute
+  @Throttle(3, 60000) // 3 requests per minute
   @ApiOperation({ summary: 'Request password reset email' })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -80,7 +80,7 @@ export class PasswordResetController {
 
   @Post('reset')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 5, ttl: 300000 } }) // 5 requests per 5 minutes
+  @Throttle(5, 300000) // 5 requests per 5 minutes
   @ApiOperation({ summary: 'Reset password using token' })
   @ApiResponse({
     status: HttpStatus.OK,

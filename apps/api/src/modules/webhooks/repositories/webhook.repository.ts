@@ -298,7 +298,7 @@ export class WebhookRepository extends TenantAwareRepository {
       where: {
         organizationId: this.tenantId,
         status: 'failed',
-        error: {
+        errorMessage: {
           not: null,
         },
         retryCount: {
