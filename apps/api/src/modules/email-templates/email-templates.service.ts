@@ -126,13 +126,17 @@ export class EmailTemplatesService {
       return template;
     } catch (error: any) {
       // 6. ERROR HANDLING
-      this.logger.error(`Create email template failed: ${error.message}`, error.stack, {
-        tenantId,
-        userId,
-        data: createDto,
-        method: 'createEmailTemplate',
-        processingTime: Date.now() - startTime,
-      });
+      this.logger.error(
+        `Create email template failed: ${error.message}`,
+        error.stack,
+        {
+          tenantId,
+          userId,
+          data: createDto,
+          method: 'createEmailTemplate',
+          processingTime: Date.now() - startTime,
+        },
+      );
 
       if (
         error instanceof ForbiddenException ||
@@ -195,12 +199,16 @@ export class EmailTemplatesService {
         },
       };
     } catch (error: any) {
-      this.logger.error(`Get all email templates failed: ${error.message}`, error.stack, {
-        tenantId,
-        userId,
-        options,
-        method: 'getAllEmailTemplates',
-      });
+      this.logger.error(
+        `Get all email templates failed: ${error.message}`,
+        error.stack,
+        {
+          tenantId,
+          userId,
+          options,
+          method: 'getAllEmailTemplates',
+        },
+      );
       throw new BadRequestException('Failed to fetch email templates');
     }
   }
@@ -229,14 +237,21 @@ export class EmailTemplatesService {
 
       return template;
     } catch (error: any) {
-      this.logger.error(`Get email template by ID failed: ${error.message}`, error.stack, {
-        tenantId,
-        userId,
-        id,
-        method: 'getEmailTemplateById',
-      });
+      this.logger.error(
+        `Get email template by ID failed: ${error.message}`,
+        error.stack,
+        {
+          tenantId,
+          userId,
+          id,
+          method: 'getEmailTemplateById',
+        },
+      );
 
-      if (error instanceof NotFoundException || error instanceof ForbiddenException) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof ForbiddenException
+      ) {
         throw error;
       }
 
@@ -285,7 +300,10 @@ export class EmailTemplatesService {
       }
 
       // 5. UPDATE TEMPLATE USING REPOSITORY
-      const updatedTemplate = await this.emailTemplateRepository.update(id, updateDto);
+      const updatedTemplate = await this.emailTemplateRepository.update(
+        id,
+        updateDto,
+      );
 
       // 6. AUDIT LOGGING
       await this.auditLogService.logEvent({
@@ -317,14 +335,18 @@ export class EmailTemplatesService {
       return updatedTemplate;
     } catch (error: any) {
       // 7. ERROR HANDLING
-      this.logger.error(`Update email template failed: ${error.message}`, error.stack, {
-        tenantId,
-        userId,
-        id,
-        data: updateDto,
-        method: 'updateEmailTemplate',
-        processingTime: Date.now() - startTime,
-      });
+      this.logger.error(
+        `Update email template failed: ${error.message}`,
+        error.stack,
+        {
+          tenantId,
+          userId,
+          id,
+          data: updateDto,
+          method: 'updateEmailTemplate',
+          processingTime: Date.now() - startTime,
+        },
+      );
 
       if (
         error instanceof NotFoundException ||
@@ -401,13 +423,17 @@ export class EmailTemplatesService {
       return { message: 'Email template deleted successfully' };
     } catch (error: any) {
       // 6. ERROR HANDLING
-      this.logger.error(`Delete email template failed: ${error.message}`, error.stack, {
-        tenantId,
-        userId,
-        id,
-        method: 'deleteEmailTemplate',
-        processingTime: Date.now() - startTime,
-      });
+      this.logger.error(
+        `Delete email template failed: ${error.message}`,
+        error.stack,
+        {
+          tenantId,
+          userId,
+          id,
+          method: 'deleteEmailTemplate',
+          processingTime: Date.now() - startTime,
+        },
+      );
 
       if (
         error instanceof NotFoundException ||
@@ -484,15 +510,22 @@ export class EmailTemplatesService {
         },
       };
     } catch (error: any) {
-      this.logger.error(`Render template failed: ${error.message}`, error.stack, {
-        tenantId,
-        userId,
-        data: renderDto,
-        method: 'renderTemplate',
-        processingTime: Date.now() - startTime,
-      });
+      this.logger.error(
+        `Render template failed: ${error.message}`,
+        error.stack,
+        {
+          tenantId,
+          userId,
+          data: renderDto,
+          method: 'renderTemplate',
+          processingTime: Date.now() - startTime,
+        },
+      );
 
-      if (error instanceof NotFoundException || error instanceof ForbiddenException) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof ForbiddenException
+      ) {
         throw error;
       }
 
@@ -637,7 +670,9 @@ export class EmailTemplatesService {
     }
 
     if (body.length > 100000) {
-      throw new BadRequestException('Template body is too long (max 100,000 characters)');
+      throw new BadRequestException(
+        'Template body is too long (max 100,000 characters)',
+      );
     }
 
     // Add more validation as needed (HTML sanitization, etc.)
@@ -661,11 +696,15 @@ export class EmailTemplatesService {
     // Warn about unused variables (optional)
     const usedVariables = Object.keys(providedVariables);
     const unusedVariables = usedVariables.filter(
-      (v) => !availableVariables.includes(v) && !availableVariables.includes(`${v}*`),
+      (v) =>
+        !availableVariables.includes(v) &&
+        !availableVariables.includes(`${v}*`),
     );
 
     if (unusedVariables.length > 0) {
-      this.logger.warn(`Unused variables provided: ${unusedVariables.join(', ')}`);
+      this.logger.warn(
+        `Unused variables provided: ${unusedVariables.join(', ')}`,
+      );
     }
   }
 
@@ -710,7 +749,9 @@ export class EmailTemplatesService {
       });
       return user?.email || `user-${userId}@unknown.example.com`;
     } catch (error) {
-      this.logger.warn(`Failed to fetch email for user ${userId}: ${error.message}`);
+      this.logger.warn(
+        `Failed to fetch email for user ${userId}: ${error.message}`,
+      );
       return `user-${userId}@error.example.com`;
     }
   }

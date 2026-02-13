@@ -95,10 +95,9 @@ export class AuthService {
       return null;
     }
 
-    const isValid = await this.authCoreAdapter.password.verify(
-      password,
-      user.passwordHash,
-    );
+    const isValid = await this.authCoreAdapter
+      .password
+      .verify(password, user.passwordHash);
     if (!isValid) {
       // Record failed attempt
       await this.accountLockoutService.recordFailedAttempt(user.id);
@@ -207,19 +206,24 @@ export class AuthService {
       );
 
       // Use auth-core token manager service for access token
-      const accessToken = await this.authCoreAdapter.authCore.issueAccessToken({
-        sub: user.id,
-        org: user.organizationId,
-        role: roles.includes('SystemAdmin') ? 'admin' : 'user',
-        version: user.tokenVersion,
-      });
+      const accessToken = await this.authCoreAdapter.jwt.issueToken({
+          sub: user.id,  // userId → sub
+          org: user.organizationId,  // organizationId → org
+          role: 'user',  // Default role
+          version: user.tokenVersion,  // tokenVersion → version
+          // Note: email, permissions, roles not in JwtPayload contract
+          metadata: {
+            firstName: user.firstName || '',
+            lastName: user.lastName || '',
+            isActive: true,
+          },
+        });
 
       // IMPORTANT: Let auth-core generate refresh token with its own jti
       // DO NOT pass version parameter - auth-core will create jti automatically
-      const refreshToken =
-        await this.authCoreAdapter.tokenManager.issueRefreshToken(
-          user.id,
-          user.organizationId,
+      const refreshToken = await this.authCoreAdapter
+        .tokenManager
+        .issueRefreshToken(user.id, user.organizationId,
           // version: undefined, // Let auth-core handle jti generation
         );
 
@@ -384,8 +388,9 @@ export class AuthService {
         tokenLength: oldRefreshToken.length,
       });
       // Verify JWT using auth-core
-      const payload =
-        this.authCoreAdapter.tokenManager.validateRefreshToken(oldRefreshToken);
+      const payload = this.authCoreAdapter
+        .tokenManager
+        .validateRefreshToken(oldRefreshToken);
 
       // Security validation
       if (payload.type !== 'refresh') {
@@ -401,183 +406,190 @@ export class AuthService {
 
       // CRITICAL: TRANSACTION WITH VERSION BINDING
       return await this.authCoreAdapter.withTransaction(async () => {
-        const tokenRepository = this.authCoreAdapter.tokenRepository;
-        const userRepository = this.authCoreAdapter.userRepository;
-        // Find user using auth-core repository
-        const authCoreUser = await userRepository.findById(payload.sub);
-        if (!authCoreUser) {
-          throw new UnauthorizedException('User not found');
-        }
+    const tokenRepository = this.authCoreAdapter.tokenRepository;
+    const userRepository = this.authCoreAdapter.userRepository;
+          // Find user using auth-core repository
+          const authCoreUser = await userRepository.findById(payload.sub);
+          if (!authCoreUser) {
+            throw new UnauthorizedException('User not found');
+          }
 
-        // Fetch full user from database for business logic
-        const fullUser = await this.prisma.user.findUnique({
-          where: { id: payload.sub },
-          include: {
-            organization: {
-              select: {
-                id: true,
-                name: true,
+          // Fetch full user from database for business logic
+          const fullUser = await this.prisma.user.findUnique({
+            where: { id: payload.sub },
+            include: {
+              organization: {
+                select: {
+                  id: true,
+                  name: true,
+                },
               },
             },
-          },
-        });
-
-        if (!fullUser || !fullUser.isActive) {
-          throw new UnauthorizedException('User not found or inactive');
-        }
-
-        const userWithOrg = {
-          ...fullUser,
-          organization: fullUser.organization,
-        };
-
-        this.logger.debug('User found for refresh', {
-          email: userWithOrg.email,
-          tokenVersion: userWithOrg.tokenVersion,
-          refreshTokenVersionLength: userWithOrg.refreshTokenVersion?.length,
-          refreshTokenVersionPrefix: userWithOrg.refreshTokenVersion?.substring(
-            0,
-            10,
-          ),
-        });
-
-        // ==================== CRITICAL: VERSION BINDING CHECK ====================
-        // Auth-core uses jti (JWT ID) for version binding
-        const tokenJti = payload.jti;
-
-        if (!tokenJti) {
-          this.logger.error('Refresh token missing jti', {
-            userId: payload.sub,
           });
-          throw new UnauthorizedException('Invalid refresh token');
-        }
 
-        // Validate current refresh token hash
-        if (!userWithOrg.refreshTokenHash) {
-          throw new UnauthorizedException('No active refresh token');
-        }
+          if (!fullUser || !fullUser.isActive) {
+            throw new UnauthorizedException('User not found or inactive');
+          }
 
-        // FIX: Auth-core provides SHA256 hash, not raw JWT
-        // We need to SHA256 hash the JWT before bcrypt comparison
-        const crypto = await import('crypto');
-        const jwtHash = crypto
-          .createHash('sha256')
-          .update(oldRefreshToken)
-          .digest('hex');
+          const userWithOrg = {
+            ...fullUser,
+            organization: fullUser.organization,
+          };
 
-        const isTokenValid = await this.authCoreAdapter.password.verify(
-          jwtHash, // Compare SHA256 hash of JWT
-          userWithOrg.refreshTokenHash,
-        );
-
-        // Debug logging
-        this.logger.debug('[FIX] SHA256 Hash Comparison', {
-          jwtHashLength: jwtHash.length,
-          jwtHashPrefix: jwtHash.substring(0, 20),
-          storedHashPrefix: userWithOrg.refreshTokenHash?.substring(0, 30),
-          comparisonType: 'bcrypt.verify(SHA256(JWT), storedHash)',
-        });
-
-        if (!isTokenValid) {
-          this.logger.log(
-            '[DEBUG] Token validation FAILED - entering error block',
-          );
-          this.logger.log('[DEBUG] Hash comparison result', {
-            isValid: isTokenValid,
-            comparisonType: 'bcrypt.verify(rawToken, hash)',
+          this.logger.debug('User found for refresh', {
+            email: userWithOrg.email,
+            tokenVersion: userWithOrg.tokenVersion,
+            refreshTokenVersionLength: userWithOrg.refreshTokenVersion?.length,
+            refreshTokenVersionPrefix:
+              userWithOrg.refreshTokenVersion?.substring(0, 10),
           });
-          throw new UnauthorizedException('Invalid refresh token');
-        }
-        // ==================== GENERATE NEW TOKENS ====================
 
-        // Get user permissions for the new token
-        const { permissions, roles } = await this.getUserPermissions(
-          userWithOrg.id,
-          userWithOrg.organizationId,
-        );
+          // ==================== CRITICAL: VERSION BINDING CHECK ====================
+          // Auth-core uses jti (JWT ID) for version binding
+          const tokenJti = payload.jti;
 
-        // Generate new refresh token (auth-core will create new jti)
-        const newRefreshToken =
-          await this.authCoreAdapter.tokenManager.issueRefreshToken(
+          if (!tokenJti) {
+            this.logger.error('Refresh token missing jti', {
+              userId: payload.sub,
+            });
+            throw new UnauthorizedException('Invalid refresh token');
+          }
+
+          // Validate current refresh token hash
+          if (!userWithOrg.refreshTokenHash) {
+            throw new UnauthorizedException('No active refresh token');
+          }
+
+          // FIX: Auth-core provides SHA256 hash, not raw JWT
+          // We need to SHA256 hash the JWT before bcrypt comparison
+          const crypto = await import('crypto');
+          const jwtHash = crypto
+            .createHash('sha256')
+            .update(oldRefreshToken)
+            .digest('hex');
+
+          const isTokenValid = await this.authCoreAdapter
+            .password
+            .verify(
+              jwtHash, // Compare SHA256 hash of JWT
+              userWithOrg.refreshTokenHash,
+            );
+
+          // Debug logging
+          this.logger.debug('[FIX] SHA256 Hash Comparison', {
+            jwtHashLength: jwtHash.length,
+            jwtHashPrefix: jwtHash.substring(0, 20),
+            storedHashPrefix: userWithOrg.refreshTokenHash?.substring(0, 30),
+            comparisonType: 'bcrypt.verify(SHA256(JWT), storedHash)',
+          });
+
+          if (!isTokenValid) {
+            this.logger.log(
+              '[DEBUG] Token validation FAILED - entering error block',
+            );
+            this.logger.log('[DEBUG] Hash comparison result', {
+              isValid: isTokenValid,
+              comparisonType: 'bcrypt.verify(rawToken, hash)',
+            });
+            throw new UnauthorizedException('Invalid refresh token');
+          }
+          // ==================== GENERATE NEW TOKENS ====================
+
+          // Get user permissions for the new token
+          const { permissions, roles } = await this.getUserPermissions(
             userWithOrg.id,
             userWithOrg.organizationId,
-            // version: undefined, // Let auth-core handle jti generation
           );
 
-        // Generate new access token
-        const newAccessToken =
-          await this.authCoreAdapter.authCore.issueAccessToken({
-            sub: userWithOrg.id,
-            org: userWithOrg.organizationId,
-            role: roles.includes('SystemAdmin') ? 'admin' : 'user',
-            version: userWithOrg.tokenVersion + 1,
-          });
+          // Generate new refresh token (auth-core will create new jti)
+          const newRefreshToken = await this.authCoreAdapter
+            .tokenManager
+            .issueRefreshToken(userWithOrg.id, userWithOrg.organizationId,
+              // version: undefined, // Let auth-core handle jti generation
+            );
 
-        // Hash the NEW token (bridge will handle this via auth-core)
-        const newRefreshTokenHash =
-          await this.authCoreAdapter.password.hash(newRefreshToken);
+          // Generate new access token
+          const newAccessToken = await this.authCoreAdapter.jwt.issueToken({
+              userId: userWithOrg.id,
+              email: userWithOrg.email,
+              organizationId: userWithOrg.organizationId,
+              tokenVersion: userWithOrg.tokenVersion + 1, // Increment token version
+              permissions: permissions,
+              roles: roles,
+              metadata: {
+                firstName: userWithOrg.firstName || '',
+                lastName: userWithOrg.lastName || '',
+                isActive: true,
+              },
+            });
 
-        // ATOMIC UPDATE WITH VERSION BINDING
-        // Bridge will handle storing new jti and hash
-        // TokenRepository doesn't have updateTokenVersion method
-        // Instead, we need to invalidate old token and save new one
-        await tokenRepository.invalidateRefreshToken(tokenJti);
-        await tokenRepository.saveRefreshToken({
-          id: 'new-jti-generated-by-auth-core', // This should come from auth-core
-          userId: userWithOrg.id,
-          organizationId: userWithOrg.organizationId,
-          tokenHash: newRefreshTokenHash,
-          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
-          createdAt: new Date(),
-        });
+          // Hash the NEW token (bridge will handle this via auth-core)
+          const newRefreshTokenHash = await this.authCoreAdapter
+            .password
+            .hash(newRefreshToken);
 
-        this.logger.debug('Token rotation completed', {
-          userId: userWithOrg.id,
-          oldTokenVersion: userWithOrg.tokenVersion,
-          newTokenVersion: userWithOrg.tokenVersion + 1,
-        });
-
-        // Set cookies
-        res.cookie(
-          'access_token',
-          newAccessToken,
-          SecurityConfig.cookies.accessToken(),
-        );
-        res.cookie(
-          'refresh_token',
-          newRefreshToken,
-          SecurityConfig.cookies.refreshToken(),
-        );
-
-        // Log token refresh to audit log
-        if (request) {
-          await this.auditLogService.logAuthEvent({
-            request,
-            action: AuditAction.TOKEN_REFRESH,
-            actorEmail: userWithOrg.email,
-            actorUserId: userWithOrg.id,
-            metadata: {
-              oldTokenVersion: userWithOrg.tokenVersion,
-              newTokenVersion: userWithOrg.tokenVersion + 1,
-            },
-            organizationId: userWithOrg.organizationId,
-            severity: AuditSeverity.MEDIUM,
-          });
-        }
-
-        return {
-          access_token: newAccessToken,
-          user: {
-            id: userWithOrg.id,
-            email: userWithOrg.email,
-            firstName: userWithOrg.firstName,
-            lastName: userWithOrg.lastName,
-            organizationId: userWithOrg.organizationId,
-            permissions,
-            roles,
-          },
-        };
+          // ATOMIC UPDATE WITH VERSION BINDING
+          // Bridge will handle storing new jti and hash
+          // TokenRepository doesn't have updateTokenVersion method
+      // Instead, we need to invalidate old token and save new one
+      await tokenRepository.invalidateRefreshToken(tokenJti);
+      await tokenRepository.saveRefreshToken({
+        id: 'new-jti-generated-by-auth-core', // This should come from auth-core
+        userId: userWithOrg.id,
+        organizationId: userWithOrg.organizationId,
+        tokenHash: newRefreshTokenHash,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+        createdAt: new Date(),
       });
+
+          this.logger.debug('Token rotation completed', {
+            userId: userWithOrg.id,
+            oldTokenVersion: userWithOrg.tokenVersion,
+            newTokenVersion: userWithOrg.tokenVersion + 1,
+          });
+
+          // Set cookies
+          res.cookie(
+            'access_token',
+            newAccessToken,
+            SecurityConfig.cookies.accessToken(),
+          );
+          res.cookie(
+            'refresh_token',
+            newRefreshToken,
+            SecurityConfig.cookies.refreshToken(),
+          );
+
+          // Log token refresh to audit log
+          if (request) {
+            await this.auditLogService.logAuthEvent({
+              request,
+              action: AuditAction.TOKEN_REFRESH,
+              actorEmail: userWithOrg.email,
+              actorUserId: userWithOrg.id,
+              metadata: {
+                oldTokenVersion: userWithOrg.tokenVersion,
+                newTokenVersion: userWithOrg.tokenVersion + 1,
+              },
+              organizationId: userWithOrg.organizationId,
+              severity: AuditSeverity.MEDIUM,
+            });
+          }
+
+          return {
+            access_token: newAccessToken,
+            user: {
+              id: userWithOrg.id,
+              email: userWithOrg.email,
+              firstName: userWithOrg.firstName,
+              lastName: userWithOrg.lastName,
+              organizationId: userWithOrg.organizationId,
+              permissions,
+              roles,
+            },
+          };
+        },
+      );
     } catch (error: any) {
       this.logger.error('Refresh token error', {
         error: error.message,
@@ -614,9 +626,9 @@ export class AuthService {
     }
 
     // Hash password using auth-core
-    const passwordHash = await this.authCoreAdapter.password.hash(
-      registerDto.password,
-    );
+    const passwordHash = await this.authCoreAdapter
+      .password
+      .hash(registerDto.password);
 
     // Create organization
     const organization = await this.prisma.organization.create({
@@ -840,10 +852,9 @@ export class AuthService {
       return false;
     }
 
-    return await this.authCoreAdapter.password.verify(
-      token,
-      user.refreshTokenHash,
-    );
+    return await this.authCoreAdapter
+      .password
+      .verify(token, user.refreshTokenHash);
   }
 
   async changePassword(
@@ -861,17 +872,17 @@ export class AuthService {
     }
 
     // Verify old password
-    const isValid = await this.authCoreAdapter.password.verify(
-      oldPassword,
-      user.passwordHash,
-    );
+    const isValid = await this.authCoreAdapter
+      .password
+      .verify(oldPassword, user.passwordHash);
     if (!isValid) {
       throw new UnauthorizedException('Invalid current password');
     }
 
     // Hash new password
-    const newPasswordHash =
-      await this.authCoreAdapter.password.hash(newPassword);
+    const newPasswordHash = await this.authCoreAdapter
+      .password
+      .hash(newPassword);
 
     // Update password and invalidate all tokens
     await this.prisma.user.update({

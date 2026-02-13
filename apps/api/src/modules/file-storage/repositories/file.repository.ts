@@ -116,10 +116,13 @@ export class FileRepository extends TenantAwareRepository {
   /**
    * Find files by uploader/user ID
    */
-  async findFilesByUserId(userId: string, options?: {
-    skip?: number;
-    take?: number;
-  }) {
+  async findFilesByUserId(
+    userId: string,
+    options?: {
+      skip?: number;
+      take?: number;
+    },
+  ) {
     return this.prisma.file.findMany({
       where: {
         organizationId: this.tenantId,
@@ -135,10 +138,13 @@ export class FileRepository extends TenantAwareRepository {
   /**
    * Find files by mime type
    */
-  async findFilesByMimeType(mimeType: string, options?: {
-    skip?: number;
-    take?: number;
-  }) {
+  async findFilesByMimeType(
+    mimeType: string,
+    options?: {
+      skip?: number;
+      take?: number;
+    },
+  ) {
     return this.prisma.file.findMany({
       where: {
         organizationId: this.tenantId,

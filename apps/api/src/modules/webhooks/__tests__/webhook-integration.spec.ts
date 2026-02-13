@@ -356,7 +356,6 @@ describe('Webhook Module Integration', () => {
         attempts: 0,
         nextAttemptAt: null,
         deliveredAt: null,
-        
       };
 
       jest.spyOn(webhookRepository, 'findById').mockResolvedValue(webhook);

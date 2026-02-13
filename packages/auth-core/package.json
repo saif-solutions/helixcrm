@@ -2,10 +2,30 @@
   "name": "@helixcrm/auth-core",
   "version": "0.1.0",
   "description": "Minimal viable authentication core for HelixCRM MVP-1",
+  "keywords": [
+    "auth",
+    "jwt",
+    "authentication",
+    "helixcrm",
+    "crm"
+  ],
+  "homepage": "https://helixcrm.com",
+  "bugs": {
+    "url": "https://github.com/helixcrm/helixcrm/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/helixcrm/helixcrm.git",
+    "directory": "packages/auth-core"
+  },
   "license": "MIT",
   "author": "HelixCRM Team",
+  "type": "commonjs",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "directories": {
+    "test": "tests"
+  },
   "files": [
     "dist",
     "README.md"
@@ -30,27 +50,11 @@
     "@types/jsonwebtoken": "^9.0.0",
     "@types/bcrypt": "^5.0.0"
   },
-  "keywords": [
-    "auth",
-    "jwt",
-    "authentication",
-    "helixcrm",
-    "crm"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/helixcrm/helixcrm.git",
-    "directory": "packages/auth-core"
-  },
-  "bugs": {
-    "url": "https://github.com/helixcrm/helixcrm/issues"
-  },
-  "homepage": "https://helixcrm.com",
-  "publishConfig": {
-    "access": "public"
-  },
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=9.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

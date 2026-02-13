@@ -44,7 +44,9 @@ export class FileStorageService {
   async uploadFile(uploadDto: UploadFileDto) {
     // Permission check
     if (!this.permissionContext.hasPermission('files.upload')) {
-      throw new ForbiddenException('Insufficient permissions: files.upload required');
+      throw new ForbiddenException(
+        'Insufficient permissions: files.upload required',
+      );
     }
 
     const tenantId = this.tenantContext.getTenantId();
@@ -112,7 +114,9 @@ export class FileStorageService {
   async getFileById(id: string) {
     // Permission check
     if (!this.permissionContext.hasPermission('files.download')) {
-      throw new ForbiddenException('Insufficient permissions: files.download required');
+      throw new ForbiddenException(
+        'Insufficient permissions: files.download required',
+      );
     }
 
     const tenantId = this.tenantContext.getTenantId();
@@ -126,12 +130,19 @@ export class FileStorageService {
 
       return file;
     } catch (error: any) {
-      this.logger.error(`Get file by ID failed: ${error.message}`, error.stack, {
-        tenantId,
-        id,
-      });
+      this.logger.error(
+        `Get file by ID failed: ${error.message}`,
+        error.stack,
+        {
+          tenantId,
+          id,
+        },
+      );
 
-      if (error instanceof NotFoundException || error instanceof ForbiddenException) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof ForbiddenException
+      ) {
         throw error;
       }
 
@@ -142,13 +153,12 @@ export class FileStorageService {
   /**
    * Get all files for current tenant
    */
-  async getAllFiles(options?: {
-    skip?: number;
-    take?: number;
-  }) {
+  async getAllFiles(options?: { skip?: number; take?: number }) {
     // Permission check
     if (!this.permissionContext.hasPermission('files.read')) {
-      throw new ForbiddenException('Insufficient permissions: files.read required');
+      throw new ForbiddenException(
+        'Insufficient permissions: files.read required',
+      );
     }
 
     const tenantId = this.tenantContext.getTenantId();
@@ -162,7 +172,9 @@ export class FileStorageService {
       return {
         data: files,
         meta: {
-          page: options?.skip ? Math.floor(options.skip / (options.take || 20)) + 1 : 1,
+          page: options?.skip
+            ? Math.floor(options.skip / (options.take || 20)) + 1
+            : 1,
           limit: options?.take || 20,
           total,
           pages: options?.take ? Math.ceil(total / (options.take || 20)) : 1,
@@ -188,7 +200,9 @@ export class FileStorageService {
   async deleteFile(id: string) {
     // Permission check
     if (!this.permissionContext.hasPermission('files.manage')) {
-      throw new ForbiddenException('Insufficient permissions: files.manage required');
+      throw new ForbiddenException(
+        'Insufficient permissions: files.manage required',
+      );
     }
 
     const tenantId = this.tenantContext.getTenantId();
@@ -270,7 +284,9 @@ export class FileStorageService {
       });
       return user?.email || `user-${userId}@unknown.example.com`;
     } catch (error) {
-      this.logger.warn(`Failed to fetch email for user ${userId}: ${error.message}`);
+      this.logger.warn(
+        `Failed to fetch email for user ${userId}: ${error.message}`,
+      );
       return `user-${userId}@error.example.com`;
     }
   }

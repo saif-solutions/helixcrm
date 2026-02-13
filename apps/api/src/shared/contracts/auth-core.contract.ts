@@ -1,7 +1,7 @@
 /**
  * Canonical Auth-Core Contract
  * Version: @helixcrm/auth-core@0.1.0
- * Date: $(date)
+ * Date: 2024-02-09
  * Status: FROZEN for MVP-1 - DO NOT MODIFY WITHOUT MIGRATION PLAN
  *
  * This file defines the REAL contract with @helixcrm/auth-core
@@ -9,7 +9,7 @@
  */
 
 // Re-export actual auth-core types
-export type {
+import type {
   AuthCoreContract,
   JwtPayload,
   RefreshTokenPayload,
@@ -19,110 +19,59 @@ export type {
   User as AuthCoreUser,
 } from '@helixcrm/auth-core';
 
-// Re-export factory types
+import { createAuthCore } from '@helixcrm/auth-core';
+
+// Re-export the types we need
 export type {
-  CreateAuthCoreOptions,
-  AuthCoreDependencies,
-} from '@helixcrm/auth-core';
+  AuthCoreContract,
+  JwtPayload,
+  RefreshTokenPayload,
+  TokenRepository,
+  UserRepository,
+  RefreshToken,
+  AuthCoreUser,
+};
 
-/**
- * Stable Adapter API - Our application's contract
- * This NEVER changes unless we explicitly version it.
- */
-export interface TokenManagerService {
-  /**
-   * Issue an access token for a user
-   * @param input User and authorization context
-   * @returns Promise<string> JWT access token
-   */
-  issueAccessToken(input: AccessTokenInput): Promise<string>;
+export { createAuthCore };
 
-  /**
-   * Issue a refresh token for a user
-   * @param input User identity and organization
-   * @returns Promise<string> JWT refresh token
-   */
-  issueRefreshToken(input: RefreshTokenInput): Promise<string>;
-
-  /**
-   * Validate and decode an access token
-   * @param token JWT access token
-   * @returns Decoded payload or throws if invalid
-   */
-  verifyAccessToken(token: string): VerifiedAccessToken;
-
-  /**
-   * Validate and decode a refresh token
-   * @param token JWT refresh token
-   * @returns Decoded payload or throws if invalid
-   */
-  verifyRefreshToken(token: string): VerifiedRefreshToken;
-}
-
-/**
- * Access Token Input - Stable across auth-core versions
- */
+// Local types that extend auth-core
 export interface AccessTokenInput {
   userId: string;
-  organizationId: string;
   email: string;
-  tokenVersion: number;
-  permissions: string[];
-  roles: string[];
-  metadata?: Record<string, any>;
+  organizationId: string;
 }
 
-/**
- * Refresh Token Input - Stable across auth-core versions
- */
 export interface RefreshTokenInput {
   userId: string;
+  tokenVersion: number;
+}
+
+export interface VerifiedAccessToken extends JwtPayload {
+  userId: string;
+  email: string;
   organizationId: string;
-  version?: string; // Custom version binding for replay protection
-  metadata?: Record<string, any>;
 }
 
-/**
- * Verified Access Token - Our application's normalized format
- */
-export interface VerifiedAccessToken {
-  sub: string; // user id
-  organizationId: string; // org id (mapped from 'org')
-  email?: string; // email (from metadata)
-  tokenVersion: number; // token version (mapped from 'version')
-  permissions: string[]; // user permissions
-  roles: string[]; // user roles
-  iat: number; // issued at
-  exp: number; // expires at
+export interface VerifiedRefreshToken extends RefreshTokenPayload {
+  userId: string;
+  tokenVersion: number;
 }
 
-/**
- * Verified Refresh Token - Our application's normalized format
- */
-export interface VerifiedRefreshToken {
-  jti: string; // token id
-  sub: string; // user id
-  organizationId: string; // org id (mapped from 'org')
-  type: 'refresh'; // token type
-  version?: string; // custom version (from metadata)
-  iat: number; // issued at
-  exp: number; // expires at
-}
-
-/**
- * Configuration for controlled degradation
- */
 export interface AuthAdapterConfig {
-  allowFallbacks: boolean; // Whether to allow fallback token issuance
-  logAuthCoreFailures: boolean; // Whether to log auth-core failures
-  fallbackIssuer: string; // Issuer for fallback tokens
-  fallbackAudience: string; // Audience for fallback tokens
+  jwtSecret: string;
+  jwtRefreshSecret: string;
+  jwtExpiration?: string;
+  jwtRefreshExpiration?: string;
 }
 
-/**
- * Metrics interface for observability
- */
-export interface AuthMetrics {
-  increment(metric: string, tags?: Record<string, string>): void;
-  timing(metric: string, duration: number, tags?: Record<string, string>): void;
+export interface CreateAuthCoreOptions {
+  jwtSecret: string;
+  jwtRefreshSecret: string;
+  jwtExpiration?: string;
+  jwtRefreshExpiration?: string;
+}
+
+export interface AuthCoreDependencies {
+  userRepository: UserRepository;
+  tokenRepository: TokenRepository;
 }

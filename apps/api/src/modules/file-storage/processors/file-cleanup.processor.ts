@@ -29,7 +29,9 @@ export class FileCleanupProcessor extends WorkerHost {
         take: 100, // Process in batches
       });
 
-      this.logger.log(`Found ${oldDeletedFiles.length} files to permanently delete`);
+      this.logger.log(
+        `Found ${oldDeletedFiles.length} files to permanently delete`,
+      );
 
       // In a real implementation, you would:
       // 1. Delete physical files from storage
@@ -45,7 +47,10 @@ export class FileCleanupProcessor extends WorkerHost {
         message: 'File cleanup completed',
       };
     } catch (error: any) {
-      this.logger.error(`File cleanup job failed: ${error.message}`, error.stack);
+      this.logger.error(
+        `File cleanup job failed: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }

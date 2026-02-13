@@ -25,7 +25,15 @@ import {
 import { EmailTemplatesService } from './email-templates.service';
 import { RequirePermission } from '../../shared/decorators/require-permission.decorator';
 
-import { IsString, IsNotEmpty, IsOptional, IsBoolean, IsArray, IsEmail, IsObject } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsBoolean,
+  IsArray,
+  IsEmail,
+  IsObject,
+} from 'class-validator';
 
 // Define DTOs inline (matching service interface)
 export class CreateEmailTemplateDto {
@@ -149,26 +157,53 @@ export class EmailTemplatesController {
 
   @Post()
   @ApiOperation({ summary: 'Create a new email template' })
-  @ApiResponse({ status: 201, description: 'Email template created successfully' })
+  @ApiResponse({
+    status: 201,
+    description: 'Email template created successfully',
+  })
   @ApiResponse({ status: 400, description: 'Invalid request data' })
   @ApiResponse({ status: 403, description: 'Insufficient permissions' })
   @ApiResponse({ status: 409, description: 'Template name already exists' })
   @ApiBody({ type: CreateEmailTemplateRequestDto })
   @RequirePermission('email_templates.manage')
   async createEmailTemplate(
-    @Body(new ValidationPipe({ transform: true })) createDto: CreateEmailTemplateDto,
+    @Body(new ValidationPipe({ transform: true }))
+    createDto: CreateEmailTemplateDto,
   ) {
     return this.emailTemplatesService.createEmailTemplate(createDto);
   }
 
   @Get()
   @ApiOperation({ summary: 'Get all email templates for current organization' })
-  @ApiResponse({ status: 200, description: 'List of email templates with pagination' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of email templates with pagination',
+  })
   @ApiResponse({ status: 403, description: 'Insufficient permissions' })
-  @ApiQuery({ name: 'category', required: false, type: String, description: 'Filter by category' })
-  @ApiQuery({ name: 'isActive', required: false, type: Boolean, description: 'Filter by active status' })
-  @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number (default: 1)' })
-  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Items per page (default: 20, max: 100)' })
+  @ApiQuery({
+    name: 'category',
+    required: false,
+    type: String,
+    description: 'Filter by category',
+  })
+  @ApiQuery({
+    name: 'isActive',
+    required: false,
+    type: Boolean,
+    description: 'Filter by active status',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number (default: 1)',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Items per page (default: 20, max: 100)',
+  })
   @RequirePermission('email_templates.read')
   async getAllEmailTemplates(
     @Query('category') category?: string,
@@ -179,7 +214,7 @@ export class EmailTemplatesController {
     // Validate and clamp limits
     const validatedPage = Math.max(1, page);
     const validatedLimit = Math.min(Math.max(1, limit), 100);
-    
+
     return this.emailTemplatesService.getAllEmailTemplates({
       category,
       isActive: isActive !== undefined ? isActive === true : undefined,
@@ -195,15 +230,16 @@ export class EmailTemplatesController {
   @ApiResponse({ status: 404, description: 'Template not found' })
   @ApiParam({ name: 'id', description: 'Email template ID' })
   @RequirePermission('email_templates.read')
-  async getEmailTemplateById(
-    @Param('id', ParseUUIDPipe) templateId: string,
-  ) {
+  async getEmailTemplateById(@Param('id', ParseUUIDPipe) templateId: string) {
     return this.emailTemplatesService.getEmailTemplateById(templateId);
   }
 
   @Put(':id')
   @ApiOperation({ summary: 'Update an email template' })
-  @ApiResponse({ status: 200, description: 'Email template updated successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Email template updated successfully',
+  })
   @ApiResponse({ status: 400, description: 'Invalid request data' })
   @ApiResponse({ status: 403, description: 'Insufficient permissions' })
   @ApiResponse({ status: 404, description: 'Template not found' })
@@ -213,30 +249,41 @@ export class EmailTemplatesController {
   @RequirePermission('email_templates.manage')
   async updateEmailTemplate(
     @Param('id', ParseUUIDPipe) templateId: string,
-    @Body(new ValidationPipe({ transform: true })) updateDto: UpdateEmailTemplateDto,
+    @Body(new ValidationPipe({ transform: true }))
+    updateDto: UpdateEmailTemplateDto,
   ) {
-    return this.emailTemplatesService.updateEmailTemplate(templateId, updateDto);
+    return this.emailTemplatesService.updateEmailTemplate(
+      templateId,
+      updateDto,
+    );
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete an email template' })
-  @ApiResponse({ status: 204, description: 'Email template deleted successfully' })
+  @ApiResponse({
+    status: 204,
+    description: 'Email template deleted successfully',
+  })
   @ApiResponse({ status: 403, description: 'Insufficient permissions' })
   @ApiResponse({ status: 404, description: 'Template not found' })
-  @ApiResponse({ status: 409, description: 'Template has sent emails and cannot be deleted' })
+  @ApiResponse({
+    status: 409,
+    description: 'Template has sent emails and cannot be deleted',
+  })
   @ApiParam({ name: 'id', description: 'Email template ID' })
   @RequirePermission('email_templates.manage')
-  async deleteEmailTemplate(
-    @Param('id', ParseUUIDPipe) templateId: string,
-  ) {
+  async deleteEmailTemplate(@Param('id', ParseUUIDPipe) templateId: string) {
     return this.emailTemplatesService.deleteEmailTemplate(templateId);
   }
 
   @Post(':id/render')
   @ApiOperation({ summary: 'Render email template with variables' })
   @ApiResponse({ status: 200, description: 'Template rendered successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid variables or missing required variables' })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid variables or missing required variables',
+  })
   @ApiResponse({ status: 403, description: 'Insufficient permissions' })
   @ApiResponse({ status: 404, description: 'Template not found' })
   @ApiParam({ name: 'id', description: 'Email template ID' })
@@ -300,9 +347,21 @@ export class EmailTemplatesController {
   async getPredefinedVariables() {
     return {
       variables: [
-        { name: 'contact.firstName', description: 'Contact first name', required: true },
-        { name: 'contact.lastName', description: 'Contact last name', required: true },
-        { name: 'contact.email', description: 'Contact email address', required: true },
+        {
+          name: 'contact.firstName',
+          description: 'Contact first name',
+          required: true,
+        },
+        {
+          name: 'contact.lastName',
+          description: 'Contact last name',
+          required: true,
+        },
+        {
+          name: 'contact.email',
+          description: 'Contact email address',
+          required: true,
+        },
         { name: 'contact.company', description: 'Contact company name' },
         { name: 'contact.phone', description: 'Contact phone number' },
         { name: 'user.firstName', description: 'Current user first name' },

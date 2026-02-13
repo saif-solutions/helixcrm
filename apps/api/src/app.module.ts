@@ -18,11 +18,11 @@ import { DealsModule } from './modules/deals/deals.module';
 import { PipelinesModule } from './modules/pipelines/pipelines.module';
 import { RbacModule } from './modules/rbac/rbac.module';
 import { AuditLogsModule } from './modules/audit-logs/audit-logs.module';
-import { ImportModule } from "./modules/import/import.module";
-import { EmailTemplatesModule } from "./modules/email-templates/email-templates.module";
-import { ExportQueueModule } from "./modules/export-queue/export-queue.module";
-import { FileStorageModule } from "./modules/file-storage/file-storage.module";
-import { WebhooksModule } from "./modules/webhooks/webhooks.module";
+import { ImportModule } from './modules/import/import.module';
+import { EmailTemplatesModule } from './modules/email-templates/email-templates.module';
+import { ExportQueueModule } from './modules/export-queue/export-queue.module';
+import { FileStorageModule } from './modules/file-storage/file-storage.module';
+import { WebhooksModule } from './modules/webhooks/webhooks.module';
 
 // Shared infrastructure modules
 import { SharedModule } from './shared/shared.module';

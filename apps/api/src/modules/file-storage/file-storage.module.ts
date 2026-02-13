@@ -17,10 +17,7 @@ import { AuditLogModule } from '../../shared/audit-log/audit-log.module';
     AuditLogModule,
   ],
   controllers: [FileStorageController],
-  providers: [
-    FileStorageService,
-    FileRepository,
-  ],
+  providers: [FileStorageService, FileRepository],
   exports: [FileStorageService],
 })
 export class FileStorageModule {}

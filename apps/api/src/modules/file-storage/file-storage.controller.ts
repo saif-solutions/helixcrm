@@ -24,9 +24,19 @@ import {
   ApiConsumes,
 } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { FileStorageService, UploadFileDto, UpdateFileDto } from './file-storage.service';
+import {
+  FileStorageService,
+  UploadFileDto,
+  UpdateFileDto,
+} from './file-storage.service';
 import { RequirePermission } from '../../shared/decorators/require-permission.decorator';
-import { IsString, IsNotEmpty, IsOptional, IsNumber, IsObject } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsNumber,
+  IsObject,
+} from 'class-validator';
 
 class UploadFileRequestDto implements UploadFileDto {
   @IsString()
@@ -75,7 +85,8 @@ export class FileStorageController {
   @ApiBody({ type: UploadFileRequestDto })
   @RequirePermission('files.upload')
   async uploadFile(
-    @Body(new ValidationPipe({ transform: true })) uploadDto: UploadFileRequestDto,
+    @Body(new ValidationPipe({ transform: true }))
+    uploadDto: UploadFileRequestDto,
   ) {
     return this.fileStorageService.uploadFile(uploadDto);
   }
@@ -84,8 +95,18 @@ export class FileStorageController {
   @ApiOperation({ summary: 'Get all files for current organization' })
   @ApiResponse({ status: 200, description: 'List of files with pagination' })
   @ApiResponse({ status: 403, description: 'Insufficient permissions' })
-  @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number (default: 1)' })
-  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Items per page (default: 20, max: 100)' })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number (default: 1)',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Items per page (default: 20, max: 100)',
+  })
   @RequirePermission('files.read')
   async getAllFiles(
     @Query('page') page: number = 1,
@@ -109,9 +130,7 @@ export class FileStorageController {
   @ApiResponse({ status: 404, description: 'File not found' })
   @ApiParam({ name: 'id', description: 'File ID' })
   @RequirePermission('files.download')
-  async getFileById(
-    @Param('id', ParseUUIDPipe) fileId: string,
-  ) {
+  async getFileById(@Param('id', ParseUUIDPipe) fileId: string) {
     return this.fileStorageService.getFileById(fileId);
   }
 
@@ -123,9 +142,7 @@ export class FileStorageController {
   @ApiResponse({ status: 404, description: 'File not found' })
   @ApiParam({ name: 'id', description: 'File ID' })
   @RequirePermission('files.manage')
-  async deleteFile(
-    @Param('id', ParseUUIDPipe) fileId: string,
-  ) {
+  async deleteFile(@Param('id', ParseUUIDPipe) fileId: string) {
     return this.fileStorageService.deleteFile(fileId);
   }
 }

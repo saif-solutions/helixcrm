@@ -1,5 +1,15 @@
 // src/modules/import/dto/create-import-job.dto.ts
-import { IsString, IsOptional, IsNumber, IsEnum, IsObject, Min, Max, IsUrl, IsArray } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsNumber,
+  IsEnum,
+  IsObject,
+  Min,
+  Max,
+  IsUrl,
+  IsArray,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 // Define supported import types

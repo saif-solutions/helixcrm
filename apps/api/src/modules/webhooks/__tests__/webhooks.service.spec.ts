@@ -101,8 +101,8 @@ describe('WebhooksService', () => {
         organizationId: 'test-tenant',
         createdAt: new Date(),
         updatedAt: new Date(),
-        deletedAt: null,    // ✅ ADDED
-        deletedBy: null,    // ✅ ADDED
+        deletedAt: null, // ✅ ADDED
+        deletedBy: null, // ✅ ADDED
       };
 
       webhookRepository.findByName.mockResolvedValue(null);
@@ -133,8 +133,8 @@ describe('WebhooksService', () => {
         organizationId: 'test-tenant',
         createdAt: new Date(),
         updatedAt: new Date(),
-        deletedAt: null,    // ✅ ADDED
-        deletedBy: null,    // ✅ ADDED
+        deletedAt: null, // ✅ ADDED
+        deletedBy: null, // ✅ ADDED
       };
 
       webhookRepository.findByName.mockResolvedValue(existingWebhook);
@@ -160,8 +160,8 @@ describe('WebhooksService', () => {
           organizationId: 'test-tenant',
           createdAt: new Date(),
           updatedAt: new Date(),
-          deletedAt: null,    // ✅ ADDED
-          deletedBy: null,    // ✅ ADDED
+          deletedAt: null, // ✅ ADDED
+          deletedBy: null, // ✅ ADDED
         },
         {
           id: 'webhook-2',
@@ -176,8 +176,8 @@ describe('WebhooksService', () => {
           organizationId: 'test-tenant',
           createdAt: new Date(),
           updatedAt: new Date(),
-          deletedAt: null,    // ✅ ADDED
-          deletedBy: null,    // ✅ ADDED
+          deletedAt: null, // ✅ ADDED
+          deletedBy: null, // ✅ ADDED
         },
       ];
 
@@ -207,8 +207,8 @@ describe('WebhooksService', () => {
         organizationId: 'test-tenant',
         createdAt: new Date(),
         updatedAt: new Date(),
-        deletedAt: null,    // ✅ ADDED
-        deletedBy: null,    // ✅ ADDED
+        deletedAt: null, // ✅ ADDED
+        deletedBy: null, // ✅ ADDED
       };
 
       webhookRepository.findById.mockResolvedValue(mockWebhook);
@@ -251,8 +251,8 @@ describe('WebhooksService', () => {
         organizationId: 'test-tenant',
         createdAt: new Date(),
         updatedAt: new Date(),
-        deletedAt: null,    // ✅ ADDED
-        deletedBy: null,    // ✅ ADDED
+        deletedAt: null, // ✅ ADDED
+        deletedBy: null, // ✅ ADDED
       };
 
       const updatedWebhook = {
@@ -288,8 +288,8 @@ describe('WebhooksService', () => {
         organizationId: 'test-tenant',
         createdAt: new Date(),
         updatedAt: new Date(),
-        deletedAt: null,    // ✅ ADDED
-        deletedBy: null,    // ✅ ADDED
+        deletedAt: null, // ✅ ADDED
+        deletedBy: null, // ✅ ADDED
       };
 
       webhookRepository.findById.mockResolvedValue(mockWebhook);
@@ -314,12 +314,12 @@ describe('WebhooksService', () => {
           status: 'success',
           statusCode: 200,
           response: 'OK',
-          errorMessage: null,  // ✅ CHANGED FROM 'error' TO 'errorMessage'
+          errorMessage: null, // ✅ CHANGED FROM 'error' TO 'errorMessage'
           organizationId: 'test-tenant',
-          attempts: 1,         // ✅ ADDED
+          attempts: 1, // ✅ ADDED
           nextAttemptAt: null, // ✅ ADDED
           deliveredAt: new Date(), // ✅ ADDED
-          retryCount: 0,       // ✅ ADDED
+          retryCount: 0, // ✅ ADDED
           attemptedAt: new Date(), // ✅ ADDED
           completedAt: new Date(), // ✅ ADDED
           createdAt: new Date(),
@@ -333,12 +333,12 @@ describe('WebhooksService', () => {
           status: 'failed',
           statusCode: 500,
           response: null,
-          errorMessage: 'Connection timeout',  // ✅ CHANGED FROM 'error' TO 'errorMessage'
+          errorMessage: 'Connection timeout', // ✅ CHANGED FROM 'error' TO 'errorMessage'
           organizationId: 'test-tenant',
-          attempts: 3,         // ✅ ADDED
+          attempts: 3, // ✅ ADDED
           nextAttemptAt: new Date(Date.now() + 3600000), // ✅ ADDED
-          deliveredAt: null,   // ✅ ADDED
-          retryCount: 2,       // ✅ ADDED
+          deliveredAt: null, // ✅ ADDED
+          retryCount: 2, // ✅ ADDED
           attemptedAt: new Date(), // ✅ ADDED
           completedAt: new Date(), // ✅ ADDED
           createdAt: new Date(),
@@ -351,10 +351,16 @@ describe('WebhooksService', () => {
 
       const result = await service.getDeliveryHistory('webhook-id', 1, 10);
 
-      expect(webhookRepository.findDeliveries).toHaveBeenCalledWith('webhook-id', 1, 10);
-      expect(webhookRepository.countDeliveries).toHaveBeenCalledWith('webhook-id');
+      expect(webhookRepository.findDeliveries).toHaveBeenCalledWith(
+        'webhook-id',
+        1,
+        10,
+      );
+      expect(webhookRepository.countDeliveries).toHaveBeenCalledWith(
+        'webhook-id',
+      );
       expect(result.data).toHaveLength(2);
-expect(result.meta.total).toBe(2);
+      expect(result.meta.total).toBe(2);
     });
   });
 
@@ -368,39 +374,41 @@ expect(result.meta.total).toBe(2);
         status: 'success',
         statusCode: 200,
         response: 'OK',
-        errorMessage: null,  // ✅ CHANGED FROM 'error' TO 'errorMessage'
+        errorMessage: null, // ✅ CHANGED FROM 'error' TO 'errorMessage'
         organizationId: 'test-tenant',
-        attempts: 1,         // ✅ ADDED
+        attempts: 1, // ✅ ADDED
         nextAttemptAt: null, // ✅ ADDED
         deliveredAt: new Date(), // ✅ ADDED
-        retryCount: 0,       // ✅ ADDED
+        retryCount: 0, // ✅ ADDED
         attemptedAt: new Date(), // ✅ ADDED
         completedAt: new Date(), // ✅ ADDED
         createdAt: new Date(),
         updatedAt: new Date(),
         webhook: {
-  id: 'webhook-id',
-  name: 'test-webhook',
-  url: 'https://example.com/webhook',
-  events: ['contact.created'], // ADD THIS
-  secret: 'secret', // ADD THIS
-  isActive: true,
-  organizationId: 'test-tenant',
-  deletedAt: null,
-  deletedBy: null,
-  createdAt: new Date(), // ADD THIS
-  updatedAt: new Date(), // ADD THIS
-  retryCount: 3, // ADD THIS
-  timeoutMs: 10000, // ADD THIS
-  headers: {}, // ADD THIS (as JsonValue)
-},
+          id: 'webhook-id',
+          name: 'test-webhook',
+          url: 'https://example.com/webhook',
+          events: ['contact.created'], // ADD THIS
+          secret: 'secret', // ADD THIS
+          isActive: true,
+          organizationId: 'test-tenant',
+          deletedAt: null,
+          deletedBy: null,
+          createdAt: new Date(), // ADD THIS
+          updatedAt: new Date(), // ADD THIS
+          retryCount: 3, // ADD THIS
+          timeoutMs: 10000, // ADD THIS
+          headers: {}, // ADD THIS (as JsonValue)
+        },
       };
 
       webhookRepository.findDeliveryById.mockResolvedValue(mockDelivery);
 
       const result = await service.getDeliveryStatus('delivery-id');
 
-      expect(webhookRepository.findDeliveryById).toHaveBeenCalledWith('delivery-id');
+      expect(webhookRepository.findDeliveryById).toHaveBeenCalledWith(
+        'delivery-id',
+      );
       expect(result?.id).toBe('delivery-id');
       expect(result?.webhook).toBeDefined();
       expect(result?.webhook).not.toHaveProperty('secret');
@@ -410,12 +418,12 @@ expect(result.meta.total).toBe(2);
   describe('getStatistics', () => {
     it('should return statistics', async () => {
       const mockStats = {
-  timeframe: 'week' as const, // Change from 'string' to specific literal
-  total: 100,
-  byStatus: { success: 80, failed: 20 },
-  avgResponseTime: 150.5,
-  successRate: 80,
-};
+        timeframe: 'week' as const, // Change from 'string' to specific literal
+        total: 100,
+        byStatus: { success: 80, failed: 20 },
+        avgResponseTime: 150.5,
+        successRate: 80,
+      };
 
       webhookRepository.getStatistics.mockResolvedValue(mockStats);
 

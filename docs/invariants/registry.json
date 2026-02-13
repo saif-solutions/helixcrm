@@ -1,0 +1,342 @@
+{
+  "schemaVersion": "2.0.0",
+  "lastUpdated": "2026-02-14",
+  "invariants": [
+    {
+      "id": "T-01",
+      "name": "Cross-Tenant Data Impossibility",
+      "severity": "P0",
+      "category": "tenant-isolation",
+      "enforcement": [
+        {
+          "type": "structural",
+          "mechanism": "postgres-rls",
+          "verification": "integration-test",
+          "path": "tests/integration/tenant-isolation/cross-tenant.e2e-spec.ts"
+        },
+        {
+          "type": "static-analysis",
+          "mechanism": "tenant-context-injection",
+          "verification": "eslint-rule",
+          "path": "eslint-rules/tenant-context.js"
+        }
+      ],
+      "lastVerification": null,
+      "verificationFrequency": "daily",
+      "nextVerificationDue": null,
+      "verificationHistory": []
+    },
+    {
+      "id": "T-02",
+      "name": "Automatic Tenant Context",
+      "severity": "P1",
+      "category": "tenant-isolation",
+      "enforcement": [
+        {
+          "type": "static-analysis",
+          "mechanism": "base-repository-pattern",
+          "verification": "eslint-rule",
+          "path": "eslint-rules/tenant-context.js"
+        }
+      ],
+      "lastVerification": null,
+      "verificationFrequency": "weekly",
+      "nextVerificationDue": null,
+      "verificationHistory": []
+    },
+    {
+      "id": "T-03",
+      "name": "Async Boundary Preservation",
+      "severity": "P1",
+      "category": "tenant-isolation",
+      "enforcement": [
+        {
+          "type": "integration-test",
+          "mechanism": "job-context-propagation",
+          "verification": "integration-test",
+          "path": "tests/integration/jobs/tenant-preservation.spec.ts"
+        }
+      ],
+      "lastVerification": null,
+      "verificationFrequency": "weekly",
+      "nextVerificationDue": null,
+      "verificationHistory": []
+    },
+    {
+      "id": "T-04",
+      "name": "Tenant-Scoped Uniqueness",
+      "severity": "P2",
+      "category": "tenant-isolation",
+      "enforcement": [
+        {
+          "type": "schema-validation",
+          "mechanism": "database-constraints",
+          "verification": "integration-test",
+          "path": "tests/integration/database/unique-constraints.spec.ts"
+        }
+      ],
+      "lastVerification": null,
+      "verificationFrequency": "monthly",
+      "nextVerificationDue": null,
+      "verificationHistory": []
+    },
+    {
+      "id": "S-01",
+      "name": "Authentication Determinism",
+      "severity": "P1",
+      "category": "security",
+      "enforcement": [
+        {
+          "type": "integration-test",
+          "mechanism": "token-versioning",
+          "verification": "security-test",
+          "path": "tests/security/auth/token-revocation.spec.ts"
+        },
+        {
+          "type": "concurrency-test",
+          "mechanism": "atomic-refresh-rotation",
+          "verification": "security-test",
+          "path": "tests/security/auth/refresh-race.spec.ts"
+        }
+      ],
+      "lastVerification": null,
+      "verificationFrequency": "daily",
+      "nextVerificationDue": null,
+      "verificationHistory": []
+    },
+    {
+      "id": "S-02",
+      "name": "Secret Safety",
+      "severity": "P0",
+      "category": "security",
+      "enforcement": [
+        {
+          "type": "runtime-validation",
+          "mechanism": "startup-crash",
+          "verification": "startup-test",
+          "path": "scripts/validate-runtime-config.js"
+        }
+      ],
+      "lastVerification": null,
+      "verificationFrequency": "per-deployment",
+      "nextVerificationDue": null,
+      "verificationHistory": []
+    },
+    {
+      "id": "S-03",
+      "name": "Audit Completeness",
+      "severity": "P1",
+      "category": "security",
+      "enforcement": [
+        {
+          "type": "integration-test",
+          "mechanism": "audit-interceptor",
+          "verification": "integration-test",
+          "path": "tests/integration/audit/coverage.spec.ts"
+        }
+      ],
+      "lastVerification": null,
+      "verificationFrequency": "weekly",
+      "nextVerificationDue": null,
+      "verificationHistory": []
+    },
+    {
+      "id": "A-01",
+      "name": "Domain Purity",
+      "severity": "P2",
+      "category": "architecture",
+      "enforcement": [
+        {
+          "type": "static-analysis",
+          "mechanism": "ast-import-rules",
+          "verification": "eslint-rule",
+          "path": "eslint-rules/domain-purity.js"
+        }
+      ],
+      "lastVerification": null,
+      "verificationFrequency": "per-commit",
+      "nextVerificationDue": null,
+      "verificationHistory": []
+    },
+    {
+      "id": "A-02",
+      "name": "Module Isolation",
+      "severity": "P2",
+      "category": "architecture",
+      "enforcement": [
+        {
+          "type": "static-analysis",
+          "mechanism": "dependency-graph-validation",
+          "verification": "ci-job",
+          "path": "scripts/validate-dependency-graph.js"
+        }
+      ],
+      "lastVerification": null,
+      "verificationFrequency": "per-commit",
+      "nextVerificationDue": null,
+      "verificationHistory": []
+    },
+    {
+      "id": "A-03",
+      "name": "Contract Authority",
+      "severity": "P2",
+      "category": "architecture",
+      "enforcement": [
+        {
+          "type": "contract-test",
+          "mechanism": "consumer-driven-contracts",
+          "verification": "ci-job",
+          "path": "tests/contracts/"
+        }
+      ],
+      "lastVerification": null,
+      "verificationFrequency": "per-release",
+      "nextVerificationDue": null,
+      "verificationHistory": []
+    },
+    {
+      "id": "A-04",
+      "name": "Archive Immutability",
+      "severity": "P3",
+      "category": "governance",
+      "enforcement": [
+        {
+          "type": "integrity-scan",
+          "mechanism": "hash-comparison",
+          "verification": "scheduled-job",
+          "path": "scripts/validate-archive-integrity.js"
+        }
+      ],
+      "lastVerification": null,
+      "verificationFrequency": "weekly",
+      "nextVerificationDue": null,
+      "verificationHistory": []
+    },
+    {
+      "id": "O-01",
+      "name": "Configuration Completeness",
+      "severity": "P1",
+      "category": "operational",
+      "enforcement": [
+        {
+          "type": "runtime-validation",
+          "mechanism": "startup-validation",
+          "verification": "startup-test",
+          "path": "scripts/validate-runtime-config.js"
+        }
+      ],
+      "lastVerification": null,
+      "verificationFrequency": "per-deployment",
+      "nextVerificationDue": null,
+      "verificationHistory": []
+    },
+    {
+      "id": "O-02",
+      "name": "Configuration Exclusivity",
+      "severity": "P3",
+      "category": "operational",
+      "enforcement": [
+        {
+          "type": "runtime-validation",
+          "mechanism": "unknown-var-detection",
+          "verification": "startup-test",
+          "path": "scripts/validate-runtime-config.js"
+        }
+      ],
+      "lastVerification": null,
+      "verificationFrequency": "per-deployment",
+      "nextVerificationDue": null,
+      "verificationHistory": []
+    },
+    {
+      "id": "O-03",
+      "name": "Traceability",
+      "severity": "P2",
+      "category": "operational",
+      "enforcement": [
+        {
+          "type": "e2e-test",
+          "mechanism": "correlation-id-propagation",
+          "verification": "e2e-test",
+          "path": "tests/e2e/observability/tracing.spec.ts"
+        }
+      ],
+      "lastVerification": null,
+      "verificationFrequency": "weekly",
+      "nextVerificationDue": null,
+      "verificationHistory": []
+    },
+    {
+      "id": "O-04",
+      "name": "Build Reproducibility",
+      "severity": "P3",
+      "category": "operational",
+      "enforcement": [
+        {
+          "type": "build-validation",
+          "mechanism": "hash-comparison",
+          "verification": "ci-job",
+          "path": "scripts/validate-build-reproducibility.js"
+        }
+      ],
+      "lastVerification": null,
+      "verificationFrequency": "per-commit",
+      "nextVerificationDue": null,
+      "verificationHistory": []
+    },
+    {
+      "id": "G-01",
+      "name": "No Silent Relaxation",
+      "severity": "P2",
+      "category": "governance",
+      "enforcement": [
+        {
+          "type": "policy",
+          "mechanism": "decision-log-required",
+          "verification": "manual-audit",
+          "path": "DECISIONS.md"
+        }
+      ],
+      "lastVerification": null,
+      "verificationFrequency": "quarterly",
+      "nextVerificationDue": null,
+      "verificationHistory": []
+    },
+    {
+      "id": "G-02",
+      "name": "Archive Immutability",
+      "severity": "P3",
+      "category": "governance",
+      "enforcement": [
+        {
+          "type": "integrity-scan",
+          "mechanism": "hash-comparison",
+          "verification": "scheduled-job",
+          "path": "scripts/validate-archive-integrity.js"
+        }
+      ],
+      "lastVerification": null,
+      "verificationFrequency": "weekly",
+      "nextVerificationDue": null,
+      "verificationHistory": []
+    },
+    {
+      "id": "G-03",
+      "name": "Archive Structure Integrity",
+      "severity": "P3",
+      "category": "governance",
+      "enforcement": [
+        {
+          "type": "integrity-scan",
+          "mechanism": "structure-validation",
+          "verification": "scheduled-job",
+          "path": "scripts/validate-archive-integrity.js"
+        }
+      ],
+      "lastVerification": null,
+      "verificationFrequency": "weekly",
+      "nextVerificationDue": null,
+      "verificationHistory": []
+    }
+  ]
+}
