@@ -1,0 +1,48 @@
+import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import { HealthController } from './health.controller';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { AuthModule } from './modules/auth/auth.module';
+import { UsersModule } from './modules/users/users.module';
+import { ContactsModule } from './modules/contacts/contacts.module';
+import { LeadsModule } from './modules/leads/leads.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { DealsModule } from './modules/deals/deals.module';
+import { PipelinesModule } from './modules/pipelines/pipelines.module';
+import { RbacModule } from './modules/rbac/rbac.module';
+import { AuditLogsModule } from './modules/audit-logs/audit-logs.module';
+import { SharedModule } from './shared/shared.module';
+
+@Module({
+  imports: [
+    // Configuration - must be first
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: '.env',
+    }),
+    
+    // Task scheduling for background jobs (like analytics summaries)
+    ScheduleModule.forRoot(),
+    
+    // Shared infrastructure modules
+    SharedModule,
+    
+    // Feature modules
+    AuthModule,
+    UsersModule,
+    ContactsModule,
+    LeadsModule,
+    DashboardModule,
+    DealsModule,
+    PipelinesModule,
+    RbacModule,
+    AnalyticsModule,
+    AuditLogsModule,
+  ],
+  controllers: [AppController, HealthController],
+  providers: [AppService],
+})
+export class AppModule {}

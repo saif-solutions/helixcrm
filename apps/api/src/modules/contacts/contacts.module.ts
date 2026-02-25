@@ -1,26 +1,21 @@
-import { Module } from "@nestjs/common";
-import { JwtModule } from "@nestjs/jwt";
-import { ContactsService } from "./contacts.service";
-import { ContactsController } from "./contacts.controller";
-import { PrismaModule } from "../../shared/prisma/prisma.module";
-import { LoggingModule } from "../../shared/logging/logging.module";
-import { AuthGuard } from "../../shared/guards/auth.guard";
-import { TenantGuard } from "../../shared/guards/tenant.guard";
+import { Module } from '@nestjs/common';
+import { ContactsService } from './contacts.service';
+import { ContactsController } from './contacts.controller';
+import { LoggingModule } from '../../shared/logging/logging.module';
+import { ContactRepository } from './repositories/contact.repository';
+import { TenantModule } from '../../shared/tenant/tenant.module';
+import { PermissionContextModule } from '../../shared/permissions/context/permission-context.module';
 
 @Module({
   imports: [
-    PrismaModule,
     LoggingModule,
-    JwtModule.register({
-      secret: process.env.JWT_SECRET || 'default-secret-change-in-production',
-      signOptions: { expiresIn: '15m' },
-    }),
+    TenantModule,                 // Provides TenantContextService
+    PermissionContextModule,       // Provides PermissionContextService
   ],
   controllers: [ContactsController],
   providers: [
     ContactsService,
-    AuthGuard,
-    TenantGuard,
+    ContactRepository,
   ],
   exports: [ContactsService],
 })

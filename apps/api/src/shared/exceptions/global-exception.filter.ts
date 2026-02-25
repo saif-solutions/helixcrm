@@ -27,12 +27,13 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<RequestWithId>();
-    
+
     // Get request ID from request or response header as fallback
-    const requestId = request.requestId || 
-                     (response.getHeader('X-Request-ID') as string) || 
-                     'unknown';
-    
+    const requestId =
+      request.requestId ||
+      (response.getHeader('X-Request-ID') as string) ||
+      'unknown';
+
     const path = request.url;
     const method = request.method;
 
@@ -44,7 +45,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     if (exception instanceof HttpException) {
       status = exception.getStatus();
       const exceptionResponse = exception.getResponse();
-      
+
       if (typeof exceptionResponse === 'string') {
         message = exceptionResponse;
         error = 'HttpException';
@@ -59,13 +60,16 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       message = 'Internal server error';
       error = 'InternalServerError';
       code = 'INTERNAL_SERVER_ERROR';
-      
+
       // Log unexpected errors
-      const errorDetails = exception instanceof Error ? {
-        message: exception.message,
-        stack: exception.stack,
-      } : { unknownError: exception };
-      
+      const errorDetails =
+        exception instanceof Error
+          ? {
+              message: exception.message,
+              stack: exception.stack,
+            }
+          : { unknownError: exception };
+
       this.logger.error({
         requestId,
         method,

@@ -16,10 +16,11 @@ export class NotFoundExceptionFilter implements ExceptionFilter {
     const status = exception.getStatus();
 
     // Get request ID from request or response header as fallback
-    const requestId = request.requestId || 
-                     (response.getHeader('X-Request-ID') as string) || 
-                     'middleware-missing';
-    
+    const requestId =
+      request.requestId ||
+      (response.getHeader('X-Request-ID') as string) ||
+      'middleware-missing';
+
     response.status(status).json({
       statusCode: status,
       timestamp: new Date().toISOString(),

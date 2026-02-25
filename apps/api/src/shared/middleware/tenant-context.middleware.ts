@@ -1,8 +1,8 @@
-﻿import { Injectable, NestMiddleware } from "@nestjs/common";
-import { Request, Response, NextFunction } from "express";
+﻿import { Injectable, NestMiddleware } from '@nestjs/common';
+import { Request, Response, NextFunction } from 'express';
 
 // Extend Express Request type
-declare module "express" {
+declare module 'express' {
   interface Request {
     user?: {
       sub: string;

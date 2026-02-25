@@ -1,6 +1,10 @@
+// File: apps/api/src/shared/security/csrf.middleware.ts
 import { Injectable, NestMiddleware, Logger } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
-import * as csurf from 'csurf';
+// CHANGE THIS LINE:
+// import * as csurf from 'csurf';
+// TO THIS:
+import csurf from 'csurf';
 import SecurityConfig from '../../config/security.config';
 
 @Injectable()
@@ -12,11 +16,15 @@ export class CsrfMiddleware implements NestMiddleware {
     // Configure CSRF protection using centralized config
     this.csrfProtection = csurf({
       cookie: SecurityConfig.cookies.csrfToken(),
-      value: (req: Request) => {
+      value: (req: any) => {
         // Get token from header (for API requests) or from body (for forms)
-        return req.headers[SecurityConfig.csrf.headerName.toLowerCase()] as string || 
-               (req.body && req.body._csrf) ||
-               req.query._csrf as string;
+        return (
+          (req.headers[
+            SecurityConfig.csrf.headerName.toLowerCase()
+          ] as string) ||
+          (req.body && req.body._csrf) ||
+          (req.query._csrf as string)
+        );
       },
       ignoreMethods: SecurityConfig.csrf.ignoreMethods as any,
     });
@@ -25,14 +33,15 @@ export class CsrfMiddleware implements NestMiddleware {
   use(req: Request, res: Response, next: NextFunction) {
     // Skip CSRF entirely for certain endpoints
     const skipCsrfPaths = [
-      '/api/v1/auth/login',
-      '/api/v1/auth/register', 
-      '/api/v1/auth/refresh',
-      '/api/v1/auth/logout',
-      '/api/v1/health',
+      '/api/auth/login',
+      '/api/auth/register',
+      '/api/auth/refresh',
+      '/api/auth/logout',
+      '/api/health',
+      '/health',
     ];
 
-    if (skipCsrfPaths.some(path => req.path.startsWith(path))) {
+    if (skipCsrfPaths.some((path) => req.path.startsWith(path))) {
       return next();
     }
 
@@ -42,13 +51,16 @@ export class CsrfMiddleware implements NestMiddleware {
         if (err) {
           // Handle CSRF token errors specifically
           if (err.code === 'EBADCSRFTOKEN') {
-            this.logger.warn(`CSRF validation failed for ${req.method} ${req.path}`, {
-              requestId: (req as any).requestId,
-              ip: req.ip,
-              userAgent: req.get('user-agent'),
-              timestamp: new Date().toISOString(),
-            });
-            
+            this.logger.warn(
+              `CSRF validation failed for ${req.method} ${req.path}`,
+              {
+                requestId: (req as any).requestId,
+                ip: req.ip,
+                userAgent: req.get('user-agent'),
+                timestamp: new Date().toISOString(),
+              },
+            );
+
             return res.status(403).json({
               statusCode: 403,
               message: 'Invalid CSRF token',
@@ -57,14 +69,14 @@ export class CsrfMiddleware implements NestMiddleware {
               path: req.path,
               requestId: (req as any).requestId,
               code: 'INVALID_CSRF_TOKEN',
-              suggestion: 'Get a new CSRF token from /api/v1/auth/csrf-token',
+              suggestion: 'Get a new CSRF token from /api/auth/csrf-token',
             });
           }
-          
+
           // For other errors, pass to next error handler
           return next(err);
         }
-        
+
         // No error, continue
         next();
       });

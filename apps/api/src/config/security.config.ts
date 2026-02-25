@@ -5,12 +5,12 @@ export class SecurityConfig {
   static isProduction = process.env.NODE_ENV === 'production';
   static isDevelopment = !this.isProduction;
 
-  // JWT
+  // JWT - NOW USING ENVIRONMENT VARIABLES
   static jwt = {
-    accessTokenExpiry: '15m',
-    refreshTokenExpiry: '7d',
-    issuer: 'helixcrm',
-    audience: 'helixcrm-client',
+    accessTokenExpiry: process.env.JWT_EXPIRES_IN || '15m',
+    refreshTokenExpiry: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
+    issuer: process.env.JWT_ISSUER || 'helixcrm',
+    audience: process.env.JWT_AUDIENCE || 'helixcrm-client',
   };
 
   // Cookies - LOCALHOST COMPATIBLE

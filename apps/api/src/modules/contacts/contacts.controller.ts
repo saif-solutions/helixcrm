@@ -1,64 +1,78 @@
-﻿import { 
-  Controller, 
-  Get, 
-  Post, 
-  Body, 
-  Param, 
-  Put, 
-  Delete, 
+﻿import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Put,
+  Delete,
   UseGuards,
   Req,
-  Request 
-} from "@nestjs/common";
-import { AuthGuard } from "../../shared/guards/auth.guard";
-import { TenantGuard } from "../../shared/guards/tenant.guard";
-import { ContactsService } from "./contacts.service";
-import { CreateContactDto } from "./dto/create-contact.dto";
-import { UpdateContactDto } from "./dto/update-contact.dto";
+  Request,
+  Query,
+  ParseIntPipe,
+  DefaultValuePipe,
+  HttpCode,
+  HttpStatus,
+  UsePipes,
+  ValidationPipe,
+} from '@nestjs/common';
+import { AuthGuard } from '../../shared/guards/auth.guard';
+import { TenantGuard } from '../../shared/guards/tenant.guard';
+import { PermissionGuard } from '../../shared/guards/permission.guard';
+import { RequirePermission } from '../../shared/decorators/require-permission.decorator';
+import { ContactsService } from './contacts.service';
+import { CreateContactDto } from './dto/create-contact.dto';
+import { UpdateContactDto } from './dto/update-contact.dto';
 
-@Controller("contacts")
-@UseGuards(AuthGuard, TenantGuard) // ✅ CRITICAL: Both guards required
+@Controller('contacts')
+@UseGuards(AuthGuard, TenantGuard, PermissionGuard)
 export class ContactsController {
   constructor(private readonly contactsService: ContactsService) {}
 
   @Post()
-  create(@Body() createContactDto: CreateContactDto, @Req() req: Request) {
-    // Application-level tenant enforcement
-    return this.contactsService.create({
-      ...createContactDto,
-      organizationId: (req as any).user.organizationId, // ✅ Injected from guard
-    });
+  @HttpCode(HttpStatus.CREATED)
+  @UsePipes(ValidationPipe)
+  @UsePipes(new ValidationPipe({ transform: true }))
+  @RequirePermission('contacts.write')
+  create(@Body() createContactDto: CreateContactDto) {
+    // OrganizationId is now handled by tenant context in service
+    return this.contactsService.create(createContactDto);
   }
 
   @Get()
-  findAll(@Req() req: Request) {
-    // Application-level tenant enforcement
-    return this.contactsService.findAll((req as any).user.organizationId);
-  }
-
-  @Get(":id")
-  findOne(@Param("id") id: string, @Req() req: Request) {
-    // Application-level tenant enforcement + ownership check
-    return this.contactsService.findOne(id, (req as any).user.organizationId);
-  }
-
-  @Put(":id")
-  update(
-    @Param("id") id: string,
-    @Body() updateContactDto: UpdateContactDto,
-    @Req() req: Request,
+  @RequirePermission('contacts.read')
+  findAll(
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
+    @Query('search') search?: string,
   ) {
-    // Application-level tenant enforcement + ownership check
-    return this.contactsService.update(
-      id,
-      updateContactDto,
-      (req as any).user.organizationId,
-    );
+    return this.contactsService.findAll({
+      page,
+      limit: Math.min(limit, 100),
+      search,
+    });
   }
 
-  @Delete(":id")
-  remove(@Param("id") id: string, @Req() req: Request) {
-    // Application-level tenant enforcement + ownership check
-    return this.contactsService.remove(id, (req as any).user.organizationId);
+  @Get(':id')
+  @RequirePermission('contacts.read')
+  findOne(@Param('id') id: string) {
+    return this.contactsService.findOne(id);
+  }
+
+  @Put(':id')
+  @UsePipes(
+    new ValidationPipe({ transform: true, skipMissingProperties: true }),
+  )
+  @RequirePermission('contacts.write')
+  update(@Param('id') id: string, @Body() updateContactDto: UpdateContactDto) {
+    return this.contactsService.update(id, updateContactDto);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @RequirePermission('contacts.delete')
+  remove(@Param('id') id: string) {
+    return this.contactsService.remove(id);
   }
 }

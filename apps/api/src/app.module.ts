@@ -1,83 +1,105 @@
-import { MiddlewareConsumer, Module, NestModule, RequestMethod } from "@nestjs/common";
-import { ConfigModule } from "@nestjs/config";
-import { APP_INTERCEPTOR } from "@nestjs/core";
-import { ThrottlerModule } from "@nestjs/throttler";
-import { AppController } from "./app.controller";
-import { AppService } from "./app.service";
-import { HealthController } from "./health.controller";
-import { PrismaModule } from "./shared/prisma/prisma.module";
-import { AuthModule } from "./modules/auth/auth.module";
-import { ContactsModule } from "./modules/contacts/contacts.module";
-import { LoggingModule } from "./shared/logging/logging.module";
-import { RequestLoggerInterceptor } from "./shared/logging/request-logger.interceptor";
-import { RequestContextMiddleware } from "./shared/middleware/request-context.middleware";
-import { CsrfMiddleware } from "./shared/security/csrf.middleware";
+import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
+
+// Core application modules
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import { HealthController } from './health.controller';
+
+// Feature modules
+import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { AuthModule } from './modules/auth/auth.module';
+import { UsersModule } from './modules/users/users.module';
+import { ContactsModule } from './modules/contacts/contacts.module';
+import { LeadsModule } from './modules/leads/leads.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { DealsModule } from './modules/deals/deals.module';
+import { PipelinesModule } from './modules/pipelines/pipelines.module';
+import { RbacModule } from './modules/rbac/rbac.module';
+import { AuditLogsModule } from './modules/audit-logs/audit-logs.module';
+import { ImportModule } from './modules/import/import.module';
+import { EmailTemplatesModule } from './modules/email-templates/email-templates.module';
+import { ExportQueueModule } from './modules/export-queue/export-queue.module';
+import { FileStorageModule } from './modules/file-storage/file-storage.module';
+import { WebhooksModule } from './modules/webhooks/webhooks.module';
+
+// Shared infrastructure modules
+import { SharedModule } from './shared/shared.module';
+
+// Phase 2A Compliance Modules (Weeks 1-6)
+import { AuditIntegrityModule } from './shared/audit-integrity/audit-integrity.module';
+import { ComplianceModule } from './shared/compliance/compliance.module';
+
+// Performance monitoring (Week 3-4)
+import { PerformanceMetricsModule } from './shared/performance/performance-metrics.module';
 
 @Module({
   imports: [
-    // Configuration module (loads .env files)
+    // ============ CORE INFRASTRUCTURE ============
+    // Configuration - must be first and global
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: ['.env', '.env.local', '.env.development'],
+      envFilePath: '.env',
+      cache: true,
       expandVariables: true,
     }),
 
-    // Rate limiting
-    ThrottlerModule.forRoot([
-      {
-        name: 'short',
-        ttl: 60000, // 1 minute
-        limit: 100, // 100 requests per minute
-      },
-      {
-        name: 'medium',
-        ttl: 300000, // 5 minutes
-        limit: 300, // 300 requests per 5 minutes
-      },
-      {
-        name: 'auth',
-        ttl: 60000, // 1 minute
-        limit: 10, // 10 requests per minute for auth endpoints
-      },
-      {
-        name: 'password-reset',
-        ttl: 3600000, // 1 hour
-        limit: 5, // 5 reset attempts per hour
-      },
-    ]),
+    // Task scheduling for background jobs
+    ScheduleModule.forRoot(),
 
-    // Database
-    PrismaModule,
+    // ============ SHARED INFRASTRUCTURE ============
+    // Core shared services (logging, middleware, guards, etc.)
+    SharedModule,
 
-    // Feature modules
+    // ============ PHASE 2A: COMPLIANCE & SECURITY ============
+    // Week 1-2: Audit Integrity (Tamper-evident audit chain)
+    AuditIntegrityModule,
+
+    // Week 5-6: SOC 2 Compliance (Evidence collection & verification)
+    ComplianceModule,
+
+    // Week 3-4: Performance Monitoring (SLO validation)
+    PerformanceMetricsModule,
+
+    // ============ BUSINESS FEATURES ============
+    // Authentication & Authorization
     AuthModule,
-    ContactsModule,
+    UsersModule,
+    RbacModule,
 
-    // Infrastructure modules
-    LoggingModule,
+    // CRM Core Features
+    ContactsModule,
+    LeadsModule,
+    DealsModule,
+    PipelinesModule,
+
+    // Reporting & Analytics
+    DashboardModule,
+    AnalyticsModule,
+    ImportModule,
+    EmailTemplatesModule,
+    ExportQueueModule,
+    FileStorageModule,
+    WebhooksModule,
+    AuditLogsModule,
   ],
+
   controllers: [AppController, HealthController],
-  providers: [
-    AppService,
-    
-    // Global request logging
-    {
-      provide: APP_INTERCEPTOR,
-      useClass: RequestLoggerInterceptor,
-    },
+
+  providers: [AppService],
+
+  exports: [
+    // Export modules that might be used in tests or other contexts
+    ConfigModule,
+    ScheduleModule,
   ],
 })
-export class AppModule implements NestModule {
-  configure(consumer: MiddlewareConsumer) {
-    // Apply RequestContextMiddleware to ALL routes first
-    consumer
-      .apply(RequestContextMiddleware)
-      .forRoutes({ path: '*', method: RequestMethod.ALL });
-
-    // Apply CSRF middleware to ALL routes
-    // The CsrfMiddleware itself handles which paths/methods to skip
-    consumer
-      .apply(CsrfMiddleware)
-      .forRoutes({ path: '*', method: RequestMethod.ALL });
+export class AppModule {
+  constructor() {
+    console.log('AppModule initialized with Phase 2A compliance features:');
+    console.log('✅ Audit Integrity (Weeks 1-2)');
+    console.log('✅ Performance Monitoring (Weeks 3-4)');
+    console.log('✅ SOC 2 Compliance (Weeks 5-6)');
   }
 }

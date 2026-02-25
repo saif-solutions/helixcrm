@@ -5,6 +5,9 @@ export interface JwtPayload {
   organizationId: string;
   role: string;
   tokenVersion: number; // MUST match user.tokenVersion
+  // PHASE 3.3 ADDITIONS
+  permissions: string[]; // flattened permissions array
+  roles: string[]; // role names for auditing
   iat?: number;
   exp?: number;
 }

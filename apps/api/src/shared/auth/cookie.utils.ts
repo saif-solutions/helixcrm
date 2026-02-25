@@ -31,7 +31,7 @@ export const clearAuthCookies = (res: any): void => {
  */
 export const validateCookieSecurity = (): string[] => {
   const warnings: string[] = [];
-  
+
   if (SecurityConfig.isProduction) {
     const accessOpts = SecurityConfig.cookies.accessToken();
     if (!accessOpts.secure) {
@@ -40,12 +40,12 @@ export const validateCookieSecurity = (): string[] => {
     if (accessOpts.sameSite !== 'strict') {
       warnings.push('Access token cookie SameSite is not strict in production');
     }
-    
+
     const refreshOpts = SecurityConfig.cookies.refreshToken();
     if (!refreshOpts.secure) {
       warnings.push('Refresh token cookie is not secure in production');
     }
   }
-  
+
   return warnings;
 };

@@ -1,5 +1,10 @@
 // File: apps/api/src/shared/logging/request-logger.interceptor.ts
-import { Injectable, NestInterceptor, ExecutionContext, CallHandler } from '@nestjs/common';
+import {
+  Injectable,
+  NestInterceptor,
+  ExecutionContext,
+  CallHandler,
+} from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { AppLogger } from './logger.service';
@@ -9,7 +14,10 @@ import { RequestWithId } from '../types/request-with-id';
 export class RequestLoggerInterceptor implements NestInterceptor {
   constructor(private logger: AppLogger) {}
 
-  intercept(context: ExecutionContext, next: CallHandler): Observable<any> | Promise<Observable<any>> {
+  intercept(
+    context: ExecutionContext,
+    next: CallHandler,
+  ): Observable<any> | Promise<Observable<any>> {
     const request = context.switchToHttp().getRequest<RequestWithId>();
     const response = context.switchToHttp().getResponse();
 
