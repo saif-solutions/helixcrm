@@ -93,3 +93,69 @@ apps/api/prisma/*.db
 # VSCode
 .vscode/settings.json
 .vscode/launch.json
+
+# === DEBUG AND TEST FILES ===
+*.debug.js
+debug_*.js
+test_*.js
+fix_*.js
+check_*.js
+reset_*.js
+verify_*.js
+update-*.js
+migrate-*.js
+*_test.js
+*_debug.js
+*_fix.js
+*_temp.js
+*.patch
+
+# === LOG FILES ===
+*.log
+logs/
+**/logs/
+
+# === COOKIE FILES ===
+cookies.txt
+*cookies*.txt
+
+# === BACKUP FILES ===
+*.backup
+*.backup*
+*.bak
+*.old
+*.orig
+*.back
+leads.backup/
+.backup/
+
+# === BUILD ARTIFACTS ===
+dist/
+**/dist/
+storybook-static/
+**/storybook-static/
+coverage/
+**/coverage/
+*.tsbuildinfo
+
+# === ENVIRONMENT FILES ===
+.env
+.env.*
+!.env.example
+
+# === TEMP FILES ===
+*.tmp
+*.temp
+*~
+*.swp
+*.swo
+
+# === ARCHIVE SHADOW FILES ===
+docs/_archive/**/shadow-backups/
+docs/_archive/**/*.backup
+docs/_archive/**/*.bak
+docs/_archive/pre-mvp-cleanup/
+
+# === PACKAGE LOCK FILES (if using pnpm) ===
+package-lock.json
+yarn.lock
