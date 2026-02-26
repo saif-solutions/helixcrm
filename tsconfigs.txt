@@ -1,0 +1,14 @@
+./apps/api/tsconfig-debug.json
+./apps/api/tsconfig.email-only.json
+./apps/api/tsconfig.email-templates.json
+./apps/api/tsconfig.json
+./apps/api/tsconfig.spec.json
+./apps/api/tsconfig.test.json
+./apps/api/tsconfig.webhook-check.json
+./apps/web/tsconfig.app.json
+./apps/web/tsconfig.eslint.json
+./apps/web/tsconfig.json
+./apps/web/tsconfig.node.json
+./packages/auth-core/tsconfig.json
+./scripts/tsconfig.json
+./tsconfig.base.json

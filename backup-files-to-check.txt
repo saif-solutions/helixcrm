@@ -1,0 +1,6 @@
+./apps/api/package.json.final-session7
+./apps/api/prisma/schema.prisma.new
+./apps/api/src/app.module.ts.final-session7
+./apps/api/src/modules/auth/auth.service.ts.fixed
+./apps/api/src/shared/audit-log/audit-log.service.ts.fix
+./apps/api/tsconfig.json.strict-backup
