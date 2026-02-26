@@ -9,10 +9,20 @@
  * - Audit logging ready
  */
 import React, { useState, useEffect } from 'react';
-import { Button } from '../ui/Button';
-import { Input } from '../ui/Input';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '../ui/Card';
+import { Button } from '../atoms/Button/Button';
+import { Input } from '../atoms/Input/Input';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '../molecules/Card/Card';
 import { Loader2 } from 'lucide-react';
+
+import { ToastProvider } from '../../components/feedback/ToastProvider';
+
+interface ToastProviderWrapperProps {
+  children: React.ReactNode;
+}
+
+export const ToastProviderWrapper: React.FC<ToastProviderWrapperProps> = ({ children }) => {
+  return <ToastProvider>{children}</ToastProvider>;
+};
 
 // Simple interface for form data - matches API DTO
 interface ContactFormData {
@@ -38,7 +48,9 @@ interface ContactFormProps {
 }
 
 // Simple validation functions
-const validateForm = (data: ContactFormData): { isValid: boolean; errors: Record<string, string> } => {
+const validateForm = (
+  data: ContactFormData
+): { isValid: boolean; errors: Record<string, string> } => {
   const errors: Record<string, string> = {};
 
   if (!data.firstName?.trim()) {
@@ -99,22 +111,21 @@ export const ContactForm: React.FC<ContactFormProps> = ({
     }
   }, [contact]);
 
-  const handleChange = (field: keyof ContactFormData) => (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: e.target.value,
-    }));
-    
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors((prev) => ({
+  const handleChange =
+    (field: keyof ContactFormData) => (e: React.ChangeEvent<HTMLInputElement>) => {
+      setFormData((prev) => ({
         ...prev,
-        [field]: '',
+        [field]: e.target.value,
       }));
-    }
-  };
+
+      // Clear error when user starts typing
+      if (errors[field]) {
+        setErrors((prev) => ({
+          ...prev,
+          [field]: '',
+        }));
+      }
+    };
 
   const handleBlur = (field: keyof ContactFormData) => () => {
     setTouched((prev) => ({
@@ -123,7 +134,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({
     }));
 
     // Validate field on blur
-    
+
     const validation = validateForm({ ...formData });
     if (validation.errors[field]) {
       setErrors((prev) => ({
@@ -135,27 +146,30 @@ export const ContactForm: React.FC<ContactFormProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const validation = validateForm(formData);
     setErrors(validation.errors);
-    
+
     // Mark all fields as touched for error display
-    const allTouched = Object.keys(formData).reduce((acc, key) => {
-      acc[key] = true;
-      return acc;
-    }, {} as Record<string, boolean>);
+    const allTouched = Object.keys(formData).reduce(
+      (acc, key) => {
+        acc[key] = true;
+        return acc;
+      },
+      {} as Record<string, boolean>
+    );
     setTouched(allTouched);
-    
+
     if (!validation.isValid) {
       return;
     }
-    
+
     // Clean up phone field if empty
     const submitData = {
       ...formData,
       phone: formData.phone?.trim() || undefined,
     };
-    
+
     await onSubmit(submitData);
   };
 
@@ -171,7 +185,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({
             {mode === 'create' ? 'Add New Contact' : 'Edit Contact'}
           </CardTitle>
         </CardHeader>
-        
+
         <CardContent className="px-0 space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -191,7 +205,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({
                 <p className="mt-1 text-sm text-red-600">{getFieldError('firstName')}</p>
               )}
             </div>
-            
+
             <div>
               <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
                 Last Name *
@@ -210,7 +224,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({
               )}
             </div>
           </div>
-          
+
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
               Email Address *
@@ -229,7 +243,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({
               <p className="mt-1 text-sm text-red-600">{getFieldError('email')}</p>
             )}
           </div>
-          
+
           <div>
             <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
               Phone Number (Optional)
@@ -251,27 +265,21 @@ export const ContactForm: React.FC<ContactFormProps> = ({
             </p>
           </div>
         </CardContent>
-        
+
         <CardFooter className="px-0 pb-0 flex justify-end space-x-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onCancel}
-            disabled={isLoading}
-          >
+          <Button type="button" variant="outline" onClick={onCancel} disabled={isLoading}>
             Cancel
           </Button>
-          <Button
-            type="submit"
-            disabled={isLoading}
-          >
+          <Button type="submit" disabled={isLoading}>
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 {mode === 'create' ? 'Creating...' : 'Saving...'}
               </>
+            ) : mode === 'create' ? (
+              'Create Contact'
             ) : (
-              mode === 'create' ? 'Create Contact' : 'Save Changes'
+              'Save Changes'
             )}
           </Button>
         </CardFooter>

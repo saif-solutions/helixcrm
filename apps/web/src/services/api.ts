@@ -1,200 +1,501 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api/v1';
+// apps/web/src/services/api.ts
+import axios, {
+  AxiosInstance,
+  AxiosRequestConfig,
+  AxiosResponse,
+  InternalAxiosRequestConfig,
+} from 'axios';
+import { useAuthStore } from '../stores/auth.store';
+import { mapBackendErrorToAuthError } from '../lib/utils/auth-error-mapper';
+import { API_CONFIG } from '../config/api.config';
 
-export interface ApiResponse<T = any> {
-  data?: T;
-  error?: string;
+// Import types
+import { Lead, Contact, Deal, CreateDealSimpleDto, DashboardStats } from '../lib/types/crm.types';
+
+interface RetryableRequestConfig extends InternalAxiosRequestConfig {
+  _retry?: boolean;
+  _csrfRetryCount?: number;
+  _requestId?: string;
+  _abortController?: AbortController;
+}
+
+// Configuration
+const API_BASE_URL = API_CONFIG.baseURL;
+const APP_ENV = import.meta.env.VITE_APP_ENV || 'development';
+const IS_DEV = import.meta.env.DEV;
+
+console.log(`Ì∫Ä API Configuration:
+  - Base URL: ${API_BASE_URL}
+  - Environment: ${APP_ENV}
+  - Development Mode: ${IS_DEV}
+`);
+
+// Generate UUID for request IDs
+const generateRequestId = (): string => {
+  return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+};
+
+// Types
+export interface ApiError {
   status: number;
+  message: string;
+  code?: string;
+  timestamp?: string;
+  path?: string;
+  requestId?: string;
 }
 
-export interface Contact {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone?: string;
-  organizationId: string;
-  createdAt: string;
-  updatedAt: string;
+export interface PaginatedResponse<T> {
+  data: T[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
 }
 
-export interface CreateContactDto {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone?: string;
-}
+// CRM specific types for API responses
+export interface LeadResponse extends PaginatedResponse<Lead> {}
+export interface ContactResponse extends PaginatedResponse<Contact> {}
+export interface DealResponse extends PaginatedResponse<Deal> {}
 
-export interface UpdateContactDto extends Partial<CreateContactDto> {}
+// CSRF Token Manager
+class CsrfTokenManager {
+  private token: string | null = null;
+  private isRefreshing = false;
+  private refreshQueue: Array<() => void> = [];
+  private initialized = false;
 
-class ApiService {
-  private getAuthToken(): string | null {
-    // Try localStorage first, then sessionStorage
-    // This works in browser context only
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('helix_token') || sessionStorage.getItem('helix_token');
-    }
-    return null;
+  setToken(token: string): void {
+    this.token = token;
+    this.initialized = true;
   }
 
-  private getCsrfToken(): string | null {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('csrf_token');
-    }
-    return null;
+  getToken(): string | null {
+    return this.token;
   }
 
-  private async fetchCsrfTokenIfNeeded(): Promise<void> {
-    if (typeof window === 'undefined') return;
-    
-    const hasCsrfToken = localStorage.getItem('csrf_token');
-    if (!hasCsrfToken) {
-      try {
-        const response = await fetch(`${API_URL}/auth/csrf-token`, {
-          credentials: 'include', // Important for cookies
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          if (data.csrfToken) {
-            localStorage.setItem('csrf_token', data.csrfToken);
-          }
-        }
-      } catch (error) {
-        console.warn('Failed to fetch CSRF token:', error);
-      }
-    }
+  clearToken(): void {
+    this.token = null;
+    this.initialized = false;
   }
 
-  private getAuthHeaders(method: string = 'GET'): Record<string, string> {
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-
-    // Add CSRF token for non-GET requests
-    if (method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS') {
-      const csrfToken = this.getCsrfToken();
-      if (csrfToken) {
-        headers['X-CSRF-Token'] = csrfToken;
-      } else {
-        console.warn('CSRF token missing for', method, 'request');
-      }
-    }
-
-    // Add Bearer token if exists (for compatibility)
-    const token = this.getAuthToken();
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-
-    return headers;
+  isInitialized(): boolean {
+    return this.initialized;
   }
 
-  private async handleResponse<T>(response: Response): Promise<ApiResponse<T>> {
-    const data = await response.json().catch(() => ({}));
-    
-    // Handle CSRF errors
-    if (response.status === 403 && data.message?.includes('CSRF')) {
-      console.error('CSRF validation failed');
-      localStorage.removeItem('csrf_token');
-      
-      // Try to get new CSRF token
-      await this.fetchCsrfTokenIfNeeded();
-      
-      return {
-        error: 'CSRF validation failed. Please try again.',
-        status: response.status,
-      };
-    }
-    
-    if (!response.ok) {
-      return {
-        error: data.message || `HTTP ${response.status}: ${response.statusText}`,
-        status: response.status,
-      };
+  async refreshCsrfToken(api: AxiosInstance): Promise<void> {
+    if (this.isRefreshing) {
+      return new Promise((resolve) => {
+        this.refreshQueue.push(resolve);
+      });
     }
 
-    return {
-      data,
-      status: response.status,
-    };
-  }
+    this.isRefreshing = true;
 
-  async request<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
     try {
-      // Ensure CSRF token exists for non-GET requests
-      const method = options.method || 'GET';
-      if (method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS') {
-        await this.fetchCsrfTokenIfNeeded();
+      const response = await api.get<{ csrfToken: string }>('/auth/csrf-token');
+      this.setToken(response.data.csrfToken);
+      console.log('‚úÖ CSRF token refreshed');
+      
+      // Resolve all queued requests
+      this.refreshQueue.forEach((resolve) => resolve());
+      this.refreshQueue = [];
+    } catch (error) {
+      console.error('‚ùå Could not refresh CSRF token', error);
+      throw error;
+    } finally {
+      this.isRefreshing = false;
+    }
+  }
+}
+
+// Create CSRF manager singleton
+export const csrfManager = new CsrfTokenManager();
+
+// Create Axios instance
+const api: AxiosInstance = axios.create({
+  baseURL: API_BASE_URL,
+  timeout: 30000,
+  withCredentials: true,
+  headers: {
+    'Content-Type': 'application/json',
+    'X-App-Version': import.meta.env.VITE_APP_VERSION || '0.9.0',
+  },
+});
+
+// Request interceptor
+api.interceptors.request.use(
+  (config: InternalAxiosRequestConfig) => {
+    // Add Request ID
+    const requestId = generateRequestId();
+    config.headers['X-Request-Id'] = requestId;
+
+    // Add CSRF token for mutating requests
+    if (config.method && ['post', 'put', 'patch', 'delete'].includes(config.method.toLowerCase())) {
+      const csrfToken = csrfManager.getToken();
+      if (csrfToken) {
+        config.headers['X-CSRF-Token'] = csrfToken;
+      } else {
+        console.warn('‚ö†Ô∏è CSRF token missing for', config.method, 'request');
       }
-      
-      const url = `${API_URL}${endpoint}`;
-      const headers = this.getAuthHeaders(method);
-      
-      const response = await fetch(url, {
-        ...options,
-        credentials: 'include', // CRITICAL: Include cookies for auth
-        headers: {
-          ...headers,
-          ...(options.headers || {}),
-        },
+    }
+
+    // Add AbortController support
+    if (!config.signal) {
+      const controller = new AbortController();
+      config.signal = controller.signal;
+      (config as any)._abortController = controller;
+    }
+
+    // Store request ID for error handling
+    (config as RetryableRequestConfig)._requestId = requestId;
+
+    // Log in development
+    if (IS_DEV) {
+      console.log(`Ì≥§ [${config.method?.toUpperCase()}] ${config.url}`, {
+        requestId,
+        hasData: !!config.data,
+        hasCsrf: !!config.headers['X-CSRF-Token'],
+      });
+    }
+
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Response interceptor
+api.interceptors.response.use(
+  (response: AxiosResponse) => {
+    // Log in development
+    if (IS_DEV) {
+      console.log(`Ì≥• [${response.config.method?.toUpperCase()}] ${response.config.url}`, {
+        status: response.status,
+      });
+    }
+    return response;
+  },
+  async (error) => {
+    const originalRequest = error.config as RetryableRequestConfig;
+    const requestId = originalRequest?._requestId || 'unknown';
+    const url = originalRequest?.url || '';
+
+    // Network error (backend offline)
+    if (!error.response) {
+      console.error('Ìºê Network error - backend might be offline', {
+        requestId,
+        url: originalRequest?.url,
+        method: originalRequest?.method,
       });
 
-      return this.handleResponse<T>(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Network error',
+      // Show session expired if it's an auth endpoint
+      if (originalRequest?.url?.includes('/auth/')) {
+        useAuthStore.getState().setSessionExpired(true);
+      }
+
+      const apiError: ApiError = {
         status: 0,
+        message: 'Network error. Please check your connection and ensure the backend server is running.',
+        code: 'NETWORK_ERROR',
+        requestId,
       };
+
+      return Promise.reject(apiError);
+    }
+
+    // Prevent refresh loop on refresh endpoint itself
+    if (originalRequest.url?.includes('/auth/refresh')) {
+      useAuthStore.getState().setSessionExpired(true);
+      return Promise.reject(error);
+    }
+
+    // Handle 401 Unauthorized
+    if (error.response?.status === 401) {
+      console.warn(`Ì¥ê Authentication required for ${url}`);
+      
+      if (originalRequest._retry) {
+        useAuthStore.getState().setSessionExpired(true);
+        return Promise.reject(error);
+      }
+
+      const authStore = useAuthStore.getState();
+      if (authStore.sessionExpired) {
+        return Promise.reject(error);
+      }
+
+      originalRequest._retry = true;
+
+      try {
+        await api.post('/auth/refresh');
+        return api(originalRequest);
+      } catch (refreshError) {
+        authStore.setSessionExpired(true);
+        return Promise.reject(refreshError);
+      }
+    }
+
+    // CSRF token expired (403)
+    if (error.response?.status === 403 && error.response?.data?.code === 'INVALID_CSRF_TOKEN') {
+      // CSRF retry guard - prevent infinite loops
+      originalRequest._csrfRetryCount = (originalRequest._csrfRetryCount || 0) + 1;
+      if (originalRequest._csrfRetryCount > 1) {
+        console.error('‚ùå CSRF retry limit exceeded, setting session expired');
+        useAuthStore.getState().setSessionExpired(true);
+        return Promise.reject(error);
+      }
+
+      try {
+        // Refresh CSRF token
+        await csrfManager.refreshCsrfToken(api);
+
+        // Retry the original request
+        return api(originalRequest);
+      } catch (refreshError) {
+        // Can't refresh token - set session expired
+        useAuthStore.getState().setSessionExpired(true);
+        return Promise.reject(refreshError);
+      }
+    }
+
+    // Map error for consistent handling
+    const mappedError = mapBackendErrorToAuthError(error);
+    const apiError: ApiError = {
+      status: error.response?.status || 0,
+      message: mappedError.message,
+      code: mappedError.code || error.response?.data?.code,
+      timestamp: error.response?.data?.timestamp,
+      path: error.response?.data?.path,
+      requestId,
+    };
+
+    console.error('‚ùå API Error:', {
+      requestId,
+      status: apiError.status,
+      message: apiError.message,
+      path: apiError.path,
+    });
+
+    return Promise.reject(apiError);
+  }
+);
+
+// API initialization with retry logic
+export const initializeApi = async (): Promise<void> => {
+  let retries = 0;
+  const maxRetries = 3;
+
+  while (retries < maxRetries) {
+    try {
+      // Get initial CSRF token
+      const response = await api.get<{ csrfToken: string }>('/auth/csrf-token');
+      csrfManager.setToken(response.data.csrfToken);
+      console.log('‚úÖ CSRF token initialized');
+      return;
+    } catch (error) {
+      retries++;
+      
+      if (retries < maxRetries) {
+        console.warn(`‚ö†Ô∏è CSRF initialization failed (attempt ${retries}/${maxRetries}), retrying in 2s...`);
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      } else {
+        console.error('‚ùå Could not initialize CSRF token - backend might be offline');
+        throw error;
+      }
     }
   }
+};
 
-  // Auth helper methods
-  async initializeCsrf(): Promise<void> {
-    await this.fetchCsrfTokenIfNeeded();
-  }
+// Abort helper
+export const createAbortController = (): AbortController => {
+  return new AbortController();
+};
 
-  async clearCsrf(): Promise<void> {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('csrf_token');
-    }
-  }
+// Export API methods with types
+export const apiClient = {
+  get: <T>(url: string, config?: AxiosRequestConfig) =>
+    api.get<T>(url, config).then((res) => res.data),
 
-  // Contacts API
-  async getContacts(): Promise<ApiResponse<Contact[]>> {
-    return this.request<Contact[]>('/contacts');
-  }
+  post: <T>(url: string, data?: any, config?: AxiosRequestConfig) =>
+    api.post<T>(url, data, config).then((res) => res.data),
 
-  async getContact(id: string): Promise<ApiResponse<Contact>> {
-    return this.request<Contact>(`/contacts/${id}`);
-  }
+  put: <T>(url: string, data?: any, config?: AxiosRequestConfig) =>
+    api.put<T>(url, data, config).then((res) => res.data),
 
-  async createContact(contact: CreateContactDto): Promise<ApiResponse<Contact>> {
-    return this.request<Contact>('/contacts', {
-      method: 'POST',
-      body: JSON.stringify(contact),
-    });
-  }
+  patch: <T>(url: string, data?: any, config?: AxiosRequestConfig) =>
+    api.patch<T>(url, data, config).then((res) => res.data),
 
-  async updateContact(id: string, contact: UpdateContactDto): Promise<ApiResponse<Contact>> {
-    return this.request<Contact>(`/contacts/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(contact),
-    });
-  }
+  delete: <T>(url: string, config?: AxiosRequestConfig) =>
+    api.delete<T>(url, config).then((res) => res.data),
+};
 
-  async deleteContact(id: string): Promise<ApiResponse<void>> {
-    return this.request<void>(`/contacts/${id}`, {
-      method: 'DELETE',
-    });
-  }
-}
+// ============================================================================
+// CRM API METHODS
+// ============================================================================
 
-// Create and export singleton instance
-export const api = new ApiService();
+/**
+ * Leads API
+ */
+export const LeadsAPI = {
+  /**
+   * List leads with pagination
+   * @param skip Number of items to skip
+   * @param take Number of items to take (limit)
+   * @returns Paginated leads response
+   */
+  list: (skip: number = 0, take: number = 50) =>
+    apiClient.get<LeadResponse>(`/leads?skip=${skip}&take=${take}`),
 
-// Initialize CSRF token on module load (for browser environment)
-if (typeof window !== 'undefined') {
-  api.initializeCsrf().catch(() => {
-    console.warn('Initial CSRF token fetch failed');
-  });
-}
+  /**
+   * Get a single lead by ID
+   * @param id Lead ID
+   * @returns Lead object
+   */
+  get: (id: string) => apiClient.get<Lead>(`/leads/${id}`),
+
+  /**
+   * Create a new lead
+   * @param data Lead data
+   * @returns Created lead
+   */
+  create: (data: any) => apiClient.post<Lead>('/leads', data),
+
+  /**
+   * Update an existing lead
+   * @param id Lead ID
+   * @param data Updated lead data
+   * @returns Updated lead
+   */
+  update: (id: string, data: any) => apiClient.put<Lead>(`/leads/${id}`, data),
+
+  /**
+   * Delete a lead
+   * @param id Lead ID
+   * @returns Deletion result
+   */
+  delete: (id: string) => apiClient.delete<{ success: boolean; message: string }>(`/leads/${id}`),
+};
+
+/**
+ * Contacts API
+ */
+export const ContactsAPI = {
+  /**
+   * List contacts with pagination
+   * @param skip Number of items to skip
+   * @param take Number of items to take (limit)
+   * @returns Paginated contacts response
+   */
+  list: (skip: number = 0, take: number = 50) =>
+    apiClient.get<ContactResponse>(`/contacts?skip=${skip}&take=${take}`),
+
+  /**
+   * Get a single contact by ID
+   * @param id Contact ID
+   * @returns Contact object
+   */
+  get: (id: string) => apiClient.get<Contact>(`/contacts/${id}`),
+
+  /**
+   * Create a new contact
+   * @param data Contact data
+   * @returns Created contact
+   */
+  create: (data: any) => apiClient.post<Contact>('/contacts', data),
+
+  /**
+   * Update an existing contact
+   * @param id Contact ID
+   * @param data Updated contact data
+   * @returns Updated contact
+   */
+  update: (id: string, data: any) => apiClient.put<Contact>(`/contacts/${id}`, data),
+
+  /**
+   * Delete a contact
+   * @param id Contact ID
+   * @returns Deletion result
+   */
+  delete: (id: string) =>
+    apiClient.delete<{ success: boolean; message: string }>(`/contacts/${id}`),
+};
+
+/**
+ * Deals API
+ */
+export const DealsAPI = {
+  /**
+   * List deals with pagination
+   * @param skip Number of items to skip
+   * @param take Number of items to take (limit)
+   * @returns Paginated deals response
+   */
+  list: (skip: number = 0, take: number = 50) =>
+    apiClient.get<DealResponse>(`/deals?skip=${skip}&take=${take}`),
+
+  /**
+   * Simplified Deal Creation
+   * @param data CreateDealSimpleDto
+   * @returns Created deal
+   */
+  createSimple: (data: CreateDealSimpleDto) => apiClient.post<Deal>('/deals/simple', data),
+
+  /**
+   * Get a single deal by ID
+   * @param id Deal ID
+   * @returns Deal object
+   */
+  get: (id: string) => apiClient.get<Deal>(`/deals/${id}`),
+
+  /**
+   * Update an existing deal
+   * @param id Deal ID
+   * @param data Updated deal data
+   * @returns Updated deal
+   */
+  update: (id: string, data: any) => apiClient.put<Deal>(`/deals/${id}`, data),
+
+  /**
+   * Delete a deal
+   * @param id Deal ID
+   * @returns Deletion result
+   */
+  delete: (id: string) => apiClient.delete<{ success: boolean; message: string }>(`/deals/${id}`),
+
+  /**
+   * Get pipeline performance metrics
+   * @param pipelineId Optional pipeline ID
+   * @returns Pipeline performance data
+   */
+  pipelinePerformance: (pipelineId?: string) =>
+    apiClient.get<any>(
+      `/deals/pipeline-performance${pipelineId ? `?pipelineId=${pipelineId}` : ''}`
+    ),
+};
+
+/**
+ * Dashboard API
+ */
+export const DashboardAPI = {
+  /**
+   * Get enhanced CRM dashboard statistics
+   * @returns Dashboard stats with pipeline/stage data
+   */
+  stats: () => apiClient.get<DashboardStats>('/dashboard/stats'),
+
+  /**
+   * Get pipeline performance for dashboard
+   * @param pipelineId Optional pipeline ID
+   * @returns Pipeline performance metrics
+   */
+  pipelinePerformance: (pipelineId?: string) =>
+    apiClient.get<any>(
+      `/dashboard/pipeline-performance${pipelineId ? `?pipelineId=${pipelineId}` : ''}`
+    ),
+};
+
+// Export for convenience
+export default api;

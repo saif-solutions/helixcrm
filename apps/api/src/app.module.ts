@@ -34,6 +34,9 @@ import { ComplianceModule } from './shared/compliance/compliance.module';
 // Performance monitoring (Week 3-4)
 import { PerformanceMetricsModule } from './shared/performance/performance-metrics.module';
 
+// Configuration validation
+import { ConfigValidationService } from './config/config-validation.service'; // ADD THIS IMPORT
+
 @Module({
   imports: [
     // ============ CORE INFRASTRUCTURE ============
@@ -87,7 +90,10 @@ import { PerformanceMetricsModule } from './shared/performance/performance-metri
 
   controllers: [AppController, HealthController],
 
-  providers: [AppService],
+  providers: [
+    AppService,
+    ConfigValidationService, // ADD THIS PROVIDER
+  ],
 
   exports: [
     // Export modules that might be used in tests or other contexts

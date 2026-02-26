@@ -1,5 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { XMarkIcon, CheckCircleIcon, ExclamationTriangleIcon, InformationCircleIcon, ExclamationCircleIcon } from '@heroicons/react/24/outline';
+import {
+  XMarkIcon,
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
+  InformationCircleIcon,
+  ExclamationCircleIcon,
+} from '@heroicons/react/24/outline';
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
 
@@ -42,13 +48,7 @@ const typeConfig = {
   },
 };
 
-export const Toast: React.FC<ToastProps> = ({ 
-  id, 
-  title, 
-  description, 
-  type, 
-  onDismiss 
-}) => {
+export const Toast: React.FC<ToastProps> = ({ id, title, description, type, onDismiss }) => {
   const [isExiting, setIsExiting] = useState(false);
   const config = typeConfig[type];
   const Icon = config.icon;
@@ -63,13 +63,13 @@ export const Toast: React.FC<ToastProps> = ({
 
   // Auto-dismiss on mouse leave if user hasn't hovered
   const [hasHovered, setHasHovered] = useState(false);
-  
+
   useEffect(() => {
     if (!hasHovered) {
       const timer = setTimeout(() => {
         handleDismiss();
       }, 5000); // Auto-dismiss after 5 seconds
-      
+
       return () => clearTimeout(timer);
     }
   }, [hasHovered]);
@@ -94,9 +94,7 @@ export const Toast: React.FC<ToastProps> = ({
           <Icon className={`h-5 w-5 ${config.iconColor}`} aria-hidden="true" />
         </div>
         <div className="ml-3 flex-1">
-          <h3 className={`text-sm font-medium ${config.textColor}`}>
-            {title}
-          </h3>
+          <h3 className={`text-sm font-medium ${config.textColor}`}>{title}</h3>
           {description && (
             <div className={`mt-1 text-sm ${config.textColor}`}>
               <p>{description}</p>
@@ -115,11 +113,11 @@ export const Toast: React.FC<ToastProps> = ({
           </button>
         </div>
       </div>
-      
+
       {/* Progress bar for auto-dismiss */}
       {!hasHovered && (
         <div className="absolute bottom-0 left-0 right-0 h-1 bg-current opacity-20">
-          <div 
+          <div
             className="h-full bg-current transition-all duration-5000 ease-linear"
             style={{ width: isExiting ? '0%' : '100%' }}
           />

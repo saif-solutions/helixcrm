@@ -1,9 +1,9 @@
-import { 
-  Button, 
-  PrimaryButton, 
-  SecondaryButton, 
-  GhostButton, 
-  DangerButton 
+import {
+  Button,
+  PrimaryButton,
+  SecondaryButton,
+  GhostButton,
+  DangerButton,
 } from '../components/atoms/Button';
 
 export function ButtonTestPage() {
@@ -11,7 +11,7 @@ export function ButtonTestPage() {
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold mb-8">Button Component Test</h1>
-        
+
         <div className="space-y-8">
           {/* Variants */}
           <section className="card">
@@ -36,13 +36,23 @@ export function ButtonTestPage() {
               <Button size="lg">Large</Button>
               <Button size="xl">Extra Large</Button>
             </div>
-            
+
             <div className="flex items-end gap-4 mt-4">
-              <Button size="xs" iconOnly>X</Button>
-              <Button size="sm" iconOnly>S</Button>
-              <Button size="md" iconOnly>M</Button>
-              <Button size="lg" iconOnly>L</Button>
-              <Button size="xl" iconOnly>XL</Button>
+              <Button size="xs" iconOnly>
+                X
+              </Button>
+              <Button size="sm" iconOnly>
+                S
+              </Button>
+              <Button size="md" iconOnly>
+                M
+              </Button>
+              <Button size="lg" iconOnly>
+                L
+              </Button>
+              <Button size="xl" iconOnly>
+                XL
+              </Button>
             </div>
           </section>
 
@@ -53,7 +63,9 @@ export function ButtonTestPage() {
               <Button>Normal</Button>
               <Button loading>Loading</Button>
               <Button disabled>Disabled</Button>
-              <Button fullWidth className="mt-2">Full Width</Button>
+              <Button fullWidth className="mt-2">
+                Full Width
+              </Button>
             </div>
           </section>
 
@@ -66,7 +78,7 @@ export function ButtonTestPage() {
               <Button leftIcon={<span>✓</span>} rightIcon={<span>↗</span>}>
                 Save & Continue
               </Button>
-              
+
               <div className="flex gap-2 mt-2">
                 <Button iconOnly aria-label="Settings">
                   <span>⚙</span>
@@ -101,7 +113,7 @@ export function ButtonTestPage() {
                 <SecondaryButton>Cancel</SecondaryButton>
                 <DangerButton>Delete</DangerButton>
               </div>
-              
+
               <div className="text-sm text-gray-600 mt-4">
                 <p>✅ Button component is working with your design system!</p>
                 <p>✅ Uses CSS variables from your tokens</p>

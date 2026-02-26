@@ -7,16 +7,16 @@ import { IconSize, IconColor } from './Icon.types';
 export const iconTokens = {
   // Size tokens (width/height in pixels)
   size: {
-    xs: 12,   // w-3 h-3
-    sm: 16,   // w-4 h-4
-    md: 20,   // w-5 h-5
-    lg: 24,   // w-6 h-6
-    xl: 32,   // w-8 h-8
+    xs: 12, // w-3 h-3
+    sm: 16, // w-4 h-4
+    md: 20, // w-5 h-5
+    lg: 24, // w-6 h-6
+    xl: 32, // w-8 h-8
     '2xl': 40, // w-10 h-10
     '3xl': 48, // w-12 h-12
     '4xl': 64, // w-16 h-16
   },
-  
+
   // Stroke width tokens
   strokeWidth: {
     thin: 1,
@@ -25,7 +25,7 @@ export const iconTokens = {
     medium: 2.5,
     bold: 3,
   },
-  
+
   // Animation duration tokens
   animation: {
     spin: '1s linear infinite',
@@ -33,7 +33,7 @@ export const iconTokens = {
     ping: '1s cubic-bezier(0, 0, 0.2, 1) infinite',
     bounce: '1s infinite',
   },
-  
+
   // Border radius tokens
   borderRadius: {
     none: 'rounded-none',
@@ -42,7 +42,7 @@ export const iconTokens = {
     lg: 'rounded-lg',
     full: 'rounded-full',
   },
-  
+
   // Spacing tokens for icon groups
   spacing: {
     xs: '0.25rem',
@@ -57,12 +57,8 @@ export const iconTokens = {
  */
 export const iconClasses = {
   // Base classes (applied to all icons)
-  base: [
-    'inline-block',
-    'transition-all',
-    'duration-200',
-  ].join(' '),
-  
+  base: ['inline-block', 'transition-all', 'duration-200'].join(' '),
+
   // Size classes (width and height)
   size: {
     xs: 'w-3 h-3',
@@ -74,7 +70,7 @@ export const iconClasses = {
     '3xl': 'w-12 h-12',
     '4xl': 'w-16 h-16',
   },
-  
+
   // Color classes (text colors with dark mode support)
   color: {
     current: 'text-current',
@@ -97,7 +93,7 @@ export const iconClasses = {
     purple: 'text-purple-600 dark:text-purple-400',
     pink: 'text-pink-600 dark:text-pink-400',
   },
-  
+
   // Animation classes
   animation: {
     spin: 'animate-spin',
@@ -105,14 +101,14 @@ export const iconClasses = {
     ping: 'animate-ping',
     bounce: 'animate-bounce',
   },
-  
+
   // State classes
   state: {
     disabled: 'opacity-40 cursor-not-allowed',
     interactive: 'cursor-pointer hover:opacity-80 active:opacity-70',
     loading: 'relative',
   },
-  
+
   // Variant classes
   variant: {
     outline: 'fill-none',
@@ -120,14 +116,14 @@ export const iconClasses = {
     duotone: 'fill-current opacity-50',
     twotone: 'fill-current',
   },
-  
+
   // Transform classes
   transform: {
     flipHorizontal: 'scale-x[-1]',
     flipVertical: 'scale-y[-1]',
     flipBoth: 'scale-[-1]',
   },
-  
+
   // SVG-specific classes
   svg: {
     base: 'stroke-current',
@@ -137,7 +133,7 @@ export const iconClasses = {
     medium: 'stroke-[2.5]',
     bold: 'stroke-[3]',
   },
-  
+
   // Badge classes
   badge: {
     base: 'absolute flex items-center justify-center min-w-[1rem] h-4 px-1 text-xs font-semibold text-white rounded-full',
@@ -149,7 +145,7 @@ export const iconClasses = {
     muted: 'bg-gray-600',
     current: 'bg-current',
   },
-  
+
   // Tooltip classes
   tooltip: {
     base: 'absolute z-50 px-2 py-1 text-xs font-medium text-white bg-gray-900 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap',
@@ -169,27 +165,30 @@ export function getIconClasses(
   const classes = [
     // Base classes
     iconClasses.base,
-    
+
     // Size
     iconClasses.size[size],
-    
+
     // Color
     iconClasses.color[color],
-    
+
     // Animation
     spin ? iconClasses.animation.spin : '',
-    
+
     // Custom classes
     className || '',
   ];
-  
+
   return classes.filter(Boolean).join(' ');
 }
 
 /**
  * Utility function to get SVG-specific classes
  */
-export function getSvgClasses(weight?: 'thin' | 'light' | 'regular' | 'medium' | 'bold', className?: string): string {
+export function getSvgClasses(
+  weight?: 'thin' | 'light' | 'regular' | 'medium' | 'bold',
+  className?: string
+): string {
   const weightClasses = {
     thin: iconClasses.svg.thin,
     light: iconClasses.svg.light,
@@ -197,27 +196,25 @@ export function getSvgClasses(weight?: 'thin' | 'light' | 'regular' | 'medium' |
     medium: iconClasses.svg.medium,
     bold: iconClasses.svg.bold,
   };
-  
-  const classes = [
-    iconClasses.svg.base,
-    weight ? weightClasses[weight] : '',
-    className || '',
-  ];
-  
+
+  const classes = [iconClasses.svg.base, weight ? weightClasses[weight] : '', className || ''];
+
   return classes.filter(Boolean).join(' ');
 }
 
 /**
  * Get badge position classes
  */
-export function getBadgePositionClasses(position: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left'): string {
+export function getBadgePositionClasses(
+  position: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left'
+): string {
   const positionClasses = {
     'top-right': 'top-0 right-0 transform translate-x-1/2 -translate-y-1/2',
     'top-left': 'top-0 left-0 transform -translate-x-1/2 -translate-y-1/2',
     'bottom-right': 'bottom-0 right-0 transform translate-x-1/2 translate-y-1/2',
     'bottom-left': 'bottom-0 left-0 transform -translate-x-1/2 translate-y-1/2',
   };
-  
+
   return positionClasses[position];
 }
 
@@ -234,14 +231,14 @@ export function getTooltipPositionClasses(position: 'top' | 'right' | 'bottom' |
     bottom: 'top-full left-1/2 transform -translate-x-1/2 mt-1',
     left: 'top-1/2 right-full transform -translate-y-1/2 mr-1',
   };
-  
+
   const arrowClasses = {
     top: 'top-full left-1/2 -translate-x-1/2 -mt-1',
     right: 'top-1/2 left-0 -translate-y-1/2 -ml-1',
     bottom: 'bottom-full left-1/2 -translate-x-1/2 -mb-1',
     left: 'top-1/2 right-0 -translate-y-1/2 -mr-1',
   };
-  
+
   return {
     container: containerClasses[position],
     arrow: arrowClasses[position],
@@ -368,7 +365,7 @@ export function getStrokeWidth(size: IconSize = 'md'): number {
     '3xl': 3,
     '4xl': 3,
   };
-  
+
   return strokeWidths[size];
 }
 
@@ -376,14 +373,14 @@ export function getStrokeWidth(size: IconSize = 'md'): number {
  * Create SVG element from path data (for server-side rendering)
  */
 export function createIconSvg(
-  pathData: typeof iconPaths[keyof typeof iconPaths],
+  pathData: (typeof iconPaths)[keyof typeof iconPaths],
   size: IconSize = 'md',
   color: IconColor = 'current',
   className?: string
 ): string {
   const sizePx = iconTokens.size[size];
   const strokeWidth = getStrokeWidth(size);
-  
+
   return `
     <svg 
       class="${getIconClasses(size, color, false, className)}" 

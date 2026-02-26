@@ -6,7 +6,7 @@ export type LoadingSpinnerProps = {
   className?: string;
 };
 
-export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ 
+export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   size = 'md',
   color = 'primary',
   className = '',
@@ -17,7 +17,7 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
     lg: 'h-12 w-12 border-4',
     xl: 'h-16 w-16 border-4',
   };
-  
+
   const colorClasses = {
     primary: 'border-neutral-200 border-t-primary-500',
     neutral: 'border-neutral-200 border-t-neutral-600',
@@ -25,7 +25,7 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   };
 
   return (
-    <div 
+    <div
       data-testid="loading-spinner"
       className={`
         rounded-full animate-spin

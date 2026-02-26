@@ -38,7 +38,7 @@ export const Variants = () => (
       <Button variant="success">Success</Button>
       <Button variant="warning">Warning</Button>
     </div>
-    
+
     <div className="text-sm text-gray-500 mt-2">
       Each variant has appropriate styling for its purpose
     </div>
@@ -55,13 +55,23 @@ export const Sizes = () => (
       <Button size="lg">Large</Button>
       <Button size="xl">Extra Large</Button>
     </div>
-    
+
     <div className="flex items-end gap-4">
-      <Button size="xs" iconOnly>X</Button>
-      <Button size="sm" iconOnly>S</Button>
-      <Button size="md" iconOnly>M</Button>
-      <Button size="lg" iconOnly>L</Button>
-      <Button size="xl" iconOnly>XL</Button>
+      <Button size="xs" iconOnly>
+        X
+      </Button>
+      <Button size="sm" iconOnly>
+        S
+      </Button>
+      <Button size="md" iconOnly>
+        M
+      </Button>
+      <Button size="lg" iconOnly>
+        L
+      </Button>
+      <Button size="xl" iconOnly>
+        XL
+      </Button>
     </div>
   </div>
 );
@@ -76,7 +86,7 @@ export const WithIcons = () => (
         Save & Continue
       </Button>
     </div>
-    
+
     <div className="flex items-center gap-4">
       <Button iconOnly aria-label="Settings">
         <span>⚙</span>
@@ -99,7 +109,7 @@ export const States = () => (
       <Button loading>Loading</Button>
       <Button disabled>Disabled</Button>
     </div>
-    
+
     <div className="flex items-center gap-4">
       <Button fullWidth>Full Width Button</Button>
     </div>
@@ -115,7 +125,7 @@ export const PredefinedButtons = () => (
       <GhostButton>Ghost Button</GhostButton>
       <DangerButton>Danger Button</DangerButton>
     </div>
-    
+
     <div className="text-sm text-gray-500">
       These are pre-configured button components for consistent usage
     </div>
@@ -133,21 +143,31 @@ export const UsageExamples = () => (
         <DangerButton>Delete Account</DangerButton>
       </div>
     </div>
-    
+
     <div>
       <h3 className="text-lg font-semibold mb-2">Data Table Actions</h3>
       <div className="flex items-center gap-2">
-        <Button size="sm" leftIcon={<span>✏</span>}>Edit</Button>
-        <Button size="sm" variant="ghost" leftIcon={<span>👁</span>}>View</Button>
-        <Button size="sm" variant="danger" leftIcon={<span>🗑</span>}>Delete</Button>
+        <Button size="sm" leftIcon={<span>✏</span>}>
+          Edit
+        </Button>
+        <Button size="sm" variant="ghost" leftIcon={<span>👁</span>}>
+          View
+        </Button>
+        <Button size="sm" variant="danger" leftIcon={<span>🗑</span>}>
+          Delete
+        </Button>
       </div>
     </div>
-    
+
     <div>
       <h3 className="text-lg font-semibold mb-2">Navigation</h3>
       <div className="flex items-center gap-3">
-        <Button variant="ghost" leftIcon={<span>←</span>}>Previous</Button>
-        <Button variant="ghost" rightIcon={<span>→</span>}>Next</Button>
+        <Button variant="ghost" leftIcon={<span>←</span>}>
+          Previous
+        </Button>
+        <Button variant="ghost" rightIcon={<span>→</span>}>
+          Next
+        </Button>
         <PrimaryButton rightIcon={<span>↗</span>}>Submit Application</PrimaryButton>
       </div>
     </div>

@@ -5,67 +5,67 @@ import * as React from 'react';
  * Main Button component props with comprehensive JSDoc
  */
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  /** 
+  /**
    * Button visual variant
    * @default 'primary'
    */
   variant?: ButtonVariant;
-  
-  /** 
+
+  /**
    * Button size
    * @default 'md'
    */
   size?: ButtonSize;
-  
-  /** 
+
+  /**
    * Display button as full width (100% of container)
    * @default false
    */
   fullWidth?: boolean;
-  
-  /** 
+
+  /**
    * Display loading state with spinner
    * @default false
    */
   loading?: boolean;
-  
-  /** 
+
+  /**
    * Icon element to display before text
    */
   leftIcon?: React.ReactNode;
-  
-  /** 
+
+  /**
    * Icon element to display after text
    */
   rightIcon?: React.ReactNode;
-  
-  /** 
+
+  /**
    * Display only icon (button becomes square, hides text)
    * @default false
    */
   iconOnly?: boolean;
-  
-  /** 
+
+  /**
    * Custom CSS class name
    */
   className?: string;
-  
-  /** 
+
+  /**
    * Button content (text or elements)
    */
   children: React.ReactNode;
-  
-  /** 
+
+  /**
    * Data attribute for testing (testing-library)
    */
   'data-testid'?: string;
-  
-  /** 
+
+  /**
    * Data attribute for analytics tracking
    */
   'data-analytics'?: string;
-  
-  /** 
+
+  /**
    * Data attribute for Cypress testing
    */
   'data-cy'?: string;
@@ -74,12 +74,12 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 /**
  * Button visual variants
  */
-export type ButtonVariant = 
-  | 'primary' 
-  | 'secondary' 
-  | 'ghost' 
-  | 'danger' 
-  | 'success' 
+export type ButtonVariant =
+  | 'primary'
+  | 'secondary'
+  | 'ghost'
+  | 'danger'
+  | 'success'
   | 'warning'
   | 'outline'
   | 'link';
@@ -95,13 +95,13 @@ export type ButtonSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 export interface ButtonAccessibilityProps {
   /** ARIA label for screen readers (alternative to visible text) */
   'aria-label'?: string;
-  
+
   /** ARIA description for additional context */
   'aria-describedby'?: string;
-  
+
   /** ARIA live region for dynamic content */
   'aria-live'?: 'polite' | 'assertive' | 'off';
-  
+
   /** ARIA busy state for loading */
   'aria-busy'?: boolean;
 }
@@ -112,10 +112,10 @@ export interface ButtonAccessibilityProps {
 export interface ButtonState {
   /** Whether button is currently pressed */
   isPressed: boolean;
-  
+
   /** Whether button is focused */
   isFocused: boolean;
-  
+
   /** Whether button is hovered */
   isHovered: boolean;
 }

@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { JwtModule } from '@nestjs/jwt'; // ADD THIS IMPORT
 import { DashboardService } from './dashboard.service';
 import { DashboardController } from './dashboard.controller';
 import { DashboardRepository } from './repositories/dashboard.repository';
@@ -8,14 +9,17 @@ import { PermissionContextService } from '../../shared/permissions/context/permi
 import { AuditLogService } from '../../shared/audit-log/audit-log.service';
 
 @Module({
-  imports: [LoggingModule],
+  imports: [
+    LoggingModule,
+    JwtModule, // ADD THIS TO IMPORTS ARRAY
+  ],
   controllers: [DashboardController],
   providers: [
     DashboardService,
-    DashboardRepository, // ✅ ADDED
-    TenantContextService, // ✅ ADDED
-    PermissionContextService, // ✅ ADDED
-    AuditLogService, // ✅ ADDED
+    DashboardRepository,
+    TenantContextService,
+    PermissionContextService,
+    AuditLogService,
   ],
   exports: [DashboardService],
 })

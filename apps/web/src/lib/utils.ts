@@ -4,7 +4,7 @@
  * Combines multiple class names
  */
 export function cn(...classes: (string | number | boolean | undefined | null)[]): string {
-  return classes.filter(c => c != null && c !== false).join(' ');
+  return classes.filter((c) => c != null && c !== false).join(' ');
 }
 
 /**
@@ -86,7 +86,7 @@ export function setCssVariable(name: string, value: string): void {
  * Sleep for a given number of milliseconds
  */
 export function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
@@ -124,7 +124,7 @@ export function isValidEmail(email: string): boolean {
 export function getInitials(name: string): string {
   return name
     .split(' ')
-    .map(word => word[0])
+    .map((word) => word[0])
     .join('')
     .toUpperCase()
     .slice(0, 2);

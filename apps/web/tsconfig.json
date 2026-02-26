@@ -1,21 +1,119 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "useDefineForClassFields": true,
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    /* ==================== LANGUAGE & ENVIRONMENT ==================== */
+    "target": "ES2022",
+    "lib": ["DOM", "DOM.Iterable", "ES2022"],
+    
+    /* React 19 JSX Configuration */
+    "jsx": "react-jsx",
+    "jsxImportSource": "react",
+    
+    /* ==================== MODULES ==================== */
     "module": "ESNext",
-    "skipLibCheck": true,
     "moduleResolution": "bundler",
-    "allowImportingTsExtensions": false,
+    "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "noEmit": false,
-    "jsx": "react-jsx",
+    "noEmit": true,
+    
+    /* Vite-specific module support */
+    "moduleDetection": "force",
+    "allowArbitraryExtensions": true,
+    
+    /* ==================== INTEROP CONSTRAINTS ==================== */
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    
+    /* ==================== TYPE CHECKING ==================== */
     "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "noImplicitThis": true,
+    "useUnknownInCatchVariables": true,
+    "alwaysStrict": true,
+    "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
-    "types": ["vitest/globals", "@testing-library/jest-dom", "vite/client"]
+    
+    /* ==================== COMPLETENESS ==================== */
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    
+    /* ==================== EMIT ==================== */
+    "sourceMap": true,
+    "inlineSources": false,
+    
+    /* ==================== ADVANCED ==================== */
+    "incremental": true,
+    "tsBuildInfoFile": "./node_modules/.tsbuildinfo",
+    "disableSourceOfProjectReferenceRedirect": false,
+    "disableSolutionSearching": false,
+    "disableReferencedProjectLoad": false,
+    
+    /* ==================== PATHS & ALIASES ==================== */
+    "baseUrl": "./src",
+    "paths": {
+      // Base alias
+      "@/*": ["./*"],
+      
+      // Atomic Design aliases (MUST match vite.config.ts)
+      "@atoms/*": ["./components/atoms/*"],
+      "@molecules/*": ["./components/molecules/*"],
+      "@organisms/*": ["./components/organisms/*"],
+      "@feedback/*": ["./components/feedback/*"],
+      "@layout/*": ["./components/layout/*"],
+      
+      // Feature aliases (MUST match vite.config.ts)
+      "@pages/*": ["./pages/*"],
+      "@services/*": ["./services/*"],
+      "@lib/*": ["./lib/*"],
+      "@stores/*": ["./stores/*"],
+      "@providers/*": ["./providers/*"],
+      "@hooks/*": ["./hooks/*"],
+      "@utils/*": ["./utils/*"],
+      "@contexts/*": ["./contexts/*"],
+      "@auth/*": ["./components/auth/*"],
+      "@contacts/*": ["./components/contacts/*"]
+    },
+    
+    /* ==================== TYPES ==================== */
+    "types": ["vite/client", "node", "@testing-library/jest-dom"],
+    
+    /* ==================== OUTPUT FORMATTING ==================== */
+    "pretty": true,
+    "newLine": "lf",
+    
+    /* ==================== PERFORMANCE ==================== */
+    "assumeChangesOnlyAffectDirectDependencies": true
   },
-  "include": ["src"],
+  
+  /* ==================== INCLUDE/EXCLUDE ==================== */
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "src/**/*.d.ts",
+    "vite-env.d.ts",
+    "vite.config.ts",
+    "vitest.config.ts",
+    "vitest.setup.ts"
+  ],
+  
+  "exclude": [
+    "node_modules",
+    "dist",
+    "build",
+    "coverage",
+    ".storybook",
+    "**/*.stories.tsx",
+    "**/*.test.tsx",
+    "**/*.spec.tsx",
+    "**/*.bak",
+    "temp",
+    "**/__tests__/**",
+    "**/__mocks__/**",
+    "**/*.zip"
+  ]
 }

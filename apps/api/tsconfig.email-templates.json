@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "src/modules/email-templates/**/*.ts",
+    "src/shared/tenant/**/*.ts",
+    "src/shared/permissions/**/*.ts",
+    "src/shared/audit-log/**/*.ts",
+    "src/shared/prisma/**/*.ts",
+    "src/shared/database/**/*.ts"
+  ],
+  "exclude": ["node_modules", "dist", "**/*.spec.ts", "**/*.test.ts"]
+}

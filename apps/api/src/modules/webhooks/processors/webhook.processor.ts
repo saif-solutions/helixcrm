@@ -1,5 +1,5 @@
 // src/modules/webhooks/processors/webhook.processor.ts
-import { Processor } from '@nestjs/bullmq';
+import { Processor, WorkerHost } from '@nestjs/bullmq'; // CHANGE THIS IMPORT
 import { Job } from 'bullmq';
 import { Logger } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
@@ -22,16 +22,18 @@ interface WebhookDeliveryJobData {
 }
 
 @Processor('webhook-queue', { concurrency: 5 }) // Process 5 webhooks concurrently
-export class WebhookProcessor {
+export class WebhookProcessor extends WorkerHost { // EXTEND WorkerHost
   private readonly logger = new Logger(WebhookProcessor.name);
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly webhookRepository: WebhookRepository,
     private readonly auditLogService: AuditLogService,
-  ) {}
+  ) {
+    super(); // CALL super()
+  }
 
-  // BullMQ will call this method for jobs in the queue
+  // BullMQ requires this method name for processing
   async process(job: Job<WebhookDeliveryJobData>): Promise<any> {
     const {
       deliveryId,
@@ -177,7 +179,6 @@ export class WebhookProcessor {
       throw error;
     }
   }
-
   /**
    * Prepare HTTP request configuration
    */

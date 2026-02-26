@@ -1,16 +1,25 @@
 // File: apps/api/src/modules/auth/auth.module.ts
+
 import { Module, forwardRef } from '@nestjs/common';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { JwtModule } from '@nestjs/jwt';
+import { PassportModule } from '@nestjs/passport';
+
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+
 import { PasswordResetController } from './controllers/password-reset.controller';
 import { PasswordResetService } from './services/password-reset.service';
 import { AccountLockoutService } from './services/account-lockout.service';
 import { RefreshTokenService } from './services/refresh-token.service';
+
+import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
+
 import { RefreshTokenGuard } from './guards/refresh-token.guard';
-import { AuditLogsModule } from '../audit-logs/audit-logs.module'; // Note: plural 'AuditLogsModule'
+
+import { AuditLogsModule } from '../audit-logs/audit-logs.module';
+
 import { AuthCoreAdapter } from './adapters/AuthCoreAdapter';
 import { PrismaUserRepositoryBridge } from './adapters/PrismaUserRepositoryBridge';
 import { PrismaTokenRepositoryBridge } from './adapters/PrismaTokenRepositoryBridge';
@@ -21,34 +30,46 @@ export const TOKEN_REPOSITORY = 'TOKEN_REPOSITORY';
 
 @Module({
   imports: [
+    PassportModule, // ✅ REQUIRED for strategies to work correctly
+
     ThrottlerModule.forRoot({
       ttl: 60000,
       limit: 10,
     }),
-    forwardRef(() => AuditLogsModule), // Circular dependency resolved with forwardRef
+
+    forwardRef(() => AuditLogsModule),
+
     JwtModule.register({
-      secret: process.env.JWT_SECRET || 'defaultSecret',
+      secret: process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET || 'dev_secret_do_not_use',
       signOptions: { expiresIn: '1h' },
     }),
   ],
-  controllers: [AuthController, PasswordResetController],
+
+  controllers: [
+    AuthController,
+    PasswordResetController,
+  ],
+
   providers: [
-    // Core Services
+    // ================= CORE SERVICES =================
     AuthService,
     PasswordResetService,
     AccountLockoutService,
     RefreshTokenService,
 
-    // Guards and Strategies
+    // ================= STRATEGIES (CRITICAL) =================
+    JwtStrategy,          // ✅ FIXES "Unknown authentication strategy jwt"
     JwtRefreshStrategy,
+
+    // ================= GUARDS =================
     RefreshTokenGuard,
 
-    // Adapters and Bridges - Concrete implementations
+    // ================= ADAPTERS / BRIDGES =================
     AuthCoreAdapter,
     PrismaUserRepositoryBridge,
     PrismaTokenRepositoryBridge,
 
-    // Abstract tokens for dependency injection flexibility
+    // ================= INJECTION TOKENS =================
     {
       provide: USER_REPOSITORY,
       useClass: PrismaUserRepositoryBridge,
@@ -58,14 +79,14 @@ export const TOKEN_REPOSITORY = 'TOKEN_REPOSITORY';
       useClass: PrismaTokenRepositoryBridge,
     },
   ],
+
   exports: [
     AuthService,
     AuthCoreAdapter,
-    PrismaUserRepositoryBridge,
-    PrismaTokenRepositoryBridge,
     USER_REPOSITORY,
     TOKEN_REPOSITORY,
-    JwtModule, // Export JwtModule so JwtService is available elsewhere
+    JwtModule,
+    PassportModule,
   ],
 })
 export class AuthModule {}

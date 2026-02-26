@@ -8,7 +8,8 @@ export default {
       control: 'select',
       options: ['default', 'success', 'error', 'warning'],
     },
-    size: { // Changed from inputSize to size
+    size: {
+      // Changed from inputSize to size
       control: 'select',
       options: ['sm', 'md', 'lg'],
     },
@@ -48,39 +49,29 @@ export const Sizes = () => (
 // With icons
 export const WithIcons = () => (
   <div className="flex flex-col gap-4 max-w-md">
-    <Input 
-      leftIcon={<span>🔍</span>} 
-      placeholder="Search..." 
-    />
-    <Input 
-      rightIcon={<span>@</span>} 
-      placeholder="Username" 
-    />
-    <Input 
-      leftIcon={<span>$</span>} 
-      rightIcon={<span>USD</span>} 
-      placeholder="Amount" 
-    />
+    <Input leftIcon={<span>🔍</span>} placeholder="Search..." />
+    <Input rightIcon={<span>@</span>} placeholder="Username" />
+    <Input leftIcon={<span>$</span>} rightIcon={<span>USD</span>} placeholder="Amount" />
   </div>
 );
 
 // With labels and helper text
 export const WithLabels = () => (
   <div className="flex flex-col gap-6 max-w-md">
-    <Input 
+    <Input
       label="Email Address"
       placeholder="you@example.com"
       helperText="We'll never share your email."
     />
-    
-    <Input 
+
+    <Input
       label="Password"
       type="password"
       placeholder="Enter password"
       helperText="Must be at least 8 characters."
     />
-    
-    <Input 
+
+    <Input
       label="Username"
       placeholder="Choose a username"
       error="Username is already taken"
@@ -115,31 +106,16 @@ export const UsageExamples = () => (
     <div>
       <h3 className="text-lg font-semibold mb-3">Login Form</h3>
       <div className="space-y-4">
-        <EmailInput 
-          label="Email" 
-          placeholder="you@example.com"
-          required
-          fullWidth
-        />
-        <PasswordInput 
-          label="Password" 
-          placeholder="Enter your password"
-          required
-          fullWidth
-        />
+        <EmailInput label="Email" placeholder="you@example.com" required fullWidth />
+        <PasswordInput label="Password" placeholder="Enter your password" required fullWidth />
       </div>
     </div>
-    
+
     <div>
       <h3 className="text-lg font-semibold mb-3">Contact Form</h3>
       <div className="space-y-4">
-        <TextInput 
-          label="Full Name" 
-          placeholder="John Doe"
-          required
-          fullWidth
-        />
-        <Input 
+        <TextInput label="Full Name" placeholder="John Doe" required fullWidth />
+        <Input
           label="Phone Number"
           leftIcon={<span>📞</span>}
           placeholder="(123) 456-7890"
@@ -147,27 +123,19 @@ export const UsageExamples = () => (
         />
       </div>
     </div>
-    
+
     <div>
       <h3 className="text-lg font-semibold mb-3">Payment Form</h3>
       <div className="space-y-4">
-        <Input 
+        <Input
           label="Card Number"
           leftIcon={<span>💳</span>}
           placeholder="1234 5678 9012 3456"
           fullWidth
         />
         <div className="grid grid-cols-2 gap-4">
-          <Input 
-            label="Expiry Date"
-            placeholder="MM/YY"
-            fullWidth
-          />
-          <Input 
-            label="CVV"
-            placeholder="123"
-            fullWidth
-          />
+          <Input label="Expiry Date" placeholder="MM/YY" fullWidth />
+          <Input label="CVV" placeholder="123" fullWidth />
         </div>
       </div>
     </div>

@@ -1,0 +1,845 @@
+{
+  "files": {
+    "history\\2026\\01\\governance\\00-master\\DOCUMENT_GOVERNANCE.md": {
+      "hash": "fb1154d90eb564edc8900a7e3d441a0a559fbf24deaa23af369082d8db0a3dc7",
+      "size": 5748,
+      "timestamp": "2026-02-13T08:52:27.004Z",
+      "archivedAt": "2026-02-13T11:24:48.214Z"
+    },
+    "history\\2026\\01\\governance\\00-master\\HELIX_Enterprise-Operational_Canonical_SSOT.md": {
+      "hash": "0a6933c338ff572616d6e77ac0aec9bcf3628dd3bbb885d8bc00ef98b75cfb0b",
+      "size": 10534,
+      "timestamp": "2026-02-13T08:52:27.014Z",
+      "archivedAt": "2026-02-13T11:24:48.235Z"
+    },
+    "history\\2026\\01\\governance\\00-master\\HELIX_PLATFORM_FLAGSHIP-Strategic_Reference.md": {
+      "hash": "632b194dec3f601c6c4b23e4c3f99797d812d3ed1afbf0448b08c372eeefc6e1",
+      "size": 16592,
+      "timestamp": "2026-02-13T08:52:27.014Z",
+      "archivedAt": "2026-02-13T11:24:48.253Z"
+    },
+    "history\\2026\\01\\governance\\00-master\\README.md": {
+      "hash": "cc9fb9d8605339297c780125f3b53d130f1463dfad30eafe705a9646bfeb4871",
+      "size": 2678,
+      "timestamp": "2026-02-13T08:52:27.016Z",
+      "archivedAt": "2026-02-13T11:24:48.265Z"
+    },
+    "history\\2026\\01\\legacy-docs\\add_version_comment.sh": {
+      "hash": "66d5c3ff6753fcbabc66fe37193cd3f666595cd1b44110d874d766e27d9d34b8",
+      "size": 393,
+      "timestamp": "2026-02-13T08:52:31.701Z",
+      "archivedAt": "2026-02-13T11:24:48.275Z"
+    },
+    "history\\2026\\01\\legacy-docs\\clear_and_restart.sh": {
+      "hash": "164dcbca97c41d6e7a3bfb0e2472ea3aa8a7359ab46abab2d60eda7996766a88",
+      "size": 1570,
+      "timestamp": "2026-02-13T08:52:31.717Z",
+      "archivedAt": "2026-02-13T11:24:48.293Z"
+    },
+    "history\\2026\\01\\legacy-docs\\complete_reset.sh": {
+      "hash": "6d6476d5ab34706263097552488d857552bf37c5b002236183e0182e58fe9893",
+      "size": 1940,
+      "timestamp": "2026-02-13T08:52:31.733Z",
+      "archivedAt": "2026-02-13T11:24:48.309Z"
+    },
+    "history\\2026\\01\\legacy-docs\\install-ux-foundation.sh": {
+      "hash": "17f6b703c22609bd44c2ef3f85972279fccbeec0750a16c4fb7cb98bfc692353",
+      "size": 1584,
+      "timestamp": "2026-02-13T08:52:31.749Z",
+      "archivedAt": "2026-02-13T11:24:48.327Z"
+    },
+    "history\\2026\\01\\phase1\\COMPONENT_STANDARDS.md": {
+      "hash": "cf8506b7301b2b58126f994bef6944828b58cea2ff7d9b04e54c7fb02716e161",
+      "size": 33370,
+      "timestamp": "2026-02-13T08:52:27.636Z",
+      "archivedAt": "2026-02-13T11:24:48.356Z"
+    },
+    "history\\2026\\01\\phase1\\DAILY_STANDUP_TEMPLATE.md": {
+      "hash": "4843433f2b0b636965c01dedfd11ddcf2ce73519c436d5112bec56474605492f",
+      "size": 690,
+      "timestamp": "2026-02-13T08:52:27.668Z",
+      "archivedAt": "2026-02-13T11:24:48.370Z"
+    },
+    "history\\2026\\01\\phase1\\PHASE1_CHECKPOINT_1.md": {
+      "hash": "b1b1ba22e4831e3a9d93046def5f845cf8a2351576cf25a5006a4145dfac94a2",
+      "size": 3030,
+      "timestamp": "2026-02-13T08:52:27.686Z",
+      "archivedAt": "2026-02-13T11:24:48.385Z"
+    },
+    "history\\2026\\01\\phase1\\PHASE1_EXECUTION_CHARTER.md": {
+      "hash": "047ae4935b478b7e51103d3a0f85d532e132e53c9c771ab06ad157ab8e91cf7c",
+      "size": 6647,
+      "timestamp": "2026-02-13T08:52:27.715Z",
+      "archivedAt": "2026-02-13T11:24:48.405Z"
+    },
+    "history\\2026\\01\\phase1\\PHASE1_PROGRESS.md": {
+      "hash": "a55690672a0e5447bf9e527ba12705c6d8876f91590f39ec24f45b2c08142e65",
+      "size": 3932,
+      "timestamp": "2026-02-13T08:52:27.731Z",
+      "archivedAt": "2026-02-13T11:24:48.419Z"
+    },
+    "history\\2026\\01\\phase1\\PHASE1_STATUS.md": {
+      "hash": "00a1d6e0b7de81786b72ae6e7ecba29fe447c7224b811c7e0518541174af0a54",
+      "size": 2265,
+      "timestamp": "2026-02-13T08:52:27.747Z",
+      "archivedAt": "2026-02-13T11:24:48.433Z"
+    },
+    "history\\2026\\01\\phase1\\PHASE1_TEAM_ACKNOWLEDGMENT.md": {
+      "hash": "6f87e1a53d0ef88b1c7dd74e6e841cff2f6a42ab6574d786c4ad23e0f9807e5f",
+      "size": 912,
+      "timestamp": "2026-02-13T08:52:27.763Z",
+      "archivedAt": "2026-02-13T11:24:48.443Z"
+    },
+    "history\\2026\\01\\phase1\\PHASE1_WORKSTREAM_A_COMPLETE.md": {
+      "hash": "9d222d6cfa0719bf40844ce0b654df32574f6b62e59d07842fe61bd42f2a800f",
+      "size": 3920,
+      "timestamp": "2026-02-13T08:52:27.779Z",
+      "archivedAt": "2026-02-13T11:24:48.456Z"
+    },
+    "history\\2026\\01\\phase1\\PHASE1_WORKSTREAM_B_COMPLETE.md": {
+      "hash": "8ec91b6cdeb420407cd76402d7e9b6ab27ff4350608e21de5a34925fdcc34586",
+      "size": 3739,
+      "timestamp": "2026-02-13T08:52:27.794Z",
+      "archivedAt": "2026-02-13T11:24:48.473Z"
+    },
+    "history\\2026\\01\\phase1-workstreams\\BACKEND_TASKS.md": {
+      "hash": "306644c1b6c0402b233adf1016a8693b6cdbdcf64e30bcb0c2620957f7d42573",
+      "size": 1015,
+      "timestamp": "2026-02-13T08:52:27.842Z",
+      "archivedAt": "2026-02-13T11:24:48.485Z"
+    },
+    "history\\2026\\01\\phase1-workstreams\\SECURITY_TASKS.md": {
+      "hash": "201bccb5c34457d84ac9374310784b778e5f77b506a1f17246a724c733ad876a",
+      "size": 962,
+      "timestamp": "2026-02-13T08:52:27.858Z",
+      "archivedAt": "2026-02-13T11:24:48.497Z"
+    },
+    "history\\2026\\01\\pilot\\FINAL-PILOT-READINESS.md": {
+      "hash": "6d7401fb0526e6ccf70f9dbf6ffd2a61b04494710a703fa1c385458c5dfdc775",
+      "size": 1199,
+      "timestamp": "2026-02-13T08:52:28.492Z",
+      "archivedAt": "2026-02-13T11:24:48.523Z"
+    },
+    "history\\2026\\01\\pilot\\PILOT-DEPLOYMENT-MANIFEST.md": {
+      "hash": "fabf6eacddd797d4560daf5d9a907f29a239b63317dbba209f345831d576e2fc",
+      "size": 1449,
+      "timestamp": "2026-02-13T08:52:28.517Z",
+      "archivedAt": "2026-02-13T11:24:48.546Z"
+    },
+    "history\\2026\\01\\pilot\\PILOT-USER-GUIDE.md": {
+      "hash": "c4c1df2a6c965e68a2dc3b96248d0df37d08f60ba15b4665a5548ff2ed036bab",
+      "size": 1420,
+      "timestamp": "2026-02-13T08:52:28.537Z",
+      "archivedAt": "2026-02-13T11:24:48.568Z"
+    },
+    "history\\2026\\01\\pm-log.md": {
+      "hash": "71b1a05c415b560c39acc287059ebe7ff7a7aea9b5034cdb0b376626149f95f6",
+      "size": 3921,
+      "timestamp": "2026-02-13T08:52:32.456Z",
+      "archivedAt": "2026-02-13T11:24:48.584Z"
+    },
+    "history\\2026\\01\\project-docs\\HelixCRM.docx": {
+      "hash": "74ff3572eb1cb577ec7312c4079f3f8146680aada9ac56bb1fe74a4568cf82e1",
+      "size": 33317,
+      "timestamp": "2026-02-13T08:52:30.899Z",
+      "archivedAt": "2026-02-13T11:24:48.601Z"
+    },
+    "history\\2026\\01\\project-docs\\Phases.docx": {
+      "hash": "ff5aee7f447fb49374c69fd38211af7ad0204853506c26a65c88e88f1620fdeb",
+      "size": 22778,
+      "timestamp": "2026-02-13T08:52:30.915Z",
+      "archivedAt": "2026-02-13T11:24:48.614Z"
+    },
+    "history\\2026\\01\\project-docs\\report-tree_2026-01-08.docx": {
+      "hash": "927e965a3a9f51fd920c1c492ae48420e0ff8db3cc5535b359942643d067c872",
+      "size": 29942,
+      "timestamp": "2026-02-13T08:52:30.947Z",
+      "archivedAt": "2026-02-13T11:24:48.630Z"
+    },
+    "history\\2026\\01\\project-docs\\SSoR.docx": {
+      "hash": "7589702132275ce7e19b3b0afff23a05d28920ccd98a12f044f2763c8c225559",
+      "size": 21787,
+      "timestamp": "2026-02-13T08:52:30.963Z",
+      "archivedAt": "2026-02-13T11:24:48.645Z"
+    },
+    "history\\2026\\01\\sprints\\7-DAY-EXECUTION-PLAN.md": {
+      "hash": "af591726acbd291e97231d6e419036f9d7cac8fd8f407f91def5b8fbca6b646c",
+      "size": 2711,
+      "timestamp": "2026-02-13T08:52:29.284Z",
+      "archivedAt": "2026-02-13T11:24:48.671Z"
+    },
+    "history\\2026\\01\\sprints\\DAY3_SUMMARY.md": {
+      "hash": "98776b09431acdb44367fb6414ea22b032d11a5431f83d18e807c7caf205063a",
+      "size": 4353,
+      "timestamp": "2026-02-13T08:52:29.300Z",
+      "archivedAt": "2026-02-13T11:24:48.689Z"
+    },
+    "history\\2026\\01\\sprints\\FINAL_STATUS.md": {
+      "hash": "ea8ebbf17bdc96e5ded0f4c7a6e0ea9e8339cbcab1db0a5630172862fb940c63",
+      "size": 3575,
+      "timestamp": "2026-02-13T08:52:29.315Z",
+      "archivedAt": "2026-02-13T11:24:48.707Z"
+    },
+    "history\\2026\\01\\sprints\\GIT-READY.md": {
+      "hash": "f3f470c331e44f8fd1a6ea752cf9702298c688eb432bf5bb611aeea623308086",
+      "size": 559,
+      "timestamp": "2026-02-13T08:52:29.331Z",
+      "archivedAt": "2026-02-13T11:24:48.729Z"
+    },
+    "history\\2026\\01\\sprints\\PHASE0_COMPLETE.md": {
+      "hash": "a0f4838c49d9a86cd8628afd59533802aa7c553637bd2f6b18bb73d16a490c2e",
+      "size": 805,
+      "timestamp": "2026-02-13T08:52:29.347Z",
+      "archivedAt": "2026-02-13T11:24:48.749Z"
+    },
+    "history\\2026\\01\\sprints\\VALIDATION-SPRINT-REPORT.md": {
+      "hash": "a521bdb2299f5b9494dd596d66dec3515ca779d60bbcdfb57be3fb43135ff640",
+      "size": 2401,
+      "timestamp": "2026-02-13T08:52:29.363Z",
+      "archivedAt": "2026-02-13T11:24:48.773Z"
+    },
+    "history\\2026\\01\\tests\\GATE1-AUTHENTICATION-TEST.md": {
+      "hash": "7af03fb9b2dbe6873dab1c4de8dc051c9846140555cc6523f02d92f765aaaec2",
+      "size": 1652,
+      "timestamp": "2026-02-13T08:52:30.103Z",
+      "archivedAt": "2026-02-13T11:24:48.795Z"
+    },
+    "history\\2026\\01\\tests\\GATE2-TENANT-ISOLATION-TEST.md": {
+      "hash": "785cdb3ae5ec57413e569942a88c53fcaeff697f6a7b11956a82dedbabae8dd1",
+      "size": 2045,
+      "timestamp": "2026-02-13T08:52:30.122Z",
+      "archivedAt": "2026-02-13T11:24:48.824Z"
+    },
+    "history\\2026\\01\\tests\\GATE3-LOGGING-TEST.md": {
+      "hash": "f041d8043e6d965f75ce7681e3f53347ee4569f52fc152e56b958380e08029d2",
+      "size": 2623,
+      "timestamp": "2026-02-13T08:52:30.142Z",
+      "archivedAt": "2026-02-13T11:24:48.846Z"
+    },
+    "history\\2026\\01\\tests\\test-authentication-gate.sh": {
+      "hash": "321e43d09047532333330af757afcbe518720468a3e5e1bb270d5f2f48e2addc",
+      "size": 936,
+      "timestamp": "2026-02-13T08:52:30.174Z",
+      "archivedAt": "2026-02-13T11:24:48.868Z"
+    },
+    "history\\2026\\01\\tests\\test_minimal.sh": {
+      "hash": "c0f9d8788ca232522b1c601149672458b8282583bb594180a446ac079ce5ad7c",
+      "size": 1154,
+      "timestamp": "2026-02-13T08:52:30.158Z",
+      "archivedAt": "2026-02-13T11:24:48.889Z"
+    },
+    "history\\2026\\01\\tests\\UX_FOUNDATION_VERIFICATION.md": {
+      "hash": "e5e10719e108d24d4df51123bfb47fa50be98ffc9c120a90d845e7b646885730",
+      "size": 2510,
+      "timestamp": "2026-02-13T08:52:30.210Z",
+      "archivedAt": "2026-02-13T11:24:48.905Z"
+    },
+    "history\\2026\\01\\tests\\verify_all_systems.sh": {
+      "hash": "0a92d3dc8f51754edc1554994bb39b85f8967836fae229637ba6ac3d9cc2b11b",
+      "size": 1850,
+      "timestamp": "2026-02-13T08:52:30.227Z",
+      "archivedAt": "2026-02-13T11:24:48.924Z"
+    },
+    "history\\2026\\02\\analysis\\SILENT_ASSUMPTIONS_SCAN.md": {
+      "hash": "7df563ae51ec138fdbcddbf730f0d8edaf43ba044bded82f844622aefa78bbd7",
+      "size": 1542,
+      "timestamp": "2026-01-29T23:57:54.175Z",
+      "archivedAt": "2026-02-13T11:24:48.939Z"
+    },
+    "history\\2026\\02\\analysis\\SILENT_ASSUMPTIONS_SCAN.md.meta.json": {
+      "hash": "6ae7a024303d7a6ebadefa13db81800b0dc18f3fe25507fa66f9eb30fc1db968",
+      "size": 298,
+      "timestamp": "2026-02-13T08:46:42.265Z",
+      "archivedAt": "2026-02-13T11:24:48.951Z"
+    },
+    "history\\2026\\02\\contracts\\CONTRACT_MAPPING.md": {
+      "hash": "8f7e617c37dcd1ca425c8cc03a23e58ffc4d98160e34c063767ec5b6f3500ca2",
+      "size": 3053,
+      "timestamp": "2026-01-30T22:32:16.908Z",
+      "archivedAt": "2026-02-13T11:24:48.965Z"
+    },
+    "history\\2026\\02\\contracts\\CONTRACT_MAPPING.md.meta.json": {
+      "hash": "732675bf7527208ba19460544e530e6b8baaacf04afa0c061560c868adfc9c5b",
+      "size": 285,
+      "timestamp": "2026-02-13T08:46:28.865Z",
+      "archivedAt": "2026-02-13T11:24:48.977Z"
+    },
+    "history\\2026\\02\\decisions\\DECISIONS_UPDATE.md": {
+      "hash": "ae56f5e0a29e5bc562b0baac1ceff3b8c1fb2d84fcd03042553f80b57ca21efb",
+      "size": 2666,
+      "timestamp": "2026-01-30T16:36:42.363Z",
+      "archivedAt": "2026-02-13T11:24:48.992Z"
+    },
+    "history\\2026\\02\\decisions\\DECISIONS_UPDATE.md.meta.json": {
+      "hash": "0a409809052563c628540f2cfadaa49c07465a04e17d1bad198929b9733a7c9e",
+      "size": 285,
+      "timestamp": "2026-02-13T08:46:18.508Z",
+      "archivedAt": "2026-02-13T11:24:49.008Z"
+    },
+    "history\\2026\\02\\guides\\SYSTEMATIC-MVP&ENTERPRISE-READINESS-EXECUTION-GUIDE.md": {
+      "hash": "2ea2f77668df668ecb54d7e44e601d2709f2bf89c11c39153dfde5828e746c24",
+      "size": 7950,
+      "timestamp": "2026-02-11T08:05:04.770Z",
+      "archivedAt": "2026-02-13T11:24:49.024Z"
+    },
+    "history\\2026\\02\\guides\\SYSTEMATIC-MVP&ENTERPRISE-READINESS-EXECUTION-GUIDE.md.meta.json": {
+      "hash": "ffe80f455db2ea4946246a2271f14f4ee2698be4cd5a9dfe878fecdd94fef465",
+      "size": 352,
+      "timestamp": "2026-02-13T08:47:02.464Z",
+      "archivedAt": "2026-02-13T11:24:49.037Z"
+    },
+    "history\\2026\\02\\legacy\\governance\\00-master\\DOCUMENT_GOVERNANCE.md": {
+      "hash": "fb1154d90eb564edc8900a7e3d441a0a559fbf24deaa23af369082d8db0a3dc7",
+      "size": 5748,
+      "timestamp": "2026-01-27T01:03:10.404Z",
+      "archivedAt": "2026-02-13T11:24:49.039Z"
+    },
+    "history\\2026\\02\\legacy\\governance\\00-master\\HELIX_Enterprise-Operational_Canonical_SSOT.md": {
+      "hash": "0a6933c338ff572616d6e77ac0aec9bcf3628dd3bbb885d8bc00ef98b75cfb0b",
+      "size": 10534,
+      "timestamp": "2026-01-27T01:03:10.420Z",
+      "archivedAt": "2026-02-13T11:24:49.063Z"
+    },
+    "history\\2026\\02\\legacy\\governance\\00-master\\HELIX_PLATFORM_FLAGSHIP-Strategic_Reference.md": {
+      "hash": "632b194dec3f601c6c4b23e4c3f99797d812d3ed1afbf0448b08c372eeefc6e1",
+      "size": 16592,
+      "timestamp": "2026-01-27T01:03:10.441Z",
+      "archivedAt": "2026-02-13T11:24:49.085Z"
+    },
+    "history\\2026\\02\\legacy\\governance\\00-master\\README.md": {
+      "hash": "cc9fb9d8605339297c780125f3b53d130f1463dfad30eafe705a9646bfeb4871",
+      "size": 2678,
+      "timestamp": "2026-01-27T01:03:10.464Z",
+      "archivedAt": "2026-02-13T11:24:49.087Z"
+    },
+    "history\\2026\\02\\legacy\\legacy-docs\\add_version_comment.sh": {
+      "hash": "66d5c3ff6753fcbabc66fe37193cd3f666595cd1b44110d874d766e27d9d34b8",
+      "size": 393,
+      "timestamp": "2026-01-27T01:03:10.773Z",
+      "archivedAt": "2026-02-13T11:24:49.089Z"
+    },
+    "history\\2026\\02\\legacy\\legacy-docs\\clear_and_restart.sh": {
+      "hash": "164dcbca97c41d6e7a3bfb0e2472ea3aa8a7359ab46abab2d60eda7996766a88",
+      "size": 1570,
+      "timestamp": "2026-01-27T01:03:10.794Z",
+      "archivedAt": "2026-02-13T11:24:49.090Z"
+    },
+    "history\\2026\\02\\legacy\\legacy-docs\\complete_reset.sh": {
+      "hash": "6d6476d5ab34706263097552488d857552bf37c5b002236183e0182e58fe9893",
+      "size": 1940,
+      "timestamp": "2026-01-27T01:03:10.824Z",
+      "archivedAt": "2026-02-13T11:24:49.092Z"
+    },
+    "history\\2026\\02\\legacy\\legacy-docs\\install-ux-foundation.sh": {
+      "hash": "17f6b703c22609bd44c2ef3f85972279fccbeec0750a16c4fb7cb98bfc692353",
+      "size": 1584,
+      "timestamp": "2026-01-27T01:03:10.849Z",
+      "archivedAt": "2026-02-13T11:24:49.094Z"
+    },
+    "history\\2026\\02\\legacy\\phase1\\COMPONENT_STANDARDS.md": {
+      "hash": "cf8506b7301b2b58126f994bef6944828b58cea2ff7d9b04e54c7fb02716e161",
+      "size": 33370,
+      "timestamp": "2026-01-27T01:03:11.178Z",
+      "archivedAt": "2026-02-13T11:24:49.123Z"
+    },
+    "history\\2026\\02\\legacy\\phase1\\DAILY_STANDUP_TEMPLATE.md": {
+      "hash": "4843433f2b0b636965c01dedfd11ddcf2ce73519c436d5112bec56474605492f",
+      "size": 690,
+      "timestamp": "2026-01-27T01:03:11.198Z",
+      "archivedAt": "2026-02-13T11:24:49.125Z"
+    },
+    "history\\2026\\02\\legacy\\phase1\\PHASE1_CHECKPOINT_1.md": {
+      "hash": "b1b1ba22e4831e3a9d93046def5f845cf8a2351576cf25a5006a4145dfac94a2",
+      "size": 3030,
+      "timestamp": "2026-01-27T01:03:11.214Z",
+      "archivedAt": "2026-02-13T11:24:49.126Z"
+    },
+    "history\\2026\\02\\legacy\\phase1\\PHASE1_EXECUTION_CHARTER.md": {
+      "hash": "047ae4935b478b7e51103d3a0f85d532e132e53c9c771ab06ad157ab8e91cf7c",
+      "size": 6647,
+      "timestamp": "2026-01-27T01:03:11.230Z",
+      "archivedAt": "2026-02-13T11:24:49.128Z"
+    },
+    "history\\2026\\02\\legacy\\phase1\\PHASE1_PROGRESS.md": {
+      "hash": "a55690672a0e5447bf9e527ba12705c6d8876f91590f39ec24f45b2c08142e65",
+      "size": 3932,
+      "timestamp": "2026-01-27T01:03:11.243Z",
+      "archivedAt": "2026-02-13T11:24:49.131Z"
+    },
+    "history\\2026\\02\\legacy\\phase1\\PHASE1_STATUS.md": {
+      "hash": "00a1d6e0b7de81786b72ae6e7ecba29fe447c7224b811c7e0518541174af0a54",
+      "size": 2265,
+      "timestamp": "2026-01-27T01:03:11.270Z",
+      "archivedAt": "2026-02-13T11:24:49.134Z"
+    },
+    "history\\2026\\02\\legacy\\phase1\\PHASE1_TEAM_ACKNOWLEDGMENT.md": {
+      "hash": "6f87e1a53d0ef88b1c7dd74e6e841cff2f6a42ab6574d786c4ad23e0f9807e5f",
+      "size": 912,
+      "timestamp": "2026-01-27T01:03:11.294Z",
+      "archivedAt": "2026-02-13T11:24:49.136Z"
+    },
+    "history\\2026\\02\\legacy\\phase1\\PHASE1_WORKSTREAM_A_COMPLETE.md": {
+      "hash": "9d222d6cfa0719bf40844ce0b654df32574f6b62e59d07842fe61bd42f2a800f",
+      "size": 3920,
+      "timestamp": "2026-01-27T01:03:11.315Z",
+      "archivedAt": "2026-02-13T11:24:49.137Z"
+    },
+    "history\\2026\\02\\legacy\\phase1\\PHASE1_WORKSTREAM_B_COMPLETE.md": {
+      "hash": "8ec91b6cdeb420407cd76402d7e9b6ab27ff4350608e21de5a34925fdcc34586",
+      "size": 3739,
+      "timestamp": "2026-01-27T01:03:11.343Z",
+      "archivedAt": "2026-02-13T11:24:49.139Z"
+    },
+    "history\\2026\\02\\legacy\\phase1-workstreams\\BACKEND_TASKS.md": {
+      "hash": "306644c1b6c0402b233adf1016a8693b6cdbdcf64e30bcb0c2620957f7d42573",
+      "size": 1015,
+      "timestamp": "2026-01-27T01:03:11.384Z",
+      "archivedAt": "2026-02-13T11:24:49.141Z"
+    },
+    "history\\2026\\02\\legacy\\phase1-workstreams\\SECURITY_TASKS.md": {
+      "hash": "201bccb5c34457d84ac9374310784b778e5f77b506a1f17246a724c733ad876a",
+      "size": 962,
+      "timestamp": "2026-01-27T01:03:11.399Z",
+      "archivedAt": "2026-02-13T11:24:49.142Z"
+    },
+    "history\\2026\\02\\legacy\\pilot\\FINAL-PILOT-READINESS.md": {
+      "hash": "6d7401fb0526e6ccf70f9dbf6ffd2a61b04494710a703fa1c385458c5dfdc775",
+      "size": 1199,
+      "timestamp": "2026-01-27T01:03:10.866Z",
+      "archivedAt": "2026-02-13T11:24:49.145Z"
+    },
+    "history\\2026\\02\\legacy\\pilot\\PILOT-DEPLOYMENT-MANIFEST.md": {
+      "hash": "fabf6eacddd797d4560daf5d9a907f29a239b63317dbba209f345831d576e2fc",
+      "size": 1449,
+      "timestamp": "2026-01-27T01:03:10.888Z",
+      "archivedAt": "2026-02-13T11:24:49.149Z"
+    },
+    "history\\2026\\02\\legacy\\pilot\\PILOT-USER-GUIDE.md": {
+      "hash": "c4c1df2a6c965e68a2dc3b96248d0df37d08f60ba15b4665a5548ff2ed036bab",
+      "size": 1420,
+      "timestamp": "2026-01-27T01:03:10.921Z",
+      "archivedAt": "2026-02-13T11:24:49.154Z"
+    },
+    "history\\2026\\02\\legacy\\pm-log.md": {
+      "hash": "71b1a05c415b560c39acc287059ebe7ff7a7aea9b5034cdb0b376626149f95f6",
+      "size": 3921,
+      "timestamp": "2026-01-27T01:03:11.153Z",
+      "archivedAt": "2026-02-13T11:24:49.157Z"
+    },
+    "history\\2026\\02\\legacy\\project-docs\\HelixCRM.docx": {
+      "hash": "74ff3572eb1cb577ec7312c4079f3f8146680aada9ac56bb1fe74a4568cf82e1",
+      "size": 33317,
+      "timestamp": "2025-12-31T10:33:46.392Z",
+      "archivedAt": "2026-02-13T11:24:49.175Z"
+    },
+    "history\\2026\\02\\legacy\\project-docs\\Phases.docx": {
+      "hash": "ff5aee7f447fb49374c69fd38211af7ad0204853506c26a65c88e88f1620fdeb",
+      "size": 22778,
+      "timestamp": "2026-01-27T01:03:11.424Z",
+      "archivedAt": "2026-02-13T11:24:49.190Z"
+    },
+    "history\\2026\\02\\legacy\\project-docs\\report-tree_2026-01-08.docx": {
+      "hash": "927e965a3a9f51fd920c1c492ae48420e0ff8db3cc5535b359942643d067c872",
+      "size": 29942,
+      "timestamp": "2026-01-27T01:03:11.481Z",
+      "archivedAt": "2026-02-13T11:24:49.205Z"
+    },
+    "history\\2026\\02\\legacy\\project-docs\\SSoR.docx": {
+      "hash": "7589702132275ce7e19b3b0afff23a05d28920ccd98a12f044f2763c8c225559",
+      "size": 21787,
+      "timestamp": "2026-01-27T01:03:11.457Z",
+      "archivedAt": "2026-02-13T11:24:49.221Z"
+    },
+    "history\\2026\\02\\legacy\\sprints\\7-DAY-EXECUTION-PLAN.md": {
+      "hash": "af591726acbd291e97231d6e419036f9d7cac8fd8f407f91def5b8fbca6b646c",
+      "size": 2711,
+      "timestamp": "2026-01-27T01:03:10.937Z",
+      "archivedAt": "2026-02-13T11:24:49.224Z"
+    },
+    "history\\2026\\02\\legacy\\sprints\\DAY3_SUMMARY.md": {
+      "hash": "98776b09431acdb44367fb6414ea22b032d11a5431f83d18e807c7caf205063a",
+      "size": 4353,
+      "timestamp": "2026-01-27T01:03:10.954Z",
+      "archivedAt": "2026-02-13T11:24:49.225Z"
+    },
+    "history\\2026\\02\\legacy\\sprints\\FINAL_STATUS.md": {
+      "hash": "ea8ebbf17bdc96e5ded0f4c7a6e0ea9e8339cbcab1db0a5630172862fb940c63",
+      "size": 3575,
+      "timestamp": "2026-01-27T01:03:10.973Z",
+      "archivedAt": "2026-02-13T11:24:49.227Z"
+    },
+    "history\\2026\\02\\legacy\\sprints\\GIT-READY.md": {
+      "hash": "f3f470c331e44f8fd1a6ea752cf9702298c688eb432bf5bb611aeea623308086",
+      "size": 559,
+      "timestamp": "2026-01-27T01:03:10.992Z",
+      "archivedAt": "2026-02-13T11:24:49.229Z"
+    },
+    "history\\2026\\02\\legacy\\sprints\\PHASE0_COMPLETE.md": {
+      "hash": "a0f4838c49d9a86cd8628afd59533802aa7c553637bd2f6b18bb73d16a490c2e",
+      "size": 805,
+      "timestamp": "2026-01-27T01:03:10.993Z",
+      "archivedAt": "2026-02-13T11:24:49.232Z"
+    },
+    "history\\2026\\02\\legacy\\sprints\\VALIDATION-SPRINT-REPORT.md": {
+      "hash": "a521bdb2299f5b9494dd596d66dec3515ca779d60bbcdfb57be3fb43135ff640",
+      "size": 2401,
+      "timestamp": "2026-01-27T01:03:11.020Z",
+      "archivedAt": "2026-02-13T11:24:49.236Z"
+    },
+    "history\\2026\\02\\legacy\\tests\\GATE1-AUTHENTICATION-TEST.md": {
+      "hash": "7af03fb9b2dbe6873dab1c4de8dc051c9846140555cc6523f02d92f765aaaec2",
+      "size": 1652,
+      "timestamp": "2026-01-27T01:03:11.033Z",
+      "archivedAt": "2026-02-13T11:24:49.240Z"
+    },
+    "history\\2026\\02\\legacy\\tests\\GATE2-TENANT-ISOLATION-TEST.md": {
+      "hash": "785cdb3ae5ec57413e569942a88c53fcaeff697f6a7b11956a82dedbabae8dd1",
+      "size": 2045,
+      "timestamp": "2026-01-27T01:03:11.047Z",
+      "archivedAt": "2026-02-13T11:24:49.241Z"
+    },
+    "history\\2026\\02\\legacy\\tests\\GATE3-LOGGING-TEST.md": {
+      "hash": "f041d8043e6d965f75ce7681e3f53347ee4569f52fc152e56b958380e08029d2",
+      "size": 2623,
+      "timestamp": "2026-01-27T01:03:11.067Z",
+      "archivedAt": "2026-02-13T11:24:49.243Z"
+    },
+    "history\\2026\\02\\legacy\\tests\\test-authentication-gate.sh": {
+      "hash": "321e43d09047532333330af757afcbe518720468a3e5e1bb270d5f2f48e2addc",
+      "size": 936,
+      "timestamp": "2026-01-27T01:03:11.103Z",
+      "archivedAt": "2026-02-13T11:24:49.245Z"
+    },
+    "history\\2026\\02\\legacy\\tests\\test_minimal.sh": {
+      "hash": "c0f9d8788ca232522b1c601149672458b8282583bb594180a446ac079ce5ad7c",
+      "size": 1154,
+      "timestamp": "2026-01-27T01:03:11.121Z",
+      "archivedAt": "2026-02-13T11:24:49.248Z"
+    },
+    "history\\2026\\02\\legacy\\tests\\UX_FOUNDATION_VERIFICATION.md": {
+      "hash": "e5e10719e108d24d4df51123bfb47fa50be98ffc9c120a90d845e7b646885730",
+      "size": 2510,
+      "timestamp": "2026-01-27T01:03:11.085Z",
+      "archivedAt": "2026-02-13T11:24:49.251Z"
+    },
+    "history\\2026\\02\\legacy\\tests\\verify_all_systems.sh": {
+      "hash": "0a92d3dc8f51754edc1554994bb39b85f8967836fae229637ba6ac3d9cc2b11b",
+      "size": 1850,
+      "timestamp": "2026-01-27T01:03:11.138Z",
+      "archivedAt": "2026-02-13T11:24:49.255Z"
+    },
+    "history\\2026\\02\\modules\\api\\SESSION3_SUMMARY.md": {
+      "hash": "ad5d04a9d40e4ad8816b01e9f9a44ed9096b7d2fcc7ba93b20cc51538a1c8e06",
+      "size": 9613,
+      "timestamp": "2026-02-07T02:51:36.943Z",
+      "archivedAt": "2026-02-13T11:24:49.279Z"
+    },
+    "history\\2026\\02\\modules\\api\\SESSION3_SUMMARY.md.meta.json": {
+      "hash": "f4a0d96da8d010a8cd9565da02afb0fb86f369acef434aa8aa59a3bd3cb8f39c",
+      "size": 304,
+      "timestamp": "2026-02-13T08:48:33.785Z",
+      "archivedAt": "2026-02-13T11:24:49.293Z"
+    },
+    "history\\2026\\02\\phases\\MVP1_SCOPE_FREEZE.md": {
+      "hash": "45cef69bf68285970e8936f153e815e1fe8bdeea7d458e2916d64b7b9c6a62cb",
+      "size": 2268,
+      "timestamp": "2026-01-29T23:56:50.390Z",
+      "archivedAt": "2026-02-13T11:24:49.309Z"
+    },
+    "history\\2026\\02\\phases\\MVP1_SCOPE_FREEZE.md.meta.json": {
+      "hash": "28a48615487b011d43099f63ff9b2b1be7721d85c78ea6a798b93a0bcc0bfbd5",
+      "size": 284,
+      "timestamp": "2026-02-13T08:45:18.940Z",
+      "archivedAt": "2026-02-13T11:24:49.320Z"
+    },
+    "history\\2026\\02\\phases\\PHASE2A_COMPLETION_SUMMARY-20260213.md": {
+      "hash": "f93ea66aa9664e272cfcb1ca6a2140fe6f095c0bc9c287c24af3949b98297268",
+      "size": 4542,
+      "timestamp": "2026-02-03T21:08:48.260Z",
+      "archivedAt": "2026-02-13T11:24:49.332Z"
+    },
+    "history\\2026\\02\\phases\\PHASE2A_COMPLETION_SUMMARY-20260213.md.meta.json": {
+      "hash": "7b18169baef60316521d3d579fbc7191537b958e8f7446781a9814c7de8dc848",
+      "size": 302,
+      "timestamp": "2026-02-13T08:45:31.054Z",
+      "archivedAt": "2026-02-13T11:24:49.341Z"
+    },
+    "history\\2026\\02\\phases\\PHASE2A_COMPLETION_SUMMARY.md": {
+      "hash": "f93ea66aa9664e272cfcb1ca6a2140fe6f095c0bc9c287c24af3949b98297268",
+      "size": 4542,
+      "timestamp": "2026-02-03T21:08:48.260Z",
+      "archivedAt": "2026-02-13T11:24:49.343Z"
+    },
+    "history\\2026\\02\\phases\\PHASE2A_COMPLETION_SUMMARY.md.meta.json": {
+      "hash": "1219c188d4d3232e6b319156f647c7d536707b720ca8b85ae9e5bf6bbe1b28ae",
+      "size": 302,
+      "timestamp": "2026-02-13T08:44:10.785Z",
+      "archivedAt": "2026-02-13T11:24:49.356Z"
+    },
+    "history\\2026\\02\\phases\\PRODUCTION_READINESS_CHECKLIST.md": {
+      "hash": "a69e2fa05988977b2294db8bfff87645793538f9aa4843266bac6d07e949e985",
+      "size": 1607,
+      "timestamp": "2026-01-29T23:26:35.358Z",
+      "archivedAt": "2026-02-13T11:24:49.370Z"
+    },
+    "history\\2026\\02\\phases\\PRODUCTION_READINESS_CHECKLIST.md.meta.json": {
+      "hash": "428556784c14bf7fdb3814f86ec5f24fc8332fc22444597a38961320e9072da5",
+      "size": 310,
+      "timestamp": "2026-02-13T08:57:34.741Z",
+      "archivedAt": "2026-02-13T11:24:49.381Z"
+    },
+    "history\\2026\\02\\phases\\PROJECT_TRANSFORMATION_SUMMARY.md": {
+      "hash": "90ed6d029a99bf18bff46160cbf13eb8ab6bc3857c0729f95f69f4ed06d63929",
+      "size": 7899,
+      "timestamp": "2026-01-30T02:04:26.281Z",
+      "archivedAt": "2026-02-13T11:24:49.398Z"
+    },
+    "history\\2026\\02\\phases\\PROJECT_TRANSFORMATION_SUMMARY.md.meta.json": {
+      "hash": "4c7c1ca5a65a387576eef65083de278e71a55ba66ad606a61b4f56f9fbb274d3",
+      "size": 310,
+      "timestamp": "2026-02-13T08:45:31.288Z",
+      "archivedAt": "2026-02-13T11:24:49.408Z"
+    },
+    "history\\2026\\02\\shadow-backups\\analytics.service.ts.backup": {
+      "hash": "b390679d896c5ddfe6d6db94340e7cbf25c6f07f6d424423d7568b0b5ba96e59",
+      "size": 18414,
+      "timestamp": "2026-02-03T11:15:12.539Z",
+      "archivedAt": "2026-02-13T11:24:49.431Z"
+    },
+    "history\\2026\\02\\shadow-backups\\analytics.service.ts.backup.meta.json": {
+      "hash": "4ffa265b2f674916b6eb03f293197b5ab0009d8fe0962cf25c16254995aa535b",
+      "size": 343,
+      "timestamp": "2026-02-13T08:47:34.335Z",
+      "archivedAt": "2026-02-13T11:24:49.442Z"
+    },
+    "history\\2026\\02\\shadow-backups\\app.module.ts.backup": {
+      "hash": "09ade7abbc44af771947e42d79bd9f4583858dbee27f4b335e45e92e70a7dd92",
+      "size": 4773,
+      "timestamp": "2026-02-03T05:34:28.722Z",
+      "archivedAt": "2026-02-13T11:24:49.458Z"
+    },
+    "history\\2026\\02\\shadow-backups\\app.module.ts.backup.meta.json": {
+      "hash": "d17b07263012cca37bc2f59f54f7ec3f57901708fc20d4bff0f7aa8e97c2bcee",
+      "size": 308,
+      "timestamp": "2026-02-13T08:47:34.006Z",
+      "archivedAt": "2026-02-13T11:24:49.471Z"
+    },
+    "history\\2026\\02\\shadow-backups\\audit-log.repository.ts.backup": {
+      "hash": "2ae03af81fcae181ac0a9c888617686df75969cfb4e7e6c3dcbf58142426fe9b",
+      "size": 8856,
+      "timestamp": "2026-01-31T05:29:04.382Z",
+      "archivedAt": "2026-02-13T11:24:49.493Z"
+    },
+    "history\\2026\\02\\shadow-backups\\audit-log.repository.ts.backup.meta.json": {
+      "hash": "9db9572a652da2166c5f35886fff9ad5ba9eec29b974ca1e338f622e09f045b9",
+      "size": 379,
+      "timestamp": "2026-02-13T08:47:34.505Z",
+      "archivedAt": "2026-02-13T11:24:49.507Z"
+    },
+    "history\\2026\\02\\shadow-backups\\audit-log.service.ts.fix": {
+      "hash": "0bbd806e5fecdad47ff9fb72459bb3c1d59f720a97b857fdc83dffdd80ba01ef",
+      "size": 460,
+      "timestamp": "2026-02-03T17:41:24.005Z",
+      "archivedAt": "2026-02-13T11:24:49.520Z"
+    },
+    "history\\2026\\02\\shadow-backups\\audit-log.service.ts.fix.meta.json": {
+      "hash": "fd171f178f6f56147a9bf77a4d9aa635dd6a4a2f9ca69f4fdf7da2055213ebfb",
+      "size": 334,
+      "timestamp": "2026-02-13T08:47:35.766Z",
+      "archivedAt": "2026-02-13T11:24:49.532Z"
+    },
+    "history\\2026\\02\\shadow-backups\\auth-throttler.guard.ts.backup": {
+      "hash": "d6774feca44cb8be8e099c2fa3a00c21dee63f9cbcebdea3279b481ea6ad7026",
+      "size": 654,
+      "timestamp": "2026-02-09T12:51:04.172Z",
+      "archivedAt": "2026-02-13T11:24:49.640Z"
+    },
+    "history\\2026\\02\\shadow-backups\\auth-throttler.guard.ts.backup.meta.json": {
+      "hash": "ee6ae2098400a9f609029067fcc2385bc5db3555fa6f3d287b59f6b137f7130b",
+      "size": 343,
+      "timestamp": "2026-02-13T08:47:35.929Z",
+      "archivedAt": "2026-02-13T11:24:49.667Z"
+    },
+    "history\\2026\\02\\shadow-backups\\auth.controller.ts.backup": {
+      "hash": "31c20bbe19caa62a423aa2eb628d7a3aa6f43f2c8e6f70b1f6d314df7a79676d",
+      "size": 8757,
+      "timestamp": "2026-02-09T12:45:02.685Z",
+      "archivedAt": "2026-02-13T11:24:49.699Z"
+    },
+    "history\\2026\\02\\shadow-backups\\auth.controller.ts.backup.meta.json": {
+      "hash": "1c636a593298f04d01dd1a9d9054f0c30896de33b908295879ce8474603c36fc",
+      "size": 333,
+      "timestamp": "2026-02-13T08:47:34.825Z",
+      "archivedAt": "2026-02-13T11:24:49.712Z"
+    },
+    "history\\2026\\02\\shadow-backups\\auth.module.ts.backup": {
+      "hash": "d080da65bb7cc9a1c8e7f0eedab69215b5063cb0b78c710d6974476b46a8eb9a",
+      "size": 1881,
+      "timestamp": "2026-02-09T12:07:10.437Z",
+      "archivedAt": "2026-02-13T11:24:49.736Z"
+    },
+    "history\\2026\\02\\shadow-backups\\auth.module.ts.backup.meta.json": {
+      "hash": "5dadda9031144f971ff2aa3c406d49fad1956d42ee76549dc516f26a3cc651f1",
+      "size": 325,
+      "timestamp": "2026-02-13T08:47:34.995Z",
+      "archivedAt": "2026-02-13T11:24:49.757Z"
+    },
+    "history\\2026\\02\\shadow-backups\\auth.service.ts.backup": {
+      "hash": "a101dd0d1ebb61d9d668049d9ec34c9af8805a32b1d60dbd0b8012d98173817b",
+      "size": 38004,
+      "timestamp": "2026-02-09T18:00:47.497Z",
+      "archivedAt": "2026-02-13T11:24:49.786Z"
+    },
+    "history\\2026\\02\\shadow-backups\\auth.service.ts.backup.meta.json": {
+      "hash": "026f0b3cbab244e36645523b060af58a5f5cabe32d9f9c86191e7628fd075ff8",
+      "size": 328,
+      "timestamp": "2026-02-13T08:47:35.142Z",
+      "archivedAt": "2026-02-13T11:24:49.797Z"
+    },
+    "history\\2026\\02\\shadow-backups\\AuthCoreAdapter.ts.backup": {
+      "hash": "d315d997e232cfcd44a9f35af73ea8ad2d7e8ad9e12da9acfcb2a5dc3cb0bf2c",
+      "size": 12530,
+      "timestamp": "2026-01-31T15:32:44.863Z",
+      "archivedAt": "2026-02-13T11:24:49.822Z"
+    },
+    "history\\2026\\02\\shadow-backups\\AuthCoreAdapter.ts.backup.meta.json": {
+      "hash": "c4612d54c1398bfb1bd74c72b88e96132047f1fffb98a2001cc9f71bb552d1c5",
+      "size": 344,
+      "timestamp": "2026-02-13T08:47:34.656Z",
+      "archivedAt": "2026-02-13T11:24:49.836Z"
+    },
+    "history\\2026\\02\\shadow-backups\\main.ts.backup": {
+      "hash": "88caf845fe24610b555d01c99cc92d8a465cd227e706d42068d87a6bf79c1164",
+      "size": 4602,
+      "timestamp": "2026-02-03T05:33:40.713Z",
+      "archivedAt": "2026-02-13T11:24:49.857Z"
+    },
+    "history\\2026\\02\\shadow-backups\\main.ts.backup.meta.json": {
+      "hash": "7cedfc65297c6ed023f6ad39b9e6184627cdfb27213a27be050624e475e6009b",
+      "size": 296,
+      "timestamp": "2026-02-13T08:47:34.158Z",
+      "archivedAt": "2026-02-13T11:24:49.870Z"
+    },
+    "history\\2026\\02\\shadow-backups\\password-reset.controller.ts.backup": {
+      "hash": "f75deec2d84522fdd2717a1bc121cd9f5597250d9a72420d4d771b8c41276496",
+      "size": 3069,
+      "timestamp": "2026-02-09T12:48:22.507Z",
+      "archivedAt": "2026-02-13T11:24:49.893Z"
+    },
+    "history\\2026\\02\\shadow-backups\\password-reset.controller.ts.backup.meta.json": {
+      "hash": "3542917f4dfc4fcbd13540ac25cd063526f3ef6cd056e7fb8e3a766c106b123f",
+      "size": 366,
+      "timestamp": "2026-02-13T08:47:35.325Z",
+      "archivedAt": "2026-02-13T11:24:49.904Z"
+    },
+    "history\\2026\\02\\shadow-backups\\permission-context.service.ts.backup": {
+      "hash": "ee930379831a6b47d707193a8345114ab6e9facc76adcb1dd8f23fe843375d3e",
+      "size": 6300,
+      "timestamp": "2026-02-03T06:14:19.076Z",
+      "archivedAt": "2026-02-13T11:24:49.926Z"
+    },
+    "history\\2026\\02\\shadow-backups\\permission-context.service.ts.backup.meta.json": {
+      "hash": "7ce6605bd9dbc18b4ae02a00a9a5ff02e897fa54b045bf287052037c953c92df",
+      "size": 370,
+      "timestamp": "2026-02-13T08:47:36.438Z",
+      "archivedAt": "2026-02-13T11:24:49.940Z"
+    },
+    "history\\2026\\02\\shadow-backups\\permission.guard.ts.backup": {
+      "hash": "3a15d879d61ad6160e7a6509866e3eefe84aa76c6ead2ffc40b19afe23414ad7",
+      "size": 4928,
+      "timestamp": "2026-02-03T03:54:08.390Z",
+      "archivedAt": "2026-02-13T11:24:49.959Z"
+    },
+    "history\\2026\\02\\shadow-backups\\permission.guard.ts.backup.meta.json": {
+      "hash": "5da1f31581110e8a1659e171da8b4558df4d46ae5a8f43a5b9ae7b003f501b6a",
+      "size": 336,
+      "timestamp": "2026-02-13T08:47:36.094Z",
+      "archivedAt": "2026-02-13T11:24:49.974Z"
+    },
+    "history\\2026\\02\\shadow-backups\\permissions.module.ts.backup": {
+      "hash": "3a38b29d55b2f5a73cba07aa189ffdeb02570fc328ecededa2d1245039726621",
+      "size": 475,
+      "timestamp": "2026-02-03T03:54:57.140Z",
+      "archivedAt": "2026-02-13T11:24:49.986Z"
+    },
+    "history\\2026\\02\\shadow-backups\\permissions.module.ts.backup.meta.json": {
+      "hash": "681dc92abab10326222abd821389471e3552e8ff0c7c09cca8c9bda60c7ec455",
+      "size": 344,
+      "timestamp": "2026-02-13T08:47:36.581Z",
+      "archivedAt": "2026-02-13T11:24:49.996Z"
+    },
+    "history\\2026\\02\\shadow-backups\\schema.prisma.new": {
+      "hash": "89bb836ec1a5dca9b32a9d3f951848d8982de9b74f6311a35d5e70b6c6c771f3",
+      "size": 17306,
+      "timestamp": "2026-02-03T17:41:23.965Z",
+      "archivedAt": "2026-02-13T11:24:50.014Z"
+    },
+    "history\\2026\\02\\shadow-backups\\schema.prisma.new.meta.json": {
+      "hash": "96590352afa0beebd5fd53065160dc40317056fb463285f3d54974f202feb5f8",
+      "size": 306,
+      "timestamp": "2026-02-13T08:47:33.842Z",
+      "archivedAt": "2026-02-13T11:24:50.026Z"
+    },
+    "history\\2026\\02\\shadow-backups\\tenant.guard.ts.backup": {
+      "hash": "148548b3b8cb4001456ead89bf1c051489a612e4b47662775d374c4f8d7480a0",
+      "size": 543,
+      "timestamp": "2026-02-03T04:47:17.978Z",
+      "archivedAt": "2026-02-13T11:24:50.048Z"
+    },
+    "history\\2026\\02\\shadow-backups\\tenant.guard.ts.backup.meta.json": {
+      "hash": "ae15c625ae23fcb9449a07f94826101312c0119bd1c3a25a808a06bec8e88d7e",
+      "size": 327,
+      "timestamp": "2026-02-13T08:47:36.255Z",
+      "archivedAt": "2026-02-13T11:24:50.057Z"
+    },
+    "history\\2026\\02\\shadow-backups\\tsconfig.json.backup": {
+      "hash": "7a2b23ebfb333f7228d81e5c07906a08a241f9bf9f9a60130deb815fdf1e4e75",
+      "size": 835,
+      "timestamp": "2026-02-07T11:43:22.254Z",
+      "archivedAt": "2026-02-13T11:24:50.071Z"
+    },
+    "history\\2026\\02\\shadow-backups\\tsconfig.json.backup.meta.json": {
+      "hash": "437d730646145e09354e4ac18396a37f683afea52124d7865e7fdce221d13c0d",
+      "size": 302,
+      "timestamp": "2026-02-13T08:47:36.749Z",
+      "archivedAt": "2026-02-13T11:24:50.081Z"
+    },
+    "history\\2026\\02\\shadow-backups\\users.controller.ts.bak": {
+      "hash": "3bf443a43a659ec9075a08e42bcbb48a177b526f354c2e0ab0f0fabd46981bfe",
+      "size": 2324,
+      "timestamp": "2026-01-26T17:24:45.549Z",
+      "archivedAt": "2026-02-13T11:24:50.104Z"
+    },
+    "history\\2026\\02\\shadow-backups\\users.controller.ts.bak.meta.json": {
+      "hash": "fdd78ba26bd2a63d8034041a028a42b24a592bf50786b1463e4fe146eb1e14fd",
+      "size": 330,
+      "timestamp": "2026-02-13T08:47:35.623Z",
+      "archivedAt": "2026-02-13T11:24:50.115Z"
+    },
+    "history\\2026\\02\\transformation\\PROJECT_TRANSFORMATION_REPORT.md": {
+      "hash": "820da7f6a5f6f564335f7372233f235fd8614669e62dbef666a7bdf98e6c7ed4",
+      "size": 4613,
+      "timestamp": "2026-01-29T23:34:24.916Z",
+      "archivedAt": "2026-02-13T11:24:50.132Z"
+    },
+    "history\\2026\\02\\transformation\\PROJECT_TRANSFORMATION_REPORT.md.meta.json": {
+      "hash": "f8a350ef77670c982a3a64ea70e48bb6c5db6bc84cef3cf7d1bf7e11773dccfb",
+      "size": 316,
+      "timestamp": "2026-02-13T08:44:11.238Z",
+      "archivedAt": "2026-02-13T11:24:50.144Z"
+    },
+    "history\\2026\\02\\transformation\\PROJECT_TRANSFORMATION_SUMMARY.md": {
+      "hash": "90ed6d029a99bf18bff46160cbf13eb8ab6bc3857c0729f95f69f4ed06d63929",
+      "size": 7899,
+      "timestamp": "2026-01-30T02:04:26.281Z",
+      "archivedAt": "2026-02-13T11:24:50.149Z"
+    },
+    "history\\2026\\02\\transformation\\PROJECT_TRANSFORMATION_SUMMARY.md.meta.json": {
+      "hash": "6380aa9652c501338890a273e36dbdf8d39beab10176422e52a36486c082f514",
+      "size": 318,
+      "timestamp": "2026-02-13T08:44:11.749Z",
+      "archivedAt": "2026-02-13T11:24:50.159Z"
+    }
+  },
+  "lastScan": "2026-02-13T11:24:48.199Z"
+}

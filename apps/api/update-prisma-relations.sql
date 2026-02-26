@@ -1,0 +1,2 @@
+-- First, let me backup the current schema
+-- We'll create a new schema file with all changes

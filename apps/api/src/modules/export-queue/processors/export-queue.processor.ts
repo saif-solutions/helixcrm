@@ -1,5 +1,6 @@
 // src/modules/export-queue/processors/export-queue.processor.ts
-import { Processor } from '@nestjs/bullmq';
+// src/modules/export-queue/processors/export-queue.processor.ts
+import { Processor, WorkerHost } from '@nestjs/bullmq'; // CHANGE THIS IMPORT
 import { Job } from 'bullmq';
 import { Logger } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
@@ -25,16 +26,18 @@ interface ExportJobData {
 }
 
 @Processor('export-queue', { concurrency: 3 })
-export class ExportQueueProcessor {
+export class ExportQueueProcessor extends WorkerHost { // EXTEND WorkerHost
   private readonly logger = new Logger(ExportQueueProcessor.name);
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly exportQueueRepository: ExportQueueRepository,
     private readonly auditLogService: AuditLogService,
-  ) {}
+  ) {
+    super(); // CALL super()
+  }
 
-  // BullMQ uses this method name by default for processing
+  // BullMQ requires this method name for processing
   async process(job: Job<ExportJobData>): Promise<any> {
     const { jobId, userId, tenantId, exportType, format, filters, options } =
       job.data;

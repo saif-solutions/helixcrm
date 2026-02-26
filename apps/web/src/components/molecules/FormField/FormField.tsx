@@ -1,18 +1,18 @@
 import * as React from 'react';
 import { cn } from '../../../lib/utils';
 import { Input } from '../../atoms/Input/Input';
-import { 
-  FormFieldProps, 
-  FormFieldGroupProps, 
+import {
+  FormFieldProps,
+  FormFieldGroupProps,
   FormActionsProps,
   FormFieldTypeProps,
   TextareaFormFieldProps,
   FormFieldRef,
   TextareaFormFieldRef,
   FormFieldGroupRef,
-  FormActionsRef
+  FormActionsRef,
 } from './FormField.types';
-import { 
+import {
   formFieldClasses,
   getWrapperClasses,
   getLabelClasses,
@@ -20,7 +20,7 @@ import {
   getInputClasses,
   getTextareaClasses,
   getFieldContainerClasses,
-  defaultStyleProps
+  defaultStyleProps,
 } from './FormField.styles';
 
 /**
@@ -57,21 +57,15 @@ export const FormField = React.forwardRef<FormFieldRef, FormFieldProps>(
     const fieldVariant = error ? 'error' : variant;
 
     // Build CSS classes using utility functions
-    const wrapperClasses = cn(
-      getWrapperClasses(layout, disabled, wrapperClassName)
-    );
+    const wrapperClasses = cn(getWrapperClasses(layout, disabled, wrapperClassName));
 
     const labelClasses = cn(
       getLabelClasses(layout, required, disabled, fieldVariant, labelClassName)
     );
 
-    const fieldContainerClasses = cn(
-      getFieldContainerClasses(layout)
-    );
+    const fieldContainerClasses = cn(getFieldContainerClasses(layout));
 
-    const inputClasses = cn(
-      getInputClasses(fieldVariant, disabled, className)
-    );
+    const inputClasses = cn(getInputClasses(fieldVariant, disabled, className));
 
     const helperErrorClasses = cn(
       getHelperClasses(fieldVariant, !!error, disabled, error ? errorClassName : helperClassName)
@@ -81,13 +75,9 @@ export const FormField = React.forwardRef<FormFieldRef, FormFieldProps>(
 
     const renderLabel = () => {
       if (!label) return null;
-      
+
       return (
-        <label
-          htmlFor={fieldId}
-          className={labelClasses}
-          style={labelStyle}
-        >
+        <label htmlFor={fieldId} className={labelClasses} style={labelStyle}>
           {label}
         </label>
       );
@@ -109,13 +99,13 @@ export const FormField = React.forwardRef<FormFieldRef, FormFieldProps>(
           aria-invalid={!!error}
           {...inputProps}
         />
-        
+
         {/* Additional error/helper text for more control */}
         {(error || helperText) && (
-          <p 
-            id={error ? errorId : helperId} 
+          <p
+            id={error ? errorId : helperId}
             className={helperErrorClasses}
-            role={error ? "alert" : undefined}
+            role={error ? 'alert' : undefined}
           >
             {error || helperText}
           </p>
@@ -146,14 +136,7 @@ FormField.displayName = 'FormField';
 // FormField sub-components for building complex forms
 export const FormFieldGroup = React.forwardRef<FormFieldGroupRef, FormFieldGroupProps>(
   ({ title, description, className, children, ...props }, ref) => (
-    <div
-      ref={ref}
-      className={cn(
-        formFieldClasses.group.wrapper,
-        className
-      )}
-      {...props}
-    >
+    <div ref={ref} className={cn(formFieldClasses.group.wrapper, className)} {...props}>
       {(title || description) && (
         <div className={formFieldClasses.group.header}>
           {title && <h3 className={formFieldClasses.group.title}>{title}</h3>}
@@ -168,14 +151,7 @@ FormFieldGroup.displayName = 'FormFieldGroup';
 
 export const FormActions = React.forwardRef<FormActionsRef, FormActionsProps>(
   ({ className, ...props }, ref) => (
-    <div
-      ref={ref}
-      className={cn(
-        formFieldClasses.actions.wrapper,
-        className
-      )}
-      {...props}
-    />
+    <div ref={ref} className={cn(formFieldClasses.actions.wrapper, className)} {...props} />
   )
 );
 FormActions.displayName = 'FormActions';
@@ -209,99 +185,92 @@ export const NumberFormField = React.forwardRef<FormFieldRef, FormFieldTypeProps
 );
 NumberFormField.displayName = 'NumberFormField';
 
-export const TextareaFormField = React.forwardRef<TextareaFormFieldRef, TextareaFormFieldProps & React.TextareaHTMLAttributes<HTMLTextAreaElement>>(
-  (props, ref) => {
-    const { 
-      wrapperClassName, 
-      labelClassName, 
-      errorClassName, 
-      helperClassName, 
-      layout, 
-      labelWidth, 
-      className, 
-      rows = 4,
-      error,
-      helperText,
-      disabled,
-      required,
-      label,
-      name,
-      variant,
-      ...textareaProps  // Changed from fieldProps to textareaProps for clarity
-    } = props;
-    
-    const fieldId = `${name}-field`;
-    const errorId = error ? `${fieldId}-error` : undefined;
-    const helperId = helperText ? `${fieldId}-helper` : undefined;
-    const ariaDescribedBy = [helperId, errorId].filter(Boolean).join(' ') || undefined;
+export const TextareaFormField = React.forwardRef<
+  TextareaFormFieldRef,
+  TextareaFormFieldProps & React.TextareaHTMLAttributes<HTMLTextAreaElement>
+>((props, ref) => {
+  const {
+    wrapperClassName,
+    labelClassName,
+    errorClassName,
+    helperClassName,
+    layout,
+    labelWidth,
+    className,
+    rows = 4,
+    error,
+    helperText,
+    disabled,
+    required,
+    label,
+    name,
+    variant,
+    ...textareaProps // Changed from fieldProps to textareaProps for clarity
+  } = props;
 
-    const isHorizontal = layout === 'horizontal';
-    const fieldVariant = error ? 'error' : variant;
+  const fieldId = `${name}-field`;
+  const errorId = error ? `${fieldId}-error` : undefined;
+  const helperId = helperText ? `${fieldId}-helper` : undefined;
+  const ariaDescribedBy = [helperId, errorId].filter(Boolean).join(' ') || undefined;
 
-    // Build CSS classes using utility functions
-    const wrapperClasses = cn(
-      getWrapperClasses(layout || 'vertical', disabled, wrapperClassName)
-    );
+  const isHorizontal = layout === 'horizontal';
+  const fieldVariant = error ? 'error' : variant;
 
-    const labelClasses = cn(
-      getLabelClasses(layout || 'vertical', required, disabled, fieldVariant, labelClassName)
-    );
+  // Build CSS classes using utility functions
+  const wrapperClasses = cn(getWrapperClasses(layout || 'vertical', disabled, wrapperClassName));
 
-    const fieldContainerClasses = cn(
-      getFieldContainerClasses(layout || 'vertical')
-    );
+  const labelClasses = cn(
+    getLabelClasses(layout || 'vertical', required, disabled, fieldVariant, labelClassName)
+  );
 
-    const textareaClasses = cn(
-      getTextareaClasses(fieldVariant, disabled, className)
-    );
+  const fieldContainerClasses = cn(getFieldContainerClasses(layout || 'vertical'));
 
-    const helperErrorClasses = cn(
-      getHelperClasses(fieldVariant, !!error, disabled, error ? errorClassName : helperClassName)
-    );
+  const textareaClasses = cn(getTextareaClasses(fieldVariant, disabled, className));
 
-    const labelStyle = isHorizontal ? { 
-      width: labelWidth || defaultStyleProps.labelWidth, 
-      minWidth: labelWidth || defaultStyleProps.labelWidth 
-    } : undefined;
+  const helperErrorClasses = cn(
+    getHelperClasses(fieldVariant, !!error, disabled, error ? errorClassName : helperClassName)
+  );
 
-    return (
-      <div className={wrapperClasses}>
-        {label && (
-          <label
-            htmlFor={fieldId}
-            className={labelClasses}
-            style={labelStyle}
+  const labelStyle = isHorizontal
+    ? {
+        width: labelWidth || defaultStyleProps.labelWidth,
+        minWidth: labelWidth || defaultStyleProps.labelWidth,
+      }
+    : undefined;
+
+  return (
+    <div className={wrapperClasses}>
+      {label && (
+        <label htmlFor={fieldId} className={labelClasses} style={labelStyle}>
+          {label}
+        </label>
+      )}
+
+      <div className={fieldContainerClasses}>
+        <textarea
+          ref={ref}
+          id={fieldId}
+          name={name}
+          className={textareaClasses}
+          disabled={disabled}
+          required={required}
+          aria-invalid={!!error}
+          aria-describedby={ariaDescribedBy}
+          rows={rows}
+          {...textareaProps} // Only spread textarea-specific props
+        />
+
+        {(error || helperText) && (
+          <p
+            id={error ? errorId : helperId}
+            className={helperErrorClasses}
+            role={error ? 'alert' : undefined}
           >
-            {label}
-          </label>
+            {error || helperText}
+          </p>
         )}
-        
-        <div className={fieldContainerClasses}>
-          <textarea
-            ref={ref}
-            id={fieldId}
-            name={name}
-            className={textareaClasses}
-            disabled={disabled}
-            required={required}
-            aria-invalid={!!error}
-            aria-describedby={ariaDescribedBy}
-            rows={rows}
-            {...textareaProps}  // Only spread textarea-specific props
-          />
-          
-          {(error || helperText) && (
-            <p 
-              id={error ? errorId : helperId} 
-              className={helperErrorClasses}
-              role={error ? "alert" : undefined}
-            >
-              {error || helperText}
-            </p>
-          )}
-        </div>
       </div>
-    );
-  }
-);
+    </div>
+  );
+});
 TextareaFormField.displayName = 'TextareaFormField';

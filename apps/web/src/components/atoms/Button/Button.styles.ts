@@ -8,13 +8,13 @@ import { ButtonVariant, ButtonSize } from './Button.types';
 export const buttonTokens = {
   // Spacing tokens (4px grid system)
   spacing: {
-    xs: '0.25rem',    // 4px
-    sm: '0.5rem',     // 8px
-    md: '0.75rem',    // 12px
-    lg: '1rem',       // 16px
-    xl: '1.5rem',     // 24px
+    xs: '0.25rem', // 4px
+    sm: '0.5rem', // 8px
+    md: '0.75rem', // 12px
+    lg: '1rem', // 16px
+    xl: '1.5rem', // 24px
   },
-  
+
   // Border radius tokens
   borderRadius: {
     none: 'rounded-none',
@@ -23,7 +23,7 @@ export const buttonTokens = {
     lg: 'rounded-lg',
     full: 'rounded-full',
   },
-  
+
   // Animation durations
   transition: {
     fast: 'duration-150',
@@ -54,7 +54,7 @@ export const buttonClasses = {
     'focus-visible:ring-2', // Enhanced focus for accessibility
     'focus-visible:ring-offset-2',
   ].join(' '),
-  
+
   // Variant classes (colors, borders, backgrounds)
   variant: {
     primary: [
@@ -65,7 +65,7 @@ export const buttonClasses = {
       'focus:ring-primary-500',
       'border-transparent',
     ].join(' '),
-    
+
     secondary: [
       'bg-white',
       'text-gray-700',
@@ -74,7 +74,7 @@ export const buttonClasses = {
       'focus:ring-gray-500',
       'border-gray-300',
     ].join(' '),
-    
+
     ghost: [
       'bg-transparent',
       'text-gray-700',
@@ -83,7 +83,7 @@ export const buttonClasses = {
       'focus:ring-gray-500',
       'border-transparent',
     ].join(' '),
-    
+
     danger: [
       'bg-error-600',
       'text-white',
@@ -92,7 +92,7 @@ export const buttonClasses = {
       'focus:ring-error-500',
       'border-transparent',
     ].join(' '),
-    
+
     success: [
       'bg-success-600',
       'text-white',
@@ -101,7 +101,7 @@ export const buttonClasses = {
       'focus:ring-success-500',
       'border-transparent',
     ].join(' '),
-    
+
     warning: [
       'bg-warning-600',
       'text-white',
@@ -110,7 +110,7 @@ export const buttonClasses = {
       'focus:ring-warning-500',
       'border-transparent',
     ].join(' '),
-    
+
     outline: [
       'bg-transparent',
       'text-primary-600',
@@ -119,7 +119,7 @@ export const buttonClasses = {
       'active:bg-primary-100',
       'focus:ring-primary-500',
     ].join(' '),
-    
+
     link: [
       'bg-transparent',
       'text-primary-600',
@@ -130,45 +130,20 @@ export const buttonClasses = {
       'hover:bg-transparent',
     ].join(' '),
   },
-  
+
   // Size classes (padding, font size, border radius)
   size: {
-    xs: [
-      'px-2.5',
-      'py-1.5',
-      'text-xs',
-      'rounded',
-    ].join(' '),
-    
-    sm: [
-      'px-3',
-      'py-2',
-      'text-sm',
-      'rounded',
-    ].join(' '),
-    
-    md: [
-      'px-4',
-      'py-2.5',
-      'text-sm',
-      'rounded-md',
-    ].join(' '),
-    
-    lg: [
-      'px-5',
-      'py-3',
-      'text-base',
-      'rounded-md',
-    ].join(' '),
-    
-    xl: [
-      'px-6',
-      'py-3.5',
-      'text-base',
-      'rounded-md',
-    ].join(' '),
+    xs: ['px-2.5', 'py-1.5', 'text-xs', 'rounded'].join(' '),
+
+    sm: ['px-3', 'py-2', 'text-sm', 'rounded'].join(' '),
+
+    md: ['px-4', 'py-2.5', 'text-sm', 'rounded-md'].join(' '),
+
+    lg: ['px-5', 'py-3', 'text-base', 'rounded-md'].join(' '),
+
+    xl: ['px-6', 'py-3.5', 'text-base', 'rounded-md'].join(' '),
   },
-  
+
   // Icon-only size classes (square buttons)
   iconSize: {
     xs: 'p-1',
@@ -177,20 +152,20 @@ export const buttonClasses = {
     lg: 'p-2.5',
     xl: 'p-3',
   },
-  
+
   // State classes
   state: {
     disabled: 'opacity-50 cursor-not-allowed',
     loading: 'cursor-wait',
     fullWidth: 'w-full',
   },
-  
+
   // Accessibility classes
   accessibility: {
     focus: 'focus:outline-none focus:ring-2 focus:ring-offset-2',
     reducedMotion: 'motion-reduce:transition-none',
   },
-  
+
   // Spacing for icons
   iconSpacing: {
     left: 'mr-2',
@@ -232,61 +207,51 @@ export function getButtonClasses(
   }
 ): string {
   const { fullWidth, disabled, loading, iconOnly, className } = options || {};
-  
+
   const classes = [
     // Base classes
     buttonClasses.base,
-    
+
     // Variant
     buttonClasses.variant[variant],
-    
+
     // Size (regular or icon-only)
     iconOnly ? buttonClasses.iconSize[size] : buttonClasses.size[size],
-    
+
     // States
     fullWidth ? buttonClasses.state.fullWidth : '',
     disabled ? buttonClasses.state.disabled : '',
     loading ? buttonClasses.state.loading : '',
-    
+
     // Accessibility
     buttonClasses.accessibility.focus,
     buttonClasses.accessibility.reducedMotion,
-    
+
     // Custom classes
     className || '',
   ];
-  
+
   return classes.filter(Boolean).join(' ');
 }
 
 /**
  * Utility function to get icon spacing classes
  */
-export function getIconSpacingClasses(
-  position: 'left' | 'right',
-  iconOnly?: boolean
-): string {
+export function getIconSpacingClasses(position: 'left' | 'right', iconOnly?: boolean): string {
   if (iconOnly) return '';
-  return position === 'left' 
-    ? buttonClasses.iconSpacing.left 
-    : buttonClasses.iconSpacing.right;
+  return position === 'left' ? buttonClasses.iconSpacing.left : buttonClasses.iconSpacing.right;
 }
 
 /**
  * Utility function to get loading spinner classes
  */
-export function getLoadingSpinnerClasses(
-  size: ButtonSize = 'md',
-  iconOnly?: boolean
-): string {
+export function getLoadingSpinnerClasses(size: ButtonSize = 'md', iconOnly?: boolean): string {
   const classes = [
     loadingSpinnerClasses.base,
     loadingSpinnerClasses.size[size],
-    iconOnly 
-      ? loadingSpinnerClasses.spacing.iconOnly 
-      : loadingSpinnerClasses.spacing.withText,
+    iconOnly ? loadingSpinnerClasses.spacing.iconOnly : loadingSpinnerClasses.spacing.withText,
   ];
-  
+
   return classes.filter(Boolean).join(' ');
 }
 

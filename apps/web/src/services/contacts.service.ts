@@ -1,53 +1,30 @@
-import { api, type Contact, type CreateContactDto, type UpdateContactDto } from './api';
+// apps/web/src/services/contacts.service.ts
+import { apiClient } from './api';
+import { Contact, CreateContactDto, UpdateContactDto } from '../lib/types/api.types';
 
-export class ContactsService {
-  async getAll(): Promise<Contact[]> {
-    const response = await api.getContacts();
-    if (response.error) {
-      throw new Error(response.error);
-    }
-    return response.data || [];
-  }
+export const contactsService = {
+  // Get all contacts
+  getAll: async (): Promise<Contact[]> => {
+    return apiClient.get<Contact[]>('/contacts');
+  },
 
-  async getById(id: string): Promise<Contact> {
-    const response = await api.getContact(id);
-    if (response.error) {
-      throw new Error(response.error);
-    }
-    if (!response.data) {
-      throw new Error('Contact not found');
-    }
-    return response.data;
-  }
+  // Get single contact by ID
+  getById: async (id: string): Promise<Contact> => {
+    return apiClient.get<Contact>(`/contacts/${id}`);
+  },
 
-  async create(contact: CreateContactDto): Promise<Contact> {
-    const response = await api.createContact(contact);
-    if (response.error) {
-      throw new Error(response.error);
-    }
-    if (!response.data) {
-      throw new Error('Failed to create contact');
-    }
-    return response.data;
-  }
+  // Create new contact
+  create: async (data: CreateContactDto): Promise<Contact> => {
+    return apiClient.post<Contact>('/contacts', data);
+  },
 
-  async update(id: string, contact: UpdateContactDto): Promise<Contact> {
-    const response = await api.updateContact(id, contact);
-    if (response.error) {
-      throw new Error(response.error);
-    }
-    if (!response.data) {
-      throw new Error('Failed to update contact');
-    }
-    return response.data;
-  }
+  // Update existing contact
+  update: async (id: string, data: UpdateContactDto): Promise<Contact> => {
+    return apiClient.put<Contact>(`/contacts/${id}`, data);
+  },
 
-  async delete(id: string): Promise<void> {
-    const response = await api.deleteContact(id);
-    if (response.error) {
-      throw new Error(response.error);
-    }
-  }
-}
-
-export const contactsService = new ContactsService();
+  // Delete contact
+  delete: async (id: string): Promise<void> => {
+    return apiClient.delete<void>(`/contacts/${id}`);
+  },
+};

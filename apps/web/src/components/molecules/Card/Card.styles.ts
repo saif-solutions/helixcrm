@@ -7,11 +7,11 @@ import { CardVariant, CardSize } from './Card.types';
 export const cardTokens = {
   // Spacing tokens (in rem units)
   spacing: {
-    sm: '1rem',     // 16px
-    md: '1.5rem',   // 24px
-    lg: '2rem',     // 32px
+    sm: '1rem', // 16px
+    md: '1.5rem', // 24px
+    lg: '2rem', // 32px
   },
-  
+
   // Color tokens (Tailwind color palette)
   colors: {
     background: {
@@ -28,22 +28,22 @@ export const cardTokens = {
       subtitle: 'text-gray-500',
     },
   },
-  
+
   // Typography tokens
   typography: {
     title: 'text-lg font-semibold',
     subtitle: 'text-sm',
   },
-  
+
   // Border radius tokens
   borderRadius: 'rounded-lg',
-  
+
   // Border width tokens
   borderWidth: 'border',
-  
+
   // Transition tokens
   transition: 'transition-all duration-200',
-  
+
   // Shadow tokens
   shadow: {
     none: 'shadow-none',
@@ -59,7 +59,7 @@ export const cardTokens = {
 export const cardClasses = {
   // Base classes (always applied)
   base: 'rounded-lg transition-all duration-200',
-  
+
   // Variant classes
   variant: {
     default: `${cardTokens.colors.background.default} ${cardTokens.borderWidth} ${cardTokens.colors.border.default}`,
@@ -67,50 +67,50 @@ export const cardClasses = {
     ghost: `${cardTokens.colors.background.transparent} ${cardTokens.colors.border.none} ${cardTokens.shadow.none}`,
     elevated: `${cardTokens.colors.background.default} ${cardTokens.borderWidth} ${cardTokens.colors.border.default} ${cardTokens.shadow.large}`,
   },
-  
+
   // Size classes
   size: {
     sm: 'p-4',
     md: 'p-6',
     lg: 'p-8',
   },
-  
+
   // Hover effects
   hover: {
     base: 'hover:shadow-md hover:border-gray-300',
     clickable: 'active:scale-[0.99]',
   },
-  
+
   // Content classes
   content: 'flex-1',
-  
+
   // Header classes
   header: 'mb-4',
-  
+
   // Title classes
   title: `${cardTokens.typography.title} ${cardTokens.colors.text.title}`,
-  
+
   // Subtitle classes
   subtitle: `${cardTokens.typography.subtitle} ${cardTokens.colors.text.subtitle} mt-1`,
-  
+
   // Footer classes
   footer: 'mt-6 pt-4 border-t border-gray-100',
-  
+
   // Actions classes
   actions: 'flex items-center gap-2',
-  
+
   // Image classes
   image: {
     container: 'mb-4 -mx-6 -mt-6 first:rounded-t-lg overflow-hidden',
     image: 'w-full object-cover',
   },
-  
+
   // Cursor classes
   cursor: {
     clickable: 'cursor-pointer',
     default: '',
   },
-  
+
   // Accessibility classes
   accessibility: {
     focus: 'focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500',
@@ -131,28 +131,28 @@ export function getCardContainerClasses(
   const classes = [
     // Base classes
     cardClasses.base,
-    
+
     // Variant classes
     cardClasses.variant[variant],
-    
+
     // Size classes
     cardClasses.size[size],
-    
+
     // Hover effects
     hoverable ? cardClasses.hover.base : '',
     clickable ? cardClasses.hover.clickable : '',
-    
+
     // Cursor
     clickable ? cardClasses.cursor.clickable : cardClasses.cursor.default,
-    
+
     // Accessibility
     cardClasses.accessibility.focus,
     cardClasses.accessibility.reducedMotion,
-    
+
     // Custom classes
     className || '',
   ];
-  
+
   return classes.filter(Boolean).join(' ');
 }
 
@@ -175,15 +175,15 @@ export function getSizeClasses(size: CardSize): string {
  */
 export function getHoverClasses(hoverable: boolean, clickable: boolean): string {
   const classes = [];
-  
+
   if (hoverable) {
     classes.push(cardClasses.hover.base);
   }
-  
+
   if (clickable) {
     classes.push(cardClasses.hover.clickable);
   }
-  
+
   return classes.join(' ');
 }
 

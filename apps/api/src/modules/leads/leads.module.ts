@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { JwtModule } from '@nestjs/jwt'; // ADD THIS IMPORT
 import { LeadsService } from './leads.service';
 import { LeadsController } from './leads.controller';
 import { LoggingModule } from '../../shared/logging/logging.module';
@@ -11,6 +12,7 @@ import { PermissionContextModule } from '../../shared/permissions/context/permis
     LoggingModule,
     TenantModule,
     PermissionContextModule,
+    JwtModule, // ADD THIS TO IMPORTS ARRAY
   ],
   controllers: [LeadsController],
   providers: [

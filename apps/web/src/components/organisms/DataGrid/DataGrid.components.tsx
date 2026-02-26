@@ -10,13 +10,13 @@ import type { CheckboxProps } from './DataGrid.types';
 export const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
   ({ className, indeterminate, ...props }, ref) => {
     const internalRef = React.useRef<HTMLInputElement>(null);
-    
+
     React.useEffect(() => {
       if (internalRef.current) {
         internalRef.current.indeterminate = !!indeterminate;
       }
     }, [indeterminate]);
-    
+
     return (
       <input
         ref={(node) => {
@@ -47,11 +47,11 @@ export interface SortIconProps {
   className?: string;
 }
 
-export const SortIcon: React.FC<SortIconProps> = ({ 
-  isSorted, 
-  direction, 
+export const SortIcon: React.FC<SortIconProps> = ({
+  isSorted,
+  direction,
   size = 'xs',
-  className 
+  className,
 }) => (
   <span className="flex flex-col">
     <svg

@@ -1,4 +1,5 @@
 // src/modules/rbac/roles.controller.ts
+
 import {
   Controller,
   Get,
@@ -12,6 +13,7 @@ import {
   HttpCode,
   HttpStatus,
   ParseUUIDPipe,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -21,16 +23,23 @@ import {
   ApiParam,
   ApiQuery,
 } from '@nestjs/swagger';
+
 import { RolesService } from './roles.service';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { AssignRoleDto } from './dto/assign-role.dto';
 import { RemoveRoleDto } from './dto/remove-role.dto';
 import { RoleQueryDto } from './dto/role-query.dto';
+
 import { RequirePermission } from '../../shared/decorators/require-permission.decorator';
+import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
+import { PermissionGuard } from '../../shared/guards/permission.guard';
 
 @ApiTags('RBAC - Roles')
 @ApiBearerAuth()
+
+// ✅ CRITICAL FIX: AuthGuard MUST run before PermissionGuard
+@UseGuards(JwtAuthGuard, PermissionGuard)
 @Controller('rbac/roles')
 export class RolesController {
   constructor(private readonly rolesService: RolesService) {}
@@ -41,7 +50,6 @@ export class RolesController {
   @ApiQuery({ type: RoleQueryDto })
   @RequirePermission('rbac.read')
   async findAll(@Request() req: any, @Query() query: RoleQueryDto) {
-    // REMOVED: organizationId parameter
     return this.rolesService.findAll(query);
   }
 
@@ -52,7 +60,6 @@ export class RolesController {
   @ApiParam({ name: 'id', description: 'Role ID' })
   @RequirePermission('rbac.read')
   async findOne(@Request() req: any, @Param('id', ParseUUIDPipe) id: string) {
-    // REMOVED: organizationId parameter
     return this.rolesService.findOne(id);
   }
 
@@ -62,7 +69,6 @@ export class RolesController {
   @ApiResponse({ status: 409, description: 'Role name already exists' })
   @RequirePermission('rbac.manage')
   async create(@Request() req: any, @Body() createRoleDto: CreateRoleDto) {
-    // REMOVED: organizationId and userId parameters
     return this.rolesService.create(createRoleDto);
   }
 
@@ -78,7 +84,6 @@ export class RolesController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateRoleDto: UpdateRoleDto,
   ) {
-    // REMOVED: organizationId and userId parameters
     return this.rolesService.update(id, updateRoleDto);
   }
 
@@ -92,7 +97,6 @@ export class RolesController {
   @ApiParam({ name: 'id', description: 'Role ID' })
   @RequirePermission('rbac.manage')
   async remove(@Request() req: any, @Param('id', ParseUUIDPipe) id: string) {
-    // REMOVED: organizationId and userId parameters
     return this.rolesService.remove(id);
   }
 
@@ -103,7 +107,6 @@ export class RolesController {
   @ApiResponse({ status: 409, description: 'Role already assigned' })
   @RequirePermission('rbac.manage')
   async assignRole(@Request() req: any, @Body() assignRoleDto: AssignRoleDto) {
-    // REMOVED: organizationId and userId parameters
     return this.rolesService.assignRole(assignRoleDto);
   }
 
@@ -114,7 +117,6 @@ export class RolesController {
   @ApiResponse({ status: 403, description: 'Cannot remove last admin' })
   @RequirePermission('rbac.manage')
   async removeRole(@Request() req: any, @Body() removeRoleDto: RemoveRoleDto) {
-    // REMOVED: organizationId and userId parameters
     return this.rolesService.removeRole(removeRoleDto);
   }
 
@@ -128,7 +130,6 @@ export class RolesController {
     @Request() req: any,
     @Param('userId', ParseUUIDPipe) userId: string,
   ) {
-    // REMOVED: organizationId parameter
     return this.rolesService.getUserRoles(userId);
   }
 }

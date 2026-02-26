@@ -1,17 +1,17 @@
 // Re-export all components
-export { 
-  FormField, 
-  FormFieldGroup, 
+export {
+  FormField,
+  FormFieldGroup,
   FormActions,
   TextFormField,
   EmailFormField,
   PasswordFormField,
   NumberFormField,
-  TextareaFormField
+  TextareaFormField,
 } from './FormField';
 
 // Re-export all types from the types file
-export type { 
+export type {
   FormFieldProps,
   FormFieldGroupProps,
   FormActionsProps,
@@ -26,7 +26,7 @@ export type {
   FormFieldRef,
   TextareaFormFieldRef,
   FormFieldGroupRef,
-  FormActionsRef
+  FormActionsRef,
 } from './FormField.types';
 
 // Re-export style utilities if needed
@@ -39,5 +39,5 @@ export {
   getInputClasses,
   getTextareaClasses,
   getFieldContainerClasses,
-  defaultStyleProps
+  defaultStyleProps,
 } from './FormField.styles';

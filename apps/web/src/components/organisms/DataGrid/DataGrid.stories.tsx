@@ -40,32 +40,198 @@ interface Contact {
 
 // Sample data
 const users: User[] = [
-  { id: '1', name: 'John Doe', email: 'john@example.com', role: 'Admin', status: 'active', lastLogin: '2024-01-10', department: 'Engineering' },
-  { id: '2', name: 'Jane Smith', email: 'jane@example.com', role: 'Editor', status: 'active', lastLogin: '2024-01-09', department: 'Marketing' },
-  { id: '3', name: 'Bob Johnson', email: 'bob@example.com', role: 'Viewer', status: 'inactive', lastLogin: '2024-01-05', department: 'Sales' },
-  { id: '4', name: 'Alice Brown', email: 'alice@example.com', role: 'Admin', status: 'pending', lastLogin: '2024-01-08', department: 'Engineering' },
-  { id: '5', name: 'Charlie Wilson', email: 'charlie@example.com', role: 'Editor', status: 'active', lastLogin: '2024-01-11', department: 'Support' },
-  { id: '6', name: 'Diana Prince', email: 'diana@example.com', role: 'Viewer', status: 'active', lastLogin: '2024-01-07', department: 'Marketing' },
-  { id: '7', name: 'Edward Lee', email: 'edward@example.com', role: 'Admin', status: 'inactive', lastLogin: '2024-01-02', department: 'Engineering' },
-  { id: '8', name: 'Fiona Green', email: 'fiona@example.com', role: 'Editor', status: 'pending', lastLogin: '2024-01-06', department: 'Sales' },
+  {
+    id: '1',
+    name: 'John Doe',
+    email: 'john@example.com',
+    role: 'Admin',
+    status: 'active',
+    lastLogin: '2024-01-10',
+    department: 'Engineering',
+  },
+  {
+    id: '2',
+    name: 'Jane Smith',
+    email: 'jane@example.com',
+    role: 'Editor',
+    status: 'active',
+    lastLogin: '2024-01-09',
+    department: 'Marketing',
+  },
+  {
+    id: '3',
+    name: 'Bob Johnson',
+    email: 'bob@example.com',
+    role: 'Viewer',
+    status: 'inactive',
+    lastLogin: '2024-01-05',
+    department: 'Sales',
+  },
+  {
+    id: '4',
+    name: 'Alice Brown',
+    email: 'alice@example.com',
+    role: 'Admin',
+    status: 'pending',
+    lastLogin: '2024-01-08',
+    department: 'Engineering',
+  },
+  {
+    id: '5',
+    name: 'Charlie Wilson',
+    email: 'charlie@example.com',
+    role: 'Editor',
+    status: 'active',
+    lastLogin: '2024-01-11',
+    department: 'Support',
+  },
+  {
+    id: '6',
+    name: 'Diana Prince',
+    email: 'diana@example.com',
+    role: 'Viewer',
+    status: 'active',
+    lastLogin: '2024-01-07',
+    department: 'Marketing',
+  },
+  {
+    id: '7',
+    name: 'Edward Lee',
+    email: 'edward@example.com',
+    role: 'Admin',
+    status: 'inactive',
+    lastLogin: '2024-01-02',
+    department: 'Engineering',
+  },
+  {
+    id: '8',
+    name: 'Fiona Green',
+    email: 'fiona@example.com',
+    role: 'Editor',
+    status: 'pending',
+    lastLogin: '2024-01-06',
+    department: 'Sales',
+  },
 ];
 
 const products: Product[] = [
-  { id: '1', name: 'Laptop Pro', category: 'Electronics', price: 1299.99, stock: 45, status: 'in_stock' },
-  { id: '2', name: 'Wireless Mouse', category: 'Accessories', price: 49.99, stock: 5, status: 'low_stock' },
-  { id: '3', name: 'Mechanical Keyboard', category: 'Accessories', price: 89.99, stock: 0, status: 'out_of_stock' },
-  { id: '4', name: 'Monitor 27"', category: 'Electronics', price: 299.99, stock: 12, status: 'in_stock' },
-  { id: '5', name: 'USB-C Hub', category: 'Accessories', price: 39.99, stock: 3, status: 'low_stock' },
-  { id: '6', name: 'Webcam HD', category: 'Electronics', price: 79.99, stock: 25, status: 'in_stock' },
+  {
+    id: '1',
+    name: 'Laptop Pro',
+    category: 'Electronics',
+    price: 1299.99,
+    stock: 45,
+    status: 'in_stock',
+  },
+  {
+    id: '2',
+    name: 'Wireless Mouse',
+    category: 'Accessories',
+    price: 49.99,
+    stock: 5,
+    status: 'low_stock',
+  },
+  {
+    id: '3',
+    name: 'Mechanical Keyboard',
+    category: 'Accessories',
+    price: 89.99,
+    stock: 0,
+    status: 'out_of_stock',
+  },
+  {
+    id: '4',
+    name: 'Monitor 27"',
+    category: 'Electronics',
+    price: 299.99,
+    stock: 12,
+    status: 'in_stock',
+  },
+  {
+    id: '5',
+    name: 'USB-C Hub',
+    category: 'Accessories',
+    price: 39.99,
+    stock: 3,
+    status: 'low_stock',
+  },
+  {
+    id: '6',
+    name: 'Webcam HD',
+    category: 'Electronics',
+    price: 79.99,
+    stock: 25,
+    status: 'in_stock',
+  },
 ];
 
 const contacts: Contact[] = [
-  { id: '1', firstName: 'John', lastName: 'Doe', company: 'Tech Corp', email: 'john@techcorp.com', phone: '(555) 123-4567', status: 'customer', lastContact: '2024-01-10', value: 50000 },
-  { id: '2', firstName: 'Jane', lastName: 'Smith', company: 'Marketing Inc', email: 'jane@marketing.com', phone: '(555) 987-6543', status: 'lead', lastContact: '2024-01-09', value: 25000 },
-  { id: '3', firstName: 'Bob', lastName: 'Johnson', company: 'Sales Co', email: 'bob@sales.com', phone: '(555) 456-7890', status: 'customer', lastContact: '2024-01-11', value: 75000 },
-  { id: '4', firstName: 'Alice', lastName: 'Brown', company: 'Startup XYZ', email: 'alice@startup.com', phone: '(555) 321-0987', status: 'lead', lastContact: '2024-01-05', value: 15000 },
-  { id: '5', firstName: 'Charlie', lastName: 'Wilson', company: 'Enterprise Ltd', email: 'charlie@enterprise.com', phone: '(555) 654-3210', status: 'customer', lastContact: '2024-01-12', value: 120000 },
-  { id: '6', firstName: 'Diana', lastName: 'Prince', company: 'Business Co', email: 'diana@business.com', phone: '(555) 789-0123', status: 'inactive', lastContact: '2023-12-15', value: 0 },
+  {
+    id: '1',
+    firstName: 'John',
+    lastName: 'Doe',
+    company: 'Tech Corp',
+    email: 'john@techcorp.com',
+    phone: '(555) 123-4567',
+    status: 'customer',
+    lastContact: '2024-01-10',
+    value: 50000,
+  },
+  {
+    id: '2',
+    firstName: 'Jane',
+    lastName: 'Smith',
+    company: 'Marketing Inc',
+    email: 'jane@marketing.com',
+    phone: '(555) 987-6543',
+    status: 'lead',
+    lastContact: '2024-01-09',
+    value: 25000,
+  },
+  {
+    id: '3',
+    firstName: 'Bob',
+    lastName: 'Johnson',
+    company: 'Sales Co',
+    email: 'bob@sales.com',
+    phone: '(555) 456-7890',
+    status: 'customer',
+    lastContact: '2024-01-11',
+    value: 75000,
+  },
+  {
+    id: '4',
+    firstName: 'Alice',
+    lastName: 'Brown',
+    company: 'Startup XYZ',
+    email: 'alice@startup.com',
+    phone: '(555) 321-0987',
+    status: 'lead',
+    lastContact: '2024-01-05',
+    value: 15000,
+  },
+  {
+    id: '5',
+    firstName: 'Charlie',
+    lastName: 'Wilson',
+    company: 'Enterprise Ltd',
+    email: 'charlie@enterprise.com',
+    phone: '(555) 654-3210',
+    status: 'customer',
+    lastContact: '2024-01-12',
+    value: 120000,
+  },
+  {
+    id: '6',
+    firstName: 'Diana',
+    lastName: 'Prince',
+    company: 'Business Co',
+    email: 'diana@business.com',
+    phone: '(555) 789-0123',
+    status: 'inactive',
+    lastContact: '2023-12-15',
+    value: 0,
+  },
 ];
 
 // ==================== BASIC EXAMPLES ====================
@@ -82,14 +248,14 @@ export const Default = () => {
     { key: 'department', title: 'Department', width: '150px' },
     { key: 'lastLogin', title: 'Last Login', width: '120px' },
   ];
-  
+
   return (
     <div className="p-6">
-      <DataGrid 
-        data={users.slice(0, 5)} 
-        columns={columns} 
-        rowKey="id" 
-        aria-label="User management table" 
+      <DataGrid
+        data={users.slice(0, 5)}
+        columns={columns}
+        rowKey="id"
+        aria-label="User management table"
       />
     </div>
   );
@@ -107,12 +273,12 @@ export const WithSelection = () => {
     { key: 'status', title: 'Status', width: '120px' },
     { key: 'lastLogin', title: 'Last Login', width: '120px' },
   ];
-  
+
   return (
     <div className="p-6">
-      <DataGrid 
-        data={users} 
-        columns={columns} 
+      <DataGrid
+        data={users}
+        columns={columns}
         rowKey="id"
         selectable
         striped
@@ -149,9 +315,7 @@ export const WithCustomRendering = () => {
       title: 'Role',
       width: '120px',
       render: (value: string) => (
-        <Badge variant={value === 'Admin' ? 'primary' : 'default'}>
-          {value}
-        </Badge>
+        <Badge variant={value === 'Admin' ? 'primary' : 'default'}>{value}</Badge>
       ),
     },
     {
@@ -170,12 +334,12 @@ export const WithCustomRendering = () => {
     },
     { key: 'lastLogin', title: 'Last Login', width: '120px' },
   ];
-  
+
   return (
     <div className="p-6">
-      <DataGrid 
-        data={users} 
-        columns={columns} 
+      <DataGrid
+        data={users}
+        columns={columns}
         rowKey="id"
         selectable
         hoverable
@@ -191,7 +355,7 @@ export const WithCustomRendering = () => {
  */
 export const WithSorting = () => {
   const [sort, setSort] = React.useState({ column: 'name', direction: 'asc' as 'asc' | 'desc' });
-  
+
   const columns: Column<User>[] = [
     { key: 'name', title: 'Name', width: '200px', sortable: true },
     { key: 'email', title: 'Email', width: '250px', sortable: true },
@@ -199,17 +363,17 @@ export const WithSorting = () => {
     { key: 'status', title: 'Status', width: '120px', sortable: true },
     { key: 'lastLogin', title: 'Last Login', width: '120px', sortable: true },
   ];
-  
+
   const handleSortChange = (column: string, direction: 'asc' | 'desc') => {
     setSort({ column, direction });
     console.log(`Sort by ${column} ${direction}`);
   };
-  
+
   return (
     <div className="p-6">
-      <DataGrid 
-        data={users} 
-        columns={columns} 
+      <DataGrid
+        data={users}
+        columns={columns}
         rowKey="id"
         sort={sort}
         onSortChange={handleSortChange}
@@ -230,7 +394,7 @@ export const WithRowActions = () => {
     { key: 'role', title: 'Role', width: '120px' },
     { key: 'status', title: 'Status', width: '120px' },
   ];
-  
+
   const rowActions = (row: User) => (
     <>
       <Button size="sm" variant="ghost" aria-label={`Edit ${row.name}`}>
@@ -241,12 +405,12 @@ export const WithRowActions = () => {
       </Button>
     </>
   );
-  
+
   return (
     <div className="p-6">
-      <DataGrid 
-        data={users.slice(0, 4)} 
-        columns={columns} 
+      <DataGrid
+        data={users.slice(0, 4)}
+        columns={columns}
         rowKey="id"
         actions={rowActions}
         aria-label="User table with row actions"
@@ -262,26 +426,26 @@ export const WithRowActions = () => {
 export const WithPagination = () => {
   const [page, setPage] = React.useState(1);
   const pageSize = 3;
-  
+
   const columns: Column<User>[] = [
     { key: 'name', title: 'Name', width: '200px' },
     { key: 'email', title: 'Email', width: '250px' },
     { key: 'role', title: 'Role', width: '120px' },
     { key: 'status', title: 'Status', width: '120px' },
   ];
-  
+
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
     console.log(`Page changed to ${newPage}`);
   };
-  
+
   const paginatedData = users.slice((page - 1) * pageSize, page * pageSize);
-  
+
   return (
     <div className="p-6">
-      <DataGrid 
-        data={paginatedData} 
-        columns={columns} 
+      <DataGrid
+        data={paginatedData}
+        columns={columns}
         rowKey="id"
         pagination={{
           page,
@@ -301,30 +465,31 @@ export const WithPagination = () => {
  */
 export const WithBulkActions = () => {
   const [selectedRows, setSelectedRows] = React.useState<string[]>([]);
-  
+
   const columns: Column<User>[] = [
     { key: 'name', title: 'Name', width: '200px' },
     { key: 'email', title: 'Email', width: '250px' },
     { key: 'role', title: 'Role', width: '120px' },
     { key: 'status', title: 'Status', width: '120px' },
   ];
-  
-  const bulkActions = selectedRows.length > 0 ? (
-    <>
-      <Button size="sm" variant="primary" aria-label="Export selected users">
-        Export Selected
-      </Button>
-      <Button size="sm" variant="danger" aria-label="Delete selected users">
-        Delete Selected
-      </Button>
-    </>
-  ) : null;
-  
+
+  const bulkActions =
+    selectedRows.length > 0 ? (
+      <>
+        <Button size="sm" variant="primary" aria-label="Export selected users">
+          Export Selected
+        </Button>
+        <Button size="sm" variant="danger" aria-label="Delete selected users">
+          Delete Selected
+        </Button>
+      </>
+    ) : null;
+
   return (
     <div className="p-6">
-      <DataGrid 
-        data={users} 
-        columns={columns} 
+      <DataGrid
+        data={users}
+        columns={columns}
         rowKey="id"
         selectable
         selectedRows={selectedRows}
@@ -346,16 +511,16 @@ export const CompactMode = () => {
   const columns: Column<Product>[] = [
     { key: 'name', title: 'Product', width: '200px' },
     { key: 'category', title: 'Category', width: '150px' },
-    { 
-      key: 'price', 
-      title: 'Price', 
+    {
+      key: 'price',
+      title: 'Price',
       width: '120px',
       align: 'right' as const,
       render: (value: number) => `$${value.toFixed(2)}`,
     },
-    { 
-      key: 'stock', 
-      title: 'Stock', 
+    {
+      key: 'stock',
+      title: 'Stock',
       width: '120px',
       align: 'right' as const,
     },
@@ -374,12 +539,12 @@ export const CompactMode = () => {
       },
     },
   ];
-  
+
   return (
     <div className="p-6">
-      <DataGrid 
-        data={products} 
-        columns={columns} 
+      <DataGrid
+        data={products}
+        columns={columns}
         rowKey="id"
         compact
         striped={false}
@@ -400,12 +565,12 @@ export const EmptyState = () => {
     { key: 'role', title: 'Role', width: '120px' },
     { key: 'status', title: 'Status', width: '120px' },
   ];
-  
+
   return (
     <div className="p-6">
-      <DataGrid 
-        data={[]} 
-        columns={columns} 
+      <DataGrid
+        data={[]}
+        columns={columns}
         rowKey="id"
         emptyMessage="No users found. Try adjusting your filters or add new users."
         aria-label="Empty user table"
@@ -425,16 +590,10 @@ export const LoadingState = () => {
     { key: 'role', title: 'Role', width: '120px' },
     { key: 'status', title: 'Status', width: '120px' },
   ];
-  
+
   return (
     <div className="p-6">
-      <DataGrid 
-        data={[]} 
-        columns={columns} 
-        rowKey="id"
-        loading
-        aria-label="Loading user table"
-      />
+      <DataGrid data={[]} columns={columns} rowKey="id" loading aria-label="Loading user table" />
     </div>
   );
 };
@@ -449,11 +608,11 @@ export const CompleteExample = () => {
   const [selectedRows, setSelectedRows] = React.useState<string[]>([]);
   const [sort, setSort] = React.useState({ column: 'name', direction: 'asc' as 'asc' | 'desc' });
   const [page, setPage] = React.useState(1);
-  
+
   const pageSize = 4;
   const total = users.length;
   const paginatedData = users.slice((page - 1) * pageSize, page * pageSize);
-  
+
   const columns: Column<User>[] = [
     {
       key: 'name',
@@ -470,9 +629,9 @@ export const CompleteExample = () => {
         </div>
       ),
     },
-    { 
-      key: 'email', 
-      title: 'Email', 
+    {
+      key: 'email',
+      title: 'Email',
       width: '250px',
       sortable: true,
     },
@@ -482,9 +641,7 @@ export const CompleteExample = () => {
       width: '120px',
       sortable: true,
       render: (value: string) => (
-        <Badge variant={value === 'Admin' ? 'primary' : 'default'}>
-          {value}
-        </Badge>
+        <Badge variant={value === 'Admin' ? 'primary' : 'default'}>{value}</Badge>
       ),
     },
     {
@@ -502,14 +659,14 @@ export const CompleteExample = () => {
         return <Badge variant={variant}>{label}</Badge>;
       },
     },
-    { 
-      key: 'lastLogin', 
-      title: 'Last Login', 
+    {
+      key: 'lastLogin',
+      title: 'Last Login',
       width: '120px',
       sortable: true,
     },
   ];
-  
+
   const rowActions = (_: User) => (
     <>
       <Button size="sm" variant="ghost" aria-label="View details">
@@ -520,28 +677,37 @@ export const CompleteExample = () => {
       </Button>
     </>
   );
-  
-  const bulkActions = selectedRows.length > 0 ? (
-    <>
-      <Button size="sm" variant="primary" aria-label={`Export ${selectedRows.length} selected users`}>
-        Export ({selectedRows.length})
-      </Button>
-      <Button size="sm" variant="danger" aria-label={`Delete ${selectedRows.length} selected users`}>
-        Delete ({selectedRows.length})
-      </Button>
-    </>
-  ) : null;
-  
+
+  const bulkActions =
+    selectedRows.length > 0 ? (
+      <>
+        <Button
+          size="sm"
+          variant="primary"
+          aria-label={`Export ${selectedRows.length} selected users`}
+        >
+          Export ({selectedRows.length})
+        </Button>
+        <Button
+          size="sm"
+          variant="danger"
+          aria-label={`Delete ${selectedRows.length} selected users`}
+        >
+          Delete ({selectedRows.length})
+        </Button>
+      </>
+    ) : null;
+
   return (
     <div className="p-6 space-y-6">
       <div>
         <h2 className="text-xl font-semibold mb-2">User Management</h2>
         <p className="text-gray-600">Manage your team members and their permissions.</p>
       </div>
-      
-      <DataGrid 
-        data={paginatedData} 
-        columns={columns} 
+
+      <DataGrid
+        data={paginatedData}
+        columns={columns}
         rowKey="id"
         selectable
         selectedRows={selectedRows}
@@ -579,7 +745,9 @@ export const CRMContactsExample = () => {
       width: '200px',
       render: (_: unknown, row: Contact) => (
         <div>
-          <div className="font-medium text-gray-900">{row.firstName} {row.lastName}</div>
+          <div className="font-medium text-gray-900">
+            {row.firstName} {row.lastName}
+          </div>
           <div className="text-sm text-gray-500">{row.company}</div>
         </div>
       ),
@@ -606,14 +774,10 @@ export const CRMContactsExample = () => {
       title: 'Value',
       width: '120px',
       align: 'right' as const,
-      render: (value: number) => (
-        <div className="font-medium">
-          ${value.toLocaleString()}
-        </div>
-      ),
+      render: (value: number) => <div className="font-medium">${value.toLocaleString()}</div>,
     },
   ];
-  
+
   const rowActions = (_: Contact) => (
     <>
       <Button size="sm" variant="ghost" aria-label="Send email">
@@ -627,17 +791,17 @@ export const CRMContactsExample = () => {
       </Button>
     </>
   );
-  
+
   return (
     <div className="p-6">
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-900">Contacts</h2>
         <p className="text-gray-600">Manage your customer relationships</p>
       </div>
-      
-      <DataGrid 
-        data={contacts} 
-        columns={columns} 
+
+      <DataGrid
+        data={contacts}
+        columns={columns}
         rowKey="id"
         selectable
         actions={rowActions}
@@ -655,33 +819,34 @@ export const CRMContactsExample = () => {
  */
 export const AccessibilityExample = () => {
   const columns: Column<User>[] = [
-    { 
-      key: 'name', 
-      title: 'Name', 
+    {
+      key: 'name',
+      title: 'Name',
       width: '200px',
       sortable: true,
     },
-    { 
-      key: 'email', 
-      title: 'Email', 
+    {
+      key: 'email',
+      title: 'Email',
       width: '250px',
       sortable: true,
     },
-    { 
-      key: 'role', 
-      title: 'Role', 
+    {
+      key: 'role',
+      title: 'Role',
       width: '120px',
     },
   ];
-  
+
   return (
     <div className="p-6">
       <div id="table-description" className="sr-only">
-        User management table with sortable columns and row selection. Use Tab to navigate, Space to select rows, and Enter to activate sortable headers.
+        User management table with sortable columns and row selection. Use Tab to navigate, Space to
+        select rows, and Enter to activate sortable headers.
       </div>
-      <DataGrid 
-        data={users.slice(0, 3)} 
-        columns={columns} 
+      <DataGrid
+        data={users.slice(0, 3)}
+        columns={columns}
         rowKey="id"
         selectable
         aria-label="Accessible user table"
@@ -708,20 +873,22 @@ export const AccessibilityExample = () => {
 export const PerformanceExample = () => {
   const [page, setPage] = React.useState(1);
   const pageSize = 50;
-  
+
   // Generate 1000 sample users
-  const largeData = React.useMemo(() => 
-    Array.from({ length: 1000 }, (_, i) => ({
-      id: `${i + 1}`,
-      name: `User ${i + 1}`,
-      email: `user${i + 1}@example.com`,
-      role: i % 3 === 0 ? 'Admin' : i % 3 === 1 ? 'Editor' : 'Viewer',
-      status: (i % 4 === 0 ? 'pending' : i % 4 === 1 ? 'inactive' : 'active') as User['status'],
-      lastLogin: '2024-01-15',
-      department: ['Engineering', 'Marketing', 'Sales', 'Support'][i % 4],
-    })), []
+  const largeData = React.useMemo(
+    () =>
+      Array.from({ length: 1000 }, (_, i) => ({
+        id: `${i + 1}`,
+        name: `User ${i + 1}`,
+        email: `user${i + 1}@example.com`,
+        role: i % 3 === 0 ? 'Admin' : i % 3 === 1 ? 'Editor' : 'Viewer',
+        status: (i % 4 === 0 ? 'pending' : i % 4 === 1 ? 'inactive' : 'active') as User['status'],
+        lastLogin: '2024-01-15',
+        department: ['Engineering', 'Marketing', 'Sales', 'Support'][i % 4],
+      })),
+    []
   );
-  
+
   const columns: Column<User>[] = [
     { key: 'name', title: 'Name', width: '200px' },
     { key: 'email', title: 'Email', width: '250px' },
@@ -729,14 +896,14 @@ export const PerformanceExample = () => {
     { key: 'status', title: 'Status', width: '120px' },
     { key: 'department', title: 'Department', width: '150px' },
   ];
-  
+
   const paginatedData = largeData.slice((page - 1) * pageSize, page * pageSize);
-  
+
   return (
     <div className="p-6">
-      <DataGrid 
-        data={paginatedData} 
-        columns={columns} 
+      <DataGrid
+        data={paginatedData}
+        columns={columns}
         rowKey="id"
         selectable
         pagination={{
@@ -748,7 +915,9 @@ export const PerformanceExample = () => {
         aria-label="Large dataset performance table"
       />
       <div className="mt-4 text-sm text-gray-600">
-        <p>Showing 50 of 1000 records. Pagination is essential for performance with large datasets.</p>
+        <p>
+          Showing 50 of 1000 records. Pagination is essential for performance with large datasets.
+        </p>
       </div>
     </div>
   );

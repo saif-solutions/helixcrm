@@ -1,13 +1,13 @@
 // D:\Projects-In-Hand\helixcrm\apps\web\src\components\molecules\FormField\FormField.stories.tsx
-import { 
-  FormField, 
-  FormFieldGroup, 
+import {
+  FormField,
+  FormFieldGroup,
   FormActions,
   TextFormField,
   EmailFormField,
   PasswordFormField,
   NumberFormField,
-  TextareaFormField
+  TextareaFormField,
 } from './FormField';
 import { Button } from '../../atoms/Button/Button';
 import { Card } from '../Card/Card';
@@ -40,41 +40,15 @@ export const Default = {
 // All field types
 export const FieldTypes = () => (
   <div className="space-y-4 max-w-md">
-    <TextFormField
-      label="Full Name"
-      name="fullName"
-      placeholder="John Doe"
-      required
-    />
-    
-    <EmailFormField
-      label="Email Address"
-      name="email"
-      placeholder="you@example.com"
-      required
-    />
-    
-    <PasswordFormField
-      label="Password"
-      name="password"
-      placeholder="••••••••"
-      required
-    />
-    
-    <NumberFormField
-      label="Age"
-      name="age"
-      placeholder="25"
-      min={18}
-      max={100}
-    />
-    
-    <TextareaFormField
-      label="Bio"
-      name="bio"
-      placeholder="Tell us about yourself..."
-      rows={3}
-    />
+    <TextFormField label="Full Name" name="fullName" placeholder="John Doe" required />
+
+    <EmailFormField label="Email Address" name="email" placeholder="you@example.com" required />
+
+    <PasswordFormField label="Password" name="password" placeholder="••••••••" required />
+
+    <NumberFormField label="Age" name="age" placeholder="25" min={18} max={100} />
+
+    <TextareaFormField label="Bio" name="bio" placeholder="Tell us about yourself..." rows={3} />
   </div>
 );
 
@@ -87,14 +61,14 @@ export const ValidationStates = () => (
       placeholder="This field is valid"
       helperText="Everything looks good!"
     />
-    
+
     <FormField
       label="Error Field"
       name="error"
       placeholder="This field has an error"
       error="This field is required"
     />
-    
+
     <FormField
       label="Success Field"
       name="success"
@@ -102,7 +76,7 @@ export const ValidationStates = () => (
       helperText="Great job!"
       variant="success"
     />
-    
+
     <FormField
       label="Warning Field"
       name="warning"
@@ -125,15 +99,10 @@ export const Layouts = () => (
           placeholder="Enter username"
           layout="vertical"
         />
-        <FormField
-          label="Email"
-          name="email1"
-          placeholder="Enter email"
-          layout="vertical"
-        />
+        <FormField label="Email" name="email1" placeholder="Enter email" layout="vertical" />
       </div>
     </div>
-    
+
     <div>
       <h3 className="text-sm font-medium text-gray-700 mb-2">Horizontal Layout</h3>
       <div className="space-y-4 max-w-2xl">
@@ -166,12 +135,8 @@ export const Layouts = () => (
 // Disabled and read-only states
 export const States = () => (
   <div className="space-y-4 max-w-md">
-    <FormField
-      label="Enabled Field"
-      name="enabled"
-      placeholder="You can type here"
-    />
-    
+    <FormField label="Enabled Field" name="enabled" placeholder="You can type here" />
+
     <FormField
       label="Disabled Field"
       name="disabled"
@@ -179,7 +144,7 @@ export const States = () => (
       disabled
       helperText="This field is disabled"
     />
-    
+
     <FormField
       label="Read-only Field"
       name="readonly"
@@ -197,44 +162,22 @@ export const FieldGroups = () => (
       title="Personal Information"
       description="This information will be displayed publicly."
     >
-      <TextFormField
-        label="First Name"
-        name="firstName"
-        placeholder="John"
-        required
-      />
-      
-      <TextFormField
-        label="Last Name"
-        name="lastName"
-        placeholder="Doe"
-        required
-      />
-      
-      <EmailFormField
-        label="Email"
-        name="email"
-        placeholder="john@example.com"
-        required
-      />
+      <TextFormField label="First Name" name="firstName" placeholder="John" required />
+
+      <TextFormField label="Last Name" name="lastName" placeholder="Doe" required />
+
+      <EmailFormField label="Email" name="email" placeholder="john@example.com" required />
     </FormFieldGroup>
-    
-    <FormFieldGroup
-      title="Account Settings"
-      description="Configure your account preferences."
-    >
-      <PasswordFormField
-        label="New Password"
-        name="newPassword"
-        placeholder="Enter new password"
-      />
-      
+
+    <FormFieldGroup title="Account Settings" description="Configure your account preferences.">
+      <PasswordFormField label="New Password" name="newPassword" placeholder="Enter new password" />
+
       <PasswordFormField
         label="Confirm Password"
         name="confirmPassword"
         placeholder="Confirm new password"
       />
-      
+
       <TextareaFormField
         label="Bio"
         name="bio"
@@ -243,7 +186,7 @@ export const FieldGroups = () => (
         helperText="Brief description for your profile."
       />
     </FormFieldGroup>
-    
+
     <FormActions>
       <Button variant="ghost">Cancel</Button>
       <Button>Save Changes</Button>
@@ -258,24 +201,14 @@ export const CompleteFormExample = () => (
     <p className="text-sm text-gray-500 mb-6">
       Please fill out all required fields to submit your inquiry.
     </p>
-    
+
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <TextFormField
-          label="First Name"
-          name="firstName"
-          placeholder="John"
-          required
-        />
-        
-        <TextFormField
-          label="Last Name"
-          name="lastName"
-          placeholder="Doe"
-          required
-        />
+        <TextFormField label="First Name" name="firstName" placeholder="John" required />
+
+        <TextFormField label="Last Name" name="lastName" placeholder="Doe" required />
       </div>
-      
+
       <EmailFormField
         label="Email Address"
         name="email"
@@ -283,20 +216,11 @@ export const CompleteFormExample = () => (
         required
         helperText="We'll never share your email."
       />
-      
-      <TextFormField
-        label="Phone Number"
-        name="phone"
-        placeholder="(123) 456-7890"
-      />
-      
-      <TextFormField
-        label="Subject"
-        name="subject"
-        placeholder="How can we help you?"
-        required
-      />
-      
+
+      <TextFormField label="Phone Number" name="phone" placeholder="(123) 456-7890" />
+
+      <TextFormField label="Subject" name="subject" placeholder="How can we help you?" required />
+
       <TextareaFormField
         label="Message"
         name="message"
@@ -305,7 +229,7 @@ export const CompleteFormExample = () => (
         required
         helperText="Please provide detailed information about your inquiry."
       />
-      
+
       <TextFormField
         label="How did you hear about us?"
         name="source"
@@ -314,14 +238,12 @@ export const CompleteFormExample = () => (
         helperText="This helps us improve our marketing."
       />
     </div>
-    
+
     <FormActions>
       <Button variant="ghost" type="button">
         Clear Form
       </Button>
-      <Button type="submit">
-        Submit Inquiry
-      </Button>
+      <Button type="submit">Submit Inquiry</Button>
     </FormActions>
   </Card>
 );
@@ -340,7 +262,7 @@ export const UsageExamples = () => (
             required
             fullWidth
           />
-          
+
           <PasswordFormField
             label="Password"
             name="loginPassword"
@@ -348,55 +270,35 @@ export const UsageExamples = () => (
             required
             fullWidth
           />
-          
+
           <div className="flex items-center justify-between">
             <label className="flex items-center">
               <input type="checkbox" className="rounded border-gray-300 text-primary-600" />
               <span className="ml-2 text-sm text-gray-700">Remember me</span>
             </label>
-            
+
             <a href="#" className="text-sm text-primary-600 hover:text-primary-500">
               Forgot password?
             </a>
           </div>
-          
-          <Button fullWidth>
-            Sign In
-          </Button>
+
+          <Button fullWidth>Sign In</Button>
         </div>
       </Card>
     </div>
-    
+
     <div>
       <h3 className="text-lg font-semibold mb-3">Registration Form</h3>
       <Card className="max-w-2xl">
-        <FormFieldGroup
-          title="Create Account"
-          description="Join our platform to get started."
-        >
+        <FormFieldGroup title="Create Account" description="Join our platform to get started.">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <TextFormField
-              label="First Name"
-              name="regFirstName"
-              placeholder="John"
-              required
-            />
-            
-            <TextFormField
-              label="Last Name"
-              name="regLastName"
-              placeholder="Doe"
-              required
-            />
+            <TextFormField label="First Name" name="regFirstName" placeholder="John" required />
+
+            <TextFormField label="Last Name" name="regLastName" placeholder="Doe" required />
           </div>
-          
-          <EmailFormField
-            label="Email"
-            name="regEmail"
-            placeholder="you@example.com"
-            required
-          />
-          
+
+          <EmailFormField label="Email" name="regEmail" placeholder="you@example.com" required />
+
           <PasswordFormField
             label="Password"
             name="regPassword"
@@ -404,20 +306,16 @@ export const UsageExamples = () => (
             required
             helperText="Must be at least 8 characters."
           />
-          
+
           <PasswordFormField
             label="Confirm Password"
             name="regConfirmPassword"
             placeholder="Confirm your password"
             required
           />
-          
-          <TextFormField
-            label="Company"
-            name="company"
-            placeholder="Your company name"
-          />
-          
+
+          <TextFormField label="Company" name="company" placeholder="Your company name" />
+
           <TextareaFormField
             label="How will you use our platform?"
             name="useCase"
@@ -425,51 +323,33 @@ export const UsageExamples = () => (
             rows={3}
           />
         </FormFieldGroup>
-        
+
         <FormActions>
           <Button variant="ghost">Cancel</Button>
           <Button>Create Account</Button>
         </FormActions>
       </Card>
     </div>
-    
+
     <div>
       <h3 className="text-lg font-semibold mb-3">Billing Information</h3>
       <Card className="max-w-2xl">
-        <FormFieldGroup
-          title="Payment Details"
-          description="Enter your billing information."
-        >
+        <FormFieldGroup title="Payment Details" description="Enter your billing information.">
           <TextFormField
             label="Card Number"
             name="cardNumber"
             placeholder="1234 5678 9012 3456"
             required
           />
-          
+
           <div className="grid grid-cols-2 gap-4">
-            <TextFormField
-              label="Expiry Date"
-              name="expiry"
-              placeholder="MM/YY"
-              required
-            />
-            
-            <TextFormField
-              label="CVV"
-              name="cvv"
-              placeholder="123"
-              required
-            />
+            <TextFormField label="Expiry Date" name="expiry" placeholder="MM/YY" required />
+
+            <TextFormField label="CVV" name="cvv" placeholder="123" required />
           </div>
-          
-          <TextFormField
-            label="Name on Card"
-            name="cardName"
-            placeholder="John Doe"
-            required
-          />
-          
+
+          <TextFormField label="Name on Card" name="cardName" placeholder="John Doe" required />
+
           <TextFormField
             label="Billing Address"
             name="address"
@@ -477,7 +357,7 @@ export const UsageExamples = () => (
             required
           />
         </FormFieldGroup>
-        
+
         <FormActions>
           <Button variant="ghost">Back</Button>
           <Button>Pay $49.99</Button>

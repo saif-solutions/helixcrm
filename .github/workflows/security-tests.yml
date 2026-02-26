@@ -1,0 +1,70 @@
+name: Security Invariant Tests
+
+on:
+push:
+branches: [ main, develop ]
+pull_request:
+branches: [ main ]
+schedule:
+- cron: '0 3 * * *' # Daily at 3 AM
+
+jobs:
+security-tests:
+runs-on: ubuntu-latest
+
+text
+services:
+  postgres:
+    image: postgres:15
+    env:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: helixcrm_test
+    options: >-
+      --health-cmd pg_isready
+      --health-interval 10s
+      --health-timeout 5s
+      --health-retries 5
+    ports:
+      - 5432:5432
+
+  redis:
+    image: redis:7-alpine
+    options: >-
+      --health-cmd "redis-cli ping"
+      --health-interval 10s
+      --health-timeout 5s
+      --health-retries 5
+    ports:
+      - 6379:6379
+
+steps:
+- uses: actions/checkout@v3
+
+- name: Setup Node.js
+  uses: actions/setup-node@v3
+  with:
+    node-version: '18'
+    cache: 'npm'
+
+- name: Install dependencies
+  run: npm ci
+  
+- name: Generate Prisma Client
+  run: npx prisma generate
+  
+- name: Run security tests
+  env:
+    DATABASE_URL: postgresql://postgres:postgres@localhost:5432/helixcrm_test
+    REDIS_URL: redis://localhost:6379
+    JWT_SECRET: test-jwt-secret-for-ci
+    NODE_ENV: test
+  run: npm run test:security -- --ci --maxWorkers=2
+  
+- name: Upload test results
+  if: always()
+  uses: actions/upload-artifact@v3
+  with:
+    name: security-test-results
+    path: |
+      coverage/security
+      test-results.xml

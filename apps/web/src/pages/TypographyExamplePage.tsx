@@ -1,17 +1,17 @@
-import { 
-  Display, 
-  H1, 
-  H2, 
-  H3, 
-  H4, 
-  H5, 
-  H6, 
-  Body, 
-  BodySmall, 
-  Caption, 
-  Label, 
+import {
+  Display,
+  H1,
+  H2,
+  H3,
+  H4,
+  H5,
+  H6,
+  Body,
+  BodySmall,
+  Caption,
+  Label,
   Code,
-  Typography 
+  Typography,
 } from '../components/atoms/Typography';
 
 export function TypographyExamplePage() {
@@ -19,7 +19,7 @@ export function TypographyExamplePage() {
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-4xl mx-auto">
         <H1 className="mb-8">Typography Design System</H1>
-        
+
         <div className="card mb-8">
           <H2 className="mb-6">All Typography Variants</H2>
           <div className="space-y-6">
@@ -31,10 +31,12 @@ export function TypographyExamplePage() {
             <H5>Heading 5</H5>
             <H6>Heading 6</H6>
             <Body>
-              Body text - Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+              Body text - Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod
+              tempor incididunt ut labore et dolore magna aliqua.
             </Body>
             <BodySmall>
-              Small body text - Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+              Small body text - Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris
+              nisi ut aliquip ex ea commodo consequat.
             </BodySmall>
             <Caption>Caption text for additional information</Caption>
             <Label>Form field label</Label>
@@ -67,10 +69,12 @@ export function TypographyExamplePage() {
               Combined transformations
             </Typography>
             <Typography truncate className="max-w-md">
-              This is a very long text that will be truncated with an ellipsis at the end when it doesn't fit in the container.
+              This is a very long text that will be truncated with an ellipsis at the end when it
+              doesn't fit in the container.
             </Typography>
             <Typography lineClamp={2} className="max-w-md">
-              This text will be limited to 2 lines. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+              This text will be limited to 2 lines. Lorem ipsum dolor sit amet, consectetur
+              adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
             </Typography>
           </div>
         </div>
@@ -84,11 +88,12 @@ export function TypographyExamplePage() {
               <Typography color="muted">•</Typography>
               <Typography color="muted">January 11, 2024</Typography>
             </div>
-            
+
             <Body>
-              This demonstrates how the typography system works together to create cohesive, accessible content. Each component maintains consistent spacing, color, and hierarchy.
+              This demonstrates how the typography system works together to create cohesive,
+              accessible content. Each component maintains consistent spacing, color, and hierarchy.
             </Body>
-            
+
             <H4>Key Benefits</H4>
             <ul className="space-y-2">
               <li className="flex items-start">
@@ -108,7 +113,7 @@ export function TypographyExamplePage() {
                 <BodySmall>Easy to maintain and update</BodySmall>
               </li>
             </ul>
-            
+
             <Caption>
               This typography system is part of the HELIX CRM design system implementation.
             </Caption>

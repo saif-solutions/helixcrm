@@ -2,13 +2,7 @@
 // ============================================================================
 // Re-export all components
 // ============================================================================
-export {
-  Badge,
-  PrimaryBadge,
-  SuccessBadge,
-  ErrorBadge,
-  WarningBadge,
-} from './Badge';
+export { Badge, PrimaryBadge, SuccessBadge, ErrorBadge, WarningBadge } from './Badge';
 
 // ============================================================================
 // Re-export all types
@@ -44,9 +38,4 @@ export {
 // ============================================================================
 // Re-export utility functions
 // ============================================================================
-export {
-  isBadgeClickable,
-  hasBadgeIcon,
-  getBadgeRole,
-  getBadgeTabIndex,
-} from './Badge.types';
+export { isBadgeClickable, hasBadgeIcon, getBadgeRole, getBadgeTabIndex } from './Badge.types';

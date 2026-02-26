@@ -7,29 +7,29 @@ import { AvatarSize, AvatarColor, AvatarShape, AvatarStatus, StatusPosition } fr
 export const avatarTokens = {
   // Size tokens (width/height in pixels)
   size: {
-    xs: 24,  // 6 * 4px
-    sm: 32,  // 8 * 4px
-    md: 40,  // 10 * 4px
-    lg: 48,  // 12 * 4px
-    xl: 64,  // 16 * 4px
+    xs: 24, // 6 * 4px
+    sm: 32, // 8 * 4px
+    md: 40, // 10 * 4px
+    lg: 48, // 12 * 4px
+    xl: 64, // 16 * 4px
   },
-  
+
   // Font size tokens
   fontSize: {
-    xs: '0.75rem',    // text-xs
-    sm: '0.875rem',   // text-sm
-    md: '1rem',       // text-base
-    lg: '1.125rem',   // text-lg
-    xl: '1.25rem',    // text-xl
+    xs: '0.75rem', // text-xs
+    sm: '0.875rem', // text-sm
+    md: '1rem', // text-base
+    lg: '1.125rem', // text-lg
+    xl: '1.25rem', // text-xl
   },
-  
+
   // Status indicator size tokens
   statusSize: {
-    xs: 6,   // 1.5 * 4px
-    sm: 8,   // 2 * 4px
-    md: 10,  // 2.5 * 4px
-    lg: 12,  // 3 * 4px
-    xl: 16,  // 4 * 4px
+    xs: 6, // 1.5 * 4px
+    sm: 8, // 2 * 4px
+    md: 10, // 2.5 * 4px
+    lg: 12, // 3 * 4px
+    xl: 16, // 4 * 4px
   },
 };
 
@@ -47,7 +47,7 @@ export const avatarClasses = {
     'select-none',
     'overflow-hidden',
   ].join(' '),
-  
+
   // Size classes (width, height, font size)
   size: {
     xs: 'w-6 h-6 text-xs',
@@ -56,14 +56,14 @@ export const avatarClasses = {
     lg: 'w-12 h-12 text-lg',
     xl: 'w-16 h-16 text-xl',
   },
-  
+
   // Shape classes (border radius)
   shape: {
     circle: 'rounded-full',
     square: 'rounded',
     rounded: 'rounded-lg',
   },
-  
+
   // Color classes (background and text colors for fallback)
   color: {
     primary: [
@@ -84,42 +84,27 @@ export const avatarClasses = {
       'text-success-800',
       'dark:text-success-200',
     ].join(' '),
-    error: [
-      'bg-error-100',
-      'dark:bg-error-900',
-      'text-error-800',
-      'dark:text-error-200',
-    ].join(' '),
+    error: ['bg-error-100', 'dark:bg-error-900', 'text-error-800', 'dark:text-error-200'].join(' '),
     warning: [
       'bg-warning-100',
       'dark:bg-warning-900',
       'text-warning-800',
       'dark:text-warning-200',
     ].join(' '),
-    info: [
-      'bg-info-100',
-      'dark:bg-info-900',
-      'text-info-800',
-      'dark:text-info-200',
-    ].join(' '),
-    gray: [
-      'bg-gray-100',
-      'dark:bg-gray-800',
-      'text-gray-800',
-      'dark:text-gray-200',
-    ].join(' '),
+    info: ['bg-info-100', 'dark:bg-info-900', 'text-info-800', 'dark:text-info-200'].join(' '),
+    gray: ['bg-gray-100', 'dark:bg-gray-800', 'text-gray-800', 'dark:text-gray-200'].join(' '),
   },
-  
+
   // Image classes
   image: {
     base: 'object-cover w-full h-full',
   },
-  
+
   // Fallback classes
   fallback: {
     base: 'flex items-center justify-center w-full h-full',
   },
-  
+
   // Status indicator classes
   status: {
     // Base status classes
@@ -131,7 +116,7 @@ export const avatarClasses = {
       'rounded-full',
       'box-content',
     ].join(' '),
-    
+
     // Status colors
     color: {
       online: 'bg-success-500',
@@ -140,7 +125,7 @@ export const avatarClasses = {
       busy: 'bg-error-500',
       none: 'hidden',
     },
-    
+
     // Status sizes (matches avatar size proportionally)
     size: {
       xs: 'w-1.5 h-1.5',
@@ -149,7 +134,7 @@ export const avatarClasses = {
       lg: 'w-3 h-3',
       xl: 'w-4 h-4',
     },
-    
+
     // Status positions
     position: {
       'top-right': 'top-0 right-0',
@@ -158,7 +143,7 @@ export const avatarClasses = {
       'bottom-left': 'bottom-0 left-0',
     },
   },
-  
+
   // State classes
   state: {
     hasImage: 'bg-opacity-20',
@@ -180,23 +165,23 @@ export function getAvatarClasses(
   const classes = [
     // Base classes
     avatarClasses.base,
-    
+
     // Size
     avatarClasses.size[size],
-    
+
     // Shape
     avatarClasses.shape[shape],
-    
+
     // Color (only applied when no image)
     !hasImage && avatarClasses.color[color],
-    
+
     // State
     hasImage && avatarClasses.state.hasImage,
-    
+
     // Custom classes
     className || '',
   ];
-  
+
   return classes.filter(Boolean).join(' ');
 }
 
@@ -204,12 +189,8 @@ export function getAvatarClasses(
  * Utility function to get image classes
  */
 export function getImageClasses(shape: AvatarShape = 'circle', className?: string): string {
-  const classes = [
-    avatarClasses.image.base,
-    avatarClasses.shape[shape],
-    className || '',
-  ];
-  
+  const classes = [avatarClasses.image.base, avatarClasses.shape[shape], className || ''];
+
   return classes.filter(Boolean).join(' ');
 }
 
@@ -217,11 +198,8 @@ export function getImageClasses(shape: AvatarShape = 'circle', className?: strin
  * Utility function to get fallback classes
  */
 export function getFallbackClasses(className?: string): string {
-  const classes = [
-    avatarClasses.fallback.base,
-    className || '',
-  ];
-  
+  const classes = [avatarClasses.fallback.base, className || ''];
+
   return classes.filter(Boolean).join(' ');
 }
 
@@ -241,7 +219,7 @@ export function getStatusClasses(
     avatarClasses.status.position[position],
     className || '',
   ];
-  
+
   return classes.filter(Boolean).join(' ');
 }
 
@@ -272,7 +250,7 @@ export function getStatusAccessibilityLabel(status: AvatarStatus): string {
     busy: 'Busy',
     none: '',
   };
-  
+
   return labels[status];
 }
 
@@ -281,13 +259,13 @@ export function getStatusAccessibilityLabel(status: AvatarStatus): string {
  */
 export function getAvatarInitialsAttribute(fallback?: string): string {
   if (!fallback) return '?';
-  
+
   const words = fallback.trim().split(/\s+/);
   if (words.length === 1) {
     return words[0].charAt(0).toUpperCase();
   } else if (words.length >= 2) {
     return (words[0].charAt(0) + words[words.length - 1].charAt(0)).toUpperCase();
   }
-  
+
   return '?';
 }

@@ -100,7 +100,7 @@ export class AuditLogController {
     if (actorType && AuditLogTypes.isActorType(actorType))
       query.actorType = actorType;
 
-    return this.auditLogService.getAuditLogs(query);
+    return this.auditLogQueryService.getAuditLogs(query);
   }
 
   @Get('stats')
@@ -112,7 +112,7 @@ export class AuditLogController {
       throw new BadRequestException('Organization ID not found in request');
     }
 
-    return this.auditLogService.getAuditStatistics(organizationId, 30);
+    return this.auditLogQueryService.getAuditStatistics(organizationId, 30);
   }
 
   @Get('available-filters')
@@ -121,10 +121,10 @@ export class AuditLogController {
   async getAvailableFilters() {
     const [actions, entityTypes, severityLevels, actorTypes] =
       await Promise.all([
-        this.auditLogService.getAvailableActions(),
-        this.auditLogService.getAvailableEntityTypes(),
-        this.auditLogService.getAvailableSeverityLevels(),
-        this.auditLogService.getAvailableActorTypes(),
+        this.auditLogQueryService.getAvailableActions(),
+        this.auditLogQueryService.getAvailableEntityTypes(),
+        this.auditLogQueryService.getAvailableSeverityLevels(),
+        this.auditLogQueryService.getAvailableActorTypes(),
       ]);
 
     return {

@@ -1,9 +1,7 @@
-// D:\Projects-In-Hand\helixcrm\apps\web\src\components\atoms\Input\Input.tsx
 import * as React from 'react';
 import { cn } from '../../../lib/utils';
 import {
   InputProps,
-  InputRef,
   TextInputProps,
   EmailInputProps,
   PasswordInputProps,
@@ -17,29 +15,41 @@ import {
   getLabelClasses,
   getHelperClasses,
   generateInputId,
-  getAriaDescribedBy,
 } from './Input.styles';
 
 /**
- * Input component for text input fields.
- * 
- * Features:
- * - Multiple variants (default, success, error, warning)
- * - Multiple sizes (sm, md, lg)
- * - Icon support (left, right)
- * - Labels and helper text
- * - Validation states with error messages
- * - Full accessibility support
- * - Forward ref support
- * 
+ * Enhanced Input component for text input fields with React Hook Form support.
+ *
+ * Phase 2A Enhancements:
+ * - ✅ Proper forwardRef implementation for React Hook Form
+ * - ✅ aria-invalid attribute for accessibility
+ * - ✅ Error state styling integration
+ * - ✅ Helper text and error message support
+ * - ✅ TypeScript strict compliance
+ *
  * @example
  * ```tsx
- * <Input placeholder="Enter text..." />
- * <Input label="Email" variant="error" error="Invalid email" />
- * <Input leftIcon={<Icon />} rightIcon={<Icon />} />
+ * // With React Hook Form
+ * const { register } = useForm();
+ * <Input {...register('email')} />
+ *
+ * // With error state
+ * <Input
+ *   error="Email is required"
+ *   aria-invalid="true"
+ *   {...register('email')}
+ * />
+ *
+ * // With helper text
+ * <Input
+ *   helperText="Enter a valid email address"
+ *   label="Email Address"
+ *   required
+ *   {...register('email')}
+ * />
  * ```
  */
-export const Input = React.forwardRef<InputRef, InputProps>(
+export const Input = React.forwardRef<HTMLInputElement, InputProps>(
   (
     {
       variant = 'default',
@@ -55,18 +65,21 @@ export const Input = React.forwardRef<InputRef, InputProps>(
       className,
       disabled,
       id,
+      'aria-invalid': ariaInvalid,
+      'aria-describedby': ariaDescribedBy,
       ...props
     }: InputProps,
-    ref: React.Ref<InputRef>
+    ref: React.Ref<HTMLInputElement>
   ) => {
     // Use error variant if error message is provided
     const finalVariant = error ? 'error' : variant;
-    
+    const isInvalid = !!error || ariaInvalid === 'true';
+
     // Generate ID if not provided
     const inputId = id || generateInputId();
     const helperId = helperText ? `${inputId}-helper` : undefined;
     const errorId = error ? `${inputId}-error` : undefined;
-    
+
     // Get accessibility attributes
     const accessibilityProps = getInputAccessibilityProps({
       error,
@@ -75,7 +88,7 @@ export const Input = React.forwardRef<InputRef, InputProps>(
       id: inputId,
       helperText,
     });
-    
+
     // Build CSS classes using utility functions
     const inputClassName = getInputClasses(finalVariant, size, {
       disabled,
@@ -87,18 +100,20 @@ export const Input = React.forwardRef<InputRef, InputProps>(
       className,
     });
 
+    // Combine aria-describedby attributes
+    const describedByIds =
+      [ariaDescribedBy, helperId, errorId].filter(Boolean).join(' ') || undefined;
+
     // Create the input element with icon wrappers
     const inputElement = (
-      <div className={getWrapperClasses(fullWidth, wrapperClassName)}>
+      <div className={getWrapperClasses(fullWidth, wrapperClassName)} data-testid="input-wrapper">
         {/* Left Icon */}
         {leftIcon && (
-          <div className={getIconContainerClasses('left')}>
-            <span className="text-gray-400">
-              {leftIcon}
-            </span>
+          <div className={getIconContainerClasses('left')} data-testid="input-left-icon">
+            <span className="text-gray-400 flex items-center justify-center">{leftIcon}</span>
           </div>
         )}
-        
+
         {/* Input Field */}
         <input
           ref={ref}
@@ -106,17 +121,18 @@ export const Input = React.forwardRef<InputRef, InputProps>(
           className={inputClassName}
           disabled={disabled}
           required={required}
-          aria-describedby={getAriaDescribedBy(helperId, errorId)}
+          aria-invalid={isInvalid ? 'true' : 'false'}
+          aria-describedby={describedByIds}
+          data-invalid={isInvalid}
+          data-error={!!error}
           {...accessibilityProps}
           {...props}
         />
-        
+
         {/* Right Icon */}
         {rightIcon && (
-          <div className={getIconContainerClasses('right')}>
-            <span className="text-gray-400">
-              {rightIcon}
-            </span>
+          <div className={getIconContainerClasses('right')} data-testid="input-right-icon">
+            <span className="text-gray-400 flex items-center justify-center">{rightIcon}</span>
           </div>
         )}
       </div>
@@ -124,43 +140,72 @@ export const Input = React.forwardRef<InputRef, InputProps>(
 
     // If no label, return just the input
     if (!label) {
-      return inputElement;
+      return (
+        <div className="space-y-1">
+          {inputElement}
+
+          {/* Helper Text or Error Message */}
+          {(helperText || error) && (
+            <div className="space-y-1">
+              {helperText && !error && (
+                <p
+                  id={helperId}
+                  className={getHelperClasses(false)}
+                  data-testid="input-helper-text"
+                >
+                  {helperText}
+                </p>
+              )}
+
+              {error && (
+                <p
+                  id={errorId}
+                  className={getHelperClasses(true)}
+                  role="alert"
+                  aria-live="assertive"
+                  data-testid="input-error-text"
+                >
+                  {error}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      );
     }
 
     // Wrap with label if label is provided
     return (
       <div className={cn('space-y-1', fullWidth ? 'w-full' : undefined)}>
         {/* Label */}
-        <label
-          htmlFor={inputId}
-          className={getLabelClasses()}
-        >
+        <label htmlFor={inputId} className={getLabelClasses()} data-testid="input-label">
           {label}
           {required && (
-            <span className="text-error-500 ml-1">*</span>
+            <span className="text-error-500 ml-1" aria-hidden="true">
+              *
+            </span>
           )}
         </label>
-        
+
         {/* Input Element */}
         {inputElement}
-        
+
         {/* Helper Text or Error Message */}
         {(helperText || error) && (
           <div className="space-y-1">
             {helperText && !error && (
-              <p
-                id={helperId}
-                className={getHelperClasses(false)}
-              >
+              <p id={helperId} className={getHelperClasses(false)} data-testid="input-helper-text">
                 {helperText}
               </p>
             )}
-            
+
             {error && (
               <p
                 id={errorId}
                 className={getHelperClasses(true)}
                 role="alert"
+                aria-live="assertive"
+                data-testid="input-error-text"
               >
                 {error}
               </p>
@@ -179,57 +224,57 @@ Input.displayName = 'Input';
 // ============================================================================
 
 /**
- * Text Input - Standard text input field
- * @example
- * ```tsx
- * <TextInput placeholder="Enter your name" />
- * ```
+ * Text Input - Standard text input field with RHF support
  */
-export const TextInput = React.forwardRef<InputRef, TextInputProps>(
-  (props: TextInputProps, ref: React.Ref<InputRef>) => (
+export const TextInput = React.forwardRef<HTMLInputElement, TextInputProps>(
+  (props: TextInputProps, ref: React.Ref<HTMLInputElement>) => (
     <Input ref={ref} type="text" {...props} />
   )
 );
 TextInput.displayName = 'TextInput';
 
 /**
- * Email Input - Email address input with proper type
- * @example
- * ```tsx
- * <EmailInput placeholder="email@example.com" />
- * ```
+ * Email Input - Email address input with proper type and validation support
  */
-export const EmailInput = React.forwardRef<InputRef, EmailInputProps>(
-  (props: EmailInputProps, ref: React.Ref<InputRef>) => (
+export const EmailInput = React.forwardRef<HTMLInputElement, EmailInputProps>(
+  (props: EmailInputProps, ref: React.Ref<HTMLInputElement>) => (
     <Input ref={ref} type="email" {...props} />
   )
 );
 EmailInput.displayName = 'EmailInput';
 
 /**
- * Password Input - Password input with masking
- * @example
- * ```tsx
- * <PasswordInput placeholder="Enter password" />
- * ```
+ * Password Input - Password input with masking and RHF support
  */
-export const PasswordInput = React.forwardRef<InputRef, PasswordInputProps>(
-  (props: PasswordInputProps, ref: React.Ref<InputRef>) => (
+export const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
+  (props: PasswordInputProps, ref: React.Ref<HTMLInputElement>) => (
     <Input ref={ref} type="password" {...props} />
   )
 );
 PasswordInput.displayName = 'PasswordInput';
 
 /**
- * Number Input - Numeric input field
- * @example
- * ```tsx
- * <NumberInput placeholder="Enter amount" />
- * ```
+ * Number Input - Numeric input field with RHF support
  */
-export const NumberInput = React.forwardRef<InputRef, NumberInputProps>(
-  (props: NumberInputProps, ref: React.Ref<InputRef>) => (
+export const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
+  (props: NumberInputProps, ref: React.Ref<HTMLInputElement>) => (
     <Input ref={ref} type="number" {...props} />
   )
 );
 NumberInput.displayName = 'NumberInput';
+
+/**
+ * FormInput - Convenience component specifically designed for forms
+ * with built-in error handling for React Hook Form
+ */
+export const FormInput = React.forwardRef<
+  HTMLInputElement,
+  InputProps & {
+    fieldError?: string;
+  }
+>(({ fieldError, error: propError, ...props }, ref) => {
+  const error = fieldError || propError;
+
+  return <Input ref={ref} error={error} aria-invalid={!!error ? 'true' : 'false'} {...props} />;
+});
+FormInput.displayName = 'FormInput';

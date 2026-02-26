@@ -1,0 +1,56 @@
+{
+  "schemaVersion": "1.0.0",
+  "lastUpdated": "2026-02-14",
+  "modules": [
+    {
+      "name": "auth-core",
+      "path": "packages/auth-core",
+      "allowedDependencies": [],
+      "description": "Authentication foundation - must have zero dependencies"
+    },
+    {
+      "name": "tenant-core",
+      "path": "packages/tenant-core",
+      "allowedDependencies": ["auth-core"],
+      "description": "Multi-tenant management - depends only on auth-core"
+    },
+    {
+      "name": "crm-basic",
+      "path": "packages/crm-basic",
+      "allowedDependencies": ["auth-core", "tenant-core"],
+      "description": "Core CRM functionality"
+    },
+    {
+      "name": "branding-engine",
+      "path": "packages/branding-engine",
+      "allowedDependencies": ["auth-core", "tenant-core"],
+      "description": "White-label theming engine"
+    },
+    {
+      "name": "i18n-engine",
+      "path": "packages/i18n-engine",
+      "allowedDependencies": ["auth-core", "tenant-core"],
+      "description": "Internationalization engine"
+    },
+    {
+      "name": "admin-dashboard",
+      "path": "packages/admin-dashboard",
+      "allowedDependencies": ["auth-core", "tenant-core", "crm-basic"],
+      "description": "Administration interface"
+    }
+  ],
+  "rules": {
+    "forbidCircularDependencies": true,
+    "enforceStrictBoundaries": true,
+    "allowContractImports": true,
+    "contractImportPattern": "**/contracts/**"
+  },
+  "exceptions": [
+    {
+      "module": "testing-utils",
+      "path": "packages/testing-utils",
+      "reason": "Test utilities may depend on multiple modules",
+      "expires": null
+    }
+  ]
+}

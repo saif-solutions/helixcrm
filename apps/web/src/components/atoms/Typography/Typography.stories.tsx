@@ -1,18 +1,18 @@
 // D:\Projects-In-Hand\helixcrm\apps\web\src\components\atoms\Typography\Typography.stories.tsx
-import { 
-  Typography, 
-  Display, 
-  H1, 
-  H2, 
-  H3, 
-  H4, 
-  H5, 
-  H6, 
-  Body, 
-  BodySmall, 
-  Caption, 
-  Label, 
-  Code 
+import {
+  Typography,
+  Display,
+  H1,
+  H2,
+  H3,
+  H4,
+  H5,
+  H6,
+  Body,
+  BodySmall,
+  Caption,
+  Label,
+  Code,
 } from './Typography';
 import { Card } from '../../molecules/Card/Card';
 
@@ -22,11 +22,36 @@ export default {
   argTypes: {
     variant: {
       control: 'select',
-      options: ['display', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'body', 'bodySmall', 'caption', 'label', 'code', 'lead', 'subtitle'],
+      options: [
+        'display',
+        'h1',
+        'h2',
+        'h3',
+        'h4',
+        'h5',
+        'h6',
+        'body',
+        'bodySmall',
+        'caption',
+        'label',
+        'code',
+        'lead',
+        'subtitle',
+      ],
     },
     color: {
       control: 'select',
-      options: ['primary', 'secondary', 'success', 'error', 'warning', 'info', 'muted', 'white', 'inherit'],
+      options: [
+        'primary',
+        'secondary',
+        'success',
+        'error',
+        'warning',
+        'info',
+        'muted',
+        'white',
+        'inherit',
+      ],
     },
     weight: {
       control: 'select',
@@ -62,7 +87,9 @@ export const Default = {
 export const AllVariants = () => (
   <div className="space-y-8">
     <div>
-      <Typography variant="h3" className="mb-4">Heading Variants</Typography>
+      <Typography variant="h3" className="mb-4">
+        Heading Variants
+      </Typography>
       <div className="space-y-4 border-l-4 border-blue-100 pl-4">
         <Display>Display Heading</Display>
         <H1>Heading 1 - Main page title</H1>
@@ -75,16 +102,21 @@ export const AllVariants = () => (
     </div>
 
     <div>
-      <Typography variant="h3" className="mb-4">Body Text Variants</Typography>
+      <Typography variant="h3" className="mb-4">
+        Body Text Variants
+      </Typography>
       <div className="space-y-4 border-l-4 border-green-100 pl-4">
         <Typography variant="lead">
-          Lead paragraph - Larger body text for introductory content. Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+          Lead paragraph - Larger body text for introductory content. Lorem ipsum dolor sit amet,
+          consectetur adipiscing elit.
         </Typography>
         <Body>
-          Body text - Standard paragraph text. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.
+          Body text - Standard paragraph text. Sed do eiusmod tempor incididunt ut labore et dolore
+          magna aliqua. Ut enim ad minim veniam.
         </Body>
         <BodySmall>
-          Small body text - For secondary content or captions. Quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+          Small body text - For secondary content or captions. Quis nostrud exercitation ullamco
+          laboris nisi ut aliquip ex ea commodo consequat.
         </BodySmall>
         <Typography variant="subtitle">
           Subtitle text - For section subtitles or metadata
@@ -93,7 +125,9 @@ export const AllVariants = () => (
     </div>
 
     <div>
-      <Typography variant="h3" className="mb-4">Special Variants</Typography>
+      <Typography variant="h3" className="mb-4">
+        Special Variants
+      </Typography>
       <div className="space-y-4 border-l-4 border-purple-100 pl-4">
         <Caption>Caption text - For image captions, table footers, etc.</Caption>
         <Label>Form field label</Label>
@@ -107,8 +141,10 @@ export const AllVariants = () => (
 
 export const ColorVariations = () => (
   <Card>
-    <Typography variant="h3" className="mb-6">Color Variations</Typography>
-    
+    <Typography variant="h3" className="mb-6">
+      Color Variations
+    </Typography>
+
     <div className="space-y-4">
       <Typography color="primary">Primary color - For main content</Typography>
       <Typography color="secondary">Secondary color - For less important content</Typography>
@@ -129,8 +165,10 @@ export const ColorVariations = () => (
 
 export const WeightVariations = () => (
   <Card>
-    <Typography variant="h3" className="mb-6">Font Weight Variations</Typography>
-    
+    <Typography variant="h3" className="mb-6">
+      Font Weight Variations
+    </Typography>
+
     <div className="space-y-3">
       <Typography weight="light">Light weight (300)</Typography>
       <Typography weight="normal">Normal weight (400)</Typography>
@@ -140,11 +178,15 @@ export const WeightVariations = () => (
       <Typography weight="extrabold">Extrabold weight (800)</Typography>
       <Typography weight="black">Black weight (900)</Typography>
     </div>
-    
+
     <div className="mt-6 pt-6 border-t">
-      <Typography variant="h4" className="mb-4">Weight Override Examples</Typography>
+      <Typography variant="h4" className="mb-4">
+        Weight Override Examples
+      </Typography>
       <div className="space-y-3">
-        <Typography variant="h3" weight="light">H3 with Light weight</Typography>
+        <Typography variant="h3" weight="light">
+          H3 with Light weight
+        </Typography>
         <Body weight="bold">Body text with Bold weight</Body>
         <Caption weight="semibold">Caption with Semibold weight</Caption>
       </div>
@@ -156,8 +198,10 @@ export const WeightVariations = () => (
 
 export const TextTransformations = () => (
   <Card>
-    <Typography variant="h3" className="mb-6">Text Transformations</Typography>
-    
+    <Typography variant="h3" className="mb-6">
+      Text Transformations
+    </Typography>
+
     <div className="space-y-4">
       <Typography uppercase>Uppercase text transformation</Typography>
       <Typography variant="subtitle">Default subtitle (already uppercase)</Typography>
@@ -174,35 +218,49 @@ export const TextTransformations = () => (
 
 export const AlignmentVariations = () => (
   <Card>
-    <Typography variant="h3" className="mb-6">Text Alignment</Typography>
-    
+    <Typography variant="h3" className="mb-6">
+      Text Alignment
+    </Typography>
+
     <div className="space-y-6">
       <div>
-        <Typography variant="h6" className="mb-2">Left aligned (default)</Typography>
+        <Typography variant="h6" className="mb-2">
+          Left aligned (default)
+        </Typography>
         <Typography align="left" className="border p-4">
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt
+          ut labore et dolore magna aliqua.
         </Typography>
       </div>
-      
+
       <div>
-        <Typography variant="h6" className="mb-2">Center aligned</Typography>
+        <Typography variant="h6" className="mb-2">
+          Center aligned
+        </Typography>
         <Typography align="center" className="border p-4">
-          Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+          Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea
+          commodo consequat.
         </Typography>
       </div>
-      
+
       <div>
-        <Typography variant="h6" className="mb-2">Right aligned</Typography>
+        <Typography variant="h6" className="mb-2">
+          Right aligned
+        </Typography>
         <Typography align="right" className="border p-4">
-          Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+          Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat
+          nulla pariatur.
         </Typography>
       </div>
-      
+
       <div>
-        <Typography variant="h6" className="mb-2">Justify aligned</Typography>
+        <Typography variant="h6" className="mb-2">
+          Justify aligned
+        </Typography>
         <Typography align="justify" className="border p-4">
-          Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-          Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium.
+          Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit
+          anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem
+          accusantium doloremque laudantium.
         </Typography>
       </div>
     </div>
@@ -213,35 +271,45 @@ export const AlignmentVariations = () => (
 
 export const TruncationExamples = () => (
   <Card>
-    <Typography variant="h3" className="mb-6">Truncation & Line Clamping</Typography>
-    
+    <Typography variant="h3" className="mb-6">
+      Truncation & Line Clamping
+    </Typography>
+
     <div className="space-y-6">
       <div>
-        <Typography variant="h6" className="mb-2">Single line truncation</Typography>
+        <Typography variant="h6" className="mb-2">
+          Single line truncation
+        </Typography>
         <div className="w-64 border p-4">
           <Typography truncate>
-            This is a very long text that will be truncated with an ellipsis when it exceeds the container width.
+            This is a very long text that will be truncated with an ellipsis when it exceeds the
+            container width.
           </Typography>
         </div>
       </div>
-      
+
       <div>
-        <Typography variant="h6" className="mb-2">2-line clamp</Typography>
+        <Typography variant="h6" className="mb-2">
+          2-line clamp
+        </Typography>
         <div className="w-64 border p-4">
           <Typography lineClamp={2}>
-            This text will be limited to 2 lines. Lorem ipsum dolor sit amet, consectetur adipiscing elit. 
-            Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.
+            This text will be limited to 2 lines. Lorem ipsum dolor sit amet, consectetur adipiscing
+            elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad
+            minim veniam.
           </Typography>
         </div>
       </div>
-      
+
       <div>
-        <Typography variant="h6" className="mb-2">3-line clamp</Typography>
+        <Typography variant="h6" className="mb-2">
+          3-line clamp
+        </Typography>
         <div className="w-64 border p-4">
           <Typography lineClamp={3}>
-            This text will be limited to 3 lines. Duis aute irure dolor in reprehenderit in voluptate velit 
-            esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, 
-            sunt in culpa qui officia deserunt mollit anim id est laborum.
+            This text will be limited to 3 lines. Duis aute irure dolor in reprehenderit in
+            voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat
+            cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
           </Typography>
         </div>
       </div>
@@ -255,63 +323,77 @@ export const UsageExamples = () => (
   <div className="space-y-8">
     {/* Article Example */}
     <Card>
-      <Typography variant="h3" className="mb-4">Article Example</Typography>
-      <Display className="mb-2">The Future of Web Development</Display>
-      <Typography variant="subtitle" className="mb-6">Exploring trends and technologies in 2024</Typography>
-      
-      <Typography variant="lead" className="mb-4">
-        Web development continues to evolve at a rapid pace, with new frameworks, tools, and methodologies emerging regularly.
+      <Typography variant="h3" className="mb-4">
+        Article Example
       </Typography>
-      
+      <Display className="mb-2">The Future of Web Development</Display>
+      <Typography variant="subtitle" className="mb-6">
+        Exploring trends and technologies in 2024
+      </Typography>
+
+      <Typography variant="lead" className="mb-4">
+        Web development continues to evolve at a rapid pace, with new frameworks, tools, and
+        methodologies emerging regularly.
+      </Typography>
+
       <H2 className="mb-3">Modern Frontend Frameworks</H2>
       <Body className="mb-4">
-        The landscape of frontend development has been dominated by React, Vue, and Angular for years. 
-        However, newer frameworks like <Code>Svelte</Code> and <Code>SolidJS</Code> are gaining traction for their innovative approaches.
+        The landscape of frontend development has been dominated by React, Vue, and Angular for
+        years. However, newer frameworks like <Code>Svelte</Code> and <Code>SolidJS</Code> are
+        gaining traction for their innovative approaches.
       </Body>
-      
+
       <H3 className="mb-3">Performance Considerations</H3>
       <Body className="mb-4">
-        With Core Web Vitals becoming ranking factors, performance optimization is more critical than ever. 
-        Developers need to focus on metrics like <Label>Largest Contentful Paint (LCP)</Label>, <Label>First Input Delay (FID)</Label>, and <Label>Cumulative Layout Shift (CLS)</Label>.
+        With Core Web Vitals becoming ranking factors, performance optimization is more critical
+        than ever. Developers need to focus on metrics like{' '}
+        <Label>Largest Contentful Paint (LCP)</Label>, <Label>First Input Delay (FID)</Label>, and{' '}
+        <Label>Cumulative Layout Shift (CLS)</Label>.
       </Body>
-      
-      <Caption className="mt-4">
-        Published on January 15, 2024 • 5 min read
-      </Caption>
+
+      <Caption className="mt-4">Published on January 15, 2024 • 5 min read</Caption>
     </Card>
 
     {/* Form Example */}
     <Card>
-      <Typography variant="h3" className="mb-6">Form Example</Typography>
-      
+      <Typography variant="h3" className="mb-6">
+        Form Example
+      </Typography>
+
       <div className="space-y-6">
         <div>
-          <Label htmlFor="name" className="block mb-2">Full Name</Label>
-          <input 
-            id="name" 
-            type="text" 
-            className="w-full p-2 border rounded" 
+          <Label htmlFor="name" className="block mb-2">
+            Full Name
+          </Label>
+          <input
+            id="name"
+            type="text"
+            className="w-full p-2 border rounded"
             placeholder="Enter your name"
           />
           <Caption>Please enter your legal name as it appears on official documents.</Caption>
         </div>
-        
+
         <div>
-          <Label htmlFor="email" className="block mb-2">Email Address</Label>
-          <input 
-            id="email" 
-            type="email" 
-            className="w-full p-2 border rounded" 
+          <Label htmlFor="email" className="block mb-2">
+            Email Address
+          </Label>
+          <input
+            id="email"
+            type="email"
+            className="w-full p-2 border rounded"
             placeholder="you@example.com"
           />
           <Caption>We'll never share your email with anyone else.</Caption>
         </div>
-        
+
         <div>
-          <Label htmlFor="bio" className="block mb-2">Bio</Label>
-          <textarea 
-            id="bio" 
-            className="w-full p-2 border rounded" 
+          <Label htmlFor="bio" className="block mb-2">
+            Bio
+          </Label>
+          <textarea
+            id="bio"
+            className="w-full p-2 border rounded"
             rows={3}
             placeholder="Tell us about yourself..."
           />
@@ -322,28 +404,42 @@ export const UsageExamples = () => (
 
     {/* Dashboard Example */}
     <Card>
-      <Typography variant="h3" className="mb-6">Dashboard Metrics</Typography>
-      
+      <Typography variant="h3" className="mb-6">
+        Dashboard Metrics
+      </Typography>
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="border rounded-lg p-4">
-          <Typography variant="h6" color="muted" className="mb-2">Total Users</Typography>
-          <Typography variant="h2" color="primary">12,847</Typography>
+          <Typography variant="h6" color="muted" className="mb-2">
+            Total Users
+          </Typography>
+          <Typography variant="h2" color="primary">
+            12,847
+          </Typography>
           <Typography variant="bodySmall" color="success">
             ↑ 12.5% from last month
           </Typography>
         </div>
-        
+
         <div className="border rounded-lg p-4">
-          <Typography variant="h6" color="muted" className="mb-2">Revenue</Typography>
-          <Typography variant="h2" color="primary">$48,250</Typography>
+          <Typography variant="h6" color="muted" className="mb-2">
+            Revenue
+          </Typography>
+          <Typography variant="h2" color="primary">
+            $48,250
+          </Typography>
           <Typography variant="bodySmall" color="success">
             ↑ 8.2% from last month
           </Typography>
         </div>
-        
+
         <div className="border rounded-lg p-4">
-          <Typography variant="h6" color="muted" className="mb-2">Conversion Rate</Typography>
-          <Typography variant="h2" color="primary">3.2%</Typography>
+          <Typography variant="h6" color="muted" className="mb-2">
+            Conversion Rate
+          </Typography>
+          <Typography variant="h2" color="primary">
+            3.2%
+          </Typography>
           <Typography variant="bodySmall" color="error">
             ↓ 0.5% from last month
           </Typography>
@@ -357,26 +453,40 @@ export const UsageExamples = () => (
 
 export const AccessibilityExample = () => (
   <Card>
-    <Typography variant="h3" className="mb-6">Accessibility Features</Typography>
-    
+    <Typography variant="h3" className="mb-6">
+      Accessibility Features
+    </Typography>
+
     <div className="space-y-4">
       <Typography variant="h4">Semantic HTML Elements</Typography>
       <Body>
         The Typography component automatically uses appropriate HTML elements based on the variant:
       </Body>
-      
+
       <ul className="list-disc pl-5 space-y-2">
-        <li><Code>Display</Code> and <Code>H1-H6</Code> use heading tags with proper aria-level</li>
-        <li><Code>Body</Code> and <Code>BodySmall</Code> use paragraph tags</li>
-        <li><Code>Label</Code> uses label tag with htmlFor support</li>
-        <li><Code>Code</Code> uses code tag for screen readers</li>
-        <li><Code>Caption</Code> uses span with appropriate role</li>
+        <li>
+          <Code>Display</Code> and <Code>H1-H6</Code> use heading tags with proper aria-level
+        </li>
+        <li>
+          <Code>Body</Code> and <Code>BodySmall</Code> use paragraph tags
+        </li>
+        <li>
+          <Code>Label</Code> uses label tag with htmlFor support
+        </li>
+        <li>
+          <Code>Code</Code> uses code tag for screen readers
+        </li>
+        <li>
+          <Code>Caption</Code> uses span with appropriate role
+        </li>
       </ul>
-      
+
       <div className="mt-6 p-4 bg-blue-50 rounded">
-        <Typography variant="h5" className="mb-2">Screen Reader Support</Typography>
+        <Typography variant="h5" className="mb-2">
+          Screen Reader Support
+        </Typography>
         <BodySmall>
-          All typography variants include proper ARIA attributes. Headings have correct aria-level, 
+          All typography variants include proper ARIA attributes. Headings have correct aria-level,
           and interactive elements have appropriate roles and labels.
         </BodySmall>
       </div>
@@ -388,16 +498,18 @@ export const AccessibilityExample = () => (
 
 export const ResponsiveExample = () => (
   <Card>
-    <Typography variant="h3" className="mb-6">Responsive Typography</Typography>
-    
+    <Typography variant="h3" className="mb-6">
+      Responsive Typography
+    </Typography>
+
     <div className="space-y-4">
       <Body>
-        The Typography component works well with responsive design patterns. 
-        You can combine it with Tailwind's responsive utilities:
+        The Typography component works well with responsive design patterns. You can combine it with
+        Tailwind's responsive utilities:
       </Body>
-      
+
       <div className="border p-4">
-        <Typography 
+        <Typography
           className="
             text-sm 
             md:text-base 
@@ -417,7 +529,7 @@ export const ResponsiveExample = () => (
           </ul>
         </Typography>
       </div>
-      
+
       <Caption>
         Tip: Use Tailwind's responsive prefixes (sm:, md:, lg:, xl:) with custom className
       </Caption>
@@ -429,13 +541,17 @@ export const ResponsiveExample = () => (
 
 export const CustomizationExample = () => (
   <Card>
-    <Typography variant="h3" className="mb-6">Custom Styling Examples</Typography>
-    
+    <Typography variant="h3" className="mb-6">
+      Custom Styling Examples
+    </Typography>
+
     <div className="space-y-6">
       <div>
-        <Typography variant="h5" className="mb-2">With Custom Classes</Typography>
-        <Typography 
-          variant="h2" 
+        <Typography variant="h5" className="mb-2">
+          With Custom Classes
+        </Typography>
+        <Typography
+          variant="h2"
           className="
             bg-gradient-to-r from-blue-500 to-purple-500 
             bg-clip-text text-transparent
@@ -445,10 +561,12 @@ export const CustomizationExample = () => (
           Gradient Text with Animation
         </Typography>
       </div>
-      
+
       <div>
-        <Typography variant="h5" className="mb-2">Custom Line Height & Letter Spacing</Typography>
-        <Typography 
+        <Typography variant="h5" className="mb-2">
+          Custom Line Height & Letter Spacing
+        </Typography>
+        <Typography
           className="
             leading-loose 
             tracking-widest
@@ -458,11 +576,13 @@ export const CustomizationExample = () => (
           Text with loose line height and wide letter spacing for dramatic effect.
         </Typography>
       </div>
-      
+
       <div>
-        <Typography variant="h5" className="mb-2">Combined Effects</Typography>
-        <Typography 
-          variant="h3" 
+        <Typography variant="h5" className="mb-2">
+          Combined Effects
+        </Typography>
+        <Typography
+          variant="h3"
           className="
             italic 
             font-black 

@@ -56,7 +56,7 @@ export {
   getTypographyElement,
   getTypographyFontFamily,
   defaultTypographyProps,
-  isMonospaceVariant,  // <-- MOVED FROM BELOW
+  isMonospaceVariant, // <-- MOVED FROM BELOW
 } from './Typography.styles';
 
 // ============================================================================

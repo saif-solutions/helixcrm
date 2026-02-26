@@ -5,61 +5,61 @@ import * as React from 'react';
  * Main Input component props with comprehensive JSDoc
  */
 export interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'> {
-  /** 
+  /**
    * Input visual variant (affects border color)
    * @default 'default'
    */
   variant?: InputVariant;
-  
-  /** 
+
+  /**
    * Input size (affects padding and font size)
    * @default 'md'
    */
   size?: InputSize;
-  
-  /** 
+
+  /**
    * Display input as full width (100% of container)
    * @default false
    */
   fullWidth?: boolean;
-  
-  /** 
+
+  /**
    * Icon element to display on the left side
    */
   leftIcon?: React.ReactNode;
-  
-  /** 
+
+  /**
    * Icon element to display on the right side
    */
   rightIcon?: React.ReactNode;
-  
-  /** 
+
+  /**
    * Label text displayed above the input
    */
   label?: string;
-  
-  /** 
+
+  /**
    * Helper text displayed below the input
    */
   helperText?: string;
-  
-  /** 
+
+  /**
    * Error message (overrides variant to 'error' if provided)
    */
   error?: string;
-  
-  /** 
+
+  /**
    * Required field indicator (adds asterisk to label)
    * @default false
    */
   required?: boolean;
-  
-  /** 
+
+  /**
    * Custom CSS class name for the wrapper element
    */
   wrapperClassName?: string;
-  
-  /** 
+
+  /**
    * Custom CSS class name for the input element
    */
   className?: string;
@@ -81,16 +81,16 @@ export type InputSize = 'sm' | 'md' | 'lg';
 export interface InputAccessibilityProps {
   /** ARIA label for screen readers (alternative to visible label) */
   'aria-label'?: string;
-  
+
   /** ARIA description for additional context */
   'aria-describedby'?: string;
-  
+
   /** ARIA invalid state for validation errors */
   'aria-invalid'?: boolean | 'true' | 'false' | 'grammar' | 'spelling';
-  
+
   /** ARIA required state */
   'aria-required'?: boolean;
-  
+
   /** ARIA disabled state */
   'aria-disabled'?: boolean;
 }
@@ -101,10 +101,10 @@ export interface InputAccessibilityProps {
 export interface InputState {
   /** Whether input is currently focused */
   isFocused: boolean;
-  
+
   /** Whether input has content */
   hasContent: boolean;
-  
+
   /** Whether input is in error state */
   isError: boolean;
 }
@@ -190,19 +190,19 @@ export interface InputValidationRule {
 export interface EnhancedInputProps extends Omit<InputProps, 'onChange' | 'value'> {
   /** Custom validation rules */
   validationRules?: InputValidationRule[];
-  
+
   /** Mask pattern (e.g., "###-##-####" for SSN) */
   mask?: string;
-  
+
   /** Auto-complete suggestions */
   suggestions?: string[];
-  
+
   /** Character counter */
   showCounter?: boolean;
-  
+
   /** Clear button */
   showClearButton?: boolean;
-  
+
   /** Controlled value with formatting */
   value?: string;
   /** On change handler with formatted value */

@@ -2,20 +2,20 @@
 import * as React from 'react';
 import { cn } from '../../../lib/utils';
 import { XIcon } from '../../atoms/Icon/Icon';
-import { 
-  AlertProps, 
+import {
+  AlertProps,
   AlertRef,
   getAlertRole,
   getAlertAriaLive,
   shouldAlertAnnounce,
-  getAlertIconSize
+  getAlertIconSize,
 } from './Alert.types';
-import { 
-  getAlertContainerClasses, 
-  getAlertIconClasses, 
+import {
+  getAlertContainerClasses,
+  getAlertIconClasses,
   getDismissButtonClasses,
   alertClasses,
-  hasAlertContent
+  hasAlertContent,
 } from './Alert.styles';
 
 /**
@@ -23,66 +23,66 @@ import {
  */
 const variantIcons = {
   info: (
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      fill="none" 
-      viewBox="0 0 24 24" 
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
       stroke="currentColor"
       aria-hidden="true"
     >
-      <path 
-        strokeLinecap="round" 
-        strokeLinejoin="round" 
-        strokeWidth={2} 
-        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
       />
     </svg>
   ),
   success: (
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      fill="none" 
-      viewBox="0 0 24 24" 
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
       stroke="currentColor"
       aria-hidden="true"
     >
-      <path 
-        strokeLinecap="round" 
-        strokeLinejoin="round" 
-        strokeWidth={2} 
-        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" 
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
       />
     </svg>
   ),
   error: (
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      fill="none" 
-      viewBox="0 0 24 24" 
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
       stroke="currentColor"
       aria-hidden="true"
     >
-      <path 
-        strokeLinecap="round" 
-        strokeLinejoin="round" 
-        strokeWidth={2} 
-        d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
       />
     </svg>
   ),
   warning: (
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      fill="none" 
-      viewBox="0 0 24 24" 
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
       stroke="currentColor"
       aria-hidden="true"
     >
-      <path 
-        strokeLinecap="round" 
-        strokeLinejoin="round" 
-        strokeWidth={2} 
-        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.342 16.5c-.77.833.192 2.5 1.732 2.5z" 
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.342 16.5c-.77.833.192 2.5 1.732 2.5z"
       />
     </svg>
   ),
@@ -141,14 +141,14 @@ export const Alert = React.forwardRef<AlertRef, AlertProps>(
 
     // Get container classes
     const containerClasses = getAlertContainerClasses(variant, size, className);
-    
+
     // Get icon classes
     const iconClasses = getAlertIconClasses(variant, size, iconClassName);
-    
+
     // Get default or custom icon
     const defaultIcon = getVariantIcon(variant);
     const alertIcon = icon || defaultIcon;
-    
+
     // Get content
     const alertMessage = message || children;
     const hasContent = hasAlertContent(title, message, children);
@@ -175,28 +175,16 @@ export const Alert = React.forwardRef<AlertRef, AlertProps>(
 
         {/* Content */}
         <div className={cn(alertClasses.content, contentClassName)}>
-          {title && (
-            <h4 className={alertClasses.title}>
-              {title}
-            </h4>
-          )}
-          
+          {title && <h4 className={alertClasses.title}>{title}</h4>}
+
           {hasContent && (
             <div className={title ? '' : 'mt-0.5'}>
-              {typeof alertMessage === 'string' ? (
-                <p>{alertMessage}</p>
-              ) : (
-                alertMessage
-              )}
+              {typeof alertMessage === 'string' ? <p>{alertMessage}</p> : alertMessage}
             </div>
           )}
-          
+
           {/* Actions */}
-          {actions && (
-            <div className={cn(alertClasses.actions, actionsClassName)}>
-              {actions}
-            </div>
-          )}
+          {actions && <div className={cn(alertClasses.actions, actionsClassName)}>{actions}</div>}
         </div>
 
         {/* Dismiss button */}
@@ -207,11 +195,7 @@ export const Alert = React.forwardRef<AlertRef, AlertProps>(
             className={getDismissButtonClasses()}
             aria-label="Dismiss alert"
           >
-            <XIcon 
-              size={getAlertIconSize(size)} 
-              className="opacity-60" 
-              aria-hidden="true"
-            />
+            <XIcon size={getAlertIconSize(size)} className="opacity-60" aria-hidden="true" />
           </button>
         )}
       </div>

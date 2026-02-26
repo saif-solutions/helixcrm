@@ -21,7 +21,7 @@ import {
 
 /**
  * Enterprise Avatar component for user profile images or initials.
- * 
+ *
  * Features:
  * - Image support with lazy loading and error handling
  * - Fallback initials extraction from names (1-2 characters)
@@ -36,15 +36,15 @@ import {
  * - Dark mode support
  * - Data attributes for testing/analytics
  * - TypeScript strict mode compliance
- * 
+ *
  * @example
  * ```tsx
  * // With image
  * <Avatar src="/user.jpg" alt="User" />
- * 
+ *
  * // With fallback initials
  * <Avatar fallback="John Doe" status="online" />
- * 
+ *
  * // Predefined size components
  * <AvatarXS fallback="JD" />
  * <AvatarSM fallback="JS" />
@@ -76,7 +76,7 @@ export const Avatar = React.memo(
       const [imageError, setImageError] = React.useState(false);
       const hasImage = hasAvatarImage({ src }) && !imageError;
       const showStatus = hasAvatarStatus({ status });
-      
+
       // Get initials from fallback text (1-2 characters max)
       const initials = getAvatarInitials(fallback);
 
@@ -84,21 +84,19 @@ export const Avatar = React.memo(
       const containerClasses = getAvatarClasses(size, shape, color, hasImage, className);
       const imageClasses = getImageClasses(shape, imageClassName);
       const fallbackClasses = getFallbackClasses(fallbackClassName);
-      
+
       // Get status classes if needed
-      const statusClasses = showStatus 
+      const statusClasses = showStatus
         ? getStatusClasses(status, size, statusPosition, statusClassName)
         : '';
-      
+
       // Get status accessibility label
-      const statusLabel = showStatus 
-        ? getStatusAccessibilityLabel(status)
-        : '';
+      const statusLabel = showStatus ? getStatusAccessibilityLabel(status) : '';
 
       return (
-        <div 
-          ref={ref} 
-          className={containerClasses} 
+        <div
+          ref={ref}
+          className={containerClasses}
           role="img"
           aria-label={alt}
           data-testid={testId}
@@ -117,10 +115,10 @@ export const Avatar = React.memo(
               data-testid={`${testId}-image`}
             />
           )}
-          
+
           {/* Fallback (when no image or image failed to load) */}
           {!hasImage && (
-            <div 
+            <div
               className={fallbackClasses}
               data-testid={`${testId}-fallback`}
               data-initials={initials}
@@ -128,11 +126,11 @@ export const Avatar = React.memo(
               {initials}
             </div>
           )}
-          
+
           {/* Status Indicator (if enabled) */}
           {showStatus && (
-            <span 
-              className={statusClasses} 
+            <span
+              className={statusClasses}
               aria-label={`Status: ${statusLabel}`}
               role="status"
               data-testid={`${testId}-status`}
@@ -158,11 +156,9 @@ Avatar.displayName = 'Avatar';
  * ```
  */
 export const AvatarXS = React.memo(
-  React.forwardRef<AvatarRef, AvatarXSProps>(
-    (props: AvatarXSProps, ref: React.Ref<AvatarRef>) => (
-      <Avatar ref={ref} size="xs" {...props} />
-    )
-  )
+  React.forwardRef<AvatarRef, AvatarXSProps>((props: AvatarXSProps, ref: React.Ref<AvatarRef>) => (
+    <Avatar ref={ref} size="xs" {...props} />
+  ))
 );
 AvatarXS.displayName = 'AvatarXS';
 
@@ -174,11 +170,9 @@ AvatarXS.displayName = 'AvatarXS';
  * ```
  */
 export const AvatarSM = React.memo(
-  React.forwardRef<AvatarRef, AvatarSMProps>(
-    (props: AvatarSMProps, ref: React.Ref<AvatarRef>) => (
-      <Avatar ref={ref} size="sm" {...props} />
-    )
-  )
+  React.forwardRef<AvatarRef, AvatarSMProps>((props: AvatarSMProps, ref: React.Ref<AvatarRef>) => (
+    <Avatar ref={ref} size="sm" {...props} />
+  ))
 );
 AvatarSM.displayName = 'AvatarSM';
 
@@ -190,11 +184,9 @@ AvatarSM.displayName = 'AvatarSM';
  * ```
  */
 export const AvatarMD = React.memo(
-  React.forwardRef<AvatarRef, AvatarMDProps>(
-    (props: AvatarMDProps, ref: React.Ref<AvatarRef>) => (
-      <Avatar ref={ref} size="md" {...props} />
-    )
-  )
+  React.forwardRef<AvatarRef, AvatarMDProps>((props: AvatarMDProps, ref: React.Ref<AvatarRef>) => (
+    <Avatar ref={ref} size="md" {...props} />
+  ))
 );
 AvatarMD.displayName = 'AvatarMD';
 
@@ -206,10 +198,8 @@ AvatarMD.displayName = 'AvatarMD';
  * ```
  */
 export const AvatarLG = React.memo(
-  React.forwardRef<AvatarRef, AvatarLGProps>(
-    (props: AvatarLGProps, ref: React.Ref<AvatarRef>) => (
-      <Avatar ref={ref} size="lg" {...props} />
-    )
-  )
+  React.forwardRef<AvatarRef, AvatarLGProps>((props: AvatarLGProps, ref: React.Ref<AvatarRef>) => (
+    <Avatar ref={ref} size="lg" {...props} />
+  ))
 );
 AvatarLG.displayName = 'AvatarLG';

@@ -1,6 +1,17 @@
 // D:\Projects-In-Hand\helixcrm\apps\web\src\components\atoms\Icon\Icon.stories.tsx
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Icon, CheckIcon, XIcon, LoadingIcon, InfoIcon, WarningIcon, ErrorIcon, StatusIcon, IconButton, IconGroup } from './Icon';
+import {
+  Icon,
+  CheckIcon,
+  XIcon,
+  LoadingIcon,
+  InfoIcon,
+  WarningIcon,
+  ErrorIcon,
+  StatusIcon,
+  IconButton,
+  IconGroup,
+} from './Icon';
 
 const meta: Meta<typeof Icon> = {
   title: 'Atoms/Icon',
@@ -9,7 +20,8 @@ const meta: Meta<typeof Icon> = {
     layout: 'centered',
     docs: {
       description: {
-        component: 'Enterprise-grade Icon component with comprehensive features including sizing, coloring, animations, badges, tooltips, and accessibility support.',
+        component:
+          'Enterprise-grade Icon component with comprehensive features including sizing, coloring, animations, badges, tooltips, and accessibility support.',
       },
     },
   },
@@ -24,7 +36,18 @@ const meta: Meta<typeof Icon> = {
     },
     color: {
       control: 'select',
-      options: ['current', 'primary', 'secondary', 'success', 'error', 'warning', 'info', 'muted', 'white', 'black'],
+      options: [
+        'current',
+        'primary',
+        'secondary',
+        'success',
+        'error',
+        'warning',
+        'info',
+        'muted',
+        'white',
+        'black',
+      ],
       description: 'Icon color',
       table: {
         defaultValue: { summary: 'current' },
@@ -96,7 +119,8 @@ export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Default icon with plus symbol. Use `aria-label` for accessibility when icon has meaning.',
+        story:
+          'Default icon with plus symbol. Use `aria-label` for accessibility when icon has meaning.',
       },
     },
   },
@@ -109,7 +133,8 @@ export const WithAccessibility: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Icon with accessibility label for screen readers. Always provide labels for meaningful icons.',
+        story:
+          'Icon with accessibility label for screen readers. Always provide labels for meaningful icons.',
       },
     },
   },
@@ -201,15 +226,32 @@ export const WithBadges: Story = {
           <span className="text-xs text-gray-500">Default (error)</span>
         </div>
         <div className="flex flex-col items-center gap-2">
-          <Icon badge={12} badgeColor="success" size="lg" aria-label="Icon with 12 success notifications" />
+          <Icon
+            badge={12}
+            badgeColor="success"
+            size="lg"
+            aria-label="Icon with 12 success notifications"
+          />
           <span className="text-xs text-gray-500">Success</span>
         </div>
         <div className="flex flex-col items-center gap-2">
-          <Icon badge={99} badgeColor="warning" badgePosition="top-left" size="lg" aria-label="Icon with 99+ warnings" />
+          <Icon
+            badge={99}
+            badgeColor="warning"
+            badgePosition="top-left"
+            size="lg"
+            aria-label="Icon with 99+ warnings"
+          />
           <span className="text-xs text-gray-500">99+ (top-left)</span>
         </div>
         <div className="flex flex-col items-center gap-2">
-          <Icon badge="!" badgeColor="info" badgePosition="bottom-right" size="lg" aria-label="Icon with important notification" />
+          <Icon
+            badge="!"
+            badgeColor="info"
+            badgePosition="bottom-right"
+            size="lg"
+            aria-label="Icon with important notification"
+          />
           <span className="text-xs text-gray-500">Custom (bottom-right)</span>
         </div>
       </div>
@@ -218,7 +260,8 @@ export const WithBadges: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Badges for notification counts or status indicators with customizable positions and colors.',
+        story:
+          'Badges for notification counts or status indicators with customizable positions and colors.',
       },
     },
   },
@@ -227,7 +270,7 @@ export const WithBadges: Story = {
 export const InteractiveIcons: Story = {
   render: () => {
     const handleClick = () => alert('Icon clicked!');
-    
+
     return (
       <div className="flex flex-col gap-6 p-6 bg-gray-50 rounded-lg">
         <div className="text-sm font-medium text-gray-700">Interactive States</div>
@@ -274,7 +317,11 @@ export const WithTooltips: Story = {
           <span className="text-xs text-gray-500">Right</span>
         </div>
         <div className="flex flex-col items-center gap-2">
-          <Icon tooltip="Important information below" tooltipPosition="bottom" aria-label="Info icon" />
+          <Icon
+            tooltip="Important information below"
+            tooltipPosition="bottom"
+            aria-label="Info icon"
+          />
           <span className="text-xs text-gray-500">Bottom</span>
         </div>
         <div className="flex flex-col items-center gap-2">
@@ -415,7 +462,7 @@ export const StatusIcons: Story = {
 export const IconButtons: Story = {
   render: () => {
     const handleAction = (action: string) => alert(`${action} clicked!`);
-    
+
     return (
       <div className="flex flex-col gap-6 p-6 bg-gray-50 rounded-lg">
         <div className="text-sm font-medium text-gray-700">Icon Buttons</div>
@@ -423,19 +470,19 @@ export const IconButtons: Story = {
           <IconButton onClick={() => handleAction('Add')} aria-label="Add">
             <Icon aria-label="Add icon" />
           </IconButton>
-          
+
           <IconButton onClick={() => handleAction('Edit')} aria-label="Edit">
             <Icon tooltip="Edit item" aria-label="Edit icon" />
           </IconButton>
-          
+
           <IconButton onClick={() => handleAction('Delete')} aria-label="Delete" disabled>
             <XIcon aria-label="Delete icon" />
           </IconButton>
-          
+
           <IconButton onClick={() => handleAction('Save')} aria-label="Save">
             <CheckIcon aria-label="Save icon" />
           </IconButton>
-          
+
           <IconButton onClick={() => handleAction('Refresh')} aria-label="Refresh">
             <LoadingIcon aria-label="Refresh icon" />
           </IconButton>
@@ -470,7 +517,7 @@ export const IconGroups: Story = {
             <Icon aria-label="Star icon" />
           </IconGroup>
         </div>
-        
+
         <div className="flex flex-col gap-2">
           <span className="text-xs text-gray-500">Small Spacing</span>
           <IconGroup spacing="sm">
@@ -479,7 +526,7 @@ export const IconGroups: Story = {
             <Icon aria-label="Social icon" />
           </IconGroup>
         </div>
-        
+
         <div className="flex flex-col gap-2">
           <span className="text-xs text-gray-500">Medium Spacing (Default)</span>
           <IconGroup spacing="md">
@@ -488,7 +535,7 @@ export const IconGroups: Story = {
             <CheckIcon aria-label="Feature 3" />
           </IconGroup>
         </div>
-        
+
         <div className="flex flex-col gap-2">
           <span className="text-xs text-gray-500">Large Spacing</span>
           <IconGroup spacing="lg">
@@ -523,39 +570,39 @@ export const UsageExamples: Story = {
             <CheckIcon color="success" size="sm" />
             <span className="text-sm">Email format is valid</span>
           </div>
-          
+
           <div className="flex items-center gap-2">
             <XIcon color="error" size="sm" />
             <span className="text-sm">Password must be 8+ characters</span>
           </div>
-          
+
           <div className="flex items-center gap-2">
             <WarningIcon color="warning" size="sm" />
             <span className="text-sm">Username may be taken</span>
           </div>
-          
+
           <div className="flex items-center gap-2">
             <LoadingIcon size="sm" />
             <span className="text-sm">Checking availability...</span>
           </div>
         </div>
       </div>
-      
+
       <div>
         <h3 className="text-lg font-semibold mb-3">Data Table Actions</h3>
         <div className="flex items-center gap-2 p-4 bg-white rounded border">
           <IconButton aria-label="Add row">
             <Icon aria-label="Add icon" />
           </IconButton>
-          
+
           <IconButton aria-label="Edit selected">
             <Icon tooltip="Edit selected rows" aria-label="Edit icon" />
           </IconButton>
-          
+
           <IconButton aria-label="Delete selected" disabled>
             <XIcon aria-label="Delete icon" />
           </IconButton>
-          
+
           <div className="ml-auto">
             <IconButton aria-label="Refresh data">
               <LoadingIcon aria-label="Refresh icon" />
@@ -563,7 +610,7 @@ export const UsageExamples: Story = {
           </div>
         </div>
       </div>
-      
+
       <div>
         <h3 className="text-lg font-semibold mb-3">Notification Panel</h3>
         <div className="space-y-3 p-4 bg-white rounded border">
@@ -576,7 +623,7 @@ export const UsageExamples: Story = {
               <CheckIcon size="sm" />
             </IconButton>
           </div>
-          
+
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Icon badge="!" badgeColor="warning" aria-label="Important alerts" />
@@ -584,7 +631,7 @@ export const UsageExamples: Story = {
             </div>
             <Icon interactive tooltip="View alerts" aria-label="View alerts" />
           </div>
-          
+
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Icon aria-label="System status" />
@@ -599,7 +646,8 @@ export const UsageExamples: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Real-world usage examples showing how icons can be combined in different scenarios.',
+        story:
+          'Real-world usage examples showing how icons can be combined in different scenarios.',
       },
     },
   },

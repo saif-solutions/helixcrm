@@ -5,71 +5,71 @@ import * as React from 'react';
  * Enterprise Badge component props with comprehensive JSDoc
  */
 export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
-  /** 
+  /**
    * Badge visual variant
    * @default 'default'
    */
   variant?: BadgeVariant;
-  
-  /** 
+
+  /**
    * Badge size
    * @default 'md'
    */
   size?: BadgeSize;
-  
-  /** 
+
+  /**
    * Badge shape (border radius)
    * @default 'rounded'
    */
   shape?: BadgeShape;
-  
-  /** 
+
+  /**
    * Whether the badge is interactive/clickable
    * @default false
    */
   clickable?: boolean;
-  
-  /** 
+
+  /**
    * Icon element to display before text
    */
   leftIcon?: React.ReactNode;
-  
-  /** 
+
+  /**
    * Icon element to display after text
    */
   rightIcon?: React.ReactNode;
-  
-  /** 
+
+  /**
    * Custom CSS class name
    */
   className?: string;
-  
-  /** 
+
+  /**
    * Badge content (text or elements)
    */
   children: React.ReactNode;
-  
-  /** 
+
+  /**
    * Data attribute for testing (testing-library)
    */
   'data-testid'?: string;
-  
-  /** 
+
+  /**
    * Data attribute for analytics tracking
    */
   'data-analytics'?: string;
-  
-  /** 
+
+  /**
    * Data attribute for Cypress testing
    */
   'data-cy'?: string;
-  
-  /** 
+
+  /**
    * Optional tooltip text for badges with limited space
    */
   tooltip?: string;
-  
-  /** 
+
+  /**
    * Maximum width before truncating text
    */
   maxWidth?: string | number;
@@ -78,13 +78,13 @@ export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
 /**
  * Badge visual variants
  */
-export type BadgeVariant = 
-  | 'default' 
-  | 'primary' 
-  | 'success' 
-  | 'error' 
-  | 'warning' 
-  | 'info' 
+export type BadgeVariant =
+  | 'default'
+  | 'primary'
+  | 'success'
+  | 'error'
+  | 'warning'
+  | 'info'
   | 'outline';
 
 /**
@@ -152,16 +152,16 @@ export function hasBadgeIcon(props: Pick<BadgeProps, 'leftIcon' | 'rightIcon'>):
 export interface BadgeAccessibilityProps {
   /** ARIA role (button for clickable badges) */
   role?: 'button' | 'status' | 'presentation';
-  
+
   /** ARIA label for screen readers */
   'aria-label'?: string;
-  
+
   /** ARIA live region for dynamic content */
   'aria-live'?: 'polite' | 'assertive' | 'off';
-  
+
   /** Tab index for clickable badges */
   tabIndex?: 0 | -1;
-  
+
   /** ARIA pressed state for toggle badges */
   'aria-pressed'?: boolean | 'mixed';
 }
@@ -213,4 +213,3 @@ export interface BadgeState {
   /** Whether badge is disabled */
   isDisabled: boolean;
 }
-

@@ -14,7 +14,7 @@ export const dataGridTokens = {
     header: 'px-4 py-3',
     pagination: 'px-4 py-3',
   },
-  
+
   // Color tokens
   colors: {
     background: {
@@ -33,7 +33,7 @@ export const dataGridTokens = {
       disabled: 'text-gray-400',
     },
   },
-  
+
   // Typography tokens
   typography: {
     header: 'text-xs font-medium uppercase tracking-wider',
@@ -42,10 +42,10 @@ export const dataGridTokens = {
       default: 'text-sm',
     },
   },
-  
+
   // Border tokens
   borderRadius: 'rounded-lg',
-  
+
   // Transition tokens
   transition: 'transition-colors duration-150',
 };
@@ -56,13 +56,13 @@ export const dataGridTokens = {
 export const dataGridClasses = {
   // Container classes
   container: 'flex flex-col',
-  
+
   // Table wrapper classes
   tableWrapper: 'overflow-x-auto border border-gray-200 rounded-lg',
-  
+
   // Table classes
   table: 'min-w-full divide-y divide-gray-200',
-  
+
   // Header classes
   header: {
     container: 'bg-gray-50',
@@ -74,10 +74,10 @@ export const dataGridClasses = {
     sticky: 'sticky left-0 bg-gray-50 z-10',
     sortable: 'cursor-pointer select-none',
   },
-  
+
   // Body classes
   body: 'bg-white divide-y divide-gray-200',
-  
+
   // Row classes
   row: {
     base: cn(dataGridTokens.transition),
@@ -85,7 +85,7 @@ export const dataGridClasses = {
     hover: 'hover:bg-gray-100',
     clickable: 'cursor-pointer',
   },
-  
+
   // Cell classes
   cell: {
     base: cn('whitespace-nowrap', dataGridTokens.colors.text.cell),
@@ -98,19 +98,19 @@ export const dataGridClasses = {
       right: 'text-right',
     },
   },
-  
+
   // Empty state classes
   emptyState: {
     container: 'px-4 py-12 text-center',
     content: 'flex flex-col items-center justify-center text-gray-500',
   },
-  
+
   // Loading state classes
   loadingState: {
     container: 'px-4 py-12 text-center',
     content: 'flex flex-col items-center justify-center',
   },
-  
+
   // Pagination classes
   pagination: {
     container: 'flex items-center justify-between px-4 py-3 border-t border-gray-200',
@@ -118,17 +118,17 @@ export const dataGridClasses = {
     buttons: 'flex items-center gap-2',
     pageButton: 'min-w-[2rem]',
   },
-  
+
   // Checkbox classes
   checkbox: cn(
     'h-4 w-4 rounded border-gray-300 text-primary-600',
     'focus:ring-primary-500 focus:ring-offset-0',
     'disabled:opacity-50 disabled:cursor-not-allowed'
   ),
-  
+
   // Bulk actions classes
   bulkActions: 'flex items-center gap-2',
-  
+
   // Sort icon classes
   sortIcon: {
     container: 'flex flex-col',
@@ -184,18 +184,18 @@ export function getRowClasses(
     hoverable && dataGridClasses.row.hover,
     clickable && dataGridClasses.row.clickable
   );
-  
+
   // Handle function rowClassName
   if (typeof rowClassName === 'function' && row) {
     const dynamicClass = rowClassName(row, index);
     return cn(baseClasses, dynamicClass);
   }
-  
+
   // Handle string rowClassName
   if (typeof rowClassName === 'string') {
     return cn(baseClasses, rowClassName);
   }
-  
+
   return baseClasses;
 }
 
@@ -217,16 +217,21 @@ export function getCellClasses(
     column.align === 'right' && dataGridClasses.cell.align.right,
     column.sticky && dataGridClasses.cell.sticky
   );
-  
-  if (typeof cellClassName === 'function' && columnObj && row !== undefined && index !== undefined) {
+
+  if (
+    typeof cellClassName === 'function' &&
+    columnObj &&
+    row !== undefined &&
+    index !== undefined
+  ) {
     const dynamicClass = cellClassName(columnObj, row, index);
     return cn(baseClasses, dynamicClass);
   }
-  
+
   if (typeof cellClassName === 'string') {
     return cn(baseClasses, cellClassName);
   }
-  
+
   return baseClasses;
 }
 
@@ -241,10 +246,7 @@ export function getCheckboxClasses(className?: string): string {
  * Utility function to build sort icon classes
  */
 export function getSortIconClasses(isActive: boolean): string {
-  return cn(
-    dataGridClasses.sortIcon.icon,
-    isActive && dataGridClasses.sortIcon.active
-  );
+  return cn(dataGridClasses.sortIcon.icon, isActive && dataGridClasses.sortIcon.active);
 }
 
 /**

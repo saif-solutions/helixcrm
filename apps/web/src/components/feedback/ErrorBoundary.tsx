@@ -33,10 +33,10 @@ export class ErrorBoundary extends Component<Props, State> {
       error,
       errorInfo,
     });
-    
+
     // Log error to error reporting service
     console.error('ErrorBoundary caught an error:', error, errorInfo);
-    
+
     // Call custom error handler if provided
     if (this.props.onError) {
       this.props.onError(error, errorInfo);
@@ -49,7 +49,7 @@ export class ErrorBoundary extends Component<Props, State> {
       error: null,
       errorInfo: null,
     });
-    
+
     // Log reset action
     console.log('ErrorBoundary was reset by user');
   };
@@ -67,7 +67,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
       // Default error UI
       return (
-        <div 
+        <div
           data-testid="error-boundary"
           className="min-h-screen flex items-center justify-center bg-neutral-50 p-4"
         >
@@ -76,11 +76,9 @@ export class ErrorBoundary extends Component<Props, State> {
               <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-error-100">
                 <ExclamationCircleIcon className="h-6 w-6 text-error-600" aria-hidden="true" />
               </div>
-              
-              <h2 className="mt-4 text-lg font-semibold text-neutral-900">
-                Something went wrong
-              </h2>
-              
+
+              <h2 className="mt-4 text-lg font-semibold text-neutral-900">Something went wrong</h2>
+
               <p className="mt-2 text-sm text-neutral-600">
                 We apologize for the inconvenience. An error occurred while rendering this page.
               </p>
@@ -114,7 +112,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 >
                   Try Again
                 </button>
-                
+
                 <button
                   type="button"
                   onClick={this.handleReload}

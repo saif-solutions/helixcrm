@@ -1,0 +1,1478 @@
+{
+  "collectedAt": "2026-02-04T02:36:22.088Z",
+  "system": "HelixCRM",
+  "version": "0.0.1",
+  "totalControls": 8,
+  "byCriteria": {
+    "Security": 3,
+    "Availability": 2,
+    "Confidentiality": 1,
+    "ProcessingIntegrity": 1,
+    "Privacy": 1
+  },
+  "results": [
+    {
+      "controlId": "CC6.1",
+      "controlName": "Logical Access Security Software",
+      "criteria": "Security",
+      "evidenceType": "ACCESS_CONTROL_LOGS",
+      "collectedAt": "2026-02-04T02:36:22.049Z",
+      "data": [
+        {
+          "id": "cml4j6u1z0003h3j0w20jfmt2",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "4bc8f025-6a04-428f-9881-2209bd3de407",
+          "actorUserId": "1ff19755-6693-46ba-994e-f38260dabee1",
+          "actorEmail": "test3@example.com",
+          "actorType": "USER",
+          "requestId": null,
+          "correlationId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [
+              "SystemAdmin"
+            ],
+            "tokenVersion": 4,
+            "permissionsCount": 22
+          },
+          "ipAddress": "::1",
+          "userAgent": "axios/1.13.2",
+          "createdAt": "2026-02-02T02:08:55.463Z",
+          "updatedAt": "2026-02-02T02:08:55.463Z"
+        },
+        {
+          "id": "cml4j6a870003yley0lljmzfj",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "4bc8f025-6a04-428f-9881-2209bd3de407",
+          "actorUserId": "1ff19755-6693-46ba-994e-f38260dabee1",
+          "actorEmail": "test3@example.com",
+          "actorType": "USER",
+          "requestId": null,
+          "correlationId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [
+              "SystemAdmin"
+            ],
+            "permissionsCount": 22
+          },
+          "ipAddress": "::1",
+          "userAgent": "axios/1.13.2",
+          "createdAt": "2026-02-02T02:08:29.768Z",
+          "updatedAt": "2026-02-02T02:08:29.768Z"
+        },
+        {
+          "id": "cml4hqsdk0003hb3sqeqn8zy0",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "4bc8f025-6a04-428f-9881-2209bd3de407",
+          "actorUserId": "1ff19755-6693-46ba-994e-f38260dabee1",
+          "actorEmail": "test3@example.com",
+          "actorType": "USER",
+          "requestId": null,
+          "correlationId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [
+              "SystemAdmin"
+            ],
+            "tokenVersion": 4,
+            "permissionsCount": 22
+          },
+          "ipAddress": "::1",
+          "userAgent": "axios/1.13.2",
+          "createdAt": "2026-02-02T01:28:27.177Z",
+          "updatedAt": "2026-02-02T01:28:27.177Z"
+        },
+        {
+          "id": "cml4hjo7200037xt8ot20orno",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "4bc8f025-6a04-428f-9881-2209bd3de407",
+          "actorUserId": "1ff19755-6693-46ba-994e-f38260dabee1",
+          "actorEmail": "test3@example.com",
+          "actorType": "USER",
+          "requestId": null,
+          "correlationId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [
+              "SystemAdmin"
+            ],
+            "tokenVersion": 4,
+            "permissionsCount": 22
+          },
+          "ipAddress": "::1",
+          "userAgent": "axios/1.13.2",
+          "createdAt": "2026-02-02T01:22:55.167Z",
+          "updatedAt": "2026-02-02T01:22:55.167Z"
+        },
+        {
+          "id": "cml4h2aq10003hvl6u6mrmlmz",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "4bc8f025-6a04-428f-9881-2209bd3de407",
+          "actorUserId": "1ff19755-6693-46ba-994e-f38260dabee1",
+          "actorEmail": "test3@example.com",
+          "actorType": "USER",
+          "requestId": null,
+          "correlationId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [
+              "SystemAdmin"
+            ],
+            "tokenVersion": 4,
+            "permissionsCount": 22
+          },
+          "ipAddress": "::1",
+          "userAgent": "axios/1.13.2",
+          "createdAt": "2026-02-02T01:09:24.553Z",
+          "updatedAt": "2026-02-02T01:09:24.553Z"
+        },
+        {
+          "id": "cml4grrc90003btsutm9d89kv",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "4bc8f025-6a04-428f-9881-2209bd3de407",
+          "actorUserId": "1ff19755-6693-46ba-994e-f38260dabee1",
+          "actorEmail": "test3@example.com",
+          "actorType": "USER",
+          "requestId": null,
+          "correlationId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [
+              "SystemAdmin"
+            ],
+            "tokenVersion": 4,
+            "permissionsCount": 22
+          },
+          "ipAddress": "::1",
+          "userAgent": "axios/1.13.2",
+          "createdAt": "2026-02-02T01:01:12.873Z",
+          "updatedAt": "2026-02-02T01:01:12.873Z"
+        },
+        {
+          "id": "cml4gdqw20003869yms1aqjr2",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "4bc8f025-6a04-428f-9881-2209bd3de407",
+          "actorUserId": "1ff19755-6693-46ba-994e-f38260dabee1",
+          "actorEmail": "test3@example.com",
+          "actorType": "USER",
+          "requestId": null,
+          "correlationId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [
+              "SystemAdmin"
+            ],
+            "tokenVersion": 4,
+            "permissionsCount": 22
+          },
+          "ipAddress": "::1",
+          "userAgent": "axios/1.13.2",
+          "createdAt": "2026-02-02T00:50:19.106Z",
+          "updatedAt": "2026-02-02T00:50:19.106Z"
+        },
+        {
+          "id": "cml4gc09q0003dnsfkiac75gk",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "4bc8f025-6a04-428f-9881-2209bd3de407",
+          "actorUserId": "1ff19755-6693-46ba-994e-f38260dabee1",
+          "actorEmail": "test3@example.com",
+          "actorType": "USER",
+          "requestId": null,
+          "correlationId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [
+              "SystemAdmin"
+            ],
+            "tokenVersion": 4,
+            "permissionsCount": 22
+          },
+          "ipAddress": "::1",
+          "userAgent": "axios/1.13.2",
+          "createdAt": "2026-02-02T00:48:57.950Z",
+          "updatedAt": "2026-02-02T00:48:57.950Z"
+        },
+        {
+          "id": "cml4chfy1000sfwk695lhd4zn",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "4bc8f025-6a04-428f-9881-2209bd3de407",
+          "actorUserId": "1ff19755-6693-46ba-994e-f38260dabee1",
+          "actorEmail": "test3@example.com",
+          "actorType": "USER",
+          "requestId": null,
+          "correlationId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [
+              "SystemAdmin"
+            ],
+            "tokenVersion": 4,
+            "permissionsCount": 22
+          },
+          "ipAddress": "::1",
+          "userAgent": "axios/1.13.2",
+          "createdAt": "2026-02-01T23:01:13.082Z",
+          "updatedAt": "2026-02-01T23:01:13.082Z"
+        },
+        {
+          "id": "cml4cfij3000mfwk6a3j2jtkf",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "4bc8f025-6a04-428f-9881-2209bd3de407",
+          "actorUserId": "1ff19755-6693-46ba-994e-f38260dabee1",
+          "actorEmail": "test3@example.com",
+          "actorType": "USER",
+          "requestId": null,
+          "correlationId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [
+              "SystemAdmin"
+            ],
+            "tokenVersion": 4,
+            "permissionsCount": 22
+          },
+          "ipAddress": "::1",
+          "userAgent": "axios/1.13.2",
+          "createdAt": "2026-02-01T22:59:43.119Z",
+          "updatedAt": "2026-02-01T22:59:43.119Z"
+        },
+        {
+          "id": "cml4cdk97000hfwk6m3vs144u",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "4bc8f025-6a04-428f-9881-2209bd3de407",
+          "actorUserId": "1ff19755-6693-46ba-994e-f38260dabee1",
+          "actorEmail": "test3@example.com",
+          "actorType": "USER",
+          "requestId": null,
+          "correlationId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [
+              "SystemAdmin"
+            ],
+            "tokenVersion": 4,
+            "permissionsCount": 22
+          },
+          "ipAddress": "::1",
+          "userAgent": "axios/1.13.2",
+          "createdAt": "2026-02-01T22:58:12.044Z",
+          "updatedAt": "2026-02-01T22:58:12.044Z"
+        },
+        {
+          "id": "cml4c4bux000dfwk6gptnx5ml",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "4bc8f025-6a04-428f-9881-2209bd3de407",
+          "actorUserId": "1ff19755-6693-46ba-994e-f38260dabee1",
+          "actorEmail": "test3@example.com",
+          "actorType": "USER",
+          "requestId": null,
+          "correlationId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [
+              "SystemAdmin"
+            ],
+            "tokenVersion": 4,
+            "permissionsCount": 22
+          },
+          "ipAddress": "::1",
+          "userAgent": "axios/1.13.2",
+          "createdAt": "2026-02-01T22:51:01.258Z",
+          "updatedAt": "2026-02-01T22:51:01.258Z"
+        },
+        {
+          "id": "cml3ynbq90003a7vq3ptulr6a",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "4bc8f025-6a04-428f-9881-2209bd3de407",
+          "actorUserId": "1ff19755-6693-46ba-994e-f38260dabee1",
+          "actorEmail": "test3@example.com",
+          "actorType": "USER",
+          "requestId": null,
+          "correlationId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [
+              "SystemAdmin"
+            ],
+            "tokenVersion": 3,
+            "permissionsCount": 22
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-02-01T16:33:52.929Z",
+          "updatedAt": "2026-02-01T16:33:52.929Z"
+        },
+        {
+          "id": "cml3xt7dq0003o4uonexqaohd",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "4bc8f025-6a04-428f-9881-2209bd3de407",
+          "actorUserId": "1ff19755-6693-46ba-994e-f38260dabee1",
+          "actorEmail": "test3@example.com",
+          "actorType": "USER",
+          "requestId": null,
+          "correlationId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [
+              "SystemAdmin"
+            ],
+            "tokenVersion": 3,
+            "permissionsCount": 22
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-02-01T16:10:27.615Z",
+          "updatedAt": "2026-02-01T16:10:27.615Z"
+        },
+        {
+          "id": "cml3xbq770007lbwhudwid7rj",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "4bc8f025-6a04-428f-9881-2209bd3de407",
+          "actorUserId": "1ff19755-6693-46ba-994e-f38260dabee1",
+          "actorEmail": "test3@example.com",
+          "actorType": "USER",
+          "requestId": null,
+          "correlationId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [
+              "SystemAdmin"
+            ],
+            "tokenVersion": 3,
+            "permissionsCount": 22
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-02-01T15:56:52.196Z",
+          "updatedAt": "2026-02-01T15:56:52.196Z"
+        },
+        {
+          "id": "cml3xbjt30003lbwhxvgo65y3",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "4bc8f025-6a04-428f-9881-2209bd3de407",
+          "actorUserId": "1ff19755-6693-46ba-994e-f38260dabee1",
+          "actorEmail": "test3@example.com",
+          "actorType": "USER",
+          "requestId": null,
+          "correlationId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [
+              "SystemAdmin"
+            ],
+            "tokenVersion": 3,
+            "permissionsCount": 22
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-02-01T15:56:43.912Z",
+          "updatedAt": "2026-02-01T15:56:43.912Z"
+        },
+        {
+          "id": "cml3ediul0006ax9dr6tqp3bt",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "4bc8f025-6a04-428f-9881-2209bd3de407",
+          "actorUserId": "1ff19755-6693-46ba-994e-f38260dabee1",
+          "actorEmail": "test3@example.com",
+          "actorType": "USER",
+          "requestId": null,
+          "correlationId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [
+              "SystemAdmin"
+            ],
+            "tokenVersion": 3,
+            "permissionsCount": 22
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-02-01T07:06:23.278Z",
+          "updatedAt": "2026-02-01T07:06:23.278Z"
+        },
+        {
+          "id": "cml3e8oyt00036hgiajf62y4r",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "4bc8f025-6a04-428f-9881-2209bd3de407",
+          "actorUserId": "1ff19755-6693-46ba-994e-f38260dabee1",
+          "actorEmail": "test3@example.com",
+          "actorType": "USER",
+          "requestId": null,
+          "correlationId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [
+              "SystemAdmin"
+            ],
+            "tokenVersion": 3,
+            "permissionsCount": 22
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-02-01T07:02:37.925Z",
+          "updatedAt": "2026-02-01T07:02:37.925Z"
+        },
+        {
+          "id": "cml3e1cvz0003chobhmpfr8z8",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "4bc8f025-6a04-428f-9881-2209bd3de407",
+          "actorUserId": "1ff19755-6693-46ba-994e-f38260dabee1",
+          "actorEmail": "test3@example.com",
+          "actorType": "USER",
+          "requestId": null,
+          "correlationId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [
+              "SystemAdmin"
+            ],
+            "tokenVersion": 3,
+            "permissionsCount": 22
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-02-01T06:56:55.680Z",
+          "updatedAt": "2026-02-01T06:56:55.680Z"
+        },
+        {
+          "id": "cml3dthcb0003w3kyi54vl3ff",
+          "action": "LOGIN_FAILURE",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "4bc8f025-6a04-428f-9881-2209bd3de407",
+          "actorUserId": "1ff19755-6693-46ba-994e-f38260dabee1",
+          "actorEmail": "test3@example.com",
+          "actorType": "USER",
+          "requestId": null,
+          "correlationId": null,
+          "severity": "HIGH",
+          "metadata": {
+            "error": "Refresh token issuance failed",
+            "errorType": "InternalServerErrorException"
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-02-01T06:50:48.204Z",
+          "updatedAt": "2026-02-01T06:50:48.204Z"
+        },
+        {
+          "id": "cml3dq5wq0003o6x5ujnp0n80",
+          "action": "LOGIN_FAILURE",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "4bc8f025-6a04-428f-9881-2209bd3de407",
+          "actorUserId": "1ff19755-6693-46ba-994e-f38260dabee1",
+          "actorEmail": "test3@example.com",
+          "actorType": "USER",
+          "requestId": null,
+          "correlationId": null,
+          "severity": "HIGH",
+          "metadata": {
+            "error": "Refresh token issuance failed",
+            "errorType": "InternalServerErrorException"
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-02-01T06:48:13.418Z",
+          "updatedAt": "2026-02-01T06:48:13.418Z"
+        },
+        {
+          "id": "cml3dmm4m0003eh64cvdjpcdo",
+          "action": "LOGIN_FAILURE",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "4bc8f025-6a04-428f-9881-2209bd3de407",
+          "actorUserId": "1ff19755-6693-46ba-994e-f38260dabee1",
+          "actorEmail": "test3@example.com",
+          "actorType": "USER",
+          "requestId": null,
+          "correlationId": null,
+          "severity": "HIGH",
+          "metadata": {
+            "error": "Refresh token issuance failed",
+            "errorType": "InternalServerErrorException"
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-02-01T06:45:27.815Z",
+          "updatedAt": "2026-02-01T06:45:27.815Z"
+        },
+        {
+          "id": "cml3ddy0000036614rs1xzk1o",
+          "action": "LOGIN_FAILURE",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "4bc8f025-6a04-428f-9881-2209bd3de407",
+          "actorUserId": "1ff19755-6693-46ba-994e-f38260dabee1",
+          "actorEmail": "test3@example.com",
+          "actorType": "USER",
+          "requestId": null,
+          "correlationId": null,
+          "severity": "HIGH",
+          "metadata": {
+            "error": "Refresh token issuance failed",
+            "errorType": "InternalServerErrorException"
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-02-01T06:38:43.296Z",
+          "updatedAt": "2026-02-01T06:38:43.296Z"
+        },
+        {
+          "id": "cml3d8bhn0003t91raeg16jgf",
+          "action": "LOGIN_FAILURE",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "4bc8f025-6a04-428f-9881-2209bd3de407",
+          "actorUserId": "1ff19755-6693-46ba-994e-f38260dabee1",
+          "actorEmail": "test3@example.com",
+          "actorType": "USER",
+          "requestId": null,
+          "correlationId": null,
+          "severity": "HIGH",
+          "metadata": {
+            "error": "Refresh token issuance failed",
+            "errorType": "InternalServerErrorException"
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-02-01T06:34:20.844Z",
+          "updatedAt": "2026-02-01T06:34:20.844Z"
+        },
+        {
+          "id": "cml3d26bs00031z06xvnj74je",
+          "action": "LOGIN_FAILURE",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "4bc8f025-6a04-428f-9881-2209bd3de407",
+          "actorUserId": "1ff19755-6693-46ba-994e-f38260dabee1",
+          "actorEmail": "test3@example.com",
+          "actorType": "USER",
+          "requestId": null,
+          "correlationId": null,
+          "severity": "HIGH",
+          "metadata": {
+            "error": "Refresh token issuance failed",
+            "errorType": "InternalServerErrorException"
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-02-01T06:29:34.216Z",
+          "updatedAt": "2026-02-01T06:29:34.216Z"
+        },
+        {
+          "id": "cml3a4lau0003124eci165om6",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "4bc8f025-6a04-428f-9881-2209bd3de407",
+          "actorUserId": "1ff19755-6693-46ba-994e-f38260dabee1",
+          "actorEmail": "test3@example.com",
+          "actorType": "USER",
+          "requestId": null,
+          "correlationId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [
+              "SystemAdmin"
+            ],
+            "tokenVersion": 3,
+            "permissionsCount": 22
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-02-01T05:07:28.086Z",
+          "updatedAt": "2026-02-01T05:07:28.086Z"
+        },
+        {
+          "id": "cml3a3gbv000endqv38ahzyo0",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "4bc8f025-6a04-428f-9881-2209bd3de407",
+          "actorUserId": "1ff19755-6693-46ba-994e-f38260dabee1",
+          "actorEmail": "test3@example.com",
+          "actorType": "USER",
+          "requestId": null,
+          "correlationId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [
+              "SystemAdmin"
+            ],
+            "tokenVersion": 3,
+            "permissionsCount": 22
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-02-01T05:06:34.988Z",
+          "updatedAt": "2026-02-01T05:06:34.988Z"
+        },
+        {
+          "id": "cml39zk9w000andqv2f2oovvs",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "4bc8f025-6a04-428f-9881-2209bd3de407",
+          "actorUserId": "1ff19755-6693-46ba-994e-f38260dabee1",
+          "actorEmail": "test3@example.com",
+          "actorType": "USER",
+          "requestId": null,
+          "correlationId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [
+              "SystemAdmin"
+            ],
+            "tokenVersion": 3,
+            "permissionsCount": 22
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-02-01T05:03:33.477Z",
+          "updatedAt": "2026-02-01T05:03:33.477Z"
+        },
+        {
+          "id": "cml39h2sj0003ndqv2xlgpk6k",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "4bc8f025-6a04-428f-9881-2209bd3de407",
+          "actorUserId": "1ff19755-6693-46ba-994e-f38260dabee1",
+          "actorEmail": "test3@example.com",
+          "actorType": "USER",
+          "requestId": null,
+          "correlationId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [
+              "SystemAdmin"
+            ],
+            "tokenVersion": 2,
+            "permissionsCount": 22
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-02-01T04:49:11.011Z",
+          "updatedAt": "2026-02-01T04:49:11.011Z"
+        },
+        {
+          "id": "cml33f7pt0007pgg5i7t3tgh3",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "4bc8f025-6a04-428f-9881-2209bd3de407",
+          "actorUserId": "1ff19755-6693-46ba-994e-f38260dabee1",
+          "actorEmail": "test3@example.com",
+          "actorType": "USER",
+          "requestId": null,
+          "correlationId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [
+              "SystemAdmin"
+            ],
+            "tokenVersion": 1,
+            "permissionsCount": 22
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-02-01T01:59:46.386Z",
+          "updatedAt": "2026-02-01T01:59:46.386Z"
+        },
+        {
+          "id": "cml33e92c0003pgg5sdagdd4n",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "4bc8f025-6a04-428f-9881-2209bd3de407",
+          "actorUserId": "1ff19755-6693-46ba-994e-f38260dabee1",
+          "actorEmail": "test3@example.com",
+          "actorType": "USER",
+          "requestId": null,
+          "correlationId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [
+              "SystemAdmin"
+            ],
+            "tokenVersion": 1,
+            "permissionsCount": 22
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-02-01T01:59:01.476Z",
+          "updatedAt": "2026-02-01T01:59:01.476Z"
+        },
+        {
+          "id": "cml2izmth0003fydq2rstqux1",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "4bc8f025-6a04-428f-9881-2209bd3de407",
+          "actorUserId": "1ff19755-6693-46ba-994e-f38260dabee1",
+          "actorEmail": "test3@example.com",
+          "actorType": "USER",
+          "requestId": null,
+          "correlationId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [
+              "SystemAdmin"
+            ],
+            "tokenVersion": 1,
+            "permissionsCount": 22
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-01-31T16:27:47.142Z",
+          "updatedAt": "2026-01-31T16:27:47.142Z"
+        },
+        {
+          "id": "cml2ic1z8000fpfpst5int4f9",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "4bc8f025-6a04-428f-9881-2209bd3de407",
+          "actorUserId": "1ff19755-6693-46ba-994e-f38260dabee1",
+          "actorEmail": "test3@example.com",
+          "actorType": "USER",
+          "requestId": null,
+          "correlationId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [
+              "SystemAdmin"
+            ],
+            "tokenVersion": 1,
+            "permissionsCount": 22
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-01-31T16:09:27.044Z",
+          "updatedAt": "2026-01-31T16:09:27.044Z"
+        },
+        {
+          "id": "cml2i4n8i000bpfpsxw0nwajv",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "4bc8f025-6a04-428f-9881-2209bd3de407",
+          "actorUserId": "1ff19755-6693-46ba-994e-f38260dabee1",
+          "actorEmail": "test3@example.com",
+          "actorType": "USER",
+          "requestId": null,
+          "correlationId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [
+              "SystemAdmin"
+            ],
+            "tokenVersion": 1,
+            "permissionsCount": 22
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-01-31T16:03:41.347Z",
+          "updatedAt": "2026-01-31T16:03:41.347Z"
+        },
+        {
+          "id": "cml2i204l0007pfpsdw4u3y7s",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "4bc8f025-6a04-428f-9881-2209bd3de407",
+          "actorUserId": "1ff19755-6693-46ba-994e-f38260dabee1",
+          "actorEmail": "test3@example.com",
+          "actorType": "USER",
+          "requestId": null,
+          "correlationId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [
+              "SystemAdmin"
+            ],
+            "tokenVersion": 1,
+            "permissionsCount": 22
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-01-31T16:01:38.085Z",
+          "updatedAt": "2026-01-31T16:01:38.085Z"
+        },
+        {
+          "id": "cml2hy7o20003pfpsfo6km3w2",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "4bc8f025-6a04-428f-9881-2209bd3de407",
+          "actorUserId": "1ff19755-6693-46ba-994e-f38260dabee1",
+          "actorEmail": "test3@example.com",
+          "actorType": "USER",
+          "requestId": null,
+          "correlationId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [
+              "SystemAdmin"
+            ],
+            "tokenVersion": 1,
+            "permissionsCount": 22
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-01-31T15:58:41.234Z",
+          "updatedAt": "2026-01-31T15:58:41.234Z"
+        },
+        {
+          "id": "cml2euzw90007e9r6f43iw0y6",
+          "action": "LOGIN_FAILURE",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "4bc8f025-6a04-428f-9881-2209bd3de407",
+          "actorUserId": "1ff19755-6693-46ba-994e-f38260dabee1",
+          "actorEmail": "test3@example.com",
+          "actorType": "USER",
+          "requestId": null,
+          "correlationId": null,
+          "severity": "HIGH",
+          "metadata": {
+            "error": "secretOrPrivateKey must have a value",
+            "errorType": "Error"
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-01-31T14:32:12.346Z",
+          "updatedAt": "2026-01-31T14:32:12.346Z"
+        },
+        {
+          "id": "cml2eubro0003e9r6f3uvy8e9",
+          "action": "LOGIN_FAILURE",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "4bc8f025-6a04-428f-9881-2209bd3de407",
+          "actorUserId": "1ff19755-6693-46ba-994e-f38260dabee1",
+          "actorEmail": "test3@example.com",
+          "actorType": "USER",
+          "requestId": null,
+          "correlationId": null,
+          "severity": "HIGH",
+          "metadata": {
+            "error": "secretOrPrivateKey must have a value",
+            "errorType": "Error"
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-01-31T14:31:41.076Z",
+          "updatedAt": "2026-01-31T14:31:41.076Z"
+        },
+        {
+          "id": "cml26it7p0003ncxf6xak5ay1",
+          "action": "LOGIN_FAILURE",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "4bc8f025-6a04-428f-9881-2209bd3de407",
+          "actorUserId": "1ff19755-6693-46ba-994e-f38260dabee1",
+          "actorEmail": "test3@example.com",
+          "actorType": "USER",
+          "requestId": null,
+          "correlationId": null,
+          "severity": "HIGH",
+          "metadata": {
+            "error": "secretOrPrivateKey must have a value",
+            "errorType": "Error"
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-01-31T10:38:46.886Z",
+          "updatedAt": "2026-01-31T10:38:46.886Z"
+        },
+        {
+          "id": "cml266nqc00034hthzpwtb1j3",
+          "action": "LOGIN_FAILURE",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "4bc8f025-6a04-428f-9881-2209bd3de407",
+          "actorUserId": "1ff19755-6693-46ba-994e-f38260dabee1",
+          "actorEmail": "test3@example.com",
+          "actorType": "USER",
+          "requestId": null,
+          "correlationId": null,
+          "severity": "HIGH",
+          "metadata": {
+            "error": "secretOrPrivateKey must have a value",
+            "errorType": "Error"
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-01-31T10:29:19.909Z",
+          "updatedAt": "2026-01-31T10:29:19.909Z"
+        },
+        {
+          "id": "cml25kp75000b12oukfa791yk",
+          "action": "LOGIN_FAILURE",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "4bc8f025-6a04-428f-9881-2209bd3de407",
+          "actorUserId": "1ff19755-6693-46ba-994e-f38260dabee1",
+          "actorEmail": "test3@example.com",
+          "actorType": "USER",
+          "requestId": null,
+          "correlationId": null,
+          "severity": "HIGH",
+          "metadata": {
+            "error": "secretOrPrivateKey must have a value",
+            "errorType": "Error"
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-01-31T10:12:15.377Z",
+          "updatedAt": "2026-01-31T10:12:15.377Z"
+        },
+        {
+          "id": "cml25jg4x000712oulx26ag42",
+          "action": "LOGIN_FAILURE",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "0772f364-35a3-4ea9-a274-c372d59bfbcb",
+          "actorUserId": "6ac6cd0f-e421-4a57-828f-40c992395fbf",
+          "actorEmail": "admin@test.com",
+          "actorType": "USER",
+          "requestId": null,
+          "correlationId": null,
+          "severity": "HIGH",
+          "metadata": {
+            "error": "secretOrPrivateKey must have a value",
+            "errorType": "Error"
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-01-31T10:11:16.978Z",
+          "updatedAt": "2026-01-31T10:11:16.978Z"
+        }
+      ],
+      "verification": {
+        "hash": "9dc9be984eb55bb94b4ad61483e60e3fee5f1607ee371e4950d1a6ad214b8406",
+        "source": "audit_logs",
+        "verified": true
+      },
+      "summary": {
+        "totalAttempts": 42,
+        "successCount": 30,
+        "failureCount": 12,
+        "uniqueUsers": 2,
+        "timeRange": {
+          "start": "2026-01-05T02:36:21.853Z",
+          "end": "2026-02-04T02:36:22.050Z"
+        }
+      }
+    },
+    {
+      "controlId": "CC6.2",
+      "controlName": "Identification and Authentication",
+      "criteria": "Security",
+      "evidenceType": "USER_ACCOUNTS",
+      "collectedAt": "2026-02-04T02:36:22.059Z",
+      "data": [
+        {
+          "id": "0c16e763-d179-491a-bed3-4a67503dc122",
+          "email": "test@phase3b.com",
+          "emailVerified": false,
+          "lastLoginAt": null,
+          "failedLoginAttempts": 0,
+          "lockedUntil": null
+        },
+        {
+          "id": "1ff19755-6693-46ba-994e-f38260dabee1",
+          "email": "test3@example.com",
+          "emailVerified": false,
+          "lastLoginAt": "2026-02-02T02:08:55.458Z",
+          "failedLoginAttempts": 0,
+          "lockedUntil": null
+        },
+        {
+          "id": "233880f9-bfcb-4698-9b11-c9870047b7d5",
+          "email": "user@acme.com",
+          "emailVerified": false,
+          "lastLoginAt": null,
+          "failedLoginAttempts": 0,
+          "lockedUntil": null
+        },
+        {
+          "id": "33c9c18d-f620-4da0-b664-76f9d17d6fda",
+          "email": "test2@example.com",
+          "emailVerified": false,
+          "lastLoginAt": null,
+          "failedLoginAttempts": 0,
+          "lockedUntil": null
+        },
+        {
+          "id": "6ac6cd0f-e421-4a57-828f-40c992395fbf",
+          "email": "admin@test.com",
+          "emailVerified": false,
+          "lastLoginAt": null,
+          "failedLoginAttempts": 0,
+          "lockedUntil": null
+        },
+        {
+          "id": "a6786fc1-9713-4cda-8924-91e18a325242",
+          "email": "user@test.com",
+          "emailVerified": false,
+          "lastLoginAt": null,
+          "failedLoginAttempts": 0,
+          "lockedUntil": null
+        },
+        {
+          "id": "bc877b19-4810-45e4-a51d-571ac9f019ee",
+          "email": "admin@acme.com",
+          "emailVerified": false,
+          "lastLoginAt": null,
+          "failedLoginAttempts": 2,
+          "lockedUntil": null
+        },
+        {
+          "id": "dd9b64d7-59b1-40d9-b7ff-09b4dfb071dc",
+          "email": "admin@marketingpros.com",
+          "emailVerified": false,
+          "lastLoginAt": "2026-01-27T00:53:05.147Z",
+          "failedLoginAttempts": 0,
+          "lockedUntil": null
+        },
+        {
+          "id": "e029144a-d122-419c-91cc-77094203ea5f",
+          "email": "viewer@acme.com",
+          "emailVerified": false,
+          "lastLoginAt": null,
+          "failedLoginAttempts": 0,
+          "lockedUntil": null
+        },
+        {
+          "id": "ee42f5e0-869d-4c13-973c-43fd676af2fc",
+          "email": "manager@acme.com",
+          "emailVerified": false,
+          "lastLoginAt": null,
+          "failedLoginAttempts": 0,
+          "lockedUntil": null
+        },
+        {
+          "id": "f4a8e2ad-f00b-4118-9cf9-1aaf8ff3e7b8",
+          "email": "locked@test.com",
+          "emailVerified": false,
+          "lastLoginAt": null,
+          "failedLoginAttempts": 0,
+          "lockedUntil": null
+        },
+        {
+          "id": "f61f733f-b4c4-49f8-83dc-29526327b8f8",
+          "email": "admin@techsolutions.com",
+          "emailVerified": false,
+          "lastLoginAt": "2026-01-27T00:53:03.952Z",
+          "failedLoginAttempts": 1,
+          "lockedUntil": null
+        }
+      ],
+      "verification": {
+        "hash": "068c015f98a5aed4347032453a9823939c5f5db83d1b31f548fd5a7715864682",
+        "source": "users",
+        "verified": true
+      },
+      "summary": {
+        "totalActiveUsers": 12,
+        "verifiedUsers": 0,
+        "lockedAccounts": 0,
+        "recentLogins": 3
+      }
+    },
+    {
+      "controlId": "CC6.6",
+      "controlName": "Security Event Monitoring",
+      "criteria": "Security",
+      "evidenceType": "SECURITY_EVENTS",
+      "collectedAt": "2026-02-04T02:36:22.063Z",
+      "data": [
+        {
+          "id": "cml3yncuh0009a7vqz7c3ckpe",
+          "action": "SYSTEM_ERROR",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "4bc8f025-6a04-428f-9881-2209bd3de407",
+          "actorUserId": "1ff19755-6693-46ba-994e-f38260dabee1",
+          "actorEmail": "test3@example.com",
+          "actorType": "USER",
+          "requestId": null,
+          "correlationId": null,
+          "severity": "CRITICAL",
+          "metadata": {
+            "dbVersion": "1769963632538-f80d9faaa147cd2327581d0a2256397e",
+            "jwtVersion": "5b90bed42e46ea2b36092074fd7692901df592cc55273016850c6833f91ef46a",
+            "securityEvent": "refresh_token_reuse_detected"
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-02-01T16:33:54.378Z",
+          "updatedAt": "2026-02-01T16:33:54.378Z"
+        },
+        {
+          "id": "cml3ynccf0006a7vq3mmdcoir",
+          "action": "SYSTEM_ERROR",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "4bc8f025-6a04-428f-9881-2209bd3de407",
+          "actorUserId": "1ff19755-6693-46ba-994e-f38260dabee1",
+          "actorEmail": "test3@example.com",
+          "actorType": "USER",
+          "requestId": null,
+          "correlationId": null,
+          "severity": "CRITICAL",
+          "metadata": {
+            "dbVersion": "1769963632538-f80d9faaa147cd2327581d0a2256397e",
+            "jwtVersion": "5b90bed42e46ea2b36092074fd7692901df592cc55273016850c6833f91ef46a",
+            "securityEvent": "refresh_token_reuse_detected"
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-02-01T16:33:53.727Z",
+          "updatedAt": "2026-02-01T16:33:53.727Z"
+        },
+        {
+          "id": "cml3xt8120006o4uohynlwt3u",
+          "action": "SYSTEM_ERROR",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "4bc8f025-6a04-428f-9881-2209bd3de407",
+          "actorUserId": "1ff19755-6693-46ba-994e-f38260dabee1",
+          "actorEmail": "test3@example.com",
+          "actorType": "USER",
+          "requestId": null,
+          "correlationId": null,
+          "severity": "CRITICAL",
+          "metadata": {
+            "dbVersion": "1769962227224-dd4e2beef40d7aed06d38ef444f032f4",
+            "jwtVersion": "78b4369221428125c6008f8025067845bb284e5a7fe1cad6572372882a2d7a50",
+            "securityEvent": "refresh_token_reuse_detected"
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-02-01T16:10:28.454Z",
+          "updatedAt": "2026-02-01T16:10:28.454Z"
+        },
+        {
+          "id": "cml3xbqwo000albwhi1wkxer8",
+          "action": "SYSTEM_ERROR",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "4bc8f025-6a04-428f-9881-2209bd3de407",
+          "actorUserId": "1ff19755-6693-46ba-994e-f38260dabee1",
+          "actorEmail": "test3@example.com",
+          "actorType": "USER",
+          "requestId": null,
+          "correlationId": null,
+          "severity": "CRITICAL",
+          "metadata": {
+            "dbVersion": "1769961411842-af422b13d823753f51da46802f066986",
+            "securityEvent": "refresh_token_reuse_detected",
+            "mismatchAnalysis": "JWT_VERSION_NULL"
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-02-01T15:56:53.112Z",
+          "updatedAt": "2026-02-01T15:56:53.112Z"
+        },
+        {
+          "id": "cml3edjcp0009ax9dn4iprvzf",
+          "action": "SYSTEM_ERROR",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "4bc8f025-6a04-428f-9881-2209bd3de407",
+          "actorUserId": "1ff19755-6693-46ba-994e-f38260dabee1",
+          "actorEmail": "test3@example.com",
+          "actorType": "USER",
+          "requestId": null,
+          "correlationId": null,
+          "severity": "CRITICAL",
+          "metadata": {
+            "dbVersion": "1769929582938-4550af01812730f5e2e6cc7fcea42273",
+            "securityEvent": "refresh_token_reuse_detected"
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-02-01T07:06:23.930Z",
+          "updatedAt": "2026-02-01T07:06:23.930Z"
+        },
+        {
+          "id": "cml3ecvuk0002ax9dspl6ciqf",
+          "action": "SYSTEM_ERROR",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "4bc8f025-6a04-428f-9881-2209bd3de407",
+          "actorUserId": "1ff19755-6693-46ba-994e-f38260dabee1",
+          "actorEmail": "test3@example.com",
+          "actorType": "USER",
+          "requestId": null,
+          "correlationId": null,
+          "severity": "CRITICAL",
+          "metadata": {
+            "dbVersion": "1769929357611-25d30700f8c3fcefdff5cf0817dff6d6",
+            "securityEvent": "refresh_token_reuse_detected"
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-02-01T07:05:53.468Z",
+          "updatedAt": "2026-02-01T07:05:53.468Z"
+        },
+        {
+          "id": "cml3e8r8400066hgijklb5gsn",
+          "action": "SYSTEM_ERROR",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "4bc8f025-6a04-428f-9881-2209bd3de407",
+          "actorUserId": "1ff19755-6693-46ba-994e-f38260dabee1",
+          "actorEmail": "test3@example.com",
+          "actorType": "USER",
+          "requestId": null,
+          "correlationId": null,
+          "severity": "CRITICAL",
+          "metadata": {
+            "dbVersion": "1769929357611-25d30700f8c3fcefdff5cf0817dff6d6",
+            "securityEvent": "refresh_token_reuse_detected"
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-02-01T07:02:40.853Z",
+          "updatedAt": "2026-02-01T07:02:40.853Z"
+        },
+        {
+          "id": "cml3e2fg60006chob3xpfjmmx",
+          "action": "SYSTEM_ERROR",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "4bc8f025-6a04-428f-9881-2209bd3de407",
+          "actorUserId": "1ff19755-6693-46ba-994e-f38260dabee1",
+          "actorEmail": "test3@example.com",
+          "actorType": "USER",
+          "requestId": null,
+          "correlationId": null,
+          "severity": "CRITICAL",
+          "metadata": {
+            "dbVersion": "1769929015349-94c38d997a13b402f942bf36f303b028",
+            "securityEvent": "refresh_token_reuse_detected"
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-02-01T06:57:45.655Z",
+          "updatedAt": "2026-02-01T06:57:45.655Z"
+        }
+      ],
+      "verification": {
+        "hash": "edbad75aceffe6f41b53cbf7aebdcd60c8a2b4363e8a8e745e21a3dc887eb66f",
+        "source": "audit_logs",
+        "verified": true
+      },
+      "summary": {
+        "totalEvents": 8,
+        "bySeverity": {
+          "HIGH": 0,
+          "CRITICAL": 8
+        },
+        "byType": {
+          "CSRF_FAILURE": 0,
+          "RATE_LIMIT": 0,
+          "SYSTEM_ERROR": 8,
+          "PERMISSION_DENIED": 0
+        }
+      }
+    },
+    {
+      "controlId": "A1.1",
+      "controlName": "Performance and Capacity Monitoring",
+      "criteria": "Availability",
+      "evidenceType": "PERFORMANCE_RESULTS",
+      "collectedAt": "2026-02-04T02:36:22.064Z",
+      "data": [],
+      "verification": {
+        "hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "source": "performance_test_results",
+        "verified": false
+      },
+      "summary": {
+        "totalResults": 0,
+        "latestResult": null,
+        "scenariosTested": []
+      }
+    },
+    {
+      "controlId": "A1.2",
+      "controlName": "Environmental Threat Protection",
+      "criteria": "Availability",
+      "evidenceType": "HEALTH_CHECKS",
+      "collectedAt": "2026-02-04T02:36:22.068Z",
+      "data": [],
+      "verification": {
+        "hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "source": "audit_logs",
+        "verified": true
+      },
+      "summary": {
+        "totalChecks": 0,
+        "timeRange": {
+          "start": "2026-01-28T02:36:22.064Z",
+          "end": "2026-02-04T02:36:22.068Z"
+        },
+        "checkFrequency": "5-minute intervals"
+      }
+    },
+    {
+      "controlId": "C1.1",
+      "controlName": "Confidential Information Protection",
+      "criteria": "Confidentiality",
+      "evidenceType": "TENANT_ISOLATION",
+      "collectedAt": "2026-02-04T02:36:22.078Z",
+      "data": {
+        "tenantCount": 9,
+        "userCountByTenant": [
+          {
+            "_count": 3,
+            "organizationId": "0772f364-35a3-4ea9-a274-c372d59bfbcb"
+          },
+          {
+            "_count": 1,
+            "organizationId": "b611ffbb-48f2-423f-b642-c179a107ef47"
+          },
+          {
+            "_count": 1,
+            "organizationId": "05162163-36dd-461a-b027-86a5e24b69d7"
+          },
+          {
+            "_count": 5,
+            "organizationId": "cda808d3-f84f-437c-b6da-2916faa3b205"
+          },
+          {
+            "_count": 1,
+            "organizationId": "8a559e3c-7f5a-4cf7-b38c-85306289eac3"
+          },
+          {
+            "_count": 1,
+            "organizationId": "4bc8f025-6a04-428f-9881-2209bd3de407"
+          }
+        ]
+      },
+      "verification": {
+        "hash": "b2725ac24d298bde1cbc7834507eeb5ecd95a39336c667f7f066c5eabb25825e",
+        "source": "database_counts",
+        "verified": true
+      },
+      "summary": {
+        "activeTenants": 9,
+        "totalUsers": 12,
+        "averageUsersPerTenant": 2
+      }
+    },
+    {
+      "controlId": "PI1.1",
+      "controlName": "Processing Integrity",
+      "criteria": "ProcessingIntegrity",
+      "evidenceType": "INTEGRITY_VERIFICATION",
+      "collectedAt": "2026-02-04T02:36:22.083Z",
+      "data": [
+        {
+          "id": "c059ee4f-a942-4ba7-b7c1-7a9b6cca6b8c",
+          "verificationTimestamp": "2026-02-04T05:21:43.604Z",
+          "status": "SUCCESS",
+          "totalEvents": 2,
+          "brokenAtIndex": null,
+          "verificationDurationMs": 100,
+          "details": {
+            "test": "final_verification",
+            "manual": true
+          }
+        }
+      ],
+      "verification": {
+        "hash": "7e5ac495c8010260ba3e421a60e9a36ae4959b5d17e5d4f1f554d2283fcaad25",
+        "source": "audit_integrity_verification",
+        "verified": true
+      },
+      "summary": {
+        "totalVerifications": 1,
+        "successCount": 1,
+        "failureCount": 0,
+        "verificationFrequency": "Daily (2 AM)",
+        "chainLength": 2
+      }
+    },
+    {
+      "controlId": "P1.1",
+      "controlName": "Privacy Notice and Communication",
+      "criteria": "Privacy",
+      "evidenceType": "DATA_RETENTION",
+      "collectedAt": "2026-02-04T02:36:22.088Z",
+      "data": {
+        "auditLogs": 0,
+        "users": 0,
+        "policies": {
+          "retentionPeriod": "365 days for audit logs",
+          "deletionSchedule": "Daily cleanup job",
+          "backupRetention": "30 days"
+        }
+      },
+      "verification": {
+        "hash": "3ef1065ab25c822cc7356ae5f5305dba7886a27cef44f01c162207a7ac5236cd",
+        "source": "database_counts",
+        "verified": true
+      },
+      "summary": {
+        "oldAuditLogs": 0,
+        "deletedUsers": 0,
+        "retentionPolicies": {
+          "retentionPeriod": "365 days for audit logs",
+          "deletionSchedule": "Daily cleanup job",
+          "backupRetention": "30 days"
+        }
+      }
+    }
+  ],
+  "verification": {
+    "packageHash": "43acbbe6bfb4528750dc626600c9e485d8afef6a22203dbb794773b1b859fb79",
+    "verificationTimestamp": "2026-02-04T02:36:22.089Z",
+    "verifiedBy": "Soc2EvidenceService"
+  }
+}

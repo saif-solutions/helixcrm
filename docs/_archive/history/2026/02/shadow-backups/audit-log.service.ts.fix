@@ -1,0 +1,13 @@
+  /**
+   * Critical actions that must always be written synchronously
+   * These represent security events where immediate persistence is required
+   */
+  private readonly CRITICAL_ACTIONS = new Set<AuditAction>([
+    AuditAction.LOGIN_FAILURE,
+    AuditAction.USER_DELETED,
+    AuditAction.PERMISSION_DENIED,
+    AuditAction.PASSWORD_CHANGE,
+    AuditAction.RATE_LIMIT_TRIGGERED,
+    AuditAction.CSRF_FAILURE,
+    AuditAction.SYSTEM_ERROR,
+  ]);

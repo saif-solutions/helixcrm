@@ -5,60 +5,60 @@ import * as React from 'react';
  * Main Alert component props with comprehensive JSDoc
  */
 export interface AlertProps extends React.HTMLAttributes<HTMLDivElement> {
-  /** 
+  /**
    * Alert variant (determines color and icon)
    * @default 'info'
    */
   variant?: AlertVariant;
-  
-  /** 
+
+  /**
    * Alert size (affects padding and font size)
    * @default 'md'
    */
   size?: AlertSize;
-  
-  /** 
+
+  /**
    * Alert title (displayed prominently above message)
    */
   title?: string;
-  
-  /** 
+
+  /**
    * Alert message content (alternative to children)
    */
   message?: string;
-  
-  /** 
+
+  /**
    * Whether alert can be dismissed by user
    * @default false
    */
   dismissible?: boolean;
-  
-  /** 
+
+  /**
    * Callback function when alert is dismissed
    */
   onDismiss?: () => void;
-  
-  /** 
+
+  /**
    * Custom icon element (overrides default variant icon)
    */
   icon?: React.ReactNode;
-  
-  /** 
+
+  /**
    * Action buttons or elements displayed below message
    */
   actions?: React.ReactNode;
-  
-  /** 
+
+  /**
    * Custom CSS class name for icon container
    */
   iconClassName?: string;
-  
-  /** 
+
+  /**
    * Custom CSS class name for content area
    */
   contentClassName?: string;
-  
-  /** 
+
+  /**
    * Custom CSS class name for actions container
    */
   actionsClassName?: string;
@@ -115,16 +115,16 @@ export interface AlertDismissOptions {
 export interface AlertAccessibilityProps {
   /** ARIA role for the alert */
   role?: 'alert' | 'status' | 'alertdialog';
-  
+
   /** ARIA label for screen readers */
   'aria-label'?: string;
-  
+
   /** ARIA live region priority */
   'aria-live'?: 'polite' | 'assertive' | 'off';
-  
+
   /** ARIA atomic for screen reader announcements */
   'aria-atomic'?: boolean;
-  
+
   /** ARIA description for additional context */
   'aria-describedby'?: string;
 }
@@ -158,7 +158,7 @@ export function getAlertRole(variant: AlertVariant): AlertAccessibilityProps['ro
   if (variant === 'error') {
     return 'alert';
   }
-  
+
   // Other alerts can be status updates
   return 'status';
 }
@@ -171,7 +171,7 @@ export function getAlertAriaLive(variant: AlertVariant): AlertAccessibilityProps
   if (variant === 'error' || variant === 'warning') {
     return 'assertive';
   }
-  
+
   // Info and success alerts can be polite
   return 'polite';
 }
@@ -185,7 +185,7 @@ export function getAlertIconSize(size: AlertSize): 'xs' | 'sm' | 'md' {
     md: 'sm',
     lg: 'md',
   };
-  
+
   return sizeMap[size];
 }
 

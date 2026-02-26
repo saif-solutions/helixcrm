@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { JwtModule } from '@nestjs/jwt'; // ADD THIS IMPORT
 import { PipelinesService } from './pipelines.service';
 import { PipelinesController } from './pipelines.controller';
 import { LoggingModule } from '../../shared/logging/logging.module';
@@ -8,7 +9,10 @@ import { PermissionContextService } from '../../shared/permissions/context/permi
 import { AuditLogService } from '../../shared/audit-log/audit-log.service';
 
 @Module({
-  imports: [LoggingModule],
+  imports: [
+    LoggingModule,
+    JwtModule, // ADD THIS TO IMPORTS ARRAY
+  ],
   controllers: [PipelinesController],
   providers: [
     PipelinesService,

@@ -1,73 +1,81 @@
-# React + TypeScript + Vite
+# HelixCRM Web Application
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Overview
+React frontend for HelixCRM platform.
 
-Currently, two official plugins are available:
+## Development
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### Prerequisites
+- Backend API running (see [API README](../api/README.md))
+- Node.js 18+
 
-## React Compiler
+### Setup
+```bash
+# Install dependencies
+npm install
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+# Start development server
+npm run dev
+Environment Variables
+Copy .env.example to .env:
 
-## Expanding the ESLint configuration
+bash
+cp .env.example .env
+Required variables:
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+VITE_API_URL: Backend API URL (default: http://localhost:3000/api/v1)
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+Key Scripts
+Script	Purpose
+npm run dev	Start development server
+npm run build	Build for production
+npm run preview	Preview production build
+npm run lint	Run ESLint
+Project Structure
+text
+src/
+├── components/     # React components
+├── pages/         # Page components
+├── hooks/         # Custom React hooks
+├── utils/         # Utility functions
+├── types/         # TypeScript definitions
+└── styles/        # Global styles
+Integration with Backend
+API client configured in src/lib/api.ts
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+Authentication handled via HTTP-only cookies
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+CSRF protection enabled
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Error handling centralized
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Testing
+bash
+# Run component tests
+npm run test
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+# Run auth flow test (requires backend)
+./test-auth-flow.sh
+Documentation
+Architecture: See docs/ARCHITECTURE.md
+
+API Contracts: See docs/API_CONTRACTS.md
+
+Security: See docs/SECURITY.md
+
+Operations: See docs/OPERATIONS.md
+
+Component Standards
+Components follow enterprise standards:
+
+6-file structure (component, types, styles, tests, stories, utils)
+
+TypeScript strict mode
+
+Comprehensive testing (>80% coverage)
+
+Accessibility compliance (WCAG 2.1 AA)
+
+Storybook documentation
+
+Example: See Dropdown component
