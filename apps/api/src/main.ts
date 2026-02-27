@@ -67,6 +67,10 @@ async function bootstrap() {
   });
   logger.log('✅ API versioning enabled (v1)');
 
+    // ==================== GLOBAL PREFIX ====================
+  app.setGlobalPrefix('api');
+  logger.log('✅ Global prefix set to /api');
+  
   // ==================== CORS ====================
   const corsOrigin = process.env.CORS_ORIGIN || 'http://localhost:5173';
   app.enableCors({
@@ -79,6 +83,8 @@ async function bootstrap() {
       'X-Requested-With',
       'Accept',
       'x-csrf-token',
+      'x-request-id',
+      'x-app-version',
     ],
   });
   logger.log(`✅ CORS enabled for ${corsOrigin}`);

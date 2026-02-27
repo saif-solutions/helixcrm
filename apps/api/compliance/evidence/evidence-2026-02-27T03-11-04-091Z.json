@@ -1,0 +1,224 @@
+{
+  "collectedAt": "2026-02-27T03:11:04.091Z",
+  "system": "HelixCRM",
+  "version": "0.0.1",
+  "totalControls": 8,
+  "byCriteria": {
+    "Security": 3,
+    "Availability": 2,
+    "Confidentiality": 1,
+    "ProcessingIntegrity": 1,
+    "Privacy": 1
+  },
+  "results": [
+    {
+      "controlId": "CC6.1",
+      "controlName": "Logical Access Security Software",
+      "criteria": "Security",
+      "evidenceType": "ACCESS_CONTROL_LOGS",
+      "collectedAt": "2026-02-27T03:11:04.051Z",
+      "data": [],
+      "verification": {
+        "hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "source": "audit_logs",
+        "verified": true
+      },
+      "summary": {
+        "totalAttempts": 0,
+        "successCount": 0,
+        "failureCount": 0,
+        "uniqueUsers": 0,
+        "timeRange": {
+          "start": "2026-01-28T03:11:04.041Z",
+          "end": "2026-02-27T03:11:04.051Z"
+        }
+      }
+    },
+    {
+      "controlId": "CC6.2",
+      "controlName": "Identification and Authentication",
+      "criteria": "Security",
+      "evidenceType": "USER_ACCOUNTS",
+      "collectedAt": "2026-02-27T03:11:04.063Z",
+      "data": [
+        {
+          "id": "3163357d-dbe8-4e24-932c-ff79ca722866",
+          "email": "test@helixcrm.com",
+          "emailVerified": true,
+          "lastLoginAt": null,
+          "failedLoginAttempts": 0,
+          "lockedUntil": null
+        }
+      ],
+      "verification": {
+        "hash": "8a00d40361042d12772d7ffab8e46aa101b8753318183d0d4b9d07eac95d9ad9",
+        "source": "users",
+        "verified": true
+      },
+      "summary": {
+        "totalActiveUsers": 1,
+        "verifiedUsers": 1,
+        "lockedAccounts": 0,
+        "recentLogins": 0
+      }
+    },
+    {
+      "controlId": "CC6.6",
+      "controlName": "Security Event Monitoring",
+      "criteria": "Security",
+      "evidenceType": "SECURITY_EVENTS",
+      "collectedAt": "2026-02-27T03:11:04.067Z",
+      "data": [],
+      "verification": {
+        "hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "source": "audit_logs",
+        "verified": true
+      },
+      "summary": {
+        "totalEvents": 0,
+        "bySeverity": {
+          "HIGH": 0,
+          "CRITICAL": 0
+        },
+        "byType": {
+          "CSRF_FAILURE": 0,
+          "RATE_LIMIT": 0,
+          "SYSTEM_ERROR": 0,
+          "PERMISSION_DENIED": 0
+        }
+      }
+    },
+    {
+      "controlId": "A1.1",
+      "controlName": "Performance and Capacity Monitoring",
+      "criteria": "Availability",
+      "evidenceType": "PERFORMANCE_RESULTS",
+      "collectedAt": "2026-02-27T03:11:04.067Z",
+      "data": [],
+      "verification": {
+        "hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "source": "performance_test_results",
+        "verified": false
+      },
+      "summary": {
+        "totalResults": 0,
+        "latestResult": null,
+        "scenariosTested": []
+      }
+    },
+    {
+      "controlId": "A1.2",
+      "controlName": "Environmental Threat Protection",
+      "criteria": "Availability",
+      "evidenceType": "HEALTH_CHECKS",
+      "collectedAt": "2026-02-27T03:11:04.070Z",
+      "data": [],
+      "verification": {
+        "hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "source": "audit_logs",
+        "verified": true
+      },
+      "summary": {
+        "totalChecks": 0,
+        "timeRange": {
+          "start": "2026-02-20T03:11:04.067Z",
+          "end": "2026-02-27T03:11:04.070Z"
+        },
+        "checkFrequency": "5-minute intervals"
+      }
+    },
+    {
+      "controlId": "C1.1",
+      "controlName": "Confidential Information Protection",
+      "criteria": "Confidentiality",
+      "evidenceType": "TENANT_ISOLATION",
+      "collectedAt": "2026-02-27T03:11:04.078Z",
+      "data": {
+        "tenantCount": 1,
+        "userCountByTenant": [
+          {
+            "_count": 1,
+            "organizationId": "6620ee6e-143c-44a2-a6a3-d8b4d44f65be"
+          }
+        ]
+      },
+      "verification": {
+        "hash": "a49e5f42f8fec6c5ecaacf9739ba8c125aeac1be589f49de3f9373b0fd1880d5",
+        "source": "database_counts",
+        "verified": true
+      },
+      "summary": {
+        "activeTenants": 1,
+        "totalUsers": 1,
+        "averageUsersPerTenant": 1
+      }
+    },
+    {
+      "controlId": "PI1.1",
+      "controlName": "Processing Integrity",
+      "criteria": "ProcessingIntegrity",
+      "evidenceType": "INTEGRITY_VERIFICATION",
+      "collectedAt": "2026-02-27T03:11:04.086Z",
+      "data": [
+        {
+          "id": "a3f1ce15-35d7-49cf-882e-2fa06d54c4e4",
+          "verificationTimestamp": "2026-02-25T23:06:19.586Z",
+          "status": "SUCCESS",
+          "totalEvents": 0,
+          "brokenAtIndex": null,
+          "verificationDurationMs": 3231,
+          "details": {
+            "verifiedAt": "2026-02-25T23:06:19.577Z"
+          }
+        }
+      ],
+      "verification": {
+        "hash": "9099e101e2f47f516aaa5de66b7d47e0fb797cb68eb8fd59e14ecdd4c1d4de7e",
+        "source": "audit_integrity_verification",
+        "verified": true
+      },
+      "summary": {
+        "totalVerifications": 1,
+        "successCount": 1,
+        "failureCount": 0,
+        "verificationFrequency": "Daily (2 AM)",
+        "chainLength": 0
+      }
+    },
+    {
+      "controlId": "P1.1",
+      "controlName": "Privacy Notice and Communication",
+      "criteria": "Privacy",
+      "evidenceType": "DATA_RETENTION",
+      "collectedAt": "2026-02-27T03:11:04.091Z",
+      "data": {
+        "auditLogs": 0,
+        "users": 0,
+        "policies": {
+          "retentionPeriod": "365 days for audit logs",
+          "deletionSchedule": "Daily cleanup job",
+          "backupRetention": "30 days"
+        }
+      },
+      "verification": {
+        "hash": "3ef1065ab25c822cc7356ae5f5305dba7886a27cef44f01c162207a7ac5236cd",
+        "source": "database_counts",
+        "verified": true
+      },
+      "summary": {
+        "oldAuditLogs": 0,
+        "deletedUsers": 0,
+        "retentionPolicies": {
+          "retentionPeriod": "365 days for audit logs",
+          "deletionSchedule": "Daily cleanup job",
+          "backupRetention": "30 days"
+        }
+      }
+    }
+  ],
+  "verification": {
+    "packageHash": "3e1b42a768bceb08bbbb2d6d693cd87f70511edab9dae86c924676108a960064",
+    "verificationTimestamp": "2026-02-27T03:11:04.092Z",
+    "verifiedBy": "Soc2EvidenceService"
+  }
+}
