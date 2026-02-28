@@ -1,3 +1,5 @@
+// apps/api/src/modules/users/users.controller.ts
+
 import {
   Controller,
   Get,
@@ -21,7 +23,7 @@ import { TenantGuard } from '../../shared/guards/tenant.guard';
 import { RequirePermission } from '../../shared/decorators/require-permission.decorator';
 
 @Controller('users')
-@UseGuards(AuthGuard, TenantGuard)
+@UseGuards(AuthGuard, TenantGuard) // TenantContextGuard removed
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
@@ -30,13 +32,13 @@ export class UsersController {
   @HttpCode(HttpStatus.CREATED)
   create(@Body() createUserDto: CreateUserDto, @Request() req: any) {
     const userId = req.user.sub;
-    return this.usersService.create(createUserDto, userId); // Removed organizationId
+    return this.usersService.create(createUserDto, userId);
   }
 
   @Get()
   @RequirePermission('users.read')
   findAll(@Query() query: UserQueryDto) {
-    return this.usersService.findAll(query); // Removed organizationId
+    return this.usersService.findAll(query);
   }
 
   @Get('me')
@@ -49,7 +51,7 @@ export class UsersController {
   @Get(':id')
   @RequirePermission('users.read')
   findOne(@Param('id') id: string) {
-    return this.usersService.findOne(id); // Removed organizationId
+    return this.usersService.findOne(id);
   }
 
   @Patch(':id')
@@ -60,7 +62,7 @@ export class UsersController {
     @Request() req: any,
   ) {
     const userId = req.user.sub;
-    return this.usersService.update(id, updateUserDto, userId); // Removed organizationId
+    return this.usersService.update(id, updateUserDto, userId);
   }
 
   @Delete(':id')
@@ -68,6 +70,6 @@ export class UsersController {
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id') id: string, @Request() req: any) {
     const userId = req.user.sub;
-    return this.usersService.remove(id, userId); // Removed organizationId
+    return this.usersService.remove(id, userId);
   }
 }

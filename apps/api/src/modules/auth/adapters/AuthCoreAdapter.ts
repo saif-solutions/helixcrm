@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { OnModuleInit, Injectable, Logger } from '@nestjs/common';
 import {
   createAuthCore,
   AuthCoreContract,
@@ -13,7 +13,7 @@ import { PrismaUserRepositoryBridge } from './PrismaUserRepositoryBridge';
 import { PrismaTokenRepositoryBridge } from './PrismaTokenRepositoryBridge';
 
 @Injectable()
-export class AuthCoreAdapter {
+export class AuthCoreAdapter implements OnModuleInit {
   private readonly logger = new Logger(AuthCoreAdapter.name);
 
   // Public services for direct access
@@ -88,4 +88,13 @@ export class AuthCoreAdapter {
   async withTransaction<T>(callback: () => Promise<T>): Promise<T> {
     return this.prisma.$transaction(callback);
   }
+
+  async onModuleInit() {
+  await this.initialize({
+    jwtSecret: process.env.JWT_ACCESS_SECRET!,
+    jwtRefreshSecret: process.env.JWT_REFRESH_SECRET!,
+    jwtExpiration: process.env.JWT_ACCESS_EXPIRATION || '15m',
+    jwtRefreshExpiration: process.env.JWT_REFRESH_EXPIRATION || '7d',
+  });
+}
 }

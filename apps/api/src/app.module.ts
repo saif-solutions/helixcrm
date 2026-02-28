@@ -1,6 +1,9 @@
-import { Module } from '@nestjs/common';
+// apps/api/src/app.module.ts
+
+import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
+// Remove this import: import { APP_INTERCEPTOR } from '@nestjs/core';
 
 // Core application modules
 import { AppController } from './app.controller';
@@ -35,7 +38,14 @@ import { ComplianceModule } from './shared/compliance/compliance.module';
 import { PerformanceMetricsModule } from './shared/performance/performance-metrics.module';
 
 // Configuration validation
-import { ConfigValidationService } from './config/config-validation.service'; // ADD THIS IMPORT
+import { ConfigValidationService } from './config/config-validation.service';
+
+// ============ MIDDLEWARE IMPORTS ============
+import { CorrelationIdMiddleware } from './shared/middleware/correlation-id.middleware';
+import { RequestContextMiddleware } from './shared/middleware/request-context.middleware';
+import { TenantContextMiddleware } from './shared/middleware/tenant-context.middleware';
+
+// Remove this import: import { TenantContextInterceptor } from './shared/interceptors/tenant-context.interceptor';
 
 @Module({
   imports: [
@@ -92,7 +102,8 @@ import { ConfigValidationService } from './config/config-validation.service'; //
 
   providers: [
     AppService,
-    ConfigValidationService, // ADD THIS PROVIDER
+    ConfigValidationService,
+    // Remove the APP_INTERCEPTOR provider
   ],
 
   exports: [
@@ -101,11 +112,21 @@ import { ConfigValidationService } from './config/config-validation.service'; //
     ScheduleModule,
   ],
 })
-export class AppModule {
+export class AppModule implements NestModule {
   constructor() {
     console.log('AppModule initialized with Phase 2A compliance features:');
     console.log('✅ Audit Integrity (Weeks 1-2)');
     console.log('✅ Performance Monitoring (Weeks 3-4)');
     console.log('✅ SOC 2 Compliance (Weeks 5-6)');
+  }
+
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(
+        CorrelationIdMiddleware,
+        RequestContextMiddleware,
+        TenantContextMiddleware,
+      )
+      .forRoutes('*'); // Apply to all routes
   }
 }
