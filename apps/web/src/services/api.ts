@@ -76,27 +76,50 @@ export type DealResponse = PaginatedResponse<Deal>;
 
 // CSRF Token Manager
 class CsrfTokenManager {
-  private token: string | null = null;
   private isRefreshing = false;
   private refreshQueue: Array<() => void> = [];
   private initialized = false;
 
-  setToken(token: string): void {
-    this.token = token;
-    this.initialized = true;
+  /**
+   * Get CSRF token from cookie (set by backend)
+   */
+  getToken(): string | null {
+    // Read from cookie - backend sets this as a non-httpOnly cookie
+    const cookies = document.cookie.split('; ');
+    const csrfCookie = cookies.find(cookie => cookie.startsWith('X-CSRF-Token='));
+    
+    if (csrfCookie) {
+      return csrfCookie.split('=')[1];
+    }
+    
+    return null;
   }
 
-  getToken(): string | null {
-    return this.token;
+  /**
+   * No need to set token manually - it comes from cookie
+   */
+  setToken(_token: string): void {
+    // This method is kept for backward compatibility but does nothing
+    // Token should only come from cookie
+    if (import.meta.env.DEV) {
+      console.warn('⚠️ Manual CSRF token setting attempted - token should come from cookie only');
+    }
+    // Mark _token as used to satisfy ESLint
+    void _token;
   }
 
   clearToken(): void {
-    this.token = null;
+    // Can't clear HTTP-only cookie from frontend
+    // Just log in development
+    if (import.meta.env.DEV) {
+      console.log('🧹 CSRF token cleared from memory (cookie remains)');
+    }
     this.initialized = false;
   }
 
   isInitialized(): boolean {
-    return this.initialized;
+    // Check if we have a token in cookie
+    return this.getToken() !== null;
   }
 
   async refreshCsrfToken(api: AxiosInstance): Promise<void> {
@@ -109,13 +132,17 @@ class CsrfTokenManager {
     this.isRefreshing = true;
 
     try {
-      const response = await api.get<{ csrfToken: string }>('/auth/csrf-token');
-      this.setToken(response.data.csrfToken);
-      console.log('✅ CSRF token refreshed');
+      // This endpoint sets a new CSRF token in cookie
+      await api.get('/auth/csrf-token');
+      
+      if (import.meta.env.DEV) {
+        console.log('✅ CSRF token refreshed (set in cookie)');
+      }
       
       // Resolve all queued requests
       this.refreshQueue.forEach((resolve) => resolve());
       this.refreshQueue = [];
+      this.initialized = true;
     } catch (error) {
       console.error('❌ Could not refresh CSRF token', error);
       throw error;
@@ -143,28 +170,31 @@ const api: AxiosInstance = axios.create({
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     // Get auth state from store - no type assertion needed
+    // Get auth state from store
     const authState = useAuthStore.getState();
-    const accessToken = authState.user ? 'token-from-user' : null; // You'll need to get actual token
+    
+    // Token is stored in HTTP-only cookie, not in localStorage or memory
+    // The browser automatically sends it with requests when withCredentials: true
+    // So we don't need to add an Authorization header - the cookie handles it
+    
     const organizationId = authState.user?.organizationId;
+    
+    // Log that we're relying on cookies (for debugging)
+    if (IS_DEV && !config.url?.includes('/auth/')) {
+      console.log(`🍪 Request will use HTTP-only cookie for authentication`);
+    }
     
     // Add Request ID
     const requestId = generateRequestId();
     config.headers['X-Request-Id'] = requestId;
 
-    // Add Authorization header if token exists
-    // Note: You'll need to store the actual token - this is a placeholder
-    // The actual token should come from cookies or a token store
-    if (accessToken) {
-      config.headers.Authorization = `Bearer ${accessToken}`;
-    }
-
-    // 🔥 Add tenant context header for all authenticated requests
-    if (organizationId && !config.url?.includes('/auth/')) {
-      config.headers['x-tenant-id'] = organizationId;
-      
-      if (IS_DEV) {
-        console.log(`🏢 Tenant context added: ${organizationId.substring(0, 8)}...`);
-      }
+    // 🔥 TENANT CONTEXT COMES FROM JWT ONLY - No header needed
+    // The backend extracts tenant from JWT token, not from headers
+    // This is a security requirement - do not add x-tenant-id header
+    
+    // Log that we're NOT sending tenant header (for debugging)
+    if (IS_DEV && organizationId && !config.url?.includes('/auth/')) {
+      console.log(`🏢 Tenant context: ${organizationId.substring(0, 8)}... (from JWT, not sent as header)`);
     }
 
     // Add CSRF token for mutating requests
@@ -318,16 +348,39 @@ api.interceptors.response.use(
       }
     }
 
+    // Extract correlation ID from backend response headers
+    const correlationId = error.response?.headers['x-request-id'] || 
+                         error.response?.headers['x-correlation-id'] || 
+                         requestId;
+    
     // Map error for consistent handling
     const mappedError = mapBackendErrorToAuthError(error);
     const apiError: ApiError = {
       status: error.response?.status || 0,
       message: mappedError.message,
-      code: mappedError.code || responseData.code,
-      timestamp: responseData.timestamp,
-      path: responseData.path,
-      requestId,
+      code: mappedError.code || responseData.code || 'UNKNOWN_ERROR',
+      timestamp: responseData.timestamp || new Date().toISOString(),
+      path: responseData.path || originalRequest?.url,
+      requestId: correlationId,  // Use backend correlation ID if available
     };
+
+    // Log error with correlation ID for debugging
+    console.error('❌ API Error:', {
+      requestId: correlationId,
+      status: apiError.status,
+      message: apiError.message,
+      code: apiError.code,
+      path: apiError.path,
+    });
+
+    // Attach correlation ID to error object for UI display
+        // Attach correlation ID to error object for UI display
+    Object.defineProperty(error, 'correlationId', {
+      value: correlationId,
+      enumerable: true,
+      writable: true,
+      configurable: true
+    });
 
     console.error('❌ API Error:', {
       requestId,
@@ -341,17 +394,23 @@ api.interceptors.response.use(
 );
 
 // API initialization with retry logic
+// API initialization with retry logic
 export const initializeApi = async (): Promise<void> => {
   let retries = 0;
   const maxRetries = 3;
 
   while (retries < maxRetries) {
     try {
-      // Get initial CSRF token
-      const response = await api.get<{ csrfToken: string }>('/auth/csrf-token');
-      csrfManager.setToken(response.data.csrfToken);
-      console.log('✅ CSRF token initialized');
-      return;
+      // Just call the endpoint - it sets cookie automatically
+      await api.get('/auth/csrf-token');
+      
+      // Verify cookie was set
+      if (csrfManager.getToken()) {
+        console.log('✅ CSRF token initialized from cookie');
+        return;
+      } else {
+        throw new Error('CSRF token not found in cookie after initialization');
+      }
     } catch (error) {
       retries++;
       

@@ -5,9 +5,9 @@ import { useToast } from '../components/feedback/ToastProvider';
 import { LoadingSpinner } from '../components/feedback/LoadingSpinner';
 import { Card } from '../components/molecules/Card';
 import { Button } from '../components/atoms/Button';
-import { useApiQuery } from '../providers/QueryProvider';
+import { useApiQuery } from '../hooks/useApiQuery';
 import { DashboardAPI, LeadsAPI, DealsAPI } from '../services/api';
-// import type { DashboardStats, Lead, Deal } from '../lib/types/crm.types';
+import { useAuthStore } from '../stores/auth.store';
 import {
   Users,
   Briefcase,
@@ -24,10 +24,69 @@ import {
   Activity,
 } from 'lucide-react';
 
+// Define types inline instead of importing from crm.types
+interface PipelineStage {
+  stageId?: string;
+  stageName: string;
+  probability: number;
+  dealCount: number;
+  totalValue: number;
+}
+// TODO: Will be used when backend types are fully integrated
+// interface DashboardStats {
+//   summary?: {
+//     leads?: number;
+//     contacts?: number;
+//     deals?: number;
+//     newLeadsThisWeek?: number;
+//     conversionRate?: number;
+//     totalWonValue?: number;
+//     averageDealValue?: number;
+//     winRate?: number;
+//     dealsThisMonth?: number;
+//     overdueDeals?: number;
+//   };
+//   pipeline?: {
+//     name: string;
+//     totalDeals: number;
+//     totalValue: number;
+//     stages: Array<{
+//       stageId?: string;
+//       stageName: string;
+//       probability: number;
+//       dealCount: number;
+//       totalValue: number;
+//     }>;
+//   };
+// }
+
+interface Lead {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  status: string;
+  company?: string;
+  createdAt: string;
+}
+
+interface Deal {
+  id: string;
+  name: string;
+  amount: number;
+  stageId: string;
+  stageName?: string;
+  pipelineId: string;
+  pipelineName?: string;
+  probability: number;
+  expectedCloseDate?: string;
+  createdAt: string;
+}
+
 const DashboardPage: React.FC = () => {
-  const { success, error: showError } = useToast();
+    const { success, error: showError } = useToast();
+  const { logout } = useAuthStore();
   const [loading, setLoading] = useState(false);
-  const [lastUpdated, setLastUpdated] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'overview' | 'leads' | 'deals'>('overview');
 
   // Fetch Phase 3.4 enhanced dashboard stats
@@ -40,13 +99,6 @@ const DashboardPage: React.FC = () => {
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: false,
   });
-
-  // Update lastUpdated when stats load
-  useEffect(() => {
-    if (dashboardStats) {
-      setLastUpdated(new Date().toLocaleTimeString());
-    }
-  }, [dashboardStats]);
 
   // Fetch recent leads
   const {
@@ -87,12 +139,15 @@ const DashboardPage: React.FC = () => {
     }
   }, [statsError, leadsError, dealsError, showError]);
 
-  const handleLogout = () => {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('token_version');
-    success('Logged out', 'You have been successfully logged out');
-    window.location.href = '/login';
+  const handleLogout = async () => {
+    try {
+      await logout();
+      success('Logged out', 'You have been successfully logged out');
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Still redirect even if API call fails
+      window.location.href = '/login';
+    }
   };
 
   const handleRefresh = () => {
@@ -109,8 +164,8 @@ const DashboardPage: React.FC = () => {
   };
 
   // Get user from localStorage
-  const userStr = localStorage.getItem('user');
-  const user = userStr ? JSON.parse(userStr) : null;
+  // Get user from auth store (in-memory only)
+  const { user } = useAuthStore();
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -173,9 +228,9 @@ const DashboardPage: React.FC = () => {
                 >
                   <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
                 </button>
-                <div className="text-sm text-gray-600">
-                  {lastUpdated && `Updated ${lastUpdated}`}
-                </div>
+              <div className="text-sm text-gray-600">
+                {dashboardStats && `Updated ${new Date().toLocaleTimeString()}`}
+              </div>
               </div>
               <div className="text-sm text-gray-600">
                 <span className="font-medium">{user?.email?.split('@')[0] || 'User'}</span>
@@ -423,7 +478,7 @@ const DashboardPage: React.FC = () => {
                   </div>
 
                   <div className="space-y-4">
-                    {dashboardStats.pipeline.stages.map((stage, index) => (
+                    {dashboardStats.pipeline.stages.map((stage: PipelineStage, index: number) => (
                       <div key={stage.stageId || `stage-${index}`} className="space-y-2">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-3">
@@ -478,7 +533,7 @@ const DashboardPage: React.FC = () => {
                     </div>
                   ) : recentLeads?.data && recentLeads.data.length > 0 ? (
                     <div className="space-y-4">
-                      {recentLeads.data.map((lead) => (
+                      {recentLeads.data.map((lead: Lead) => (
                         <div
                           key={lead.id}
                           className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
@@ -611,7 +666,7 @@ const DashboardPage: React.FC = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {recentDeals.data.map((deal) => (
+                        {recentDeals.data.map((deal: Deal) => (
                           <tr
                             key={deal.id}
                             className="border-b border-gray-100 hover:bg-gray-50 transition-colors"

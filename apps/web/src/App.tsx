@@ -17,37 +17,28 @@ import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { ErrorBoundary } from './components/feedback/ErrorBoundary';
 import { initializeApi } from './services/api';
 
-// Development mode configuration
-const IS_DEV = import.meta.env.DEV;
-
 console.log(`🚀 App Configuration:
   - Environment: ${import.meta.env.MODE}
-  - Development Mode: ${IS_DEV}
+  - API URL: ${import.meta.env.VITE_API_URL || 'http://localhost:3001/api/v1'}
 `);
 
 function App() {
-  const { initialize, sessionExpired, clearSessionExpired, isAuthenticated } = useAuthStore();
-  const [apiInitialized, setApiInitialized] = useState(false);
-  const [offlineMode, setOfflineMode] = useState(false);
+  const { initialize, sessionExpired, clearSessionExpired } = useAuthStore();
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
     const initApp = async () => {
       try {
-        // Initialize API
+        // Initialize API (CSRF token)
         await initializeApi();
-        setApiInitialized(true);
         
-        // Initialize auth store (won't fail if backend is offline)
+        // Initialize auth (check session)
         await initialize();
       } catch (error) {
-        console.warn('⚠️ App initialization warning:', error);
-        
-        // In development, continue even if API fails
-        if (IS_DEV) {
-          setApiInitialized(true);
-          setOfflineMode(true);
-          console.log('🔧 Running in offline development mode');
-        }
+        console.error('Failed to initialize app:', error);
+        // Don't block the UI - show login page with error
+      } finally {
+        setIsInitialized(true);
       }
     };
 
@@ -59,48 +50,22 @@ function App() {
   };
 
   // Show loading state while initializing
-  if (!apiInitialized) {
+  if (!isInitialized) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-neutral-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
           <p className="mt-4 text-neutral-600">Initializing HelixCRM...</p>
-          {IS_DEV && (
-            <p className="mt-2 text-sm text-neutral-500">
-              Waiting for backend connection on {import.meta.env.VITE_API_URL}
-            </p>
-          )}
         </div>
       </div>
     );
   }
-
-  // Development mode warning banner
-  const DevBanner = () => {
-    if (!IS_DEV) return null;
-    
-    return (
-      <div className="bg-warning-100 border-b border-warning-300 text-warning-800 px-4 py-2 text-sm">
-        <div className="container mx-auto flex items-center justify-between">
-          <div className="flex items-center">
-            <span className="font-semibold">🔧 Development Mode</span>
-            {offlineMode && <span className="ml-2">(Offline - Backend not connected)</span>}
-          </div>
-          <div>
-            Backend: {offlineMode ? '❌ Offline' : '✅ Connected'}
-          </div>
-        </div>
-      </div>
-    );
-  };
 
   return (
     <QueryProvider>
       <ToastProvider>
         <Router>
           <div className="App">
-            <DevBanner />
-            
             <ErrorBoundary>
               <Routes>
                 {/* Public routes */}
