@@ -8,6 +8,7 @@ import { Button } from '../components/atoms/Button';
 import { useApiQuery } from '../hooks/useApiQuery';
 import { DashboardAPI, LeadsAPI, DealsAPI } from '../services/api';
 import { useAuthStore } from '../stores/auth.store';
+import { usePermission } from '../lib/hooks/usePermission';
 import {
   Users,
   Briefcase,
@@ -88,7 +89,7 @@ const DashboardPage: React.FC = () => {
   const { logout } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'leads' | 'deals'>('overview');
-
+  const { hasPermission } = usePermission();
   // Fetch Phase 3.4 enhanced dashboard stats
   const {
     data: dashboardStats,
@@ -282,16 +283,26 @@ const DashboardPage: React.FC = () => {
               <span>Deals</span>
             </Link>
 
-            <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider mt-6">
-              Quick Actions
-            </div>
-            <Link
-              to="/leads/new"
-              className="flex items-center space-x-3 px-3 py-2 text-gray-700 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
-            >
-              <Plus className="w-5 h-5" />
-              <span>New Lead</span>
-            </Link>
+            {/* Only show Quick Actions if user has write permissions */}
+            {(hasPermission('lead:write') || hasPermission('contact:write') || hasPermission('deal:write')) && (
+              <>
+                <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider mt-6">
+                  Quick Actions
+                </div>
+                
+                {hasPermission('lead:write') && (
+                  <Link
+                    to="/leads/new"
+                    className="flex items-center space-x-3 px-3 py-2 text-gray-700 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+                  >
+                    <Plus className="w-5 h-5" />
+                    <span>New Lead</span>
+                  </Link>
+                )}
+                
+                {/* Add other quick actions as needed */}
+              </>
+            )}
             {/* Note: Contacts and Deals creation is handled within their respective pages via modals */}
           </nav>
         </aside>
@@ -309,15 +320,18 @@ const DashboardPage: React.FC = () => {
                   <p className="opacity-90">Here's your CRM overview for today.</p>
                 </div>
                 <div className="flex items-center space-x-3 mt-4 md:mt-0">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={handleExport}
-                    leftIcon={<Download className="w-4 h-4" />}
-                    className="bg-white/20 hover:bg-white/30 text-white"
-                  >
-                    Export Report
-                  </Button>
+                  {/* Only show Export button if user has report:read permission */}
+                  {hasPermission('report:read') && (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={handleExport}
+                      leftIcon={<Download className="w-4 h-4" />}
+                      className="bg-white/20 hover:bg-white/30 text-white"
+                    >
+                      Export Report
+                    </Button>
+                  )}
                   <Button
                     variant="secondary"
                     size="sm"
@@ -368,7 +382,8 @@ const DashboardPage: React.FC = () => {
 
             {/* Stats Cards - Phase 3.4 Enhanced */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-              {/* Leads Card */}
+              {/* Leads Card - requires lead:read */}
+              {hasPermission('lead:read') && (
               <Card className="p-6 hover:shadow-lg transition-shadow">
                 <div className="flex items-center justify-between">
                   <div>
@@ -390,8 +405,10 @@ const DashboardPage: React.FC = () => {
                   </div>
                 </div>
               </Card>
+              )}
 
-              {/* Contacts Card */}
+              {/* Contacts Card - requires contact:read */}
+              {hasPermission('contact:read') && (
               <Card className="p-6 hover:shadow-lg transition-shadow">
                 <div className="flex items-center justify-between">
                   <div>
@@ -413,8 +430,10 @@ const DashboardPage: React.FC = () => {
                   </div>
                 </div>
               </Card>
+              )}
 
-              {/* Deals Card */}
+              {/* Deals Card - requires deal:read */}
+              {hasPermission('deal:read') && (
               <Card className="p-6 hover:shadow-lg transition-shadow">
                 <div className="flex items-center justify-between">
                   <div>
@@ -438,8 +457,10 @@ const DashboardPage: React.FC = () => {
                   </div>
                 </div>
               </Card>
+              )}
 
-              {/* Revenue Card */}
+              {/* Revenue Card - requires deal:read */}
+              {hasPermission('deal:read') && (
               <Card className="p-6 hover:shadow-lg transition-shadow">
                 <div className="flex items-center justify-between">
                   <div>
@@ -461,10 +482,11 @@ const DashboardPage: React.FC = () => {
                   </div>
                 </div>
               </Card>
+              )}
             </div>
 
-            {/* Pipeline Overview - Phase 3.4 Enhanced */}
-            {dashboardStats?.pipeline && (
+            {/* Pipeline Overview - requires deal:read */}
+            {hasPermission('deal:read') && dashboardStats?.pipeline && (
               <Card className="mb-6">
                 <div className="p-6">
                   <div className="flex items-center justify-between mb-4">
@@ -514,7 +536,8 @@ const DashboardPage: React.FC = () => {
 
             {/* Recent Activity & Quick Stats */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Recent Leads */}
+              {/* Recent Leads - requires lead:read */}
+              {hasPermission('lead:read') && (
               <Card className="lg:col-span-2">
                 <div className="p-6">
                   <div className="flex items-center justify-between mb-4">
@@ -577,8 +600,10 @@ const DashboardPage: React.FC = () => {
                   )}
                 </div>
               </Card>
+              )}
 
-              {/* Quick Stats */}
+              {/* Quick Stats - requires deal:read */}
+              {hasPermission('deal:read') && (
               <Card>
                 <div className="p-6">
                   <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Stats</h2>
@@ -624,9 +649,12 @@ const DashboardPage: React.FC = () => {
                   )}
                 </div>
               </Card>
+              )}
+
             </div>
 
-            {/* Recent Deals */}
+            {/* Recent Deals - requires deal:read */}
+            {hasPermission('deal:read') && (
             <Card className="mt-6">
               <div className="p-6">
                 <div className="flex items-center justify-between mb-4">
@@ -711,6 +739,20 @@ const DashboardPage: React.FC = () => {
                 )}
               </div>
             </Card>
+            )}
+
+            {/* No permissions message */}
+            {!hasPermission('lead:read') && 
+             !hasPermission('contact:read') && 
+             !hasPermission('deal:read') && (
+              <Card className="p-8 text-center">
+                <p className="text-gray-500">You don't have permission to view dashboard data.</p>
+                <p className="text-sm text-gray-400 mt-2">
+                  Please contact your administrator for access.
+                </p>
+              </Card>
+            )}
+
           </div>
         </main>
       </div>
