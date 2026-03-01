@@ -12,6 +12,7 @@ export interface User {
   lastName?: string;
   organizationId: string;
   role?: 'admin' | 'user' | 'manager';
+  permissions?: string[];
 }
 
 // Define a type for API errors

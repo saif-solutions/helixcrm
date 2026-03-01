@@ -16,6 +16,7 @@ import EditLeadPage from './pages/leads/EditLeadPage';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { ErrorBoundary } from './components/feedback/ErrorBoundary';
 import { initializeApi } from './services/api';
+import { PermissionDebug } from './components/dev/PermissionDebug';
 
 console.log(`🚀 App Configuration:
   - Environment: ${import.meta.env.MODE}
@@ -94,6 +95,9 @@ function App() {
 
             {/* Global Session Expired Modal */}
             <SessionExpiredModal isOpen={sessionExpired} onClose={handleCloseSessionModal} />
+            
+            {/* Permission Debug Tool (only shows in development) */}
+            <PermissionDebug />
           </div>
         </Router>
       </ToastProvider>
