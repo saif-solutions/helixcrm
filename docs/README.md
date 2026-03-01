@@ -1,44 +1,48 @@
 # HelixCRM Documentation
 
-## Ì≥ö Documentation Structure
+## üìö Documentation Architecture
 
-This documentation follows the **Single Source of Truth (SSOT)** principle. All documentation is centralized in these 5 core documents:
+This documentation follows the **Single Source of Truth (SSOT)** principle with a clear authority hierarchy.
 
-### Core Documents
-1. **[SSOT.md](SSOT.md)** - **CONSTITUTIONAL DOCUMENT**
-   - Vision & strategy
-   - Operating model
-   - MVP definition
-   - Enterprise rules
-   - **Always authoritative in case of conflicts**
+### üèõ Constitutional Documents (Level 1A)
+| Document | Purpose |
+|----------|---------|
+| [`SSOT.md`](SSOT.md) | Constitutional document - always authoritative |
+| [`INVARIANTS.md`](INVARIANTS.md) | System invariants with P0-P3 severity |
+| [`VOCABULARY.md`](VOCABULARY.md) | Canonical terminology definitions |
 
-2. **[ARCHITECTURE.md](ARCHITECTURE.md)**
-   - System architecture
-   - Technology stack
-   - Module boundaries
-   - Scalability strategy
+### üìã Controlled Documents (Level 1B)
+| Document | Purpose |
+|----------|---------|
+| [`API_CONTRACTS.md`](API_CONTRACTS.md) | API specifications and versioning |
+| [`ARCHITECTURE.md`](ARCHITECTURE.md) | System architecture overview |
+| [`SECURITY.md`](SECURITY.md) | Security model and controls |
+| [`OPERATIONS.md`](OPERATIONS.md) | Development and deployment procedures |
+| [`FRONTEND_SSOT.md`](FRONTEND_SSOT.md) | Frontend execution blueprint |
+| [`TESTING_STRATEGY.md`](TESTING_STRATEGY.md) | 4-layer test taxonomy |
+| [`INVARIANT_VIOLATIONS.md`](INVARIANT_VIOLATIONS.md) | Violation response playbook |
+| [`MVP_AUTH_BOUNDARIES.md`](MVP_AUTH_BOUNDARIES.md) | MVP scope definition |
+| [`POST-QA-HARDENING.md`](POST-QA-HARDENING.md) | Post-QA hardening roadmap |
 
-3. **[SECURITY.md](SECURITY.md)**
-   - Authentication & authorization
-   - RBAC model
-   - Tenant isolation
-   - Security compliance
+### üèó Architecture Specifications
+| Location | Purpose |
+|----------|---------|
+| [`architecture/`](architecture/) | Detailed architecture documents |
+| [`architecture/tenant-isolation-architecture.md`](architecture/tenant-isolation-architecture.md) | Tenant isolation SSOT |
 
-4. **[API_CONTRACTS.md](API_CONTRACTS.md)**
-   - Stable API endpoints
-   - Versioning policy
-   - Response formats
-   - Breaking change rules
+### üîê Compliance & Governance
+| Location | Purpose |
+|----------|---------|
+| [`compliance/`](compliance/) | Compliance and audit evidence |
+| [`invariants/`](invariants/) | Invariant registry and tracking |
+| [`team/`](team/) | Team process and rules |
+| [`VALIDATION_SUMMARY.md`](VALIDATION_SUMMARY.md) | Governance validation snapshot |
 
-5. **[OPERATIONS.md](OPERATIONS.md)**
-   - Development setup
-   - Deployment procedures
-   - Environment configuration
-   - Troubleshooting
+### üì¶ Archive (Historical Only)
+- [`_archive/`](_archive/) - Read-only historical documents (phase reports, obsolete guides)
 
-## Ì∫Ä Getting Started
+## üöÄ Quick Start
 
-### Quick Start
 ```bash
 # Clone repository
 git clone <repository-url>
@@ -46,102 +50,48 @@ git clone <repository-url>
 # Start services
 docker-compose -f docker/docker-compose.yml up -d
 
-# Setup and run
+# Setup and run API
 cd apps/api
 npm install
 npx prisma migrate dev
 npm run start:dev
-Verification
+‚úÖ Verification
 bash
 curl http://localhost:3000/health
-# Should return: {"status":"ok","service":"helixcrm-api"}
-Ì≥Å Archive
-Historical documents, phase reports, and legacy documentation are preserved in:
+# Expected: {"status":"ok","service":"helixcrm-api"}
+üìñ How to Use This Documentation
+Start with SSOT.md for strategic direction
 
-/_archive/ - Read-only historical reference
+Check INVARIANTS.md for system truths
 
-Ì¥Ñ Governance Rules
-Documentation Principles
-SSOT is authoritative - All decisions must align with SSOT.md
+Use VOCABULARY.md for consistent terminology
+
+Refer to FRONTEND_SSOT.md for frontend implementation
+
+Follow TESTING_STRATEGY.md for test placement
+
+üõ° Documentation Governance
+Core Principles
+SSOT is authoritative - All decisions align with SSOT.md
 
 No duplication - Information lives in exactly one place
 
-Current state only - No historical/phase docs in active documentation
+Current state only - Historical docs go to /_archive/
 
-Link, don't repeat - Reference sections instead of copying content
+Link, don't repeat - Reference sections instead of copying
 
-Forbidden in Active Docs
-Phase completion reports
+Conflict Resolution
+SSOT.md is always authoritative
 
-Temporary status updates
+Update other docs to align with SSOT
 
-Personal notes
+Archive outdated versions
 
-Historical decision logs
+Document the resolution
 
-Where Those Belong
-GitHub Issues
-
-PR descriptions
-
-Commit messages
-
-/_archive/ folder
-
-Ì¥ù Contributing
-Check SSOT.md for strategic direction
-
-Update relevant core document(s)
-
-Ensure no duplication with existing docs
-
-Move outdated content to /_archive/
-
-Reference SSOT sections where applicable
-
-‚ùì Help & Support
-Architecture questions: ARCHITECTURE.md
-
-Security concerns: SECURITY.md
-
-API integration: API_CONTRACTS.md
-
-Deployment issues: OPERATIONS.md
-
-Strategic direction: SSOT.md
-
-Remember: When in doubt, consult SSOT.md - it's the constitutional document of HelixCRM.
-
-## Ì≥ú Documentation Governance (From SSOT.md)
-
-### Allowed Documentation
-- Architecture specifications
-- Security protocols  
-- API contracts
-- Operations procedures
-- Standards and guidelines
-
-### Forbidden in Active Docs
-- Phase completion reports
-- Temporary status updates
-- Personal notes
-- Historical decision logs
-
-### Archive Policy
-- Historical documents ‚Üí `/docs/_archive/`
-- Phase reports ‚Üí `/docs/_archive/`
-- Governance docs superseded by SSOT ‚Üí `/docs/_archive/`
-
-### Conflict Resolution
-When documentation conflicts arise:
-1. SSOT.md is always authoritative
-2. Update other docs to align with SSOT
-3. Archive outdated versions
-4. Document the resolution
-
-## Ì¥ç Verification Checklist
-- [x] SSOT.md established as constitutional document
-- [x] 5 core documentation files created
-- [x] Historical docs moved to `/docs/_archive/`
-- [x] No duplicate content across active docs
-- [x] All docs reference SSOT where applicable
+üìä Current Documentation Status
+Category	Count	Status
+Constitutional (Level 1A)	3	‚úÖ Active
+Controlled (Level 1B)	11	‚úÖ Active
+Archived	4	‚úÖ Preserved
+When in doubt, consult SSOT.md - it's the constitutional document of HelixCRM.
