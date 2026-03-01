@@ -12,10 +12,11 @@
  */
 import React, { useState, useEffect, ChangeEvent, useCallback } from 'react';
 import { useToast } from '../components/feedback/ToastProvider';
-import { useApiMutation } from '../providers/QueryProvider';
+import { useApiMutation } from '../hooks/useApiMutation';
 import { Card } from '../components/molecules/Card';
 import { Button } from '../components/atoms/Button';
 import { Input } from '../components/atoms/Input';
+import { usePermission } from '../lib/hooks/usePermission';
 import {
   Table,
   TableHeader,
@@ -45,7 +46,7 @@ export const ContactsPage: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalContacts, setTotalContacts] = useState(0);
   const itemsPerPage = 20;
-
+ const { hasPermission } = usePermission();
   // Form state
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<FormMode>('create');
@@ -56,59 +57,62 @@ export const ContactsPage: React.FC = () => {
   const [contactToDelete, setContactToDelete] = useState<Contact | null>(null);
 
   // Phase 3.4: Create contact mutation
-  const createContactMutation = useApiMutation(
+  const createContactMutation = useApiMutation<Contact, Error, CreateContactDto>(
     (data: CreateContactDto) => ContactsAPI.create(data),
     {
-      onSuccess: (newContact) => {
+      onSuccess: (newContact: Contact) => {
         success(
           'Contact Created',
           `${newContact.firstName} ${newContact.lastName} has been added to your contacts`
         );
         setIsFormOpen(false);
-        fetchContacts(); // Refresh the list
+        fetchContacts();
       },
-      onError: (error: any) => {
+      onError: (error: Error) => {
         showError('Create Failed', error.message || 'Failed to create contact');
       },
     }
   );
 
   // Phase 3.4: Update contact mutation
-  const updateContactMutation = useApiMutation(
+  const updateContactMutation = useApiMutation<Contact, Error, { id: string; data: UpdateContactDto }>(
     ({ id, data }: { id: string; data: UpdateContactDto }) => ContactsAPI.update(id, data),
     {
-      onSuccess: (updatedContact) => {
+      onSuccess: (updatedContact: Contact) => {
         success(
           'Contact Updated',
           `${updatedContact.firstName} ${updatedContact.lastName} has been updated`
         );
         setIsFormOpen(false);
         setEditingContact(null);
-        fetchContacts(); // Refresh the list
+        fetchContacts();
       },
-      onError: (error: any) => {
+      onError: (error: Error) => {
         showError('Update Failed', error.message || 'Failed to update contact');
       },
     }
   );
 
   // Phase 3.4: Delete contact mutation
-  const deleteContactMutation = useApiMutation((id: string) => ContactsAPI.delete(id), {
-    onSuccess: () => {
-      if (contactToDelete) {
-        success(
-          'Contact Deleted',
-          `${contactToDelete.firstName} ${contactToDelete.lastName} has been removed from your contacts`
-        );
-      }
-      setIsDeleteDialogOpen(false);
-      setContactToDelete(null);
-      fetchContacts(); // Refresh the list
-    },
-    onError: (error: any) => {
-      showError('Delete Failed', error.message || 'Failed to delete contact');
-    },
-  });
+  const deleteContactMutation = useApiMutation<{ success: boolean; message: string }, Error, string>(
+    (id: string) => ContactsAPI.delete(id),
+    {
+      onSuccess: () => {
+        if (contactToDelete) {
+          success(
+            'Contact Deleted',
+            `${contactToDelete.firstName} ${contactToDelete.lastName} has been removed from your contacts`
+          );
+        }
+        setIsDeleteDialogOpen(false);
+        setContactToDelete(null);
+        fetchContacts();
+      },
+      onError: (error: Error) => {
+        showError('Delete Failed', error.message || 'Failed to delete contact');
+      },
+    }
+  );
 
   // Fetch contacts from Phase 3.4 API
   const fetchContacts = useCallback(async () => {
@@ -131,12 +135,10 @@ export const ContactsPage: React.FC = () => {
       if (response.data.length === 0) {
         info('No contacts found', 'Create your first contact to get started');
       }
-    } catch (err: any) {
+        } catch (err: unknown) {
       console.error('❌ Error in fetchContacts:', err);
-      showError(
-        'Failed to load contacts',
-        err?.message || 'Please check your connection and try again'
-      );
+      const errorMessage = err instanceof Error ? err.message : 'Please check your connection and try again';
+      showError('Failed to load contacts', errorMessage);
     } finally {
       console.log('✅ Setting loading to false');
       setLoading(false);
@@ -318,16 +320,19 @@ export const ContactsPage: React.FC = () => {
             {searchTerm ? `, ${filteredContacts.length} found for "${searchTerm}"` : ''}
           </p>
         </div>
-        <Button
-          onClick={handleCreateContact}
-          leftIcon={<Plus className="h-4 w-4" />}
-          variant="primary"
-          aria-label="Add new contact"
-          loading={createContactMutation.isPending}
-        >
-          Add Contact
-        </Button>
-      </div>
+        {/* Only show Add Contact button if user has contact:write permission */}
+        {hasPermission('contact:write') && (
+          <Button
+            onClick={handleCreateContact}
+            leftIcon={<Plus className="h-4 w-4" />}
+            variant="primary"
+            aria-label="Add new contact"
+            loading={createContactMutation.isPending}
+          >
+            Add Contact
+          </Button>
+        )}
+        </div>
 
       {/* Search Bar */}
       <Card className="mb-6">
@@ -354,10 +359,12 @@ export const ContactsPage: React.FC = () => {
             message={
               searchTerm
                 ? 'Try adjusting your search terms'
-                : 'Get started by adding your first contact'
+                : hasPermission('contact:write')
+                  ? 'Get started by adding your first contact'
+                  : 'No contacts available'
             }
-            actionLabel="Add Contact"
-            onAction={handleCreateContact}
+            actionLabel={hasPermission('contact:write') ? 'Add Contact' : undefined}
+            onAction={hasPermission('contact:write') ? handleCreateContact : undefined}
           />
         ) : (
           <>
@@ -387,28 +394,40 @@ export const ContactsPage: React.FC = () => {
                       <TableCell>{contact.company || '—'}</TableCell>
                       <TableCell>{formatDate(contact.createdAt)}</TableCell>
                       <TableCell className="text-right space-x-2">
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => handleEditContact(contact)}
-                          aria-label={`Edit ${contact.firstName} ${contact.lastName}`}
-                          loading={
-                            updateContactMutation.isPending && editingContact?.id === contact.id
-                          }
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          onClick={() => handleDeleteClick(contact)}
-                          aria-label={`Delete ${contact.firstName} ${contact.lastName}`}
-                          loading={
-                            deleteContactMutation.isPending && contactToDelete?.id === contact.id
-                          }
-                        >
-                          Delete
-                        </Button>
+                        {/* Only show Edit button if user has contact:write permission */}
+                        {hasPermission('contact:write') && (
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => handleEditContact(contact)}
+                            aria-label={`Edit ${contact.firstName} ${contact.lastName}`}
+                            loading={
+                              updateContactMutation.isPending && editingContact?.id === contact.id
+                            }
+                          >
+                            Edit
+                          </Button>
+                        )}
+                        
+                        {/* Only show Delete button if user has contact:delete permission */}
+                        {hasPermission('contact:delete') && (
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            onClick={() => handleDeleteClick(contact)}
+                            aria-label={`Delete ${contact.firstName} ${contact.lastName}`}
+                            loading={
+                              deleteContactMutation.isPending && contactToDelete?.id === contact.id
+                            }
+                          >
+                            Delete
+                          </Button>
+                        )}
+                        
+                        {/* Show message if user has no permissions */}
+                        {!hasPermission('contact:write') && !hasPermission('contact:delete') && (
+                          <span className="text-sm text-gray-400">View only</span>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}

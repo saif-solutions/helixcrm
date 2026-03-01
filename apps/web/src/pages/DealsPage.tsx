@@ -1,6 +1,8 @@
 // apps/web/src/pages/DealsPage.tsx
 import React, { useState, useMemo } from 'react';
-import { useApiQuery, useApiMutation } from '../providers/QueryProvider';
+import { useApiQuery } from '../hooks/useApiQuery';
+import { useApiMutation } from '../hooks/useApiMutation';
+import { usePermission } from '../lib/hooks/usePermission';
 import { useToast } from '../components/feedback/ToastProvider';
 import { Card } from '../components/molecules/Card';
 import { Button } from '../components/atoms/Button';
@@ -27,6 +29,16 @@ import {
   BarChart3,
   Sparkles,
 } from 'lucide-react';
+
+type DealsApiResponse = {
+  data: Deal[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+};
 
 // Mock pipeline stages (should come from API in real implementation)
 const PIPELINE_STAGES = [
@@ -72,6 +84,8 @@ const DealsPage: React.FC = () => {
     priority: 'medium',
   });
 
+  const { hasPermission } = usePermission();
+
   // Calculate skip for Phase 3.4 API
   const skip = (currentPage - 1) * ITEMS_PER_PAGE;
 
@@ -82,11 +96,11 @@ const DealsPage: React.FC = () => {
     error,
     isFetching,
     refetch,
-  } = useApiQuery(
+  } = useApiQuery<DealsApiResponse>(
     ['deals', currentPage.toString(), searchTerm, selectedStage],
     () => DealsAPI.list(skip, ITEMS_PER_PAGE),
     {
-      placeholderData: (previousData) => previousData,
+      placeholderData: (previousData: DealsApiResponse | undefined) => previousData,
       staleTime: 30 * 1000, // 30 seconds
     }
   );
@@ -102,8 +116,24 @@ const DealsPage: React.FC = () => {
   );
 
   // Phase 3.4: Create simplified deal mutation
-  const createDealMutation = useApiMutation(
-    (data: CreateDealSimpleDto) => DealsAPI.createSimple(data),
+  const createDealMutation = useApiMutation<Deal, Error, CreateDealSimpleDto>(
+        (data: CreateDealSimpleDto) => {
+      // Convert to Record for API call
+      const apiData: Record<string, unknown> = {
+        name: data.name,
+        amount: data.amount,
+        stageId: data.stageId,
+        currency: data.currency,
+        probability: data.probability,
+        status: data.status,
+        priority: data.priority,
+        contactId: data.contactId,
+        accountId: data.accountId,
+        expectedCloseDate: data.expectedCloseDate,
+        description: data.description,
+      };
+        return DealsAPI.createSimple(apiData as unknown as CreateDealSimpleDto);
+    },
     {
       onSuccess: () => {
         success(
@@ -112,61 +142,77 @@ const DealsPage: React.FC = () => {
         );
         setShowCreateDialog(false);
         resetForm();
-        refetch(); // Refresh the list
+        refetch();
       },
-      onError: (error: any) => {
+      onError: (error: Error) => {
         showError('Create Failed', error.message || 'Failed to create deal');
       },
     }
   );
 
   // Update deal mutation
-  const updateDealMutation = useApiMutation(
-    ({ id, data }: { id: string; data: UpdateDealDto }) => DealsAPI.update(id, data),
+  const updateDealMutation = useApiMutation<Deal, Error, { id: string; data: UpdateDealDto }>(
+    ({ id, data }: { id: string; data: UpdateDealDto }) => DealsAPI.update(id, data as unknown as Record<string, unknown>),
     {
       onSuccess: () => {
         success('Deal Updated', 'Deal has been updated successfully');
         setShowEditDialog(false);
         setSelectedDeal(null);
-        refetch(); // Refresh the list
+        refetch();
       },
-      onError: (error: any) => {
+      onError: (error: Error) => {
         showError('Update Failed', error.message || 'Failed to update deal');
       },
     }
   );
 
   // Delete deal mutation
-  const deleteDealMutation = useApiMutation((id: string) => DealsAPI.delete(id), {
-    onSuccess: () => {
-      success('Deal Deleted', 'Deal has been deleted successfully');
-      setShowDeleteConfirm(false);
-      setDealToDelete(null);
-      refetch(); // Refresh the list
-    },
-    onError: (error: any) => {
-      showError('Delete Failed', error.message || 'Failed to delete deal');
-    },
-  });
+  const deleteDealMutation = useApiMutation<{ success: boolean; message: string }, Error, string>(
+    (id: string) => DealsAPI.delete(id),
+    {
+      onSuccess: () => {
+        success('Deal Deleted', 'Deal has been deleted successfully');
+        setShowDeleteConfirm(false);
+        setDealToDelete(null);
+        refetch();
+      },
+      onError: (error: Error) => {
+        showError('Delete Failed', error.message || 'Failed to delete deal');
+      },
+    }
+  );
 
   // Handle API errors
   React.useEffect(() => {
     if (error) {
-      showError(
-        'Failed to load deals',
-        error instanceof Error ? error.message : 'Please try again'
-      );
+      const errorMessage = error instanceof Error ? error.message : 'Please try again';
+      showError('Failed to load deals', errorMessage);
     }
   }, [error, showError]);
 
-  const deals = dealsResponse?.data || [];
-  const meta = dealsResponse?.meta;
-  const totalDeals = meta?.total || 0;
-  const totalPages = Math.ceil(totalDeals / ITEMS_PER_PAGE) || 1;
+    // Memoize deals data to prevent unnecessary recalculations
+  const dealsData = useMemo(() => {
+    const data = dealsResponse?.data || [];
+    const meta = dealsResponse?.meta;
+    const total = meta?.total || 0;
+    const pages = Math.ceil(total / ITEMS_PER_PAGE) || 1;
+    const start = total > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0;
+    const end = Math.min(currentPage * ITEMS_PER_PAGE, total);
 
-  // Calculate showing range
-  const showingStart = totalDeals > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0;
-  const showingEnd = Math.min(currentPage * ITEMS_PER_PAGE, totalDeals);
+    return {
+      data,
+      total,
+      pages,
+      showingStart: start,
+      showingEnd: end,
+    };
+  }, [dealsResponse, currentPage]);
+
+  const deals = dealsData.data;
+  const totalDeals = dealsData.total;
+  const totalPages = dealsData.pages;
+  const showingStart = dealsData.showingStart;
+  const showingEnd = dealsData.showingEnd;
 
   // Calculate deal statistics
   const dealStats = useMemo(() => {
@@ -208,23 +254,31 @@ const DealsPage: React.FC = () => {
     });
   };
 
-  const handleFormChange = (field: keyof CreateDealSimpleDto, value: any) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+    const handleFormChange = (field: keyof CreateDealSimpleDto, value: string | number | boolean | undefined) => {
+    // Handle different field types appropriately
+    setFormData((prev) => {
+      const newData = { ...prev, [field]: value };
 
-    // Update probability when stage changes
-    if (field === 'stageId') {
-      const stage = PIPELINE_STAGES.find((s) => s.id === value);
-      if (stage) {
-        setFormData((prev) => ({
-          ...prev,
-          stageId: value,
-          probability: stage.probability,
-        }));
+      // Update probability when stage changes
+      if (field === 'stageId' && typeof value === 'string') {
+        const stage = PIPELINE_STAGES.find((s) => s.id === value);
+        if (stage) {
+          newData.stageId = value;
+          newData.probability = stage.probability;
+        }
       }
-    }
+
+      // Ensure required fields have appropriate types
+      if (field === 'amount' && typeof value === 'number') {
+        newData.amount = value;
+      }
+      
+      if (field === 'name' && typeof value === 'string') {
+        newData.name = value;
+      }
+
+      return newData as CreateDealSimpleDto;
+    });
   };
 
   const handleExport = () => {
@@ -327,21 +381,25 @@ const DealsPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            leftIcon={<Download className="w-4 h-4" />}
-            onClick={handleExport}
-            disabled={totalDeals === 0}
-          >
-            Export
-          </Button>
-          <Button
-            leftIcon={<Plus className="w-4 h-4" />}
-            onClick={() => setShowCreateDialog(true)}
-            loading={createDealMutation.isPending}
-          >
-            New Deal
-          </Button>
+          {hasPermission('report:read') && (
+            <Button
+              variant="outline"
+              leftIcon={<Download className="w-4 h-4" />}
+              onClick={handleExport}
+              disabled={totalDeals === 0}
+            >
+              Export
+            </Button>
+          )}
+          {hasPermission('deal:write') && (
+            <Button
+              leftIcon={<Plus className="w-4 h-4" />}
+              onClick={() => setShowCreateDialog(true)}
+              loading={createDealMutation.isPending}
+            >
+              New Deal
+            </Button>
+          )}
         </div>
       </div>
 
@@ -445,9 +503,13 @@ const DealsPage: React.FC = () => {
         {deals.length === 0 ? (
           <EmptyState
             title="No deals yet"
-            message="Get started by creating your first deal using the Phase 3.4 simplified API"
-            actionLabel="Create First Deal"
-            onAction={() => setShowCreateDialog(true)}
+            message={
+              hasPermission('deal:write')
+                ? "Get started by creating your first deal using the Phase 3.4 simplified API"
+                : "No deals available"
+            }
+            actionLabel={hasPermission('deal:write') ? "Create First Deal" : undefined}
+            onAction={hasPermission('deal:write') ? () => setShowCreateDialog(true) : undefined}
           />
         ) : (
           <>
@@ -533,30 +595,39 @@ const DealsPage: React.FC = () => {
                         </td>
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-gray-600 hover:text-primary-600"
-                              onClick={() => {
-                                setSelectedDeal(deal);
-                                setShowEditDialog(true);
-                              }}
-                              leftIcon={<Edit className="w-4 h-4" />}
-                            >
-                              Edit
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-gray-600 hover:text-red-600"
-                              onClick={() => {
-                                setDealToDelete(deal.id);
-                                setShowDeleteConfirm(true);
-                              }}
-                              leftIcon={<Trash2 className="w-4 h-4" />}
-                            >
-                              Delete
-                            </Button>
+                            {hasPermission('deal:write') && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-gray-600 hover:text-primary-600"
+                                onClick={() => {
+                                  setSelectedDeal(deal);
+                                  setShowEditDialog(true);
+                                }}
+                                leftIcon={<Edit className="w-4 h-4" />}
+                              >
+                                Edit
+                              </Button>
+                            )}
+                            
+                            {hasPermission('deal:delete') && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-gray-600 hover:text-red-600"
+                                onClick={() => {
+                                  setDealToDelete(deal.id);
+                                  setShowDeleteConfirm(true);
+                                }}
+                                leftIcon={<Trash2 className="w-4 h-4" />}
+                              >
+                                Delete
+                              </Button>
+                            )}
+                            
+                            {!hasPermission('deal:write') && !hasPermission('deal:delete') && (
+                              <span className="text-sm text-gray-400">View only</span>
+                            )}
                           </div>
                         </td>
                       </tr>

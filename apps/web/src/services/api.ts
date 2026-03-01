@@ -12,6 +12,7 @@ import { API_CONFIG } from '../config/api.config';
 
 // Import types
 import { Lead, Contact, Deal, CreateDealSimpleDto, DashboardStats } from '../lib/types/crm.types';
+import type { CreateContactDto, UpdateContactDto } from '../lib/types/crm.types';
 
 interface RetryableRequestConfig extends InternalAxiosRequestConfig {
   _retry?: boolean;
@@ -520,7 +521,8 @@ export const ContactsAPI = {
    * @param data Contact data
    * @returns Created contact
    */
-  create: (data: Record<string, unknown>) => apiClient.post<Contact>('/contacts', data),
+  create: (data: CreateContactDto) => 
+    apiClient.post<Contact>('/contacts', data as unknown as Record<string, unknown>),
 
   /**
    * Update an existing contact
@@ -528,7 +530,8 @@ export const ContactsAPI = {
    * @param data Updated contact data
    * @returns Updated contact
    */
-  update: (id: string, data: Record<string, unknown>) => apiClient.put<Contact>(`/contacts/${id}`, data),
+  update: (id: string, data: UpdateContactDto) => 
+    apiClient.put<Contact>(`/contacts/${id}`, data as unknown as Record<string, unknown>),
 
   /**
    * Delete a contact

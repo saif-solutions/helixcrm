@@ -1,6 +1,7 @@
 // apps/web/src/pages/LeadsPage.tsx
 import React, { useState, useMemo } from 'react';
-import { useApiQuery, useApiMutation } from '../providers/QueryProvider';
+import { useApiQuery } from '../hooks/useApiQuery';
+import { useApiMutation } from '../hooks/useApiMutation';
 import { useToast } from '../components/feedback/ToastProvider';
 import { Card } from '../components/molecules/Card';
 import { Button } from '../components/atoms/Button';
@@ -10,6 +11,18 @@ import { LoadingSpinner } from '../components/feedback/LoadingSpinner';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { LeadsAPI } from '../services/api';
 import type { Lead, LeadStatus, CreateLeadDto, UpdateLeadDto } from '../lib/types/crm.types';
+
+// Add this type definition
+type LeadsApiResponse = {
+  data: Lead[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+};
+import { usePermission } from '../lib/hooks/usePermission';
 import {
   Search,
   Filter,
@@ -59,6 +72,8 @@ const LeadsPage: React.FC = () => {
 
   const { success, error: showError } = useToast();
 
+  const { hasPermission } = usePermission();
+
   // Calculate skip for Phase 3.4 API
   const skip = (currentPage - 1) * ITEMS_PER_PAGE;
 
@@ -69,55 +84,61 @@ const LeadsPage: React.FC = () => {
     error,
     isFetching,
     refetch,
-  } = useApiQuery(
+  } = useApiQuery<LeadsApiResponse>(
     ['leads', currentPage.toString(), debouncedSearchTerm, selectedStatus],
     () => LeadsAPI.list(skip, ITEMS_PER_PAGE),
     {
-      placeholderData: (previousData) => previousData,
+      placeholderData: (previousData: LeadsApiResponse | undefined) => previousData,
       staleTime: 30 * 1000, // 30 seconds
     }
   );
 
   // Phase 3.4: Create lead mutation
-  const createLeadMutation = useApiMutation((data: CreateLeadDto) => LeadsAPI.create(data), {
-    onSuccess: () => {
-      success('Lead Created', 'Lead has been created successfully');
-      setShowCreateDialog(false);
-      refetch(); // Refresh the list
-    },
-    onError: (error: any) => {
-      showError('Create Failed', error.message || 'Failed to create lead');
-    },
-  });
+  const createLeadMutation = useApiMutation<Lead, Error, CreateLeadDto>(
+        (data: CreateLeadDto) => LeadsAPI.create(data as unknown as Record<string, unknown>),
+    {
+      onSuccess: () => {
+        success('Lead Created', 'Lead has been created successfully');
+        setShowCreateDialog(false);
+        refetch();
+      },
+      onError: (error: Error) => {
+        showError('Create Failed', error.message || 'Failed to create lead');
+      },
+    }
+  );
 
   // Phase 3.4: Update lead mutation
-  const updateLeadMutation = useApiMutation(
-    ({ id, data }: { id: string; data: UpdateLeadDto }) => LeadsAPI.update(id, data),
+  const updateLeadMutation = useApiMutation<Lead, Error, { id: string; data: UpdateLeadDto }>(
+        ({ id, data }: { id: string; data: UpdateLeadDto }) => LeadsAPI.update(id, data as unknown as Record<string, unknown>),
     {
       onSuccess: () => {
         success('Lead Updated', 'Lead has been updated successfully');
         setShowEditDialog(false);
         setSelectedLead(null);
-        refetch(); // Refresh the list
+        refetch();
       },
-      onError: (error: any) => {
+      onError: (error: Error) => {
         showError('Update Failed', error.message || 'Failed to update lead');
       },
     }
   );
 
   // Phase 3.4: Delete lead mutation
-  const deleteLeadMutation = useApiMutation((id: string) => LeadsAPI.delete(id), {
-    onSuccess: () => {
-      success('Lead Deleted', 'Lead has been deleted successfully');
-      setShowDeleteConfirm(false);
-      setLeadToDelete(null);
-      refetch(); // Refresh the list
-    },
-    onError: (error: any) => {
-      showError('Delete Failed', error.message || 'Failed to delete lead');
-    },
-  });
+  const deleteLeadMutation = useApiMutation<{ success: boolean; message: string }, Error, string>(
+    (id: string) => LeadsAPI.delete(id),
+    {
+      onSuccess: () => {
+        success('Lead Deleted', 'Lead has been deleted successfully');
+        setShowDeleteConfirm(false);
+        setLeadToDelete(null);
+        refetch();
+      },
+      onError: (error: Error) => {
+        showError('Delete Failed', error.message || 'Failed to delete lead');
+      },
+    }
+  );
 
   // Calculate stats from the current data
   const leadStats = useMemo(() => {
@@ -125,11 +146,12 @@ const LeadsPage: React.FC = () => {
 
     const leads = leadsResponse.data;
     const byStatus = leads.reduce(
-      (acc: Record<LeadStatus, number>, lead) => {
-        acc[lead.status] = (acc[lead.status] || 0) + 1;
+      (acc: Record<string, number>, lead: Lead) => {
+        const status = lead.status;
+        acc[status] = (acc[status] || 0) + 1;
         return acc;
       },
-      {} as Record<LeadStatus, number>
+      {} as Record<string, number>
     );
 
     // Calculate conversion rate (qualified + converted) / total
@@ -271,21 +293,26 @@ const LeadsPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            leftIcon={<Download className="w-4 h-4" />}
-            onClick={handleExport}
-            disabled={totalLeads === 0}
-          >
-            Export
-          </Button>
-          <Button
-            leftIcon={<UserPlus className="w-4 h-4" />}
-            onClick={() => setShowCreateDialog(true)}
-            loading={createLeadMutation.isPending}
-          >
-            New Lead
-          </Button>
+          {hasPermission('report:read') && (
+            <Button
+              variant="outline"
+              leftIcon={<Download className="w-4 h-4" />}
+              onClick={handleExport}
+              disabled={totalLeads === 0}
+            >
+              Export
+            </Button>
+          )}
+          {/* Only show New Lead button if user has lead:write permission */}
+          {hasPermission('lead:write') && (
+            <Button
+              leftIcon={<UserPlus className="w-4 h-4" />}
+              onClick={() => setShowCreateDialog(true)}
+              loading={createLeadMutation.isPending}
+            >
+              New Lead
+            </Button>
+          )}
         </div>
       </div>
 
@@ -404,10 +431,12 @@ const LeadsPage: React.FC = () => {
             message={
               searchTerm || selectedStatus !== 'all'
                 ? 'Try adjusting your search or filter criteria'
-                : 'Get started by adding your first lead'
+                : hasPermission('lead:write')
+                  ? 'Get started by adding your first lead'
+                  : 'No leads available'
             }
-            actionLabel="Add Lead"
-            onAction={() => setShowCreateDialog(true)}
+            actionLabel={hasPermission('lead:write') ? 'Add Lead' : undefined}
+            onAction={hasPermission('lead:write') ? () => setShowCreateDialog(true) : undefined}
           />
         ) : (
           <>
@@ -433,7 +462,7 @@ const LeadsPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {leads.map((lead) => {
+                  {leads.map((lead: Lead) => {
                     const statusConfig = statusOptions.find((s) => s.value === lead.status);
                     return (
                       <tr
@@ -495,30 +524,42 @@ const LeadsPage: React.FC = () => {
                         </td>
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-gray-600 hover:text-primary-600"
-                              onClick={() => {
-                                setSelectedLead(lead);
-                                setShowEditDialog(true);
-                              }}
-                              leftIcon={<Edit className="w-4 h-4" />}
-                            >
-                              Edit
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-gray-600 hover:text-red-600"
-                              onClick={() => {
-                                setLeadToDelete(lead.id);
-                                setShowDeleteConfirm(true);
-                              }}
-                              leftIcon={<Trash2 className="w-4 h-4" />}
-                            >
-                              Delete
-                            </Button>
+                            {/* Only show Edit button if user has lead:write permission */}
+                            {hasPermission('lead:write') && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-gray-600 hover:text-primary-600"
+                                onClick={() => {
+                                  setSelectedLead(lead);
+                                  setShowEditDialog(true);
+                                }}
+                                leftIcon={<Edit className="w-4 h-4" />}
+                              >
+                                Edit
+                              </Button>
+                            )}
+                            
+                            {/* Only show Delete button if user has lead:delete permission */}
+                            {hasPermission('lead:delete') && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-gray-600 hover:text-red-600"
+                                onClick={() => {
+                                  setLeadToDelete(lead.id);
+                                  setShowDeleteConfirm(true);
+                                }}
+                                leftIcon={<Trash2 className="w-4 h-4" />}
+                              >
+                                Delete
+                              </Button>
+                            )}
+                            
+                            {/* Show message if user has no permissions */}
+                            {!hasPermission('lead:write') && !hasPermission('lead:delete') && (
+                              <span className="text-sm text-gray-400">View only</span>
+                            )}
                           </div>
                         </td>
                       </tr>
