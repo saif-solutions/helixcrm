@@ -1,0 +1,893 @@
+{
+  "collectedAt": "2026-03-01T08:48:37.566Z",
+  "system": "HelixCRM",
+  "version": "0.0.1",
+  "totalControls": 8,
+  "byCriteria": {
+    "Security": 3,
+    "Availability": 2,
+    "Confidentiality": 1,
+    "ProcessingIntegrity": 1,
+    "Privacy": 1
+  },
+  "results": [
+    {
+      "controlId": "CC6.1",
+      "controlName": "Logical Access Security Software",
+      "criteria": "Security",
+      "evidenceType": "ACCESS_CONTROL_LOGS",
+      "collectedAt": "2026-03-01T08:48:37.527Z",
+      "data": [
+        {
+          "id": "cmm66l1cc000bze0ks8hd02bq",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "6620ee6e-143c-44a2-a6a3-d8b4d44f65be",
+          "actorUserId": "3163357d-dbe8-4e24-932c-ff79ca722866",
+          "actorEmail": "test@helixcrm.com",
+          "actorType": "USER",
+          "requestId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [],
+            "tokenVersion": 1,
+            "permissionsCount": 0
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-02-28T10:31:17.772Z",
+          "updatedAt": "2026-02-28T10:31:17.772Z",
+          "correlationId": null
+        },
+        {
+          "id": "cmm65aem90007ze0kiv9fhcro",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "6620ee6e-143c-44a2-a6a3-d8b4d44f65be",
+          "actorUserId": "3163357d-dbe8-4e24-932c-ff79ca722866",
+          "actorEmail": "test@helixcrm.com",
+          "actorType": "USER",
+          "requestId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [],
+            "tokenVersion": 1,
+            "permissionsCount": 0
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-02-28T09:55:02.145Z",
+          "updatedAt": "2026-02-28T09:55:02.145Z",
+          "correlationId": null
+        },
+        {
+          "id": "cmm64okvj0003ze0kl8v8hc2c",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "6620ee6e-143c-44a2-a6a3-d8b4d44f65be",
+          "actorUserId": "3163357d-dbe8-4e24-932c-ff79ca722866",
+          "actorEmail": "test@helixcrm.com",
+          "actorType": "USER",
+          "requestId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [],
+            "tokenVersion": 1,
+            "permissionsCount": 0
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-02-28T09:38:03.823Z",
+          "updatedAt": "2026-02-28T09:38:03.823Z",
+          "correlationId": null
+        },
+        {
+          "id": "cmm64ha6m0003tbykcn8k08c4",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "6620ee6e-143c-44a2-a6a3-d8b4d44f65be",
+          "actorUserId": "3163357d-dbe8-4e24-932c-ff79ca722866",
+          "actorEmail": "test@helixcrm.com",
+          "actorType": "USER",
+          "requestId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [],
+            "tokenVersion": 1,
+            "permissionsCount": 0
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-02-28T09:32:23.374Z",
+          "updatedAt": "2026-02-28T09:32:23.374Z",
+          "correlationId": null
+        },
+        {
+          "id": "cmm64efej000359qlps4xlv01",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "6620ee6e-143c-44a2-a6a3-d8b4d44f65be",
+          "actorUserId": "3163357d-dbe8-4e24-932c-ff79ca722866",
+          "actorEmail": "test@helixcrm.com",
+          "actorType": "USER",
+          "requestId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [],
+            "tokenVersion": 1,
+            "permissionsCount": 0
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-02-28T09:30:10.171Z",
+          "updatedAt": "2026-02-28T09:30:10.171Z",
+          "correlationId": null
+        },
+        {
+          "id": "cmm6417vw0003rogzqgao3y55",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "6620ee6e-143c-44a2-a6a3-d8b4d44f65be",
+          "actorUserId": "3163357d-dbe8-4e24-932c-ff79ca722866",
+          "actorEmail": "test@helixcrm.com",
+          "actorType": "USER",
+          "requestId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [],
+            "tokenVersion": 1,
+            "permissionsCount": 0
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-02-28T09:19:53.901Z",
+          "updatedAt": "2026-02-28T09:19:53.901Z",
+          "correlationId": null
+        },
+        {
+          "id": "cmm62wdon00033cz13pbeo9u9",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "6620ee6e-143c-44a2-a6a3-d8b4d44f65be",
+          "actorUserId": "3163357d-dbe8-4e24-932c-ff79ca722866",
+          "actorEmail": "test@helixcrm.com",
+          "actorType": "USER",
+          "requestId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [],
+            "tokenVersion": 1,
+            "permissionsCount": 0
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-02-28T08:48:08.520Z",
+          "updatedAt": "2026-02-28T08:48:08.520Z",
+          "correlationId": null
+        },
+        {
+          "id": "cmm62ivcb0003hng2xg8egcue",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "6620ee6e-143c-44a2-a6a3-d8b4d44f65be",
+          "actorUserId": "3163357d-dbe8-4e24-932c-ff79ca722866",
+          "actorEmail": "test@helixcrm.com",
+          "actorType": "USER",
+          "requestId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [],
+            "tokenVersion": 1,
+            "permissionsCount": 0
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-02-28T08:37:38.219Z",
+          "updatedAt": "2026-02-28T08:37:38.219Z",
+          "correlationId": null
+        },
+        {
+          "id": "cmm62ew6i0003xyw9ysy14fey",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "6620ee6e-143c-44a2-a6a3-d8b4d44f65be",
+          "actorUserId": "3163357d-dbe8-4e24-932c-ff79ca722866",
+          "actorEmail": "test@helixcrm.com",
+          "actorType": "USER",
+          "requestId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [],
+            "tokenVersion": 1,
+            "permissionsCount": 0
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-02-28T08:34:32.682Z",
+          "updatedAt": "2026-02-28T08:34:32.682Z",
+          "correlationId": null
+        },
+        {
+          "id": "cmm6268bc000313s5iugrelz3",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "6620ee6e-143c-44a2-a6a3-d8b4d44f65be",
+          "actorUserId": "3163357d-dbe8-4e24-932c-ff79ca722866",
+          "actorEmail": "test@helixcrm.com",
+          "actorType": "USER",
+          "requestId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [],
+            "tokenVersion": 1,
+            "permissionsCount": 0
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-02-28T08:27:48.504Z",
+          "updatedAt": "2026-02-28T08:27:48.504Z",
+          "correlationId": null
+        },
+        {
+          "id": "cmm61z8ep000392fub339m5p0",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "6620ee6e-143c-44a2-a6a3-d8b4d44f65be",
+          "actorUserId": "3163357d-dbe8-4e24-932c-ff79ca722866",
+          "actorEmail": "test@helixcrm.com",
+          "actorType": "USER",
+          "requestId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [],
+            "tokenVersion": 1,
+            "permissionsCount": 0
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-02-28T08:22:22.033Z",
+          "updatedAt": "2026-02-28T08:22:22.033Z",
+          "correlationId": null
+        },
+        {
+          "id": "cmm610tmm0003gliuuywa00sc",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "6620ee6e-143c-44a2-a6a3-d8b4d44f65be",
+          "actorUserId": "3163357d-dbe8-4e24-932c-ff79ca722866",
+          "actorEmail": "test@helixcrm.com",
+          "actorType": "USER",
+          "requestId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [],
+            "tokenVersion": 1,
+            "permissionsCount": 0
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-02-28T07:55:36.574Z",
+          "updatedAt": "2026-02-28T07:55:36.574Z",
+          "correlationId": null
+        },
+        {
+          "id": "cmm5zwxo20003ncwvmpac4o1l",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "6620ee6e-143c-44a2-a6a3-d8b4d44f65be",
+          "actorUserId": "3163357d-dbe8-4e24-932c-ff79ca722866",
+          "actorEmail": "test@helixcrm.com",
+          "actorType": "USER",
+          "requestId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [],
+            "tokenVersion": 1,
+            "permissionsCount": 0
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-02-28T07:24:35.571Z",
+          "updatedAt": "2026-02-28T07:24:35.571Z",
+          "correlationId": null
+        },
+        {
+          "id": "cmm5ys9m20003ez1s5anmyrea",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "6620ee6e-143c-44a2-a6a3-d8b4d44f65be",
+          "actorUserId": "3163357d-dbe8-4e24-932c-ff79ca722866",
+          "actorEmail": "test@helixcrm.com",
+          "actorType": "USER",
+          "requestId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [],
+            "tokenVersion": 1,
+            "permissionsCount": 0
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-02-28T06:52:58.154Z",
+          "updatedAt": "2026-02-28T06:52:58.154Z",
+          "correlationId": null
+        },
+        {
+          "id": "cmm5tceza0003i90hzk6s66tx",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "8b450cdf-1c75-4898-bcef-407e5b40c373",
+          "actorUserId": "18a77c71-3326-4f36-aa47-a273547df73b",
+          "actorEmail": "admin@helixcrm.com",
+          "actorType": "USER",
+          "requestId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [
+              "admin"
+            ],
+            "tokenVersion": 1,
+            "permissionsCount": 25
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-02-28T04:20:40.534Z",
+          "updatedAt": "2026-02-28T04:20:40.534Z",
+          "correlationId": null
+        },
+        {
+          "id": "cmm5s600y0003ttle4s7mqdip",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "8b450cdf-1c75-4898-bcef-407e5b40c373",
+          "actorUserId": "18a77c71-3326-4f36-aa47-a273547df73b",
+          "actorEmail": "admin@helixcrm.com",
+          "actorType": "USER",
+          "requestId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [
+              "admin"
+            ],
+            "tokenVersion": 1,
+            "permissionsCount": 25
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-02-28T03:47:41.602Z",
+          "updatedAt": "2026-02-28T03:47:41.602Z",
+          "correlationId": null
+        },
+        {
+          "id": "cmm5k6qco0003h3ya1mqz6f71",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "8b450cdf-1c75-4898-bcef-407e5b40c373",
+          "actorUserId": "18a77c71-3326-4f36-aa47-a273547df73b",
+          "actorEmail": "admin@helixcrm.com",
+          "actorType": "USER",
+          "requestId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [
+              "admin"
+            ],
+            "tokenVersion": 1,
+            "permissionsCount": 25
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-02-28T00:04:18.792Z",
+          "updatedAt": "2026-02-28T00:04:18.792Z",
+          "correlationId": null
+        },
+        {
+          "id": "cmm5ja33k00033kd8ljd1d2kl",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "8b450cdf-1c75-4898-bcef-407e5b40c373",
+          "actorUserId": "18a77c71-3326-4f36-aa47-a273547df73b",
+          "actorEmail": "admin@helixcrm.com",
+          "actorType": "USER",
+          "requestId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [
+              "admin"
+            ],
+            "tokenVersion": 1,
+            "permissionsCount": 25
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-02-27T23:38:55.664Z",
+          "updatedAt": "2026-02-27T23:38:55.664Z",
+          "correlationId": null
+        },
+        {
+          "id": "cmm5i6aot00035vbnurp89f75",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "8b450cdf-1c75-4898-bcef-407e5b40c373",
+          "actorUserId": "18a77c71-3326-4f36-aa47-a273547df73b",
+          "actorEmail": "admin@helixcrm.com",
+          "actorType": "USER",
+          "requestId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [
+              "admin"
+            ],
+            "tokenVersion": 1,
+            "permissionsCount": 25
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-02-27T23:07:59.262Z",
+          "updatedAt": "2026-02-27T23:07:59.262Z",
+          "correlationId": null
+        },
+        {
+          "id": "cmm5aclr70003zapd0v3vd5hp",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "8b450cdf-1c75-4898-bcef-407e5b40c373",
+          "actorUserId": "18a77c71-3326-4f36-aa47-a273547df73b",
+          "actorEmail": "admin@helixcrm.com",
+          "actorType": "USER",
+          "requestId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [
+              "admin"
+            ],
+            "tokenVersion": 1,
+            "permissionsCount": 25
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-02-27T19:28:56.611Z",
+          "updatedAt": "2026-02-27T19:28:56.611Z",
+          "correlationId": null
+        },
+        {
+          "id": "cmm4ljz4q0003hrb11lpv99m5",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "8b450cdf-1c75-4898-bcef-407e5b40c373",
+          "actorUserId": "18a77c71-3326-4f36-aa47-a273547df73b",
+          "actorEmail": "admin@helixcrm.com",
+          "actorType": "USER",
+          "requestId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [
+              "admin"
+            ],
+            "tokenVersion": 1,
+            "permissionsCount": 25
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-02-27T07:54:50.138Z",
+          "updatedAt": "2026-02-27T07:54:50.138Z",
+          "correlationId": null
+        },
+        {
+          "id": "cmm4kbhs80003qdxzf5wyrkct",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "8b450cdf-1c75-4898-bcef-407e5b40c373",
+          "actorUserId": "18a77c71-3326-4f36-aa47-a273547df73b",
+          "actorEmail": "admin@helixcrm.com",
+          "actorType": "USER",
+          "requestId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [
+              "admin"
+            ],
+            "tokenVersion": 1,
+            "permissionsCount": 25
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-02-27T07:20:14.792Z",
+          "updatedAt": "2026-02-27T07:20:14.792Z",
+          "correlationId": null
+        },
+        {
+          "id": "cmm4j2ldj0003tuyzbzin13cr",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "8b450cdf-1c75-4898-bcef-407e5b40c373",
+          "actorUserId": "18a77c71-3326-4f36-aa47-a273547df73b",
+          "actorEmail": "admin@helixcrm.com",
+          "actorType": "USER",
+          "requestId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [
+              "admin"
+            ],
+            "tokenVersion": 1,
+            "permissionsCount": 25
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-02-27T06:45:19.927Z",
+          "updatedAt": "2026-02-27T06:45:19.927Z",
+          "correlationId": null
+        },
+        {
+          "id": "cmm4i1hhv0003102ewttfhx96",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "6620ee6e-143c-44a2-a6a3-d8b4d44f65be",
+          "actorUserId": "3163357d-dbe8-4e24-932c-ff79ca722866",
+          "actorEmail": "test@helixcrm.com",
+          "actorType": "USER",
+          "requestId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [],
+            "tokenVersion": 1,
+            "permissionsCount": 0
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-02-27T06:16:28.627Z",
+          "updatedAt": "2026-02-27T06:16:28.627Z",
+          "correlationId": null
+        },
+        {
+          "id": "cmm4fjxwl0003tvbwcnyomz6o",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "6620ee6e-143c-44a2-a6a3-d8b4d44f65be",
+          "actorUserId": "3163357d-dbe8-4e24-932c-ff79ca722866",
+          "actorEmail": "test@helixcrm.com",
+          "actorType": "USER",
+          "requestId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [],
+            "tokenVersion": 1,
+            "permissionsCount": 0
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-02-27T05:06:50.854Z",
+          "updatedAt": "2026-02-27T05:06:50.854Z",
+          "correlationId": null
+        },
+        {
+          "id": "cmm4fhn2i0003za8h3678tet0",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "6620ee6e-143c-44a2-a6a3-d8b4d44f65be",
+          "actorUserId": "3163357d-dbe8-4e24-932c-ff79ca722866",
+          "actorEmail": "test@helixcrm.com",
+          "actorType": "USER",
+          "requestId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [],
+            "tokenVersion": 1,
+            "permissionsCount": 0
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-02-27T05:05:03.499Z",
+          "updatedAt": "2026-02-27T05:05:03.499Z",
+          "correlationId": null
+        },
+        {
+          "id": "cmm4fea3g00091kqeslcdgt0o",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "6620ee6e-143c-44a2-a6a3-d8b4d44f65be",
+          "actorUserId": "3163357d-dbe8-4e24-932c-ff79ca722866",
+          "actorEmail": "test@helixcrm.com",
+          "actorType": "USER",
+          "requestId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [],
+            "tokenVersion": 1,
+            "permissionsCount": 0
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-02-27T05:02:26.716Z",
+          "updatedAt": "2026-02-27T05:02:26.716Z",
+          "correlationId": null
+        },
+        {
+          "id": "cmm4fcabr00051kqes92rftaq",
+          "action": "LOGIN_SUCCESS",
+          "entityType": "AUTH",
+          "entityId": null,
+          "organizationId": "6620ee6e-143c-44a2-a6a3-d8b4d44f65be",
+          "actorUserId": "3163357d-dbe8-4e24-932c-ff79ca722866",
+          "actorEmail": "test@helixcrm.com",
+          "actorType": "USER",
+          "requestId": null,
+          "severity": "MEDIUM",
+          "metadata": {
+            "roles": [],
+            "tokenVersion": 1,
+            "permissionsCount": 0
+          },
+          "ipAddress": "::1",
+          "userAgent": "curl/8.17.0",
+          "createdAt": "2026-02-27T05:00:53.703Z",
+          "updatedAt": "2026-02-27T05:00:53.703Z",
+          "correlationId": null
+        }
+      ],
+      "verification": {
+        "hash": "476ef00f4fc7779719cdb5d217f75942d0f8905cac470681ce4a92243edd7bb9",
+        "source": "audit_logs",
+        "verified": true
+      },
+      "summary": {
+        "totalAttempts": 28,
+        "successCount": 28,
+        "failureCount": 0,
+        "uniqueUsers": 2,
+        "timeRange": {
+          "start": "2026-01-30T08:48:37.498Z",
+          "end": "2026-03-01T08:48:37.528Z"
+        }
+      }
+    },
+    {
+      "controlId": "CC6.2",
+      "controlName": "Identification and Authentication",
+      "criteria": "Security",
+      "evidenceType": "USER_ACCOUNTS",
+      "collectedAt": "2026-03-01T08:48:37.540Z",
+      "data": [
+        {
+          "id": "18a77c71-3326-4f36-aa47-a273547df73b",
+          "email": "admin@helixcrm.com",
+          "emailVerified": true,
+          "lastLoginAt": "2026-02-28T04:20:40.528Z",
+          "failedLoginAttempts": 0,
+          "lockedUntil": null
+        },
+        {
+          "id": "3163357d-dbe8-4e24-932c-ff79ca722866",
+          "email": "test@helixcrm.com",
+          "emailVerified": true,
+          "lastLoginAt": "2026-02-28T10:31:17.768Z",
+          "failedLoginAttempts": 0,
+          "lockedUntil": null
+        },
+        {
+          "id": "ff284528-4bb7-49b5-84e5-c13e5da81d63",
+          "email": "manager@helixcrm.com",
+          "emailVerified": true,
+          "lastLoginAt": null,
+          "failedLoginAttempts": 0,
+          "lockedUntil": null
+        }
+      ],
+      "verification": {
+        "hash": "9c43bcf592bbe751613aebf90605000117c2fcb8bbfc9f3eaafabdf96dce6be9",
+        "source": "users",
+        "verified": true
+      },
+      "summary": {
+        "totalActiveUsers": 3,
+        "verifiedUsers": 3,
+        "lockedAccounts": 0,
+        "recentLogins": 2
+      }
+    },
+    {
+      "controlId": "CC6.6",
+      "controlName": "Security Event Monitoring",
+      "criteria": "Security",
+      "evidenceType": "SECURITY_EVENTS",
+      "collectedAt": "2026-03-01T08:48:37.543Z",
+      "data": [],
+      "verification": {
+        "hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "source": "audit_logs",
+        "verified": true
+      },
+      "summary": {
+        "totalEvents": 0,
+        "bySeverity": {
+          "HIGH": 0,
+          "CRITICAL": 0
+        },
+        "byType": {
+          "CSRF_FAILURE": 0,
+          "RATE_LIMIT": 0,
+          "SYSTEM_ERROR": 0,
+          "PERMISSION_DENIED": 0
+        }
+      }
+    },
+    {
+      "controlId": "A1.1",
+      "controlName": "Performance and Capacity Monitoring",
+      "criteria": "Availability",
+      "evidenceType": "PERFORMANCE_RESULTS",
+      "collectedAt": "2026-03-01T08:48:37.543Z",
+      "data": [],
+      "verification": {
+        "hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "source": "performance_test_results",
+        "verified": false
+      },
+      "summary": {
+        "totalResults": 0,
+        "latestResult": null,
+        "scenariosTested": []
+      }
+    },
+    {
+      "controlId": "A1.2",
+      "controlName": "Environmental Threat Protection",
+      "criteria": "Availability",
+      "evidenceType": "HEALTH_CHECKS",
+      "collectedAt": "2026-03-01T08:48:37.546Z",
+      "data": [],
+      "verification": {
+        "hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "source": "audit_logs",
+        "verified": true
+      },
+      "summary": {
+        "totalChecks": 0,
+        "timeRange": {
+          "start": "2026-02-22T08:48:37.543Z",
+          "end": "2026-03-01T08:48:37.546Z"
+        },
+        "checkFrequency": "5-minute intervals"
+      }
+    },
+    {
+      "controlId": "C1.1",
+      "controlName": "Confidential Information Protection",
+      "criteria": "Confidentiality",
+      "evidenceType": "TENANT_ISOLATION",
+      "collectedAt": "2026-03-01T08:48:37.556Z",
+      "data": {
+        "tenantCount": 2,
+        "userCountByTenant": [
+          {
+            "_count": 2,
+            "organizationId": "8b450cdf-1c75-4898-bcef-407e5b40c373"
+          },
+          {
+            "_count": 1,
+            "organizationId": "6620ee6e-143c-44a2-a6a3-d8b4d44f65be"
+          }
+        ]
+      },
+      "verification": {
+        "hash": "1d980bc9c84a94b70d934eb3a6a6371e82333389a28f514de4ae4d21dfb546ae",
+        "source": "database_counts",
+        "verified": true
+      },
+      "summary": {
+        "activeTenants": 2,
+        "totalUsers": 3,
+        "averageUsersPerTenant": 1.5
+      }
+    },
+    {
+      "controlId": "PI1.1",
+      "controlName": "Processing Integrity",
+      "criteria": "ProcessingIntegrity",
+      "evidenceType": "INTEGRITY_VERIFICATION",
+      "collectedAt": "2026-03-01T08:48:37.562Z",
+      "data": [
+        {
+          "id": "5105ca7e-dd35-48f1-b872-1b459bad2e2d",
+          "verificationTimestamp": "2026-02-27T23:02:44.660Z",
+          "status": "FAILURE",
+          "totalEvents": 9,
+          "brokenAtIndex": 1,
+          "verificationDurationMs": 2356,
+          "details": {
+            "actualHash": "8b5fc3168c03b49bd181a191b2642b7242e45091ecf08da6067e901b74e83ace",
+            "verifiedAt": "2026-02-27T23:02:44.656Z",
+            "brokenAtHash": "8b5fc3168c03b49bd181a191b2642b7242e45091ecf08da6067e901b74e83ace",
+            "expectedHash": "e897911af7cf03b79b2e54d4c01170f9013a16937b53de73229c494b8f8e049a"
+          }
+        },
+        {
+          "id": "a3f1ce15-35d7-49cf-882e-2fa06d54c4e4",
+          "verificationTimestamp": "2026-02-25T23:06:19.586Z",
+          "status": "SUCCESS",
+          "totalEvents": 0,
+          "brokenAtIndex": null,
+          "verificationDurationMs": 3231,
+          "details": {
+            "verifiedAt": "2026-02-25T23:06:19.577Z"
+          }
+        }
+      ],
+      "verification": {
+        "hash": "25fd69fcd25399e3feab84de8953808b6f39509dcdab31b30446849c036547cd",
+        "source": "audit_integrity_verification",
+        "verified": false
+      },
+      "summary": {
+        "totalVerifications": 2,
+        "successCount": 1,
+        "failureCount": 1,
+        "verificationFrequency": "Daily (2 AM)",
+        "chainLength": 9
+      }
+    },
+    {
+      "controlId": "P1.1",
+      "controlName": "Privacy Notice and Communication",
+      "criteria": "Privacy",
+      "evidenceType": "DATA_RETENTION",
+      "collectedAt": "2026-03-01T08:48:37.566Z",
+      "data": {
+        "auditLogs": 0,
+        "users": 0,
+        "policies": {
+          "retentionPeriod": "365 days for audit logs",
+          "deletionSchedule": "Daily cleanup job",
+          "backupRetention": "30 days"
+        }
+      },
+      "verification": {
+        "hash": "3ef1065ab25c822cc7356ae5f5305dba7886a27cef44f01c162207a7ac5236cd",
+        "source": "database_counts",
+        "verified": true
+      },
+      "summary": {
+        "oldAuditLogs": 0,
+        "deletedUsers": 0,
+        "retentionPolicies": {
+          "retentionPeriod": "365 days for audit logs",
+          "deletionSchedule": "Daily cleanup job",
+          "backupRetention": "30 days"
+        }
+      }
+    }
+  ],
+  "verification": {
+    "packageHash": "19f826f59c4168fc35f4d2d49ba9e6d9ed85355c2c7f4b96cf724993ced4c1a3",
+    "verificationTimestamp": "2026-03-01T08:48:37.567Z",
+    "verifiedBy": "Soc2EvidenceService"
+  }
+}

@@ -64,15 +64,15 @@ export const Toast: React.FC<ToastProps> = ({ id, title, description, type, onDi
   // Auto-dismiss on mouse leave if user hasn't hovered
   const [hasHovered, setHasHovered] = useState(false);
 
-  useEffect(() => {
-    if (!hasHovered) {
-      const timer = setTimeout(() => {
-        handleDismiss();
-      }, 5000); // Auto-dismiss after 5 seconds
-
-      return () => clearTimeout(timer);
-    }
-  }, [hasHovered]);
+useEffect(() => {
+  if (!hasHovered) {
+    const timer = setTimeout(() => {
+      handleDismiss();
+    }, 5000);
+    return () => clearTimeout(timer);
+  }
+  return undefined; // Add this line
+}, [hasHovered]);
 
   return (
     <div

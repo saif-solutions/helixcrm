@@ -1,5 +1,6 @@
 import { NestFactory, Reflector } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import {
@@ -18,7 +19,7 @@ async function bootstrap() {
   });
 
   // ==================== LOGGING MIDDLEWARE REGISTRATION ====================
-  logger.log('� Registering middleware...');
+  logger.log('📋 Registering middleware...');
 
   // ==================== ESSENTIAL MIDDLEWARE ====================
   // 1. Cookie parser MUST come first
@@ -32,7 +33,7 @@ async function bootstrap() {
         directives: {
           defaultSrc: ["'self'"],
           styleSrc: ["'self'", "'unsafe-inline'"],
-          scriptSrc: ["'self'", "'unsafe-inline'"],
+          scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // Added unsafe-eval for Swagger
           imgSrc: ["'self'", 'data:', 'https:'],
         },
       },
@@ -42,7 +43,55 @@ async function bootstrap() {
   );
   logger.log('✅ Security headers (Helmet) registered');
 
-  // ==================== CRITICAL: GLOBAL VALIDATION PIPE ====================
+  // ==================== SWAGGER DOCUMENTATION ====================
+  logger.log('📚 Setting up Swagger documentation...');
+  
+  const config = new DocumentBuilder()
+    .setTitle('HelixCRM API')
+    .setDescription('Enterprise CRM API with multi-tenant isolation')
+    .setVersion('1.0')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        name: 'JWT',
+        description: 'Enter JWT token',
+        in: 'header',
+      },
+      'access-token',
+    )
+    .addCookieAuth('refresh_token')
+    .addApiKey(
+      {
+        type: 'apiKey',
+        name: 'X-CSRF-Token',
+        in: 'header',
+        description: 'CSRF token for mutating requests',
+      },
+      'csrf',
+    )
+    .addServer(`http://localhost:${process.env.PORT || 3001}`, 'Local server')
+    .build();
+    
+  const document = SwaggerModule.createDocument(app, config);
+  
+  // Setup Swagger UI with custom options
+  SwaggerModule.setup('api/docs', app, document, {
+    swaggerOptions: {
+      persistAuthorization: true,
+      tagsSorter: 'alpha',
+      operationsSorter: 'alpha',
+      docExpansion: 'none',
+      filter: true,
+      displayRequestDuration: true,
+    },
+    customSiteTitle: 'HelixCRM API Documentation',
+  });
+  
+  logger.log('✅ Swagger documentation available at /api/docs');
+
+  // ==================== GLOBAL VALIDATION PIPE ====================
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -67,7 +116,7 @@ async function bootstrap() {
   });
   logger.log('✅ API versioning enabled (v1)');
 
-    // ==================== GLOBAL PREFIX ====================
+  // ==================== GLOBAL PREFIX ====================
   app.setGlobalPrefix('api');
   logger.log('✅ Global prefix set to /api');
   
@@ -93,8 +142,8 @@ async function bootstrap() {
   await app.init();
   logger.log('✅ Application initialized');
 
-  // ==================== CONFIGURATION VALIDATION (RUNS AFTER APP INIT) ====================
-  logger.log('� Running configuration validation...');
+  // ==================== CONFIGURATION VALIDATION ====================
+  logger.log('🔍 Running configuration validation...');
   try {
     const configValidationService = app.get(ConfigValidationService);
     if (
@@ -133,8 +182,7 @@ async function bootstrap() {
     );
   }
 
-  // ==================== DEBUG: LOG ALL REGISTERED ROUTES ====================
-  // This helps verify that all modules are loaded correctly
+  // ==================== DEBUG ROUTES ====================
   if (process.env.NODE_ENV === 'development') {
     const server = app.getHttpServer();
     const router = server._events.request._router;
@@ -154,7 +202,7 @@ async function bootstrap() {
         );
 
       if (routes.length > 0) {
-        logger.log(`� Registered ${routes.length} analytics routes:`);
+        logger.log(`📊 Registered ${routes.length} analytics routes:`);
         routes.forEach((route) => logger.log(`  ${route}`));
       } else {
         logger.warn('⚠️ No analytics routes found in router stack');
@@ -167,12 +215,13 @@ async function bootstrap() {
   await app.listen(port);
 
   const url = await app.getUrl();
-  logger.log(`� Server running on: ${url}`);
-  logger.log(`� API: ${url}/api/v1`);
+  logger.log(`🚀 Server running on: ${url}`);
+  logger.log(`📚 API: ${url}/api/v1`);
+  logger.log(`📖 Swagger Docs: ${url}/api/docs`);
   logger.log(`✅ Global ValidationPipe: ACTIVE`);
-  logger.log(`� Security: ACTIVE`);
-  logger.log(`� CORS: Enabled for ${corsOrigin}`);
-  logger.log(`� Environment: ${process.env.NODE_ENV || 'development'}`);
+  logger.log(`🔒 Security: ACTIVE`);
+  logger.log(`🌐 CORS: Enabled for ${corsOrigin}`);
+  logger.log(`⚙️ Environment: ${process.env.NODE_ENV || 'development'}`);
 
   // Log analytics module status
   if (
@@ -180,10 +229,10 @@ async function bootstrap() {
     process.env.ANALYTICS_EXPORT_ENABLED !== 'false'
   ) {
     logger.log(
-      `� Analytics: Enabled with Redis exports (host: ${process.env.REDIS_HOST})`,
+      `📈 Analytics: Enabled with Redis exports (host: ${process.env.REDIS_HOST})`,
     );
   } else {
-    logger.log(`� Analytics: Enabled (read-only, exports disabled)`);
+    logger.log(`📈 Analytics: Enabled (read-only, exports disabled)`);
   }
 }
 

@@ -13,6 +13,9 @@ import {
   createDefaultDialogActions,
   DialogEvent,
   normalizeDialogEvent,
+  OverlayRenderParams,
+  HeaderRenderParams,
+  FooterRenderParams,
 } from './Dialog.types';
 import {
   dialogClasses,
@@ -71,17 +74,6 @@ const DialogHeader = React.forwardRef<
     const context = useDialogHeaderContext();
     const { state, actions, accessibility, utils, hasCloseButton } = context;
 
-    const shouldShowCloseButton = showCloseButton && hasCloseButton;
-    const hasTitle = Boolean(title);
-    const hasDescription = Boolean(description);
-    const hasIcon = Boolean(icon);
-    const hasHeaderContent = hasTitle || hasDescription || hasIcon || children;
-
-    if (!hasHeaderContent && !shouldShowCloseButton) {
-      return null;
-    }
-
-    // FIXED: Use raw event - normalization happens in context
     const handleCloseClick = React.useCallback(
       (event: React.MouseEvent) => {
         event.preventDefault();
@@ -92,11 +84,20 @@ const DialogHeader = React.forwardRef<
           return;
         }
 
-        // Pass raw React event - context will normalize it
         actions.onClose(event);
       },
       [state.persistent, actions]
     );
+
+    const shouldShowCloseButton = showCloseButton && hasCloseButton;
+    const hasTitle = Boolean(title);
+    const hasDescription = Boolean(description);
+    const hasIcon = Boolean(icon);
+    const hasHeaderContent = hasTitle || hasDescription || hasIcon || children;
+
+    if (!hasHeaderContent && !shouldShowCloseButton) {
+      return null;
+    }
 
     const headerClass = cn(dialogClasses.header.base, dialogClasses.header.align[align], className);
 
@@ -232,15 +233,12 @@ const DialogFooter = React.forwardRef<
           return;
         }
 
-        // Call action's onClick handler
         if (action.onClick) {
           action.onClick(event);
         }
 
-        // Handle action through context
         contextActions.handleActionClick(action);
 
-        // Close dialog for non-persistent actions (unless action prevents it)
         if (!state.persistent && action.type !== 'reset') {
           contextActions.onClose(event);
         }
@@ -248,7 +246,6 @@ const DialogFooter = React.forwardRef<
       [state.persistent, contextActions]
     );
 
-    // Improved test ID sanitization
     const getActionTestId = React.useCallback(
       (action: DialogAction) => {
         const actionId =
@@ -280,7 +277,7 @@ const DialogFooter = React.forwardRef<
       className
     );
 
-    const renderActions = () => {
+    const renderActions = (): React.ReactNode => {
       if (footerActions && Array.isArray(footerActions) && footerActions.length > 0) {
         return (
           <div className={dialogClasses.footer.actions}>
@@ -356,7 +353,7 @@ const DialogFooter = React.forwardRef<
 DialogFooter.displayName = 'DialogFooter';
 
 /**
- * Dialog Overlay Component (Internal) - FIXED: Proper event blocking
+ * Dialog Overlay Component (Internal)
  */
 const DialogOverlay = React.forwardRef<
   HTMLDivElement,
@@ -383,23 +380,17 @@ const DialogOverlay = React.forwardRef<
       closeOnOverlayClick = true,
       onClose,
       triggerPersistentFeedback,
-      getTestId = (element: any) => `dialog-${element}`,
+      getTestId = (element: 'overlay' | 'header' | 'body' | 'footer' | 'container' | 'close-button' | 'action') => `dialog-${element}`,
       ...props
     },
     ref
   ) => {
-    // In DialogOverlay component - REPLACE THE ENTIRE handleOverlayClick function:
-
-    // In DialogOverlay component - REPLACE THE ENTIRE handleOverlayClick function:
-
     const handleOverlayClick = React.useCallback(
       (event: React.MouseEvent) => {
-        // CRITICAL FIX: Always prevent default for overlay clicks
         event.preventDefault();
         event.stopPropagation();
 
         if (!closeOnOverlayClick) {
-          // Don't trigger any close behavior when closeOnOverlayClick is false
           return;
         }
 
@@ -408,7 +399,6 @@ const DialogOverlay = React.forwardRef<
           return;
         }
 
-        // Only close if clicking directly on overlay (not bubbled events)
         if (event.target === event.currentTarget) {
           onClose?.(event);
         }
@@ -418,10 +408,8 @@ const DialogOverlay = React.forwardRef<
 
     const handleOverlayMouseDown = React.useCallback(
       (event: React.MouseEvent) => {
-        // Always prevent default to stop text selection
         event.preventDefault();
 
-        // Also stop propagation if closeOnOverlayClick is false
         if (!closeOnOverlayClick) {
           event.stopPropagation();
         }
@@ -450,7 +438,7 @@ const DialogOverlay = React.forwardRef<
         onClick={handleClick}
         onMouseDown={handleOverlayMouseDown}
         data-testid={getTestId('overlay')}
-        data-dialog-overlay="true" // ADD THIS
+        data-dialog-overlay="true"
         aria-hidden="true"
         {...props}
       />
@@ -545,13 +533,11 @@ export const Dialog = React.forwardRef<DialogRef, DialogProps>((props, forwarded
 
     // Transition properties
     transitionDuration = 200,
-    transitionTimingFunction = 'ease-in-out',
     unmountOnExit = true,
 
     // Portal properties
     portal = true,
     portalContainer,
-    portalClassName,
 
     // Styling
     className,
@@ -645,7 +631,6 @@ export const Dialog = React.forwardRef<DialogRef, DialogProps>((props, forwarded
   const triggerPersistentFeedback = React.useCallback(() => {
     if (!persistent) return;
 
-    // Clear any existing timer
     if (persistentTimerRef.current) {
       window.clearTimeout(persistentTimerRef.current);
       persistentTimerRef.current = null;
@@ -653,11 +638,10 @@ export const Dialog = React.forwardRef<DialogRef, DialogProps>((props, forwarded
 
     setShowPersistentFeedback(true);
 
-    // Fallback timer ONLY for browsers that don't fire animationend
     persistentTimerRef.current = window.setTimeout(() => {
       setShowPersistentFeedback(false);
       persistentTimerRef.current = null;
-    }, 500); // Slightly longer than CSS animation
+    }, 500);
   }, [persistent]);
 
   const handleClose = React.useCallback(
@@ -671,10 +655,8 @@ export const Dialog = React.forwardRef<DialogRef, DialogProps>((props, forwarded
         return;
       }
 
-      // Simply pass the original event to onClose
       onClose(event);
 
-      // Prevent default/stop propagation for React events
       if (event) {
         const normalized = normalizeDialogEvent(event);
         if (normalized?.isReactEvent) {
@@ -703,16 +685,18 @@ export const Dialog = React.forwardRef<DialogRef, DialogProps>((props, forwarded
     [onDialogAnimationEnd]
   );
 
+  // FIX 6: Add explicit return type and handle properly
   const handleInteractOutside = React.useCallback(
-    (event?: DialogEvent) => {
-      onInteractOutside?.(event!);
+    (event?: DialogEvent): void => {
+      if (onInteractOutside && event) {
+        onInteractOutside(event);
+      }
     },
     [onInteractOutside]
   );
 
   const handleActionClick = React.useCallback(
     (action: DialogAction) => {
-      // Analytics tracking
       if (process.env.NODE_ENV === 'development' && dataAnalytics) {
         console.debug('Dialog Action:', {
           action: 'dialog_action_click',
@@ -733,14 +717,12 @@ export const Dialog = React.forwardRef<DialogRef, DialogProps>((props, forwarded
   // 4. FOCUS MANAGEMENT & TRAP IMPLEMENTATION
   // ============================================================================
 
-  // Store last active element when dialog opens - FIX 3
   React.useEffect(() => {
     if (open) {
       lastActiveElementRef.current = document.activeElement as HTMLElement | null;
     }
   }, [open]);
 
-  // Focus trap implementation - FIX 2
   React.useEffect(() => {
     if (!open || !dialogRef.current || !lockFocus) return;
 
@@ -755,7 +737,6 @@ export const Dialog = React.forwardRef<DialogRef, DialogProps>((props, forwarded
       const firstElement = focusableElements[0];
       const lastElement = focusableElements[focusableElements.length - 1];
 
-      // Only prevent default when we need to wrap focus
       if (event.shiftKey && document.activeElement === firstElement) {
         event.preventDefault();
         event.stopPropagation();
@@ -775,10 +756,9 @@ export const Dialog = React.forwardRef<DialogRef, DialogProps>((props, forwarded
 
   const hasAutoFocusedRef = React.useRef(false);
 
-  // Auto-focus first focusable element on open
   React.useEffect(() => {
     if (!open || !dialogRef.current || !autoFocus) return;
-    if (hasAutoFocusedRef.current) return; // Already focused
+    if (hasAutoFocusedRef.current) return;
 
     hasAutoFocusedRef.current = true;
 
@@ -789,7 +769,6 @@ export const Dialog = React.forwardRef<DialogRef, DialogProps>((props, forwarded
         initialFocusRef.current.focus();
       } else {
         const focusableElements = getFocusableElements(container);
-        // Skip close button when auto-focusing
         const focusableWithoutClose = focusableElements.filter(
           (el) => el.getAttribute('aria-label') !== 'Close dialog'
         );
@@ -805,10 +784,6 @@ export const Dialog = React.forwardRef<DialogRef, DialogProps>((props, forwarded
     };
 
     queueMicrotask(focusInitialElement);
-
-    return () => {
-      // Cleanup: reset on unmount
-    };
   }, [open, autoFocus, initialFocusRef]);
 
   React.useEffect(() => {
@@ -817,40 +792,12 @@ export const Dialog = React.forwardRef<DialogRef, DialogProps>((props, forwarded
     }
   }, [open]);
 
-  // Restore focus on close
-  React.useEffect(() => {
-    if (!open && lastActiveElementRef.current) {
-      const elementToFocus = returnFocusRef?.current || lastActiveElementRef.current;
-
-      // Debug logging for development
-      if (process.env.NODE_ENV === 'development') {
-        console.debug('Dialog closing, restoring focus to:', {
-          element: elementToFocus?.tagName,
-          id: elementToFocus?.id,
-          className: elementToFocus?.className,
-        });
-      }
-
-      queueMicrotask(() => {
-        if (elementToFocus && document.contains(elementToFocus)) {
-          elementToFocus.focus();
-        }
-      });
-
-      return () => {
-        // No cleanup needed
-      };
-    }
-  }, [open, returnFocusRef]);
-
   // ============================================================================
   // 5. EFFECTS & LIFECYCLE
   // ============================================================================
 
-  // Cleanup persistent timer on unmount
   React.useEffect(() => {
     return () => {
-      // Cleanup persistent timer on unmount
       if (persistentTimerRef.current) {
         window.clearTimeout(persistentTimerRef.current);
         persistentTimerRef.current = null;
@@ -858,21 +805,17 @@ export const Dialog = React.forwardRef<DialogRef, DialogProps>((props, forwarded
     };
   }, []);
 
-  // Handle open/close transitions
   React.useEffect(() => {
     if (open) {
-      // Opening animation
       setIsVisible(true);
       setAnimationPhase('enter');
       setIsAnimating(true);
 
-      // Start enter animation
       const enterTimer = setTimeout(() => {
         setAnimationPhase('enter-active');
         handleAnimationStart('enter');
       }, 10);
 
-      // Complete enter animation
       const enterActiveTimer = setTimeout(() => {
         setAnimationPhase('entered');
         setIsAnimating(false);
@@ -885,17 +828,14 @@ export const Dialog = React.forwardRef<DialogRef, DialogProps>((props, forwarded
         clearTimeout(enterActiveTimer);
       };
     } else if (isVisible) {
-      // Closing animation
       setAnimationPhase('exit');
       setIsAnimating(true);
 
-      // Start exit animation
       const exitTimer = setTimeout(() => {
         setAnimationPhase('exit-active');
         handleAnimationStart('exit');
       }, 10);
 
-      // Complete exit animation
       const exitActiveTimer = setTimeout(() => {
         setAnimationPhase('exited');
         setIsVisible(false);
@@ -919,7 +859,6 @@ export const Dialog = React.forwardRef<DialogRef, DialogProps>((props, forwarded
     onCloseComplete,
   ]);
 
-  // Prevent body scroll when dialog is open
   React.useEffect(() => {
     if (!preventScroll || !open) return;
 
@@ -930,7 +869,6 @@ export const Dialog = React.forwardRef<DialogRef, DialogProps>((props, forwarded
     };
   }, [open, preventScroll]);
 
-  // Handle escape key press - UPDATED with fix for closeOnEscape=false
   React.useEffect(() => {
     if (!open) return;
 
@@ -940,7 +878,6 @@ export const Dialog = React.forwardRef<DialogRef, DialogProps>((props, forwarded
         event.stopPropagation();
 
         if (persistent) {
-          // For persistent dialogs, trigger shake feedback
           triggerPersistentFeedback();
           onInteractOutside?.(event);
           return;
@@ -962,20 +899,16 @@ export const Dialog = React.forwardRef<DialogRef, DialogProps>((props, forwarded
     };
   }, [open, closeOnEscape, persistent, handleClose, triggerPersistentFeedback, onInteractOutside]);
 
-  // Handle outside clicks
-  // In Dialog.tsx - UPDATE THE handleOutsideClick EFFECT (around line 700):
   React.useEffect(() => {
     if (!open || !closeOnInteractOutside || persistent) return;
 
     const handleOutsideClick = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
 
-      // Skip clicks on dialog container or overlay
       if (target.closest('[data-dialog-container]') || target.closest('[data-dialog-overlay]')) {
         return;
       }
 
-      // Only handle clicks outside both dialog and overlay
       if (dialogRef.current && !dialogRef.current.contains(event.target as Node)) {
         event.preventDefault();
         event.stopPropagation();
@@ -989,6 +922,7 @@ export const Dialog = React.forwardRef<DialogRef, DialogProps>((props, forwarded
       document.removeEventListener('mousedown', handleOutsideClick, true);
     };
   }, [open, closeOnInteractOutside, persistent, handleClose]);
+
   // ============================================================================
   // 6. CONTEXT VALUES
   // ============================================================================
@@ -1047,7 +981,7 @@ export const Dialog = React.forwardRef<DialogRef, DialogProps>((props, forwarded
     ]
   );
 
-  const contextAccessibility: DialogAccessibilityContextType = React.useMemo(() => dialogIds, []);
+  const contextAccessibility: DialogAccessibilityContextType = React.useMemo(() => dialogIds, [dialogIds]);
 
   const contextRefs: DialogRefsContextType = React.useMemo(
     () => ({
@@ -1062,7 +996,7 @@ export const Dialog = React.forwardRef<DialogRef, DialogProps>((props, forwarded
 
   const contextUtils: DialogUtilitiesContextType = React.useMemo(
     () => ({
-      getTestId: (element: string) => getDialogTestId(testId, element as any, nestedLevel),
+      getTestId: (element: string) => getDialogTestId(testId, element as 'overlay' | 'header' | 'body' | 'footer' | 'container' | 'close-button' | 'action', nestedLevel),
       portalContainer: portal ? getPortalContainer(portalContainer, nestedLevel) : null,
     }),
     [testId, nestedLevel, portal, portalContainer]
@@ -1072,7 +1006,6 @@ export const Dialog = React.forwardRef<DialogRef, DialogProps>((props, forwarded
   // 7. RENDER LOGIC
   // ============================================================================
 
-  // Get default actions based on variant
   const defaultActions = React.useMemo(() => {
     if (variant === 'alert') return createDefaultDialogActions('alert');
     if (variant === 'confirm') return createDefaultDialogActions('confirm');
@@ -1082,29 +1015,23 @@ export const Dialog = React.forwardRef<DialogRef, DialogProps>((props, forwarded
     return createDefaultDialogActions('default');
   }, [variant]);
 
-  // Determine if we should render header/footer
-  const shouldRenderHeader = React.useMemo(() => {
+  const shouldRenderHeader = React.useMemo((): boolean => {
     if (typeof header === 'boolean') {
       return header && (title || description || icon);
     }
     return true;
   }, [header, title, description, icon]);
 
-  const shouldRenderFooter = React.useMemo(() => {
+  // FIX 4: Simplify shouldRenderFooter to always return boolean
+  const shouldRenderFooter = React.useMemo((): boolean => {
     if (typeof footer === 'boolean') {
-      return footer; // true = show, false = hide
+      return footer;
     }
 
-    // If footer is an object, check if it has actions or children
-    if (footer && typeof footer === 'object') {
-      const hasActions = footer.actions && footer.actions.length > 0;
-      return hasActions || true; // Always render if footer object exists
-    }
-
+    // If footer is an object, we want to render it
     return true;
   }, [footer]);
 
-  // Get header props
   const headerProps = React.useMemo(() => {
     if (typeof header === 'object' && header !== null) {
       return {
@@ -1127,11 +1054,8 @@ export const Dialog = React.forwardRef<DialogRef, DialogProps>((props, forwarded
     };
   }, [header, title, description, icon, showCloseButton, headerClassName]);
 
-  // Get footer props
   const footerProps = React.useMemo(() => {
     if (typeof footer === 'object' && footer !== null) {
-      // CRITICAL FIX: If custom actions are provided, use ONLY those
-      // Don't fall back to default actions
       const shouldUseDefaultActions = !footer.actions || footer.actions.length === 0;
 
       return {
@@ -1143,7 +1067,6 @@ export const Dialog = React.forwardRef<DialogRef, DialogProps>((props, forwarded
       };
     }
 
-    // If footer is true or not specified, use default actions
     if (footer === true || footer === undefined) {
       return {
         actions: defaultActions,
@@ -1153,11 +1076,9 @@ export const Dialog = React.forwardRef<DialogRef, DialogProps>((props, forwarded
       };
     }
 
-    // If footer is false, return null to hide it
     return null;
   }, [footer, defaultActions, footerClassName]);
 
-  // Dialog classes
   const dialogClass = React.useMemo(
     () =>
       cn(
@@ -1178,23 +1099,134 @@ export const Dialog = React.forwardRef<DialogRef, DialogProps>((props, forwarded
     ]
   );
 
-  // Content classes
   const contentClass = React.useMemo(
     () => cn('dialog-content-wrapper', contentClassName),
     [contentClassName]
   );
 
-  // Portal container
   const targetContainer = React.useMemo(() => {
     if (!portal) return null;
     return getPortalContainer(portalContainer, nestedLevel);
   }, [portal, portalContainer, nestedLevel]);
 
   // ============================================================================
-  // 8. RENDER CONTENT
+  // 8. RENDER CONTENT (SAFE PATTERN - NO REF ACCESS DURING RENDER)
   // ============================================================================
 
-  const renderDialogContent = () => (
+  // Overlay element - refs are attached to JSX, not passed to functions
+  const overlayElement = (() => {
+    if (!overlay) return null;
+
+    if (renderOverlay) {
+      // Custom render overlay with parameters - consumer attaches their own ref
+      // eslint-disable-next-line react-hooks/refs
+      return renderOverlay({
+        overlayRef,
+        isVisible,
+        handleClose: (event?: React.MouseEvent) => {
+          if (closeOnOverlayClick && !persistent) {
+            handleClose(event);
+          } else if (persistent) {
+            triggerPersistentFeedback();
+          }
+        },
+        persistent,
+        closeOnOverlayClick,
+        overlayBlur,
+        overlayClassName,
+        overlayColor,
+        overlayOpacity,
+        testId,
+        nestedLevel,
+        triggerPersistentFeedback,
+      });
+    }
+
+    // Default overlay with ref attached directly to JSX
+    return (
+      <DialogOverlay
+        ref={overlayRef}
+        visible={isVisible}
+        blur={overlayBlur}
+        className={overlayClassName}
+        persistent={persistent}
+        closeOnOverlayClick={closeOnOverlayClick}
+        onClose={handleClose}
+        triggerPersistentFeedback={triggerPersistentFeedback}
+        getTestId={(element: 'overlay' | 'header' | 'body' | 'footer' | 'container' | 'close-button' | 'action') => getDialogTestId(testId, element, nestedLevel)}
+      />
+    );
+  })();
+
+  // Header element
+  const headerElement = (() => {
+    if (!shouldRenderHeader) return null;
+
+    if (renderHeader) {
+      // Custom render header with parameters - consumer builds their own JSX
+      // eslint-disable-next-line react-hooks/refs
+      return renderHeader({
+        headerProps,
+        onClose: handleClose,
+        id: dialogIds.headerId,
+        testId,
+        nestedLevel,
+      });
+    }
+
+    // Default header with ref attached internally by DialogHeader
+    return (
+      <DialogHeader
+        {...headerProps}
+        data-testid={getDialogTestId(testId, 'header', nestedLevel)}
+      />
+    );
+  })();
+
+  // Footer element
+  const footerElement = (() => {
+    if (!shouldRenderFooter) return null;
+
+    if (renderFooter) {
+      // Custom render footer with parameters
+      // eslint-disable-next-line react-hooks/refs
+      return renderFooter({
+        defaultActions,
+        footerProps,
+        testId,
+        nestedLevel,
+      });
+    }
+
+    // Default footer with ref attached internally by DialogFooter
+    if (footerProps) {
+      return (
+        <DialogFooter
+          {...footerProps}
+          data-testid={getDialogTestId(testId, 'footer', nestedLevel)}
+          id={dialogIds.footerId}
+        />
+      );
+    }
+
+    return null;
+  })();
+
+  // Body element
+  const bodyElement = (
+    <DialogBody
+      scrollable={size !== 'fullscreen'}
+      padding="md"
+      className={bodyClassName}
+      data-testid={getDialogTestId(testId, 'body', nestedLevel)}
+      id={dialogIds.bodyId}
+    >
+      {children}
+    </DialogBody>
+  );
+
+  // Main dialog content
+  const dialogContent = (
     <OptimizedDialogProvider
       state={contextState}
       config={contextConfig}
@@ -1203,40 +1235,7 @@ export const Dialog = React.forwardRef<DialogRef, DialogProps>((props, forwarded
       refs={contextRefs}
       utils={contextUtils}
     >
-      {overlay &&
-        (renderOverlay ? (
-          renderOverlay({
-            ref: overlayRef,
-            className: cn(
-              getOverlayClasses(isVisible, overlayBlur, overlayClassName),
-              persistent ? dialogClasses.persistent.overlay : ''
-            ),
-            onClick: (event: React.MouseEvent) => {
-              if (closeOnOverlayClick && !persistent) {
-                handleClose(event);
-              } else if (persistent) {
-                triggerPersistentFeedback();
-              }
-            },
-            'data-testid': getDialogTestId(testId, 'overlay', nestedLevel),
-            style: {
-              backgroundColor: overlayColor || undefined,
-              opacity: overlayOpacity,
-            },
-          } as React.HTMLAttributes<HTMLDivElement>)
-        ) : (
-          <DialogOverlay
-            ref={overlayRef}
-            visible={isVisible}
-            blur={overlayBlur}
-            className={overlayClassName}
-            persistent={persistent}
-            closeOnOverlayClick={closeOnOverlayClick}
-            onClose={handleClose}
-            triggerPersistentFeedback={triggerPersistentFeedback}
-            getTestId={(element) => getDialogTestId(testId, element as any, nestedLevel)}
-          />
-        ))}
+      {overlayElement}
 
       <div
         ref={dialogRef}
@@ -1252,10 +1251,8 @@ export const Dialog = React.forwardRef<DialogRef, DialogProps>((props, forwarded
         data-dialog-container="true"
         data-analytics={dataAnalytics}
         data-cy={dataCy}
-        // ADD animation end handler
         onAnimationEnd={(e) => {
           if (e.animationName.includes('shake') && showPersistentFeedback) {
-            // Clear shake feedback when shake animation completes
             setShowPersistentFeedback(false);
             if (persistentTimerRef.current) {
               window.clearTimeout(persistentTimerRef.current);
@@ -1266,47 +1263,9 @@ export const Dialog = React.forwardRef<DialogRef, DialogProps>((props, forwarded
         {...restProps}
       >
         <div className={contentClass} ref={contentRef}>
-          {shouldRenderHeader &&
-            (renderHeader ? (
-              renderHeader({
-                ...headerProps,
-                onClose: handleClose,
-                id: dialogIds.headerId,
-                'data-testid': getDialogTestId(testId, 'header', nestedLevel),
-              })
-            ) : (
-              <DialogHeader
-                {...headerProps}
-                data-testid={getDialogTestId(testId, 'header', nestedLevel)}
-              />
-            ))}
-
-          <DialogBody
-            scrollable={size !== 'fullscreen'}
-            padding="md"
-            className={bodyClassName}
-            data-testid={getDialogTestId(testId, 'body', nestedLevel)}
-            id={dialogIds.bodyId}
-          >
-            {children}
-          </DialogBody>
-
-          {shouldRenderFooter &&
-            (renderFooter ? (
-              renderFooter(defaultActions, () => (
-                <DialogFooter
-                  {...footerProps}
-                  data-testid={getDialogTestId(testId, 'footer', nestedLevel)}
-                  id={dialogIds.footerId}
-                />
-              ))
-            ) : (
-              <DialogFooter
-                {...footerProps}
-                data-testid={getDialogTestId(testId, 'footer', nestedLevel)}
-                id={dialogIds.footerId}
-              />
-            ))}
+          {headerElement}
+          {bodyElement}
+          {footerElement}
         </div>
       </div>
     </OptimizedDialogProvider>
@@ -1316,27 +1275,33 @@ export const Dialog = React.forwardRef<DialogRef, DialogProps>((props, forwarded
   // 9. PORTAL RENDERING
   // ============================================================================
 
-  // Early return if not visible and unmountOnExit
   if (!isVisible && unmountOnExit) {
     return null;
   }
 
-  // Render without portal
   if (!portal || !targetContainer) {
-    return renderDialogContent();
+    return dialogContent;
   }
 
-  // Render with portal
-  return ReactDOM.createPortal(renderDialogContent(), targetContainer);
+  return ReactDOM.createPortal(
+    dialogContent,
+    targetContainer
+  );
 });
 
 // Add display name
 Dialog.displayName = 'Dialog';
 
-// Attach compound components
-(Dialog as any).Header = DialogHeader;
-(Dialog as any).Body = DialogBody;
-(Dialog as any).Footer = DialogFooter;
+// Attach compound components with proper typing
+interface DialogComponent extends React.ForwardRefExoticComponent<DialogProps & React.RefAttributes<DialogRef>> {
+  Header: typeof DialogHeader;
+  Body: typeof DialogBody;
+  Footer: typeof DialogFooter;
+}
+
+(Dialog as unknown as DialogComponent).Header = DialogHeader;
+(Dialog as unknown as DialogComponent).Body = DialogBody;
+(Dialog as unknown as DialogComponent).Footer = DialogFooter;
 
 // Export compound components
 export { DialogHeader, DialogBody, DialogFooter };

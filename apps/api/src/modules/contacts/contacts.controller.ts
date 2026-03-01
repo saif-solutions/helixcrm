@@ -8,7 +8,6 @@
   Delete,
   UseGuards,
   Req,
-  Request,
   Query,
   ParseIntPipe,
   DefaultValuePipe,
@@ -33,46 +32,46 @@ export class ContactsController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @UsePipes(ValidationPipe)
-  @UsePipes(new ValidationPipe({ transform: true }))
-  @RequirePermission('contacts.write')
-  create(@Body() createContactDto: CreateContactDto) {
-    // OrganizationId is now handled by tenant context in service
-    return this.contactsService.create(createContactDto);
+  @RequirePermission('contact:write')
+  async create(@Body() createContactDto: CreateContactDto, @Req() req: any) {
+    const tenantId = req.user?.organizationId || req.user?.org;
+    return this.contactsService.create(createContactDto, tenantId);
   }
 
   @Get()
-  @RequirePermission('contacts.read')
-  findAll(
+  @RequirePermission('contact:read')
+  async findAll(
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
     @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
-    @Query('search') search?: string,
+    @Query('search') search: string = '',
+    @Req() req: any,
   ) {
-    return this.contactsService.findAll({
-      page,
-      limit: Math.min(limit, 100),
-      search,
-    });
+    const tenantId = req.user?.organizationId || req.user?.org;
+    return this.contactsService.findAll({ page, limit, search }, tenantId);
   }
 
   @Get(':id')
-  @RequirePermission('contacts.read')
-  findOne(@Param('id') id: string) {
-    return this.contactsService.findOne(id);
+  @RequirePermission('contact:read')
+  async findOne(@Param('id') id: string, @Req() req: any) {
+    const tenantId = req.user?.organizationId || req.user?.org;
+    return this.contactsService.findOne(id, tenantId);
   }
 
   @Put(':id')
-  @UsePipes(
-    new ValidationPipe({ transform: true, skipMissingProperties: true }),
-  )
-  @RequirePermission('contacts.write')
-  update(@Param('id') id: string, @Body() updateContactDto: UpdateContactDto) {
-    return this.contactsService.update(id, updateContactDto);
+  @RequirePermission('contact:write')
+  async update(
+    @Param('id') id: string,
+    @Body() updateContactDto: UpdateContactDto,
+    @Req() req: any,
+  ) {
+    const tenantId = req.user?.organizationId || req.user?.org;
+    return this.contactsService.update(id, updateContactDto, tenantId);
   }
 
   @Delete(':id')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @RequirePermission('contacts.delete')
-  remove(@Param('id') id: string) {
-    return this.contactsService.remove(id);
+  @RequirePermission('contact:delete')
+  async remove(@Param('id') id: string, @Req() req: any) {
+    const tenantId = req.user?.organizationId || req.user?.org;
+    return this.contactsService.remove(id, tenantId);
   }
 }

@@ -1,3 +1,5 @@
+// apps/web/src/stores/auth.store.ts
+
 import { create } from 'zustand';
 import { apiClient, initializeApi } from '../services/api';
 import { LoginFormData, RegisterFormData } from '../lib/schemas/auth.schema';
@@ -10,6 +12,15 @@ export interface User {
   lastName?: string;
   organizationId: string;
   role?: 'admin' | 'user' | 'manager';
+}
+
+// Define a type for API errors
+interface ApiError {
+  response?: {
+    status?: number;
+    data?: unknown;
+  };
+  message?: string;
 }
 
 export interface AuthState {
@@ -54,7 +65,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         authError: null,
         sessionExpired: false,
       });
-    } catch (error) {
+    } catch {
       // Not authenticated - clear state
       set({
         user: null,
@@ -89,13 +100,14 @@ export const useAuthStore = create<AuthState>((set) => ({
         authError: null,
         sessionExpired: false,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const apiError = error as ApiError;
       const formErrors = mapBackendErrorToFormErrors(error);
 
       set({
         isLoading: false,
         authError: formErrors.formError || 'Login failed',
-        sessionExpired: error.response?.status === 401,
+        sessionExpired: apiError.response?.status === 401,
       });
 
       throw error;
@@ -111,7 +123,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     });
 
     try {
-      // Exclude confirmPassword from API request
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { confirmPassword, ...apiCredentials } = credentials;
 
       const response = await apiClient.post<{ user: User }>('/auth/register', apiCredentials);
@@ -125,13 +137,14 @@ export const useAuthStore = create<AuthState>((set) => ({
         authError: null,
         sessionExpired: false,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const apiError = error as ApiError;
       const formErrors = mapBackendErrorToFormErrors(error);
 
       set({
         isLoading: false,
         authError: formErrors.formError || 'Registration failed',
-        sessionExpired: error.response?.status === 401,
+        sessionExpired: apiError.response?.status === 401,
       });
 
       throw error;
@@ -147,7 +160,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
     try {
       await apiClient.post('/auth/logout');
-    } catch (error) {
+    } catch {
       console.warn('Logout API call failed, but clearing local state anyway');
     } finally {
       set({

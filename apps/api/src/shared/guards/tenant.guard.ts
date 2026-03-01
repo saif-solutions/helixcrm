@@ -7,7 +7,8 @@ import {
   ForbiddenException,
   Logger,
 } from '@nestjs/common';
-import { getTenantContext, withTenantContext } from '../tenant/tenant.context';
+import { getTenantContext, setTenantContext } from '../tenant/tenant.context';
+import { TenantContext } from '../tenant/tenant.types';
 
 @Injectable()
 export class TenantGuard implements CanActivate {
@@ -17,63 +18,81 @@ export class TenantGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
 
     try {
-      // Get current context
-      let tenantContext = getTenantContext();
+      // Get current context (should be PENDING from middleware)
+      const currentContext = getTenantContext();
       
-      this.logger.debug(`TenantGuard - Current context: ${JSON.stringify({
-        tenantId: tenantContext?.tenantId,
-        isSystem: tenantContext?.isSystemContext,
+      this.logger.debug(`TenantGuard - Initial state:`, {
+        tenantId: currentContext?.tenantId,
+        isSystem: currentContext?.isSystemContext,
         hasUser: !!request.user,
         userId: request.user?.sub,
-        orgFromUser: request.user?.organizationId || request.user?.org
-      })}`);
-      
-      // If context is PENDING and we now have a user, update to real tenant
-      if (tenantContext?.tenantId === 'PENDING' && request.user) {
-        const realTenantId = request.user.organizationId || request.user.org;
-        
-        if (realTenantId) {
-          this.logger.debug(`Updating PENDING context to real tenant: ${realTenantId}`);
-          
-          const realContext = {
-            tenantId: realTenantId,
-            organizationId: realTenantId,
-            isSystemContext: false,
-            resolvedAt: new Date(),
-            source: 'token' as const,
-            userId: request.user.id || request.user.sub,
-            userEmail: request.user.email,
-            roles: request.user.roles || [],
-            permissions: request.user.permissions || [],
-          };
-          
-          // Update the context
-          withTenantContext(realContext, () => {
-            request.organizationId = realTenantId;
-            (request as any).tenantContext = realContext;
-          });
-          
-          tenantContext = realContext;
-          this.logger.debug(`Context updated to: ${realTenantId}`);
-        }
-      }
-      
-      // Now validate the context
-      if (!tenantContext || tenantContext.tenantId === 'SYSTEM' || tenantContext.tenantId === 'PENDING') {
-        this.logger.error(`Invalid tenant context for route: ${request.path}`, {
-          tenantId: tenantContext?.tenantId,
-          isSystem: tenantContext?.isSystemContext,
-        });
-        throw new ForbiddenException('Tenant context required for this operation');
+        orgFromUser: request.user?.organizationId || request.user?.org,
+        path: request.path
+      });
+
+      // We must have a user at this point (AuthGuard runs before)
+      if (!request.user) {
+        this.logger.error('No user found in request - AuthGuard must run before TenantGuard');
+        throw new ForbiddenException('Authentication required');
       }
 
-      this.logger.debug(
-        `Tenant guard passed: ${tenantContext.tenantId} (${tenantContext.source})`,
+      const user = request.user;
+      const realTenantId = user.organizationId || user.org;
+
+      if (!realTenantId) {
+        this.logger.error('User authenticated but missing organization ID', {
+          userId: user.sub,
+          userObject: user
+        });
+        throw new ForbiddenException('User missing organization context');
+      }
+
+      // Create the proper tenant context
+      const realContext: TenantContext = {
+        tenantId: realTenantId,
+        organizationId: realTenantId,
+        isSystemContext: false,
+        resolvedAt: new Date(),
+        source: 'token',
+        userId: user.sub,
+        userEmail: user.email,
+        roles: user.roles || [],
+        permissions: user.permissions || [],
+      };
+
+      // CRITICAL: Update the context directly using setTenantContext
+      // This replaces the PENDING context with the real one
+      setTenantContext(realContext);
+
+      // Also set on request for backward compatibility
+      request.organizationId = realTenantId;
+      (request as any).tenantContext = realContext;
+
+      // Verify the context was updated
+      const verifiedContext = getTenantContext();
+      
+      this.logger.debug(`Tenant context after update:`, {
+        tenantId: verifiedContext?.tenantId,
+        userId: verifiedContext?.userId,
+        source: verifiedContext?.source,
+        match: verifiedContext?.tenantId === realTenantId
+      });
+
+      if (!verifiedContext || verifiedContext.tenantId !== realTenantId) {
+        this.logger.error('Failed to verify tenant context was updated', {
+          expected: realTenantId,
+          actual: verifiedContext?.tenantId
+        });
+        throw new ForbiddenException('Failed to establish tenant context');
+      }
+
+      this.logger.log(
+        `Tenant context established: ${realTenantId} for user ${user.sub}`,
         {
           path: request.path,
           method: request.method,
-          userId: tenantContext.userId,
-        },
+          source: 'token',
+        }
       );
 
       return true;
@@ -81,8 +100,9 @@ export class TenantGuard implements CanActivate {
       this.logger.error(`Tenant guard failed: ${error.message}`, {
         path: request.path,
         method: request.method,
+        stack: error.stack,
         user: request.user ? {
-          id: request.user.id || request.user.sub,
+          id: request.user.sub,
           hasOrgId: !!(request.user.organizationId || request.user.org),
         } : null,
       });

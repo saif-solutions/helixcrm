@@ -1,11 +1,12 @@
 // apps/web/src/services/api.ts
+
 import axios, {
   AxiosInstance,
   AxiosRequestConfig,
   AxiosResponse,
   InternalAxiosRequestConfig,
 } from 'axios';
-import { useAuthStore } from '../stores/auth.store';
+import { useAuthStore } from '../stores/auth.store'; 
 import { mapBackendErrorToAuthError } from '../lib/utils/auth-error-mapper';
 import { API_CONFIG } from '../config/api.config';
 
@@ -19,12 +20,25 @@ interface RetryableRequestConfig extends InternalAxiosRequestConfig {
   _abortController?: AbortController;
 }
 
+// Remove the local AuthState interface - we'll use the imported one
+
+// Define error response types
+interface ErrorResponseData {
+  code?: string;
+  message?: string;
+  timestamp?: string;
+  path?: string;
+  error?: {
+    message?: string;
+  };
+}
+
 // Configuration
 const API_BASE_URL = API_CONFIG.baseURL;
 const APP_ENV = import.meta.env.VITE_APP_ENV || 'development';
 const IS_DEV = import.meta.env.DEV;
 
-console.log(`íº€ API Configuration:
+console.log(`ðŸ“¡ API Configuration:
   - Base URL: ${API_BASE_URL}
   - Environment: ${APP_ENV}
   - Development Mode: ${IS_DEV}
@@ -55,10 +69,10 @@ export interface PaginatedResponse<T> {
   };
 }
 
-// CRM specific types for API responses
-export interface LeadResponse extends PaginatedResponse<Lead> {}
-export interface ContactResponse extends PaginatedResponse<Contact> {}
-export interface DealResponse extends PaginatedResponse<Deal> {}
+// Use type aliases instead of empty interfaces
+export type LeadResponse = PaginatedResponse<Lead>;
+export type ContactResponse = PaginatedResponse<Contact>;
+export type DealResponse = PaginatedResponse<Deal>;
 
 // CSRF Token Manager
 class CsrfTokenManager {
@@ -128,9 +142,30 @@ const api: AxiosInstance = axios.create({
 // Request interceptor
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
+    // Get auth state from store - no type assertion needed
+    const authState = useAuthStore.getState();
+    const accessToken = authState.user ? 'token-from-user' : null; // You'll need to get actual token
+    const organizationId = authState.user?.organizationId;
+    
     // Add Request ID
     const requestId = generateRequestId();
     config.headers['X-Request-Id'] = requestId;
+
+    // Add Authorization header if token exists
+    // Note: You'll need to store the actual token - this is a placeholder
+    // The actual token should come from cookies or a token store
+    if (accessToken) {
+      config.headers.Authorization = `Bearer ${accessToken}`;
+    }
+
+    // ðŸ”¥ Add tenant context header for all authenticated requests
+    if (organizationId && !config.url?.includes('/auth/')) {
+      config.headers['x-tenant-id'] = organizationId;
+      
+      if (IS_DEV) {
+        console.log(`ðŸ¢ Tenant context added: ${organizationId.substring(0, 8)}...`);
+      }
+    }
 
     // Add CSRF token for mutating requests
     if (config.method && ['post', 'put', 'patch', 'delete'].includes(config.method.toLowerCase())) {
@@ -146,7 +181,7 @@ api.interceptors.request.use(
     if (!config.signal) {
       const controller = new AbortController();
       config.signal = controller.signal;
-      (config as any)._abortController = controller;
+      (config as RetryableRequestConfig)._abortController = controller;
     }
 
     // Store request ID for error handling
@@ -154,10 +189,11 @@ api.interceptors.request.use(
 
     // Log in development
     if (IS_DEV) {
-      console.log(`í³¤ [${config.method?.toUpperCase()}] ${config.url}`, {
+      console.log(`ðŸ“¤ [${config.method?.toUpperCase()}] ${config.url}`, {
         requestId,
         hasData: !!config.data,
         hasCsrf: !!config.headers['X-CSRF-Token'],
+        hasTenant: !!config.headers['x-tenant-id'],
       });
     }
 
@@ -173,7 +209,7 @@ api.interceptors.response.use(
   (response: AxiosResponse) => {
     // Log in development
     if (IS_DEV) {
-      console.log(`í³¥ [${response.config.method?.toUpperCase()}] ${response.config.url}`, {
+      console.log(`ðŸ“¥ [${response.config.method?.toUpperCase()}] ${response.config.url}`, {
         status: response.status,
       });
     }
@@ -186,7 +222,7 @@ api.interceptors.response.use(
 
     // Network error (backend offline)
     if (!error.response) {
-      console.error('í¼ Network error - backend might be offline', {
+      console.error('ðŸŒ Network error - backend might be offline', {
         requestId,
         url: originalRequest?.url,
         method: originalRequest?.method,
@@ -207,6 +243,27 @@ api.interceptors.response.use(
       return Promise.reject(apiError);
     }
 
+    // Get response data with proper typing
+    const responseData = error.response?.data as ErrorResponseData;
+
+    // ðŸ”¥ Handle 403 - Tenant context missing or invalid
+    if (error.response?.status === 403) {
+      // Check if it's a tenant context issue
+      if (responseData.error?.message?.includes('Tenant context')) {
+        console.error('ðŸ¢ Tenant context error:', {
+          requestId,
+          url,
+          message: responseData.error?.message,
+        });
+        
+        // If this is not an auth endpoint, we might need to redirect
+        if (!url.includes('/auth/')) {
+          console.warn('ðŸ”„ Tenant context missing - redirecting to login');
+          useAuthStore.getState().setSessionExpired(true);
+        }
+      }
+    }
+
     // Prevent refresh loop on refresh endpoint itself
     if (originalRequest.url?.includes('/auth/refresh')) {
       useAuthStore.getState().setSessionExpired(true);
@@ -215,7 +272,7 @@ api.interceptors.response.use(
 
     // Handle 401 Unauthorized
     if (error.response?.status === 401) {
-      console.warn(`í´ Authentication required for ${url}`);
+      console.warn(`ðŸ” Authentication required for ${url}`);
       
       if (originalRequest._retry) {
         useAuthStore.getState().setSessionExpired(true);
@@ -239,7 +296,7 @@ api.interceptors.response.use(
     }
 
     // CSRF token expired (403)
-    if (error.response?.status === 403 && error.response?.data?.code === 'INVALID_CSRF_TOKEN') {
+    if (error.response?.status === 403 && responseData.code === 'INVALID_CSRF_TOKEN') {
       // CSRF retry guard - prevent infinite loops
       originalRequest._csrfRetryCount = (originalRequest._csrfRetryCount || 0) + 1;
       if (originalRequest._csrfRetryCount > 1) {
@@ -266,9 +323,9 @@ api.interceptors.response.use(
     const apiError: ApiError = {
       status: error.response?.status || 0,
       message: mappedError.message,
-      code: mappedError.code || error.response?.data?.code,
-      timestamp: error.response?.data?.timestamp,
-      path: error.response?.data?.path,
+      code: mappedError.code || responseData.code,
+      timestamp: responseData.timestamp,
+      path: responseData.path,
       requestId,
     };
 
@@ -319,13 +376,13 @@ export const apiClient = {
   get: <T>(url: string, config?: AxiosRequestConfig) =>
     api.get<T>(url, config).then((res) => res.data),
 
-  post: <T>(url: string, data?: any, config?: AxiosRequestConfig) =>
+  post: <T>(url: string, data?: unknown, config?: AxiosRequestConfig) =>
     api.post<T>(url, data, config).then((res) => res.data),
 
-  put: <T>(url: string, data?: any, config?: AxiosRequestConfig) =>
+  put: <T>(url: string, data?: unknown, config?: AxiosRequestConfig) =>
     api.put<T>(url, data, config).then((res) => res.data),
 
-  patch: <T>(url: string, data?: any, config?: AxiosRequestConfig) =>
+  patch: <T>(url: string, data?: unknown, config?: AxiosRequestConfig) =>
     api.patch<T>(url, data, config).then((res) => res.data),
 
   delete: <T>(url: string, config?: AxiosRequestConfig) =>
@@ -361,7 +418,7 @@ export const LeadsAPI = {
    * @param data Lead data
    * @returns Created lead
    */
-  create: (data: any) => apiClient.post<Lead>('/leads', data),
+  create: (data: Record<string, unknown>) => apiClient.post<Lead>('/leads', data),
 
   /**
    * Update an existing lead
@@ -369,7 +426,7 @@ export const LeadsAPI = {
    * @param data Updated lead data
    * @returns Updated lead
    */
-  update: (id: string, data: any) => apiClient.put<Lead>(`/leads/${id}`, data),
+  update: (id: string, data: Record<string, unknown>) => apiClient.put<Lead>(`/leads/${id}`, data),
 
   /**
    * Delete a lead
@@ -404,7 +461,7 @@ export const ContactsAPI = {
    * @param data Contact data
    * @returns Created contact
    */
-  create: (data: any) => apiClient.post<Contact>('/contacts', data),
+  create: (data: Record<string, unknown>) => apiClient.post<Contact>('/contacts', data),
 
   /**
    * Update an existing contact
@@ -412,7 +469,7 @@ export const ContactsAPI = {
    * @param data Updated contact data
    * @returns Updated contact
    */
-  update: (id: string, data: any) => apiClient.put<Contact>(`/contacts/${id}`, data),
+  update: (id: string, data: Record<string, unknown>) => apiClient.put<Contact>(`/contacts/${id}`, data),
 
   /**
    * Delete a contact
@@ -456,7 +513,7 @@ export const DealsAPI = {
    * @param data Updated deal data
    * @returns Updated deal
    */
-  update: (id: string, data: any) => apiClient.put<Deal>(`/deals/${id}`, data),
+  update: (id: string, data: Record<string, unknown>) => apiClient.put<Deal>(`/deals/${id}`, data),
 
   /**
    * Delete a deal
@@ -471,7 +528,7 @@ export const DealsAPI = {
    * @returns Pipeline performance data
    */
   pipelinePerformance: (pipelineId?: string) =>
-    apiClient.get<any>(
+    apiClient.get<Record<string, unknown>>(
       `/deals/pipeline-performance${pipelineId ? `?pipelineId=${pipelineId}` : ''}`
     ),
 };
@@ -492,7 +549,7 @@ export const DashboardAPI = {
    * @returns Pipeline performance metrics
    */
   pipelinePerformance: (pipelineId?: string) =>
-    apiClient.get<any>(
+    apiClient.get<Record<string, unknown>>(
       `/dashboard/pipeline-performance${pipelineId ? `?pipelineId=${pipelineId}` : ''}`
     ),
 };

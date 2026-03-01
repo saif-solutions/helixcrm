@@ -41,7 +41,7 @@ export interface TenantContext {
   // Context metadata
   isSystemContext: boolean;
   resolvedAt: Date;
-  source: 'header' | 'token' | 'system';
+  source: 'header' | 'token' | 'system' | 'pending';
 }
 
 /**

@@ -3,7 +3,6 @@
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
-// Remove this import: import { APP_INTERCEPTOR } from '@nestjs/core';
 
 // Core application modules
 import { AppController } from './app.controller';
@@ -45,12 +44,12 @@ import { CorrelationIdMiddleware } from './shared/middleware/correlation-id.midd
 import { RequestContextMiddleware } from './shared/middleware/request-context.middleware';
 import { TenantContextMiddleware } from './shared/middleware/tenant-context.middleware';
 
-// Remove this import: import { TenantContextInterceptor } from './shared/interceptors/tenant-context.interceptor';
+// ============ TENANT MODULE ============
+import { TenantModule } from './shared/tenant/module/tenant.module';
 
 @Module({
   imports: [
     // ============ CORE INFRASTRUCTURE ============
-    // Configuration - must be first and global
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
@@ -58,36 +57,25 @@ import { TenantContextMiddleware } from './shared/middleware/tenant-context.midd
       expandVariables: true,
     }),
 
-    // Task scheduling for background jobs
     ScheduleModule.forRoot(),
 
     // ============ SHARED INFRASTRUCTURE ============
-    // Core shared services (logging, middleware, guards, etc.)
     SharedModule,
+    TenantModule, // Add TenantModule here
 
     // ============ PHASE 2A: COMPLIANCE & SECURITY ============
-    // Week 1-2: Audit Integrity (Tamper-evident audit chain)
     AuditIntegrityModule,
-
-    // Week 5-6: SOC 2 Compliance (Evidence collection & verification)
     ComplianceModule,
-
-    // Week 3-4: Performance Monitoring (SLO validation)
     PerformanceMetricsModule,
 
     // ============ BUSINESS FEATURES ============
-    // Authentication & Authorization
     AuthModule,
     UsersModule,
     RbacModule,
-
-    // CRM Core Features
     ContactsModule,
     LeadsModule,
     DealsModule,
     PipelinesModule,
-
-    // Reporting & Analytics
     DashboardModule,
     AnalyticsModule,
     ImportModule,
@@ -103,11 +91,9 @@ import { TenantContextMiddleware } from './shared/middleware/tenant-context.midd
   providers: [
     AppService,
     ConfigValidationService,
-    // Remove the APP_INTERCEPTOR provider
   ],
 
   exports: [
-    // Export modules that might be used in tests or other contexts
     ConfigModule,
     ScheduleModule,
   ],
@@ -118,6 +104,7 @@ export class AppModule implements NestModule {
     console.log('✅ Audit Integrity (Weeks 1-2)');
     console.log('✅ Performance Monitoring (Weeks 3-4)');
     console.log('✅ SOC 2 Compliance (Weeks 5-6)');
+    console.log('✅ Tenant Module (Active)');
   }
 
   configure(consumer: MiddlewareConsumer) {
@@ -127,6 +114,6 @@ export class AppModule implements NestModule {
         RequestContextMiddleware,
         TenantContextMiddleware,
       )
-      .forRoutes('*'); // Apply to all routes
+      .forRoutes('*');
   }
 }

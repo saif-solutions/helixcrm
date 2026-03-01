@@ -12,7 +12,8 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { PERMISSION_KEY } from '../decorators/require-permission.decorator';
-import { TenantContextService } from '../tenant/context/tenant-context.service'; // Add this import
+import { TenantContextService } from '../tenant/context/tenant-context.service';
+import { withTenantContext } from '../tenant/tenant.context';
 
 interface JwtPayload {
   sub: string;
@@ -36,7 +37,7 @@ export class AuthGuard implements CanActivate {
     private prisma: PrismaService,
     private reflector: Reflector,
     private configService: ConfigService,
-    private tenantContextService: TenantContextService, // Add this
+    private tenantContextService: TenantContextService,
   ) {
     this.secret = this.configService.get<string>('JWT_ACCESS_SECRET');
     if (!this.secret) {
@@ -79,11 +80,16 @@ export class AuthGuard implements CanActivate {
         throw new UnauthorizedException('Invalid token');
       }
 
+      if (!organizationId) {
+        this.logger.warn('Token missing organization context');
+        throw new UnauthorizedException('Invalid token: missing organization context');
+      }
+
       // Verify user exists and is active
       const user = await this.prisma.user.findUnique({
         where: { id: payload.sub },
-        select: { 
-          tokenVersion: true, 
+        select: {
+          tokenVersion: true,
           isActive: true,
           email: true,
         },
@@ -99,12 +105,13 @@ export class AuthGuard implements CanActivate {
         throw new UnauthorizedException('Invalid token');
       }
 
-      // Create user object
+      // Create user object with permissions and roles
       const userObj = {
         id: payload.sub,
         sub: payload.sub,
         email: payload.email || user.email,
         organizationId: organizationId,
+        org: organizationId,
         tokenVersion: tokenVersion,
         permissions: payload.permissions || [],
         roles: payload.roles || [],
@@ -114,37 +121,11 @@ export class AuthGuard implements CanActivate {
       request.user = userObj;
       request.organizationId = organizationId;
 
-      // CRITICAL FIX: Set tenant context for this request
-      // This ensures all subsequent database queries use the correct organization ID
-      if (organizationId) {
-        this.logger.debug(`Setting tenant context to ${organizationId} for user ${payload.sub}`);
-        
-        // Create tenant context
-        const tenantContext = {
-          tenantId: organizationId,
-          organizationId: organizationId,
-          isSystemContext: false,
-          resolvedAt: new Date(),
-          source: 'token' as const,
-          userId: payload.sub,
-          userEmail: payload.email || user.email,
-          roles: payload.roles || [],
-          permissions: payload.permissions || [],
-        };
+      this.logger.log(`Auth successful for user ${payload.sub} in org ${organizationId}`);
 
-        // Store in request for backward compatibility
-        (request as any).tenantContext = tenantContext;
-        
-        // Use the TenantContextService to set the context
-        // This will make it available via requireTenantContext() in repositories
-        const { withTenantContext } = require('../tenant/tenant.context');
-        withTenantContext(tenantContext, () => {
-          // The context is now set for the rest of this request
-          this.logger.debug(`Tenant context successfully set`);
-        });
-      }
-
-      this.logger.debug(`Auth successful for user ${payload.sub} in org ${organizationId}`);
+      // The tenant context will be properly set by the TenantGuard
+      // which runs after AuthGuard and calls tenantContextService.resolveContext()
+      
       return true;
     } catch (error) {
       this.logger.error(`Auth failed: ${error.message}`);

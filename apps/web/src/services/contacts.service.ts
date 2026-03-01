@@ -1,30 +1,52 @@
 // apps/web/src/services/contacts.service.ts
 import { apiClient } from './api';
-import { Contact, CreateContactDto, UpdateContactDto } from '../lib/types/api.types';
+import { components } from '../lib/types/generated/api';
+
+// Use the properly generated component schemas
+export type Contact = {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  company?: string;
+  title?: string;
+  department?: string;
+  organizationId: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+// Use the generated DTO types
+export type CreateContactDto = components['schemas']['CreateContactDto'];
+export type UpdateContactDto = components['schemas']['UpdateContactDto'];
 
 export const contactsService = {
-  // Get all contacts
-  getAll: async (): Promise<Contact[]> => {
-    return apiClient.get<Contact[]>('/contacts');
+  // Get all contacts with pagination
+  getAll: async (params?: { page?: number; limit?: number; search?: string }): Promise<Contact[]> => {
+    const response = await apiClient.get<{ data: Contact[] }>('/contacts', { params });
+    return response.data;
   },
 
   // Get single contact by ID
   getById: async (id: string): Promise<Contact> => {
-    return apiClient.get<Contact>(`/contacts/${id}`);
+    const response = await apiClient.get<{ data: Contact }>(`/contacts/${id}`);
+    return response.data;
   },
 
   // Create new contact
   create: async (data: CreateContactDto): Promise<Contact> => {
-    return apiClient.post<Contact>('/contacts', data);
+    const response = await apiClient.post<{ data: Contact }>('/contacts', data);
+    return response.data;
   },
 
   // Update existing contact
   update: async (id: string, data: UpdateContactDto): Promise<Contact> => {
-    return apiClient.put<Contact>(`/contacts/${id}`, data);
+    const response = await apiClient.put<{ data: Contact }>(`/contacts/${id}`, data);
+    return response.data;
   },
 
   // Delete contact
   delete: async (id: string): Promise<void> => {
-    return apiClient.delete<void>(`/contacts/${id}`);
+    await apiClient.delete(`/contacts/${id}`);
   },
 };

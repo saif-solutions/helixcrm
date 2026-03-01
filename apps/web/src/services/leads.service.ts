@@ -1,19 +1,45 @@
 // apps/web/src/services/leads.service.ts
 import { apiClient } from './api';
-import {
-  Lead,
-  LeadStatus,
-  LeadsListResponse,
-  LeadsStats,
-  CreateLeadDto,
-  UpdateLeadDto,
-} from '../lib/types/api.types';
+import { components } from '../lib/types/generated/api';
+
+// Define the Lead type based on the DTO and expected response
+export type Lead = {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  status: 'new' | 'contacted' | 'qualified';
+  source?: string;
+  organizationId: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+// Use the generated DTO types
+export type CreateLeadDto = components['schemas']['CreateLeadDto'];
+export type UpdateLeadDto = components['schemas']['UpdateLeadDto'];
+
+export interface LeadsStats {
+  total: number;
+  byStatus: Record<'new' | 'contacted' | 'qualified', number>;
+  recentCount: number;
+}
 
 export interface LeadQueryParams {
   page: number;
   limit: number;
   search?: string;
-  status?: LeadStatus;
+  status?: string;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
 }
 
 export interface LeadStatsResponse extends LeadsStats {
@@ -22,7 +48,7 @@ export interface LeadStatsResponse extends LeadsStats {
 
 export const leadsService = {
   // Get paginated leads with filters
-  getLeads: async (params: LeadQueryParams): Promise<LeadsListResponse> => {
+  getLeads: async (params: LeadQueryParams): Promise<PaginatedResponse<Lead>> => {
     const { page = 1, limit = 20, search, status } = params;
 
     const queryParams = new URLSearchParams({
@@ -33,32 +59,37 @@ export const leadsService = {
     if (search) queryParams.append('search', search);
     if (status) queryParams.append('status', status);
 
-    return apiClient.get<LeadsListResponse>(`/leads?${queryParams.toString()}`);
+    const response = await apiClient.get<PaginatedResponse<Lead>>(`/leads?${queryParams.toString()}`);
+    return response.data;
   },
 
   // Get single lead by ID
   getLeadById: async (id: string): Promise<Lead> => {
-    return apiClient.get<Lead>(`/leads/${id}`);
+    const response = await apiClient.get<{ data: Lead }>(`/leads/${id}`);
+    return response.data;
   },
 
   // Create new lead
   createLead: async (data: CreateLeadDto): Promise<Lead> => {
-    return apiClient.post<Lead>('/leads', data);
+    const response = await apiClient.post<{ data: Lead }>('/leads', data);
+    return response.data;
   },
 
   // Update existing lead
   updateLead: async (id: string, data: UpdateLeadDto): Promise<Lead> => {
-    return apiClient.put<Lead>(`/leads/${id}`, data);
+    const response = await apiClient.put<{ data: Lead }>(`/leads/${id}`, data);
+    return response.data;
   },
 
   // Delete lead
   deleteLead: async (id: string): Promise<void> => {
-    return apiClient.delete<void>(`/leads/${id}`);
+    await apiClient.delete(`/leads/${id}`);
   },
 
   // Get lead statistics
   getLeadStats: async (): Promise<LeadStatsResponse> => {
-    const stats = await apiClient.get<LeadsStats>('/leads/stats');
+    const response = await apiClient.get<LeadsStats>('/leads/stats');
+    const stats = response.data;
 
     // Calculate conversion rate (qualified / total * 100)
     const total = stats.total || 0;
