@@ -1,6 +1,7 @@
 // D:\Projects-In-Hand\helixcrm\apps\web\src\components\atoms\Icon\Icon.tsx
 import * as React from 'react';
 import { cn } from '../../../lib/utils';
+import { IconChild } from './IconChild';
 import {
   IconProps,
   IconRef,
@@ -66,7 +67,7 @@ export const Icon = React.memo(
         'aria-label': ariaLabel,
 
         // Enhanced features with defaults
-        library = 'heroicons',
+        // library = 'heroicons',
         variant = 'outline', // Ensure default
         weight,
         interactive = false,
@@ -146,7 +147,7 @@ export const Icon = React.memo(
           if (interactive && !disabled && (e.key === 'Enter' || e.key === ' ')) {
             e.preventDefault();
             if (onClick) {
-              onClick(e as any);
+              onClick(e as unknown as React.MouseEvent<SVGSVGElement>);
             }
           }
         },
@@ -204,7 +205,6 @@ export const Icon = React.memo(
         return (
           <div className="relative group">
             {content}
-            // Replace the tooltip rendering section with:
             <div
               className={cn(
                 'absolute z-50 px-2 py-1 text-xs font-medium',
@@ -233,46 +233,32 @@ export const Icon = React.memo(
         );
       };
 
-      // If children is provided and it's a valid React element, clone it with new props
-      // In Icon.tsx, update the childProps section (around line 127-145):
+      // Handle children case
       if (children && React.isValidElement(children)) {
-        const childProps = {
-          ...(children.props as any),
-          className: cn(
-            iconClasses,
-            'inline-block transition-all duration-200', // Ensure base classes are included
-            (children.props as any)?.className
-          ),
-          style: combinedStyle,
-          ref,
-          'data-testid': testId, // This was being overridden
-          'data-analytics': analyticsId,
-          'data-cy': cyId,
-          onClick: handleClick,
-          onKeyDown: handleKeyDown,
-          onMouseEnter,
-          onMouseLeave,
-          onFocus,
-          onBlur,
-          tabIndex: interactive && !disabled ? 0 : undefined,
-          ...accessibilityProps,
-          ...props,
-        };
-
-        // Add data-testid from children if it exists
-        if ((children.props as any)?.['data-testid']) {
-          childProps['data-testid'] = (children.props as any)?.['data-testid'];
-        }
-
-        const wrappedIcon = (
-          <div className="relative inline-block">
-            {React.cloneElement(children, childProps)}
-            {renderBadge()}
-            {renderLoadingOverlay()}
-          </div>
+        return (
+          <IconChild
+            children={children as React.ReactElement<{ className?: string; 'data-testid'?: string; [key: string]: unknown; }>}
+            iconClasses={iconClasses}
+            combinedStyle={combinedStyle}
+            testId={testId}
+            analyticsId={analyticsId}
+            cyId={cyId}
+            handleClick={handleClick}
+            handleKeyDown={handleKeyDown}
+            onMouseEnter={onMouseEnter}
+            onMouseLeave={onMouseLeave}
+            onFocus={onFocus}
+            onBlur={onBlur}
+            interactive={interactive}
+            disabled={disabled}
+            accessibilityProps={accessibilityProps}
+            additionalProps={props}
+            renderBadge={renderBadge}
+            renderLoadingOverlay={renderLoadingOverlay}
+            renderWithTooltip={renderWithTooltip}
+            ref={ref}
+          />
         );
-
-        return renderWithTooltip(wrappedIcon);
       }
 
       // Get stroke width based on weight prop or size
@@ -302,7 +288,7 @@ export const Icon = React.memo(
         return sizeMap[size];
       };
 
-      // Default fallback icon if no children provided (Heroicons plus icon)
+      // Default fallback icon if no children provided
       const iconContent = (
         <div className="relative inline-block">
           <svg
@@ -512,37 +498,13 @@ export const StatusIcon = React.memo(
       neutral: Icon,
     };
 
-    const IconComponent = iconMap[status];
+    const IconComponent = iconMap[status as keyof typeof iconMap];
 
-    return <IconComponent ref={ref} {...props} />;
+    const Component = IconComponent as React.ComponentType<Omit<IconProps, 'children'>>;
+    return <Component ref={ref} {...props} />;
   })
 );
 StatusIcon.displayName = 'StatusIcon';
-
-// ============================================================================
-// Icon Context & Provider (For Icon Library Configuration)
-// ============================================================================
-
-export interface IconContextValue {
-  defaultSize?: IconProps['size'];
-  defaultColor?: IconProps['color'];
-  defaultLibrary?: IconProps['library'];
-  defaultVariant?: IconProps['variant'];
-  iconPackUrl?: string;
-}
-
-export const IconContext = React.createContext<IconContextValue>({});
-
-export const IconProvider: React.FC<{
-  children: React.ReactNode;
-  config?: IconContextValue;
-}> = ({ children, config = {} }) => {
-  return <IconContext.Provider value={config}>{children}</IconContext.Provider>;
-};
-
-export const useIconConfig = () => {
-  return React.useContext(IconContext);
-};
 
 // ============================================================================
 // Icon Utility Components

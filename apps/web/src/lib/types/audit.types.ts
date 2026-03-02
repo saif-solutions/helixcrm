@@ -18,7 +18,7 @@ export interface AuditLog {
   actorEmail: string;
   actorType: string;
   severity: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   ipAddress?: string;
   userAgent?: string;
   requestId?: string;
@@ -162,7 +162,7 @@ export interface AuditAlert {
   type: 'THRESHOLD' | 'PATTERN' | 'ANOMALY';
   severity: string;
   message: string;
-  criteria: Record<string, any>;
+  criteria: Record<string, unknown>;
   triggeredAt: string;
   logs: AuditLog[];
   acknowledged: boolean;

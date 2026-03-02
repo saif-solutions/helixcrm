@@ -6,7 +6,7 @@ const SESSION_TIMEOUT = 15 * 60 * 1000; // 15 minutes
 const WARNING_TIME = 1 * 60 * 1000; // 1 minute before expiry
 
 export const useSession = () => {
-  const [lastActivity, setLastActivity] = useState<number>(Date.now());
+  const [lastActivity, setLastActivity] = useState<number>(() => Date.now());
   const [showWarning, setShowWarning] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(SESSION_TIMEOUT);
 

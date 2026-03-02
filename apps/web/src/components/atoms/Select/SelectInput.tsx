@@ -47,11 +47,12 @@ interface ReactElementProps {
   label?: string;
   title?: string;
   'aria-label'?: string;
-  [key: string]: any;
+  [key: string]: unknown;
+
 }
 
 // ✅ Type guard to check if value is a React element with props
-const isReactElementWithProps = (value: any): value is React.ReactElement<ReactElementProps> => {
+const isReactElementWithProps = (value: unknown): value is React.ReactElement<ReactElementProps> => {
   return React.isValidElement(value) && typeof value === 'object' && 'props' in value;
 };
 
@@ -109,7 +110,7 @@ const extractTextFromReactNode = (node: React.ReactNode): string => {
 
   // Handle React fragments specifically
   if (typeof node === 'object' && node !== null && 'type' in node) {
-    const fragmentNode = node as any;
+      const fragmentNode = node as React.ReactElement & { type: typeof React.Fragment };
     if (fragmentNode.type === React.Fragment) {
       // Safely check for props and children
       if (fragmentNode.props && typeof fragmentNode.props === 'object') {

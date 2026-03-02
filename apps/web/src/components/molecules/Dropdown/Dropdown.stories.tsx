@@ -4,6 +4,107 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { action } from '@storybook/addon-actions';
 import { Dropdown, createDefaultDropdownItems } from './index';
 
+const ControlledDropdownExample = (props: Story['args'] = {}) => {
+  const [open, setOpen] = React.useState(false);
+  
+  // Destructure props outside useCallback
+  const { onOpenChange } = props;
+  
+  const handleOpenChange = React.useCallback(
+    (newOpen: boolean) => {
+      setOpen(newOpen);
+      onOpenChange?.(newOpen);
+    },
+    [onOpenChange] // Now only depends on onOpenChange, not the whole props object
+  );
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: STORY_CONSTANTS.spacing.medium,
+        alignItems: 'center',
+      }}
+    >
+      <div style={{ display: 'flex', gap: STORY_CONSTANTS.spacing.small }}>
+        <StoryButton onClick={() => setOpen(true)}>Open Programmatically</StoryButton>
+        <StoryButton onClick={() => setOpen(false)}>Close Programmatically</StoryButton>
+        <StoryButton onClick={() => setOpen(!open)}>Toggle</StoryButton>
+      </div>
+
+      <Dropdown
+        {...props}
+        open={open}
+        onOpenChange={handleOpenChange}
+        trigger={<StoryButton>Controlled Menu</StoryButton>}
+      >
+        <Dropdown.Item>Item 1</Dropdown.Item>
+        <Dropdown.Item>Item 2</Dropdown.Item>
+        <Dropdown.Item onSelect={() => setOpen(false)}>Close on Select</Dropdown.Item>
+      </Dropdown>
+
+      <p
+        style={{
+          color: STORY_CONSTANTS.colors.text.secondary,
+          fontSize: '14px',
+          fontFamily: 'monospace',
+        }}
+      >
+        Current state: <strong>{open ? 'Open' : 'Closed'}</strong>
+      </p>
+    </div>
+  );
+};
+
+export const ControlledDropdown: Story = {
+  args: {
+    // Explicitly set defaults to prevent control interference
+    closeOnSelect: true,
+    closeOnEscape: true,
+    closeOnOutsideClick: true,
+  },
+    render: (args) => <ControlledDropdownExample {...args} />,
+};
+
+
+export const WithGroupsProp: Story = {
+  args: {
+    closeOnSelect: true,
+  },
+  render: (args) => {
+    const groups = [
+      {
+        label: 'File Operations',
+        items: [
+          { id: 'new', label: 'New', onClick: action('New clicked') },
+          { id: 'open', label: 'Open', onClick: action('Open clicked') },
+          { id: 'save', label: 'Save', onClick: action('Save clicked') },
+        ],
+      },
+      {
+        label: 'Edit Operations',
+        items: [
+          { id: 'undo', label: 'Undo', onClick: action('Undo clicked') },
+          { id: 'redo', label: 'Redo', onClick: action('Redo clicked') },
+          { id: 'cut', label: 'Cut', onClick: action('Cut clicked'), disabled: true },
+          { id: 'copy', label: 'Copy', onClick: action('Copy clicked') },
+          { id: 'paste', label: 'Paste', onClick: action('Paste clicked') },
+        ],
+      },
+    ];
+
+    return (
+      <Dropdown
+        {...args}
+        groups={groups}
+        trigger={<StoryButton>Editor Menu (Groups Prop)</StoryButton>}
+      />
+    );
+  },
+};
+
+
 // ============================================================================
 // STORY UTILITIES & CONSTANTS
 // ============================================================================
@@ -31,10 +132,20 @@ const IconPlaceholder = ({
   </svg>
 );
 
-const EditIcon = (props: any) => <IconPlaceholder {...props} />;
-const DeleteIcon = (props: any) => <IconPlaceholder color="#EF4444" {...props} />;
-const DuplicateIcon = (props: any) => <IconPlaceholder color="#3B82F6" {...props} />;
-const SettingsIcon = (props: any) => <IconPlaceholder color="#8B5CF6" {...props} />;
+const EditIcon = (props: React.SVGProps<SVGSVGElement> & { size?: number }) => (
+  <IconPlaceholder {...props} />
+);
+const DeleteIcon = (props: React.SVGProps<SVGSVGElement> & { size?: number }) => (
+  <IconPlaceholder color="#EF4444" {...props} />
+);
+const DuplicateIcon = (props: React.SVGProps<SVGSVGElement> & { size?: number }) => (
+  <IconPlaceholder color="#3B82F6" {...props} />
+);
+const SettingsIcon = (props: React.SVGProps<SVGSVGElement> & { size?: number }) => (
+  <IconPlaceholder color="#8B5CF6" {...props} />
+);
+
+
 
 // Storybook button with forwardRef support
 const StoryButton = React.forwardRef<
@@ -453,56 +564,7 @@ export const AnimationVariants: Story = {
 // BEHAVIOR STORIES (Explicit args to prevent control leakage)
 // ============================================================================
 
-export const ControlledDropdown: Story = {
-  args: {
-    // Explicitly set defaults to prevent control interference
-    closeOnSelect: true,
-    closeOnEscape: true,
-    closeOnOutsideClick: true,
-  },
-  render: (args) => {
-    const [open, setOpen] = React.useState(false);
-    const handleOpenChange = React.useCallback(setOpen, []);
 
-    return (
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: STORY_CONSTANTS.spacing.medium,
-          alignItems: 'center',
-        }}
-      >
-        <div style={{ display: 'flex', gap: STORY_CONSTANTS.spacing.small }}>
-          <StoryButton onClick={() => setOpen(true)}>Open Programmatically</StoryButton>
-          <StoryButton onClick={() => setOpen(false)}>Close Programmatically</StoryButton>
-          <StoryButton onClick={() => setOpen(!open)}>Toggle</StoryButton>
-        </div>
-
-        <Dropdown
-          {...args}
-          open={open}
-          onOpenChange={handleOpenChange}
-          trigger={<StoryButton>Controlled Menu</StoryButton>}
-        >
-          <Dropdown.Item>Item 1</Dropdown.Item>
-          <Dropdown.Item>Item 2</Dropdown.Item>
-          <Dropdown.Item onSelect={() => setOpen(false)}>Close on Select</Dropdown.Item>
-        </Dropdown>
-
-        <p
-          style={{
-            color: STORY_CONSTANTS.colors.text.secondary,
-            fontSize: '14px',
-            fontFamily: 'monospace',
-          }}
-        >
-          Current state: <strong>{open ? 'Open' : 'Closed'}</strong>
-        </p>
-      </div>
-    );
-  },
-};
 
 export const PersistentDropdown: Story = {
   args: {
@@ -589,41 +651,7 @@ export const WithItemsProp: Story = {
   },
 };
 
-export const WithGroupsProp: Story = {
-  args: {
-    closeOnSelect: true,
-  },
-  render: (args) => {
-    const groups = [
-      {
-        label: 'File Operations',
-        items: [
-          { label: 'New', onClick: action('New clicked') },
-          { label: 'Open', onClick: action('Open clicked') },
-          { label: 'Save', onClick: action('Save clicked') },
-        ],
-      },
-      {
-        label: 'Edit Operations',
-        items: [
-          { label: 'Undo', onClick: action('Undo clicked') },
-          { label: 'Redo', onClick: action('Redo clicked') },
-          { label: 'Cut', onClick: action('Cut clicked'), disabled: true },
-          { label: 'Copy', onClick: action('Copy clicked') },
-          { label: 'Paste', onClick: action('Paste clicked') },
-        ],
-      },
-    ];
 
-    return (
-      <Dropdown
-        {...args}
-        groups={groups}
-        trigger={<StoryButton>Editor Menu (Groups Prop)</StoryButton>}
-      />
-    );
-  },
-};
 
 // ============================================================================
 // REAL-WORLD EXAMPLES

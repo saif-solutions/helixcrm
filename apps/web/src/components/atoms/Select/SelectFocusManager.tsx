@@ -13,12 +13,15 @@ export function useFocusWithin(
     if (!element) return;
 
     const handleFocusIn = (_event: FocusEvent) => {
+      // _event is intentionally unused
       if (element.contains(document.activeElement)) {
         onFocusWithinChange?.(true);
       }
     };
 
     const handleFocusOut = (_event: FocusEvent) => {
+      // _event is intentionally unused
+
       // Use setTimeout to check after focus has moved
       setTimeout(() => {
         if (!element.contains(document.activeElement)) {

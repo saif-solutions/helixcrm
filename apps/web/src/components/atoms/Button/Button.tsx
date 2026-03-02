@@ -99,7 +99,15 @@ export const Button = React.memo(
           if (!isDisabled && (e.key === ' ' || e.key === 'Enter')) {
             e.preventDefault();
             if (onClick) {
-              onClick(e as any);
+              // Convert KeyboardEvent to MouseEvent by creating a compatible object
+              const syntheticEvent = {
+                ...e,
+                type: 'click',
+                clientX: 0,
+                clientY: 0,
+                button: 0,
+              } as unknown as React.MouseEvent<HTMLButtonElement>;
+              onClick(syntheticEvent);
             }
           }
         },

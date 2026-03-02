@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useEffect } from 'react';
 import { useAuthStore, User } from '../stores/auth.store';
 import { useToast } from '../components/feedback/ToastProvider';
@@ -26,7 +27,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     logout,
     register,
     clearSessionExpired,
-    setSessionExpired,
   } = useAuthStore();
   
   const { success, error } = useToast();
@@ -39,11 +39,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Show session expired toast when session expires
   useEffect(() => {
     if (sessionExpired) {
-error(
-  'Session Expired',
-  'Your session has expired. Please log in again to continue.'
-);
-clearSessionExpired();
+      error(
+        'Session Expired',
+        'Your session has expired. Please log in again to continue.'
+      );
+      clearSessionExpired();
     }
   }, [sessionExpired, error, clearSessionExpired]);
 
@@ -51,8 +51,8 @@ clearSessionExpired();
     try {
       await login({ email, password, rememberMe: false });
       success('Login successful', 'Welcome back!');
-    } catch (err: any) {
-      const message = err.message || 'Login failed';
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Login failed';
       error('Login failed', message);
       throw err;
     }
@@ -75,8 +75,8 @@ clearSessionExpired();
         organizationName,
       });
       success('Registration successful', 'Welcome to HelixCRM!');
-    } catch (err: any) {
-      const message = err.message || 'Registration failed';
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Registration failed';
       error('Registration failed', message);
       throw err;
     }

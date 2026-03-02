@@ -1,4 +1,5 @@
 // D:\Projects-In-Hand\helixcrm\apps\web\src\components\atoms\Typography\Typography.tsx
+import { TypographyContext } from './TypographyContext';
 import * as React from 'react';
 import { cn } from '../../../lib/utils';
 import {
@@ -20,9 +21,6 @@ import {
   getTypographyRole,
   getTypographyAriaLevel,
   isTypographyHeading,
-  TypographyVariant,
-  TypographyColor,
-  TypographyWeight,
 } from './Typography.types';
 import { getTypographyClasses, getLineClampStyles } from './Typography.styles';
 
@@ -358,31 +356,6 @@ export const Highlight = React.forwardRef<HTMLSpanElement, Omit<TypographyProps,
   )
 );
 Highlight.displayName = 'Highlight';
-
-/**
- * Typography component context for theming
- */
-export const TypographyContext = React.createContext<{
-  defaultVariant?: TypographyVariant;
-  defaultColor?: TypographyColor;
-  defaultWeight?: TypographyWeight;
-}>({});
-
-/**
- * TypographyProvider for setting defaults
- */
-export const TypographyProvider: React.FC<{
-  children: React.ReactNode;
-  defaultVariant?: TypographyVariant;
-  defaultColor?: TypographyColor;
-  defaultWeight?: TypographyWeight;
-}> = ({ children, defaultVariant, defaultColor, defaultWeight }) => {
-  return (
-    <TypographyContext.Provider value={{ defaultVariant, defaultColor, defaultWeight }}>
-      {children}
-    </TypographyContext.Provider>
-  );
-};
 
 /**
  * Typography component with context support

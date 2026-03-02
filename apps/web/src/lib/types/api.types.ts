@@ -1,7 +1,7 @@
 // apps/web/src/lib/types/api.types.ts
 
 // Base API Response
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   data?: T;
   error?: string;
   status: number;
@@ -42,6 +42,7 @@ export interface CreateLeadDto {
   status?: LeadStatus;
 }
 
+// This empty interface is intentional for extensibility
 export interface UpdateLeadDto extends Partial<CreateLeadDto> {}
 
 export interface LeadsStats {
@@ -75,6 +76,7 @@ export interface CreateContactDto {
   company?: string;
 }
 
+// This empty interface is intentional for extensibility
 export interface UpdateContactDto extends Partial<CreateContactDto> {}
 
 // API Query Responses
@@ -110,10 +112,3 @@ export type ApiError = {
   timestamp?: string;
   path?: string;
 };
-
-export interface PaginationMeta {
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-}

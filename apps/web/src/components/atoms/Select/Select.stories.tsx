@@ -476,62 +476,65 @@ export const ManyOptions: Story = {
  * Integration Examples
  * ========================================================================== */
 
+// Create a proper component for the form example
+const FormExample = () => {
+  const [country, setCountry] = useState<string>('');
+  const [languages, setLanguages] = useState<string[]>([]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    alert(`Country: ${country}\nLanguages: ${languages.join(', ')}`);
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4 max-w-md">
+      <div>
+        <label className="block text-sm font-medium mb-1">Country</label>
+        <Select
+          options={[
+            { value: 'us', label: 'United States' },
+            { value: 'ca', label: 'Canada' },
+            { value: 'uk', label: 'United Kingdom' },
+            { value: 'au', label: 'Australia' },
+          ]}
+          value={country}
+          onChange={(value) => setCountry(value as string)}
+          name="country"
+          placeholder="Select country"
+          required
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-1">Languages</label>
+        <Select
+          options={[
+            { value: 'en', label: 'English' },
+            { value: 'es', label: 'Spanish' },
+            { value: 'fr', label: 'French' },
+            { value: 'de', label: 'German' },
+          ]}
+          value={languages}
+          onChange={(value) => setLanguages(value as string[])}
+          multiple
+          name="languages"
+          placeholder="Select languages"
+          helperText="You can select multiple languages"
+        />
+      </div>
+
+      <button
+        type="submit"
+        className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      >
+        Submit Form
+      </button>
+    </form>
+  );
+};
+
 export const InForm: Story = {
-  render: () => {
-    const [country, setCountry] = useState<string>('');
-    const [languages, setLanguages] = useState<string[]>([]);
-
-    const handleSubmit = (e: React.FormEvent) => {
-      e.preventDefault();
-      alert(`Country: ${country}\nLanguages: ${languages.join(', ')}`);
-    };
-
-    return (
-      <form onSubmit={handleSubmit} className="space-y-4 max-w-md">
-        <div>
-          <label className="block text-sm font-medium mb-1">Country</label>
-          <Select
-            options={[
-              { value: 'us', label: 'United States' },
-              { value: 'ca', label: 'Canada' },
-              { value: 'uk', label: 'United Kingdom' },
-              { value: 'au', label: 'Australia' },
-            ]}
-            value={country}
-            onChange={(value) => setCountry(value as string)}
-            name="country"
-            placeholder="Select country"
-            required
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-1">Languages</label>
-          <Select
-            options={[
-              { value: 'en', label: 'English' },
-              { value: 'es', label: 'Spanish' },
-              { value: 'fr', label: 'French' },
-              { value: 'de', label: 'German' },
-            ]}
-            value={languages}
-            onChange={(value) => setLanguages(value as string[])}
-            multiple
-            name="languages"
-            placeholder="Select languages"
-            helperText="You can select multiple languages"
-          />
-        </div>
-
-        <button
-          type="submit"
-          className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          Submit Form
-        </button>
-      </form>
-    );
-  },
+  render: () => <FormExample />,
   parameters: {
     docs: {
       description: {

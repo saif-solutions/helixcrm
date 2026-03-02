@@ -259,17 +259,27 @@ export function createDefaultDropdownItems(
  *
  * @internal
  */
+// Define the Performance interface with memory property
+interface PerformanceWithMemory extends Performance {
+  memory?: {
+    usedJSHeapSize: number;
+    totalJSHeapSize: number;
+    jsHeapSizeLimit: number;
+  };
+}
+
 export function measureDropdownPerformance(renderFn: () => void): {
   renderTime: number;
   memoryUsage: number;
 } {
   const startTime = performance.now();
-  const startMemory = (performance as any).memory?.usedJSHeapSize || 0;
+  const perf = performance as PerformanceWithMemory;
+  const startMemory = perf.memory?.usedJSHeapSize || 0;
 
   renderFn();
 
   const endTime = performance.now();
-  const endMemory = (performance as any).memory?.usedJSHeapSize || 0;
+  const endMemory = perf.memory?.usedJSHeapSize || 0;
 
   return {
     renderTime: endTime - startTime,
@@ -282,7 +292,7 @@ export function measureDropdownPerformance(renderFn: () => void): {
  *
  * @internal
  */
-export function debounce<T extends (...args: any[]) => any>(
+export function debounce<T extends (...args: unknown[]) => unknown>(
   fn: T,
   delay: number
 ): (...args: Parameters<T>) => void {

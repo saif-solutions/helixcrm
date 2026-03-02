@@ -36,7 +36,7 @@ export interface Lead extends TimestampEntity, OrganizationEntity {
   convertedToDealId?: string;
   lastContactedAt?: string;
   tags?: string[];
-  customFields?: Record<string, any>;
+  customFields?: Record<string, unknown>;
 }
 
 export interface CreateLeadDto {
@@ -51,9 +51,10 @@ export interface CreateLeadDto {
   assignedTo?: string;
   estimatedValue?: number;
   tags?: string[];
-  customFields?: Record<string, any>;
+  customFields?: Record<string, unknown>;
 }
 
+// This empty interface is intentional for extensibility
 export interface UpdateLeadDto extends Partial<CreateLeadDto> {}
 
 // ============================================================================
@@ -83,7 +84,7 @@ export interface Contact extends TimestampEntity, OrganizationEntity {
   dateOfBirth?: string;
   anniversary?: string;
   tags?: string[];
-  customFields?: Record<string, any>;
+  customFields?: Record<string, unknown>;
   socialLinks?: {
     linkedin?: string;
     twitter?: string;
@@ -113,7 +114,7 @@ export interface CreateContactDto {
   dateOfBirth?: string;
   anniversary?: string;
   tags?: string[];
-  customFields?: Record<string, any>;
+  customFields?: Record<string, unknown>;
   socialLinks?: {
     linkedin?: string;
     twitter?: string;
@@ -122,6 +123,7 @@ export interface CreateContactDto {
   };
 }
 
+// This empty interface is intentional for extensibility
 export interface UpdateContactDto extends Partial<CreateContactDto> {}
 
 // ============================================================================
@@ -159,7 +161,7 @@ export interface Deal extends TimestampEntity, OrganizationEntity {
   description?: string;
   notes?: string;
   tags?: string[];
-  customFields?: Record<string, any>;
+  customFields?: Record<string, unknown>;
 
   // Calculated fields
   daysInStage?: number;
@@ -202,7 +204,7 @@ export interface UpdateDealDto {
   description?: string;
   notes?: string;
   tags?: string[];
-  customFields?: Record<string, any>;
+  customFields?: Record<string, unknown>;
 }
 
 // ============================================================================

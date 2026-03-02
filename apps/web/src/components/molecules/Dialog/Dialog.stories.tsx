@@ -1,10 +1,30 @@
 // D:\Projects-In-Hand\helixcrm\apps\web\src\components\molecules\Dialog\Dialog.stories.tsx
 import * as React from 'react';
+import { fn } from '@storybook/test';
 import type { Meta, StoryObj } from '@storybook/react';
 // import { fn } from '@storybook/test';
 import { Dialog } from './Dialog';
 import { Button } from '../../atoms/Button/Button';
 import { Input } from '../../atoms/Input/Input';
+
+interface DialogHeaderStoryProps {
+  title?: string;
+  description?: string;
+  showCloseButton?: boolean;
+  children?: React.ReactNode;
+  [key: string]: unknown;
+}
+interface DialogBodyStoryProps {
+  children?: React.ReactNode;
+  className?: string;
+  [key: string]: unknown;
+}
+
+interface DialogFooterStoryProps {
+  children?: React.ReactNode;
+  className?: string;
+  [key: string]: unknown;
+}
 
 // Mock dependencies for comprehensive stories
 // Since Checkbox is in MVP roadmap, create a mock component
@@ -41,13 +61,13 @@ const MockCard = ({
 
 // Type assertions for compound components (they exist in Dialog.tsx)
 const DialogWithComponents = Dialog as typeof Dialog & {
-  Header: React.ComponentType<any>;
-  Body: React.ComponentType<any>;
-  Footer: React.ComponentType<any>;
+  Header: React.ComponentType<React.ComponentProps<typeof DialogHeader>>;
+  Body: React.ComponentType<React.ComponentProps<typeof DialogBody>>;
+  Footer: React.ComponentType<React.ComponentProps<typeof DialogFooter>>;
 };
 
-// Create typed versions of compound components
-const DialogHeader = ({ title, description, showCloseButton = true, children, ...props }: any) => (
+
+const DialogHeader = ({ title, description, showCloseButton = true, children, ...props }: DialogHeaderStoryProps) => (
   <div
     className="flex items-start justify-between p-6 pb-4 border-b border-gray-200 dark:border-gray-700"
     {...props}
@@ -78,13 +98,13 @@ const DialogHeader = ({ title, description, showCloseButton = true, children, ..
   </div>
 );
 
-const DialogBody = ({ children, className = '', ...props }: any) => (
+const DialogBody = ({ children, className = '', ...props }: DialogBodyStoryProps) => (
   <div className={`px-6 py-4 ${className}`} {...props}>
     {children}
   </div>
 );
 
-const DialogFooter = ({ children, className = '', ...props }: any) => (
+const DialogFooter = ({ children, className = '', ...props }: DialogFooterStoryProps) => (
   <div
     className={`flex items-center px-6 py-4 border-t border-gray-200 dark:border-gray-700 ${className}`}
     {...props}
@@ -94,9 +114,23 @@ const DialogFooter = ({ children, className = '', ...props }: any) => (
 );
 
 // Attach mock compound components
-(DialogWithComponents as any).Header = DialogHeader;
-(DialogWithComponents as any).Body = DialogBody;
-(DialogWithComponents as any).Footer = DialogFooter;
+(DialogWithComponents as typeof Dialog & {
+  Header: typeof DialogHeader;
+  Body: typeof DialogBody;
+  Footer: typeof DialogFooter;
+}).Header = DialogHeader;
+
+(DialogWithComponents as typeof Dialog & {
+  Header: typeof DialogHeader;
+  Body: typeof DialogBody;
+  Footer: typeof DialogFooter;
+}).Body = DialogBody;
+
+(DialogWithComponents as typeof Dialog & {
+  Header: typeof DialogHeader;
+  Body: typeof DialogBody;
+  Footer: typeof DialogFooter;
+}).Footer = DialogFooter;
 
 // ============================================================================
 // 1. METADATA & CONFIGURATION
@@ -271,7 +305,7 @@ A fully accessible, enterprise-grade dialog/modal component for HELIX CRM with c
   },
   args: {
     open: false,
-    onClose: jest.fn(),
+    onClose: fn(),
     title: 'Dialog Title',
     description: 'This is a dialog description that provides more context.',
     showCloseButton: true,
@@ -1238,7 +1272,7 @@ export const AlertDialogAria: Story = {
 // 11. FORM & VALIDATION STORIES
 // ============================================================================
 
-const FormValidationExample = (args: any) => {
+const FormValidationExample = (args: Story['args'] = {}) => {
   const [formData, setFormData] = React.useState({
     name: '',
     email: '',
@@ -1262,7 +1296,11 @@ const FormValidationExample = (args: any) => {
   };
 
   return (
-    <Dialog {...args}>
+    <Dialog 
+  {...args} 
+  open={args?.open ?? true} 
+  onClose={args?.onClose ?? fn()}
+>
       <div className="space-y-6">
         <div>
           <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
@@ -1330,7 +1368,7 @@ const FormValidationExample = (args: any) => {
 
 export const FormValidation: Story = {
   name: 'Pattern: Form with Validation',
-  render: (args) => <FormValidationExample {...args} />,
+  render: (args) => <FormValidationExample {...args || {}} />,
   args: {
     open: true,
     variant: 'form',
@@ -1643,7 +1681,7 @@ const MultiStepWizardExample = () => {
   return (
     <Dialog
       open={true}
-      onClose={jest.fn()}
+      onClose={fn()}
       title="Multi-Step Onboarding"
       size="lg"
       data-testid="wizard-dialog"
@@ -1675,10 +1713,10 @@ const MultiStepWizardExample = () => {
             Back
           </Button>
           <div className="space-x-3">
-            <Button variant="outline" onClick={jest.fn()}>
+            <Button variant="outline" onClick={fn()}>
               Cancel
             </Button>
-            <Button variant="primary" onClick={step === 3 ? jest.fn() : handleNext}>
+            <Button variant="primary" onClick={step === 3 ? fn() : handleNext}>
               {step === 3 ? 'Complete' : 'Next'}
             </Button>
           </div>
@@ -1712,7 +1750,7 @@ const DynamicContentDialog = () => {
   return (
     <Dialog
       open={true}
-      onClose={jest.fn()}
+      onClose={fn()}
       title="Dynamic Content Example"
       data-testid="dynamic-dialog"
     >

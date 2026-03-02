@@ -105,6 +105,7 @@ export interface CardState {
 /**
  * Sub-component props
  */
+// These empty interfaces are intentional for future extensibility
 export interface CardHeaderProps extends React.HTMLAttributes<HTMLDivElement> {}
 export interface CardTitleProps extends React.HTMLAttributes<HTMLHeadingElement> {}
 export interface CardSubtitleProps extends React.HTMLAttributes<HTMLParagraphElement> {}

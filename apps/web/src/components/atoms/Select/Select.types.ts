@@ -20,7 +20,7 @@ export interface SelectOption {
   disabled?: boolean;
   group?: string;
   tooltip?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   className?: string;
   'data-testid'?: string;
 }
@@ -236,7 +236,7 @@ export function getSelectedOptions(
 /**
  * Type guard to check if value is an array
  */
-export function isArrayValue(value: any): value is (string | number)[] {
+export function isArrayValue(value: unknown): value is (string | number)[] {
   return Array.isArray(value);
 }
 

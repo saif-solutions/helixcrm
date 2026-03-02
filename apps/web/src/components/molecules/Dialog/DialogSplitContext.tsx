@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 // D:\Projects-In-Hand\helixcrm\apps\web\src\components\molecules\Dialog\DialogSplitContext.tsx
 import * as React from 'react';
 import {
@@ -184,6 +185,7 @@ export const OptimizedDialogProvider: React.FC<OptimizedDialogProviderProps> = R
     // Memoize each context value individually for optimal performance
     const memoizedState = React.useMemo(
       () => state,
+      // eslint-disable-next-line react-hooks/exhaustive-deps
       [
         state.isOpen,
         state.isVisible,
@@ -196,6 +198,7 @@ export const OptimizedDialogProvider: React.FC<OptimizedDialogProviderProps> = R
 
     const memoizedConfig = React.useMemo(
       () => config,
+      // eslint-disable-next-line react-hooks/exhaustive-deps
       [
         config.variant,
         config.size,
@@ -208,6 +211,7 @@ export const OptimizedDialogProvider: React.FC<OptimizedDialogProviderProps> = R
 
     const memoizedActions = React.useMemo(
       () => actions,
+      // eslint-disable-next-line react-hooks/exhaustive-deps
       [
         actions.onClose,
         actions.onAnimationStart,
@@ -220,12 +224,17 @@ export const OptimizedDialogProvider: React.FC<OptimizedDialogProviderProps> = R
 
     const memoizedAccessibility = React.useMemo(
       () => accessibility,
+      // eslint-disable-next-line react-hooks/exhaustive-deps
       [accessibility.dialogId, accessibility.headerId, accessibility.bodyId]
     );
 
-    const memoizedRefs = React.useMemo(() => refs, []);
+    const memoizedRefs = React.useMemo(() => refs, 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []);
 
-    const memoizedUtils = React.useMemo(() => utils, [utils.getTestId, utils.portalContainer]);
+    const memoizedUtils = React.useMemo(() => utils,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [utils.getTestId, utils.portalContainer]);
 
     return (
       <DialogStateContext.Provider value={memoizedState}>

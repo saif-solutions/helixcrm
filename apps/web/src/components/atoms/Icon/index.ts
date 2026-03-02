@@ -14,8 +14,12 @@ export {
   StatusIcon,
   IconButton,
   IconGroup,
-  IconProvider,
 } from './Icon';
+
+// ============================================================================
+// Re-export context providers and hooks
+// ============================================================================
+export { IconProvider, useIconConfig } from './IconContext';
 
 // ============================================================================
 // Re-export all types
@@ -71,8 +75,3 @@ export {
   getIconClassNames,
   isValidBadge,
 } from './Icon.types';
-
-// ============================================================================
-// Re-export hooks
-// ============================================================================
-export { useIconConfig } from './Icon';

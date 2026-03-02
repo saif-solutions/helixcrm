@@ -310,7 +310,7 @@ export const Select = React.memo(
       label,
       helperText,
       required = false,
-      icon,
+      // icon removed - not used
       maxMenuHeight = defaultSelectStyleProps.maxMenuHeight,
       minMenuWidth = defaultSelectStyleProps.minMenuWidth,
       className,
@@ -328,10 +328,10 @@ export const Select = React.memo(
       'data-testid': testId = 'select',
       'data-analytics': analyticsId,
       'data-cy': cyId,
-      ariaLabel,
-      ariaDescribedBy,
-      ariaControls,
-      ariaOwns,
+      // ariaLabel removed - not used
+      // ariaDescribedBy removed - not used
+      // ariaControls removed - not used
+      // ariaOwns removed - not used
       onFocus,
       onBlur,
       onKeyDown,
@@ -713,9 +713,9 @@ export const Select = React.memo(
             ariaControls={`${testId}-menu`}
             onToggle={toggleDropdown}
             onClear={handleClear}
-            onKeyDown={combinedHandleKeyDown as any}
-            onFocus={handleFocus as any}
-            onBlur={handleBlur as any}
+            onKeyDown={combinedHandleKeyDown as React.KeyboardEventHandler<Element>}
+            onFocus={handleFocus as React.FocusEventHandler<Element>}
+            onBlur={handleBlur as React.FocusEventHandler<Element>}
           />
 
           <SelectMenu

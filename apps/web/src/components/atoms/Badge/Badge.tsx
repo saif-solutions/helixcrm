@@ -97,7 +97,15 @@ export const Badge = React.memo(
           if (clickable && (e.key === 'Enter' || e.key === ' ')) {
             e.preventDefault();
             if (onClick) {
-              onClick(e as any);
+              // Convert KeyboardEvent to MouseEvent by creating a compatible object
+              const syntheticEvent = {
+                ...e,
+                type: 'click',
+                clientX: 0,
+                clientY: 0,
+                button: 0,
+              } as unknown as React.MouseEvent<HTMLSpanElement>;
+              onClick(syntheticEvent);
             }
           }
         },

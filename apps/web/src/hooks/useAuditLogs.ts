@@ -59,11 +59,12 @@ interface UseAuditLogsReturn {
 }
 
 // Helper function to build query string from filters with validation
-const buildQueryString = (params: Record<string, any>): string => {
+// Helper function to build query string from filters with validation
+const buildQueryString = (params: AuditLogQueryParams): string => {
   const searchParams = new URLSearchParams();
   
   // Validate and fix date range if needed
-  let validatedParams = { ...params };
+  const validatedParams = { ...params };
   
   if (validatedParams.from && validatedParams.to) {
     const fromDate = new Date(validatedParams.from);
@@ -71,24 +72,27 @@ const buildQueryString = (params: Record<string, any>): string => {
     
     if (fromDate > toDate) {
       // Swap dates if from is after to
-      [validatedParams.from, validatedParams.to] = [validatedParams.to, validatedParams.from];
+      const temp = validatedParams.from;
+      validatedParams.from = validatedParams.to;
+      validatedParams.to = temp;
     }
     
     // Ensure to date is not in the future
     const now = new Date();
-    if (toDate > now) {
+    const toDateObj = new Date(validatedParams.to);
+    if (toDateObj > now) {
       validatedParams.to = now.toISOString().split('T')[0];
     }
   }
   
-  Object.entries(validatedParams).forEach(([key, value]: [string, any]) => {
+  Object.entries(validatedParams).forEach(([key, value]) => {
     if (value === undefined || value === null || value === '') return;
     
     if (Array.isArray(value)) {
       if (value.length > 0) {
         searchParams.set(key, value.join(','));
       }
-    } else {
+    } else if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
       searchParams.set(key, value.toString());
     }
   });
@@ -262,8 +266,9 @@ export const useAuditLogs = (initialParams?: AuditLogQueryParams): UseAuditLogsR
       const data: PaginatedAuditLogs = await response.json();
       setLogs(data.data);
       setPagination(data.pagination);
-    } catch (err: any) {
-      if (err.name === 'AbortError') {
+    } catch (err) {
+      // Check if it's an AbortError
+      if (err instanceof Error && err.name === 'AbortError') {
         console.log('Fetch logs request was aborted');
         return;
       }
@@ -522,7 +527,7 @@ export const useAuditLogs = (initialParams?: AuditLogQueryParams): UseAuditLogsR
 
   // Fetch initial data
   useEffect(() => {
-    const cleanup = refreshAll(); // Store the promise if needed
+    refreshAll(); // Store the promise if needed
     const cleanupWebSocket = setupWebSocket();
     
     // Cleanup function
@@ -615,8 +620,9 @@ export const useAuditLogDetail = (logId?: string) => {
       
       const data: AuditLog = await response.json();
       setLog(data);
-    } catch (err: any) {
-      if (err.name === 'AbortError') {
+    } catch (err) {
+      // Check if it's an AbortError
+      if (err instanceof Error && err.name === 'AbortError') {
         console.log('Fetch log detail request was aborted');
         return;
       }

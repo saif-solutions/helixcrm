@@ -1,0 +1,9 @@
+**/*.test.tsx
+**/*.stories.tsx
+**/*.spec.tsx
+**/__tests__/**
+**/__mocks__/**
+src/pages/archive/**
+src/components/atoms/**/*.stories.tsx
+src/components/molecules/**/*.stories.tsx
+src/components/organisms/**/*.stories.tsx

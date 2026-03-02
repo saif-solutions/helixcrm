@@ -5,6 +5,7 @@
 
 import { apiClient, csrfManager } from './api';
 import { useAuthStore, User } from '../stores/auth.store';
+import api from './api';
 
 export interface LoginRequest {
   email: string;
@@ -36,7 +37,7 @@ export const AuthService = {
    */
   async initialize(): Promise<void> {
     try {
-      await csrfManager.refreshCsrfToken(api as any);
+      await csrfManager.refreshCsrfToken(api);
     } catch (error) {
       console.error('Failed to initialize auth:', error);
       throw error;
@@ -50,11 +51,14 @@ export const AuthService = {
     try {
       const response = await apiClient.post<LoginResponse>('/auth/login', credentials);
       return response;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Login failed:', error);
       
+      // Check if it's an API error with status
+      const apiError = error as { status?: number; message?: string };
+      
       // Specific error mapping
-      if (error.status === 401) {
+      if (apiError.status === 401) {
         throw { 
           message: 'Invalid email or password', 
           code: 'INVALID_CREDENTIALS',
@@ -62,7 +66,7 @@ export const AuthService = {
         };
       }
       
-      if (error.status === 0) {
+      if (apiError.status === 0) {
         throw { 
           message: 'Cannot connect to server. Please check your connection.',
           code: 'NETWORK_ERROR',
@@ -81,7 +85,7 @@ export const AuthService = {
     try {
       const response = await apiClient.post<LoginResponse>('/auth/register', data);
       return response;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Registration failed:', error);
       throw error;
     }
@@ -94,8 +98,9 @@ export const AuthService = {
     try {
       const response = await apiClient.get<User>('/auth/me');
       return response;
-    } catch (error: any) {
-      if (error.status === 401) {
+    } catch (error: unknown) {
+      const apiError = error as { status?: number };
+      if (apiError.status === 401) {
         useAuthStore.getState().logout();
       }
       throw error;
@@ -163,5 +168,4 @@ export const AuthService = {
 };
 
 // Export axios instance for services that need it
-import api from './api';
 export { api };

@@ -79,6 +79,8 @@ export interface FormFieldGroupProps extends React.HTMLAttributes<HTMLDivElement
 
 /**
  * FormActions component props - container for form action buttons
+ * This interface intentionally extends HTMLDivElement without additional props
+ * to allow for future extensibility without breaking changes.
  */
 export interface FormActionsProps extends React.HTMLAttributes<HTMLDivElement> {}
 
