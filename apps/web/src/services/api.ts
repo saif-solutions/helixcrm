@@ -9,7 +9,7 @@ import axios, {
 import { useAuthStore } from '../stores/auth.store'; 
 import { mapBackendErrorToAuthError } from '../lib/utils/auth-error-mapper';
 import { API_CONFIG } from '../config/api.config';
-
+import { logger, generateCorrelationId } from '../lib/logging/logger.service';
 // Import types
 import { Lead, Contact, Deal, CreateDealSimpleDto, DashboardStats } from '../lib/types/crm.types';
 import type { CreateContactDto, UpdateContactDto } from '../lib/types/crm.types';
@@ -44,11 +44,6 @@ console.log(`📡 API Configuration:
   - Environment: ${APP_ENV}
   - Development Mode: ${IS_DEV}
 `);
-
-// Generate UUID for request IDs
-const generateRequestId = (): string => {
-  return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-};
 
 // Types
 export interface ApiError {
@@ -168,34 +163,22 @@ const api: AxiosInstance = axios.create({
 });
 
 // Request interceptor
+// Request interceptor
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    // Get auth state from store - no type assertion needed
-    // Get auth state from store
-    const authState = useAuthStore.getState();
-    
-    // Token is stored in HTTP-only cookie, not in localStorage or memory
-    // The browser automatically sends it with requests when withCredentials: true
-    // So we don't need to add an Authorization header - the cookie handles it
-    
-    const organizationId = authState.user?.organizationId;
-    
-    // Log that we're relying on cookies (for debugging)
-    if (IS_DEV && !config.url?.includes('/auth/')) {
-      console.log(`🍪 Request will use HTTP-only cookie for authentication`);
-    }
-    
-    // Add Request ID
-    const requestId = generateRequestId();
-    config.headers['X-Request-Id'] = requestId;
+    // Generate and set correlation ID
+    const correlationId = generateCorrelationId();
+    config.headers['X-Request-Id'] = correlationId;
+    logger.setCorrelationId(correlationId);
 
-    // 🔥 TENANT CONTEXT COMES FROM JWT ONLY - No header needed
-    // The backend extracts tenant from JWT token, not from headers
-    // This is a security requirement - do not add x-tenant-id header
-    
-    // Log that we're NOT sending tenant header (for debugging)
-    if (IS_DEV && organizationId && !config.url?.includes('/auth/')) {
-      console.log(`🏢 Tenant context: ${organizationId.substring(0, 8)}... (from JWT, not sent as header)`);
+    // Log request in development
+    if (IS_DEV) {
+      logger.debug(`📤 API Request: ${config.method?.toUpperCase()} ${config.url}`, {
+        method: config.method,
+        url: config.url,
+        hasData: !!config.data,
+        hasCsrf: !!config.headers['X-CSRF-Token'],
+      });
     }
 
     // Add CSRF token for mutating requests
@@ -203,63 +186,49 @@ api.interceptors.request.use(
       const csrfToken = csrfManager.getToken();
       if (csrfToken) {
         config.headers['X-CSRF-Token'] = csrfToken;
-      } else {
-        console.warn('⚠️ CSRF token missing for', config.method, 'request');
       }
-    }
-
-    // Add AbortController support
-    if (!config.signal) {
-      const controller = new AbortController();
-      config.signal = controller.signal;
-      (config as RetryableRequestConfig)._abortController = controller;
-    }
-
-    // Store request ID for error handling
-    (config as RetryableRequestConfig)._requestId = requestId;
-
-    // Log in development
-    if (IS_DEV) {
-      console.log(`📤 [${config.method?.toUpperCase()}] ${config.url}`, {
-        requestId,
-        hasData: !!config.data,
-        hasCsrf: !!config.headers['X-CSRF-Token'],
-        hasTenant: !!config.headers['x-tenant-id'],
-      });
     }
 
     return config;
   },
   (error) => {
+    logger.error('Request interceptor error', error);
     return Promise.reject(error);
   }
 );
 
 // Response interceptor
+// Response interceptor
 api.interceptors.response.use(
   (response: AxiosResponse) => {
-    // Log in development
+    // Log successful response in development
     if (IS_DEV) {
-      console.log(`📥 [${response.config.method?.toUpperCase()}] ${response.config.url}`, {
+      logger.debug(`📥 API Response: ${response.config.method?.toUpperCase()} ${response.config.url}`, {
         status: response.status,
+        statusText: response.statusText,
       });
     }
     return response;
   },
   async (error) => {
     const originalRequest = error.config as RetryableRequestConfig;
-    const requestId = originalRequest?._requestId || 'unknown';
     const url = originalRequest?.url || '';
+
+    // Log error
+    logger.error(
+      `API Error: ${error.response?.status} ${error.config?.method?.toUpperCase()} ${url}`,
+      error,
+      {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        url,
+        method: error.config?.method,
+        requestId: originalRequest?._requestId,
+      }
+    );
 
     // Network error (backend offline)
     if (!error.response) {
-      console.error('🌐 Network error - backend might be offline', {
-        requestId,
-        url: originalRequest?.url,
-        method: originalRequest?.method,
-      });
-
-      // Show session expired if it's an auth endpoint
       if (originalRequest?.url?.includes('/auth/')) {
         useAuthStore.getState().setSessionExpired(true);
       }
@@ -268,28 +237,19 @@ api.interceptors.response.use(
         status: 0,
         message: 'Network error. Please check your connection and ensure the backend server is running.',
         code: 'NETWORK_ERROR',
-        requestId,
+        requestId: originalRequest?._requestId,
       };
 
       return Promise.reject(apiError);
     }
 
-    // Get response data with proper typing
-    const responseData = error.response?.data as ErrorResponseData;
-
-    // 🔥 Handle 403 - Tenant context missing or invalid
+    // Handle 403 - Tenant context missing or invalid
     if (error.response?.status === 403) {
-      // Check if it's a tenant context issue
+      const responseData = error.response?.data as ErrorResponseData;
       if (responseData.error?.message?.includes('Tenant context')) {
-        console.error('🏢 Tenant context error:', {
-          requestId,
-          url,
-          message: responseData.error?.message,
-        });
+        logger.warn('Tenant context error', { url, requestId: originalRequest?._requestId });
         
-        // If this is not an auth endpoint, we might need to redirect
         if (!url.includes('/auth/')) {
-          console.warn('🔄 Tenant context missing - redirecting to login');
           useAuthStore.getState().setSessionExpired(true);
         }
       }
@@ -303,7 +263,7 @@ api.interceptors.response.use(
 
     // Handle 401 Unauthorized
     if (error.response?.status === 401) {
-      console.warn(`🔐 Authentication required for ${url}`);
+      logger.warn('Authentication required', { url, requestId: originalRequest?._requestId });
       
       if (originalRequest._retry) {
         useAuthStore.getState().setSessionExpired(true);
@@ -318,32 +278,34 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
+        logger.info('Attempting token refresh');
         await api.post('/auth/refresh');
+        logger.info('Token refresh successful');
         return api(originalRequest);
       } catch (refreshError) {
+        logger.error('Token refresh failed', refreshError as Error);
         authStore.setSessionExpired(true);
         return Promise.reject(refreshError);
       }
     }
 
     // CSRF token expired (403)
-    if (error.response?.status === 403 && responseData.code === 'INVALID_CSRF_TOKEN') {
-      // CSRF retry guard - prevent infinite loops
+    if (error.response?.status === 403 && error.response?.data?.code === 'INVALID_CSRF_TOKEN') {
+      logger.warn('CSRF token expired, attempting refresh');
+      
       originalRequest._csrfRetryCount = (originalRequest._csrfRetryCount || 0) + 1;
       if (originalRequest._csrfRetryCount > 1) {
-        console.error('❌ CSRF retry limit exceeded, setting session expired');
+        logger.error('CSRF retry limit exceeded');
         useAuthStore.getState().setSessionExpired(true);
         return Promise.reject(error);
       }
 
       try {
-        // Refresh CSRF token
         await csrfManager.refreshCsrfToken(api);
-
-        // Retry the original request
+        logger.info('CSRF token refreshed');
         return api(originalRequest);
       } catch (refreshError) {
-        // Can't refresh token - set session expired
+        logger.error('CSRF refresh failed', refreshError as Error);
         useAuthStore.getState().setSessionExpired(true);
         return Promise.reject(refreshError);
       }
@@ -352,43 +314,19 @@ api.interceptors.response.use(
     // Extract correlation ID from backend response headers
     const correlationId = error.response?.headers['x-request-id'] || 
                          error.response?.headers['x-correlation-id'] || 
-                         requestId;
+                         originalRequest?._requestId;
     
     // Map error for consistent handling
     const mappedError = mapBackendErrorToAuthError(error);
+    const responseData = error.response?.data as ErrorResponseData;
     const apiError: ApiError = {
       status: error.response?.status || 0,
       message: mappedError.message,
       code: mappedError.code || responseData.code || 'UNKNOWN_ERROR',
       timestamp: responseData.timestamp || new Date().toISOString(),
       path: responseData.path || originalRequest?.url,
-      requestId: correlationId,  // Use backend correlation ID if available
-    };
-
-    // Log error with correlation ID for debugging
-    console.error('❌ API Error:', {
       requestId: correlationId,
-      status: apiError.status,
-      message: apiError.message,
-      code: apiError.code,
-      path: apiError.path,
-    });
-
-    // Attach correlation ID to error object for UI display
-        // Attach correlation ID to error object for UI display
-    Object.defineProperty(error, 'correlationId', {
-      value: correlationId,
-      enumerable: true,
-      writable: true,
-      configurable: true
-    });
-
-    console.error('❌ API Error:', {
-      requestId,
-      status: apiError.status,
-      message: apiError.message,
-      path: apiError.path,
-    });
+    };
 
     return Promise.reject(apiError);
   }

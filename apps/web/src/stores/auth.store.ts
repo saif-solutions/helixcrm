@@ -4,6 +4,7 @@ import { create } from 'zustand';
 import { apiClient, initializeApi } from '../services/api';
 import { LoginFormData, RegisterFormData } from '../lib/schemas/auth.schema';
 import { mapBackendErrorToFormErrors } from '../lib/utils/auth-error-mapper';
+import { setUserContext, clearUserContext } from '../lib/logging/logger.service';
 
 export interface User {
   id: string;
@@ -59,6 +60,12 @@ export const useAuthStore = create<AuthState>((set) => ({
       await initializeApi();
 
       const response = await apiClient.get<{ user: User }>('/auth/me');
+      
+      // Restore user context for logging if user is authenticated
+      if (response.user) {
+        setUserContext(response.user.id, response.user.organizationId);
+      }
+      
       set({
         user: response.user,
         isAuthenticated: true,
@@ -68,6 +75,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       });
     } catch {
       // Not authenticated - clear state
+      clearUserContext();
       set({
         user: null,
         isAuthenticated: false,
@@ -92,6 +100,9 @@ export const useAuthStore = create<AuthState>((set) => ({
         rememberMe: credentials.rememberMe || false,
       });
 
+      // Set user context for logging
+      setUserContext(response.user.id, response.user.organizationId);
+
       await initializeApi();
 
       set({
@@ -102,13 +113,19 @@ export const useAuthStore = create<AuthState>((set) => ({
         sessionExpired: false,
       });
     } catch (error: unknown) {
-      const apiError = error as ApiError;
       const formErrors = mapBackendErrorToFormErrors(error);
+      
+      // Check if it's an API error with response status
+      let isSessionExpired = false;
+      if (error && typeof error === 'object' && 'response' in error) {
+        const err = error as { response?: { status?: number } };
+        isSessionExpired = err.response?.status === 401;
+      }
 
       set({
         isLoading: false,
         authError: formErrors.formError || 'Login failed',
-        sessionExpired: apiError.response?.status === 401,
+        sessionExpired: isSessionExpired,
       });
 
       throw error;
@@ -164,6 +181,9 @@ export const useAuthStore = create<AuthState>((set) => ({
     } catch {
       console.warn('Logout API call failed, but clearing local state anyway');
     } finally {
+      // Clear user context from logger
+      clearUserContext();
+      
       set({
         user: null,
         isAuthenticated: false,
