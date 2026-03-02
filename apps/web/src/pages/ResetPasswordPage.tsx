@@ -3,8 +3,7 @@ import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useToast } from '../components/feedback/ToastProvider';
 import { LoadingSpinner } from '../components/feedback/LoadingSpinner';
 import { ErrorDisplay } from '../components/feedback/ErrorDisplay';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+import { apiClient } from '../lib/api/client';
 
 export default function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
@@ -32,22 +31,15 @@ export default function ResetPasswordPage() {
       }
 
       try {
-        const response = await fetch(`${API_URL}/auth/password-reset/validate-token`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ token }),
-        });
+        // Use apiClient instead of fetch
+        const response = await apiClient.post<{ valid: boolean }>('/auth/password-reset/validate-token', { token });
 
-        const data = await response.json();
-
-        if (data.valid) {
+        if (response.data?.valid) {
           setIsTokenValid(true);
         } else {
           setTokenError('Invalid or expired reset token');
         }
-      } catch (err) {
+      } catch {
         setTokenError('Failed to validate token. Please try again.');
       } finally {
         setIsValidating(false);
@@ -101,23 +93,12 @@ export default function ResetPasswordPage() {
     setFormError(null);
 
     try {
-      const response = await fetch(`${API_URL}/auth/password-reset/reset`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          token,
-          newPassword: password,
-          confirmPassword,
-        }),
+      // Use apiClient instead of fetch
+      await apiClient.post('/auth/password-reset/reset', {
+        token,
+        newPassword: password,
+        confirmPassword,
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to reset password');
-      }
 
       setSuccess(true);
       showSuccess('Password reset', 'Your password has been reset successfully');
@@ -130,8 +111,10 @@ export default function ResetPasswordPage() {
       setTimeout(() => {
         navigate('/login');
       }, 3000);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'An error occurred';
+    } catch (err: unknown) {
+      const message = err instanceof Error 
+        ? err.message 
+        : 'Failed to reset password';
       setFormError(message);
       showError('Reset failed', message);
     } finally {

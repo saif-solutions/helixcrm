@@ -67,7 +67,7 @@ const LoginPage: React.FC = () => {
     try {
       await login(data);
       navigate('/dashboard', { replace: true });
-    } catch (error: any) {
+    } catch (error: unknown) {
       const formErrors = mapBackendErrorToFormErrors(error);
 
       // Set field errors

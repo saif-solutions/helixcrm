@@ -3,8 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '../components/feedback/ToastProvider';
 import { LoadingSpinner } from '../components/feedback/LoadingSpinner';
 import { ErrorDisplay } from '../components/feedback/ErrorDisplay';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+import { apiClient } from '../lib/api/client';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -32,27 +31,18 @@ export default function ForgotPasswordPage() {
     setError(null);
 
     try {
-      const response = await fetch(`${API_URL}/auth/password-reset/request`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to send reset email');
-      }
+      // Use apiClient instead of fetch
+      await apiClient.post('/auth/password-reset/request', { email });
 
       setSuccess(true);
       showSuccess('Reset email sent', 'Check your email for the password reset link');
 
       // Clear form
       setEmail('');
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'An error occurred';
+    } catch (err: unknown) {
+      const message = err instanceof Error 
+        ? err.message 
+        : 'Failed to send reset email';
       setError(message);
       showError('Reset failed', message);
     } finally {

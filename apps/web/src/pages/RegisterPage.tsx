@@ -76,7 +76,7 @@ const RegisterPage: React.FC = () => {
     try {
       await registerUser(data);
       navigate('/dashboard', { replace: true });
-    } catch (error: any) {
+    } catch (error: unknown) {
       const formErrors = mapBackendErrorToFormErrors(error);
 
       // Set field errors
