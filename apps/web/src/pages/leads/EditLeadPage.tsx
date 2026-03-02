@@ -1,18 +1,21 @@
-// apps/web/src/pages/leads/EditLeadPage.tsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useParams } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useToast } from '../../components/feedback/ToastProvider';
-import { useApiQuery } from '../../providers/QueryProvider';
+import { useApiQuery } from '../../hooks/useApiQuery';
+import { useApiMutation } from '../../hooks/useApiMutation';
+import { usePermission } from '../../lib/hooks/usePermission';
 import { Card } from '../../components/molecules/Card';
 import { Button } from '../../components/atoms/Button';
 import { Input } from '../../components/atoms/Input';
 import { LoadingSpinner } from '../../components/feedback/LoadingSpinner';
 import { EmptyState } from '../../components/feedback/EmptyState';
-import { ArrowLeft, Save, Trash2 } from 'lucide-react';
-import { Lead } from '../../lib/types/api.types';
+import { ConfirmationDialog } from '../../components/feedback/ConfirmationDialog';
+import { LeadsAPI } from '../../services/api';
+import { ArrowLeft, Save, Trash2, Shield } from 'lucide-react';
+import type { Lead, UpdateLeadDto } from '../../lib/types/crm.types';
 
 // Zod schema for lead validation
 const leadSchema = z.object({
@@ -28,43 +31,65 @@ const leadSchema = z.object({
   phone: z
     .string()
     .optional()
-    .refine((val) => !val || /^[\d\s\-\+\(\)]+$/.test(val), {
+    .refine((val) => !val || /^[\d\s\-+()]+$/.test(val), {
       message: 'Please enter a valid phone number',
     }),
-  status: z.enum(['new', 'contacted', 'qualified']).default('new'),
+  status: z.enum(['new', 'contacted', 'qualified', 'converted', 'disqualified']).default('new'),
 });
 
 type LeadFormData = z.infer<typeof leadSchema>;
 
-// Mock lead data for now - will be replaced with API call
-const mockLead: Lead = {
-  id: '1',
-  name: 'John Smith',
-  email: 'john@example.com',
-  phone: '+1 (555) 123-4567',
-  status: 'new',
-  organizationId: 'org-123',
-  createdAt: '2024-01-15T10:30:00Z',
-  updatedAt: '2024-01-15T10:30:00Z',
-};
-
 const EditLeadPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const navigate = useNavigate();
-  const { success, error } = useToast();
+  const { success, error: showError } = useToast();
+  const { hasPermission } = usePermission();
+
+  // Check permissions
+  useEffect(() => {
+    if (!hasPermission('lead:write')) {
+      navigate('/leads');
+    }
+  }, [hasPermission, navigate]);
 
   // Fetch lead data
-  const { data: lead, isLoading } = useApiQuery(
+  const {
+    data: lead,
+    isLoading,
+    error,
+  } = useApiQuery<Lead>(
     ['lead', id || ''],
-    async () => {
-      // TODO: Replace with real API call
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      if (!id) throw new Error('Lead ID not found');
-      return mockLead; // Replace with API call
-    },
+    () => LeadsAPI.get(id || ''),
     { enabled: !!id }
+  );
+
+  // Update lead mutation
+  const updateMutation = useApiMutation<Lead, Error, { id: string; data: UpdateLeadDto }>(
+    ({ id, data }) => LeadsAPI.update(id, data as unknown as Record<string, unknown>),
+    {
+      onSuccess: (updatedLead) => {
+        success('Lead Updated', `${updatedLead.name} has been updated`);
+        navigate('/leads');
+      },
+      onError: (err: Error) => {
+        showError('Update Failed', err.message || 'Failed to update lead');
+      },
+    }
+  );
+
+  // Delete lead mutation
+  const deleteMutation = useApiMutation<{ success: boolean; message: string }, Error, string>(
+    (id: string) => LeadsAPI.delete(id),
+    {
+      onSuccess: () => {
+        success('Lead Deleted', 'The lead has been removed');
+        navigate('/leads');
+      },
+      onError: (err: Error) => {
+        showError('Delete Failed', err.message || 'Failed to delete lead');
+      },
+    }
   );
 
   const {
@@ -72,7 +97,7 @@ const EditLeadPage: React.FC = () => {
     handleSubmit,
     formState: { errors },
     setValue,
-    watch,
+    control,
     reset,
   } = useForm<LeadFormData>({
     resolver: zodResolver(leadSchema),
@@ -85,74 +110,63 @@ const EditLeadPage: React.FC = () => {
         name: lead.name,
         email: lead.email || '',
         phone: lead.phone || '',
-        status: lead.status,
+        status: lead.status as LeadFormData['status'],
       });
     }
   }, [lead, reset]);
 
   const onSubmit = async (data: LeadFormData) => {
     if (!id) return;
-
-    setIsSubmitting(true);
-
-    try {
-      // TODO: Replace with real API call
-      console.log('Updating lead:', id, data);
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      success('Lead Updated', `${data.name} has been updated`);
-      navigate('/leads');
-    } catch (err) {
-      error('Update Failed', 'Failed to update lead. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
+    updateMutation.mutate({ id, data });
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!id) return;
-
-    if (
-      !window.confirm('Are you sure you want to delete this lead? This action cannot be undone.')
-    ) {
-      return;
-    }
-
-    setIsDeleting(true);
-
-    try {
-      // TODO: Replace with real API call
-      console.log('Deleting lead:', id);
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      success('Lead Deleted', 'The lead has been removed');
-      navigate('/leads');
-    } catch (err) {
-      error('Delete Failed', 'Failed to delete lead. Please try again.');
-    } finally {
-      setIsDeleting(false);
-    }
+    setShowDeleteConfirm(true);
   };
 
-  const statusOptions: {
-    value: 'new' | 'contacted' | 'qualified';
-    label: string;
-    color: string;
-  }[] = [
-    { value: 'new', label: 'New', color: 'text-blue-600 bg-blue-50 border-blue-200' },
-    {
-      value: 'contacted',
-      label: 'Contacted',
-      color: 'text-yellow-600 bg-yellow-50 border-yellow-200',
-    },
-    {
-      value: 'qualified',
-      label: 'Qualified',
-      color: 'text-green-600 bg-green-50 border-green-200',
-    },
-  ];
+  const handleConfirmDelete = () => {
+    if (!id) return;
+    deleteMutation.mutate(id);
+  };
 
-  const selectedStatus = watch('status');
+  // Status options - defined outside component or with useMemo for stability
+  const statusOptions = React.useMemo(() => [
+    { value: 'new' as const, label: 'New', color: 'text-blue-600 bg-blue-50 border-blue-200' },
+    { value: 'contacted' as const, label: 'Contacted', color: 'text-yellow-600 bg-yellow-50 border-yellow-200' },
+    { value: 'qualified' as const, label: 'Qualified', color: 'text-green-600 bg-green-50 border-green-200' },
+    { value: 'converted' as const, label: 'Converted', color: 'text-purple-600 bg-purple-50 border-purple-200' },
+    { value: 'disqualified' as const, label: 'Disqualified', color: 'text-red-600 bg-red-50 border-red-200' },
+  ], []);
+
+    // Use useWatch instead of watch() - this is more compatible with React Compiler
+  const selectedStatus = useWatch({
+    control,
+    name: 'status',
+    defaultValue: 'new',
+  });
+
+  // Check write permission for page access
+  if (!hasPermission('lead:write')) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <Card className="p-12 text-center">
+          <Shield className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Access Denied</h2>
+          <p className="text-gray-500">
+            You don't have permission to edit leads.
+          </p>
+          <Button
+            variant="primary"
+            className="mt-4"
+            onClick={() => navigate('/leads')}
+          >
+            Back to Leads
+          </Button>
+        </Card>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -164,7 +178,7 @@ const EditLeadPage: React.FC = () => {
     );
   }
 
-  if (!lead) {
+  if (error || !lead) {
     return (
       <div className="container mx-auto px-4 py-8">
         <EmptyState
@@ -179,6 +193,18 @@ const EditLeadPage: React.FC = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      {/* Delete Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={handleConfirmDelete}
+        title="Delete Lead"
+        message={`Are you sure you want to delete "${lead.name}"? This action cannot be undone.`}
+        confirmText={deleteMutation.isPending ? 'Deleting...' : 'Delete Lead'}
+        cancelText="Cancel"
+        isLoading={deleteMutation.isPending}
+      />
+
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
@@ -194,15 +220,18 @@ const EditLeadPage: React.FC = () => {
           </div>
         </div>
 
-        <Button
-          variant="danger"
-          size="sm"
-          leftIcon={<Trash2 className="w-4 h-4" />}
-          onClick={handleDelete}
-          loading={isDeleting}
-        >
-          Delete
-        </Button>
+        {/* Delete button - requires lead:delete */}
+        {hasPermission('lead:delete') && (
+          <Button
+            variant="danger"
+            size="sm"
+            leftIcon={<Trash2 className="w-4 h-4" />}
+            onClick={handleDelete}
+            loading={deleteMutation.isPending}
+          >
+            Delete
+          </Button>
+        )}
       </div>
 
       <div className="max-w-2xl mx-auto">
@@ -221,13 +250,13 @@ const EditLeadPage: React.FC = () => {
               {/* Status Selector */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   {statusOptions.map((option) => (
                     <button
                       key={option.value}
                       type="button"
                       onClick={() => setValue('status', option.value)}
-                      className={`flex-1 px-4 py-2 rounded-lg border-2 transition-all ${
+                      className={`px-4 py-2 rounded-lg border-2 transition-all ${
                         selectedStatus === option.value
                           ? `${option.color} border-current font-semibold`
                           : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
@@ -294,7 +323,6 @@ const EditLeadPage: React.FC = () => {
                   rows={4}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   placeholder="Any additional information about this lead..."
-                  defaultValue="Initial contact made via email. Interested in enterprise plan."
                 />
               </div>
 
@@ -307,7 +335,7 @@ const EditLeadPage: React.FC = () => {
                 </Link>
                 <Button
                   type="submit"
-                  loading={isSubmitting}
+                  loading={updateMutation.isPending}
                   leftIcon={<Save className="w-4 h-4" />}
                 >
                   Save Changes

@@ -1,16 +1,17 @@
-// apps/web/src/pages/leads/NewLeadPage.tsx
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useToast } from '../../components/feedback/ToastProvider';
-import { useQueryClient } from '../../providers/QueryProvider';
+import { useApiMutation } from '../../hooks/useApiMutation';
+import { usePermission } from '../../lib/hooks/usePermission';
 import { Card } from '../../components/molecules/Card';
 import { Button } from '../../components/atoms/Button';
 import { Input } from '../../components/atoms/Input';
-import { leadsService } from '../../services/leads.service';
-import { ArrowLeft, Save } from 'lucide-react';
+import { LeadsAPI } from '../../services/api';
+import { ArrowLeft, Save, Shield } from 'lucide-react';
+import type { Lead, CreateLeadDto } from '../../lib/types/crm.types';
 
 // Zod schema for lead validation
 const leadSchema = z.object({
@@ -26,26 +27,44 @@ const leadSchema = z.object({
   phone: z
     .string()
     .optional()
-    .refine((val) => !val || /^[\d\s\-\+\(\)]+$/.test(val), {
+    .refine((val) => !val || /^[\d\s\-+()]+$/.test(val), {
       message: 'Please enter a valid phone number',
     }),
-  status: z.enum(['new', 'contacted', 'qualified']).default('new'),
+  status: z.enum(['new', 'contacted', 'qualified', 'converted', 'disqualified']).default('new'),
 });
 
 type LeadFormData = z.infer<typeof leadSchema>;
 
 const NewLeadPage: React.FC = () => {
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
-  const { success, error } = useToast();
-  const queryClient = useQueryClient();
+  const { success, error: showError } = useToast();
+  const { hasPermission } = usePermission();
+
+  // Create lead mutation
+  const createMutation = useApiMutation<Lead, Error, CreateLeadDto>(
+    (data: CreateLeadDto) => LeadsAPI.create(data as unknown as Record<string, unknown>),
+    {
+      onSuccess: (newLead) => {
+        success('Lead Created', `${newLead.name} has been added to your leads`);
+        navigate('/leads');
+      },
+      onError: (err: Error) => {
+        // Handle specific error cases
+        if (err.message.includes('permission') || err.message.includes('403')) {
+          showError('Permission Denied', 'You do not have permission to create leads');
+        } else {
+          showError('Creation Failed', err.message || 'Failed to create lead');
+        }
+      },
+    }
+  );
 
   const {
     register,
     handleSubmit,
     formState: { errors },
     setValue,
-    watch,
+    control,
   } = useForm<LeadFormData>({
     resolver: zodResolver(leadSchema),
     defaultValues: {
@@ -56,60 +75,58 @@ const NewLeadPage: React.FC = () => {
     },
   });
 
+  // Use useWatch instead of watch() for React Compiler compatibility
+  const selectedStatus = useWatch({
+    control,
+    name: 'status',
+    defaultValue: 'new',
+  });
+
   const onSubmit = async (data: LeadFormData) => {
-    setIsSubmitting(true);
+    // Clean up empty strings for optional fields
+    const leadData: CreateLeadDto = {
+      name: data.name,
+      email: data.email?.trim() || undefined,
+      phone: data.phone?.trim() || undefined,
+      status: data.status,
+    };
 
-    try {
-      // Clean up empty strings for optional fields
-      const leadData = {
-        ...data,
-        email: data.email?.trim() || undefined,
-        phone: data.phone?.trim() || undefined,
-      };
-
-      console.log('Creating lead:', leadData);
-      const createdLead = await leadsService.createLead(leadData);
-
-      // Invalidate leads queries to refresh the list
-      queryClient.invalidateQueries({ queryKey: ['leads'] });
-
-      success('Lead Created', `${createdLead.name} has been added to your leads`);
-      navigate('/leads');
-    } catch (err: any) {
-      console.error('Failed to create lead:', err);
-
-      // Handle specific error cases
-      if (err.status === 400) {
-        error('Validation Error', 'Please check your input and try again');
-      } else if (err.status === 403) {
-        error('Permission Denied', 'You do not have permission to create leads');
-      } else {
-        error('Creation Failed', err.message || 'Failed to create lead. Please try again.');
-      }
-    } finally {
-      setIsSubmitting(false);
-    }
+    createMutation.mutate(leadData);
   };
 
   const statusOptions: {
-    value: 'new' | 'contacted' | 'qualified';
+    value: LeadFormData['status'];
     label: string;
     color: string;
   }[] = [
     { value: 'new', label: 'New', color: 'text-blue-600 bg-blue-50 border-blue-200' },
-    {
-      value: 'contacted',
-      label: 'Contacted',
-      color: 'text-yellow-600 bg-yellow-50 border-yellow-200',
-    },
-    {
-      value: 'qualified',
-      label: 'Qualified',
-      color: 'text-green-600 bg-green-50 border-green-200',
-    },
+    { value: 'contacted', label: 'Contacted', color: 'text-yellow-600 bg-yellow-50 border-yellow-200' },
+    { value: 'qualified', label: 'Qualified', color: 'text-green-600 bg-green-50 border-green-200' },
+    { value: 'converted', label: 'Converted', color: 'text-purple-600 bg-purple-50 border-purple-200' },
+    { value: 'disqualified', label: 'Disqualified', color: 'text-red-600 bg-red-50 border-red-200' },
   ];
 
-  const selectedStatus = watch('status');
+  // Check write permission for page access
+  if (!hasPermission('lead:write')) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <Card className="p-12 text-center">
+          <Shield className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Access Denied</h2>
+          <p className="text-gray-500">
+            You don't have permission to create leads.
+          </p>
+          <Button
+            variant="primary"
+            className="mt-4"
+            onClick={() => navigate('/leads')}
+          >
+            Back to Leads
+          </Button>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -136,13 +153,13 @@ const NewLeadPage: React.FC = () => {
               {/* Status Selector */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   {statusOptions.map((option) => (
                     <button
                       key={option.value}
                       type="button"
                       onClick={() => setValue('status', option.value)}
-                      className={`flex-1 px-4 py-2 rounded-lg border-2 transition-all ${
+                      className={`px-4 py-2 rounded-lg border-2 transition-all ${
                         selectedStatus === option.value
                           ? `${option.color} border-current font-semibold`
                           : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
@@ -225,11 +242,10 @@ const NewLeadPage: React.FC = () => {
                 </Link>
                 <Button
                   type="submit"
-                  loading={isSubmitting}
+                  loading={createMutation.isPending}
                   leftIcon={<Save className="w-4 h-4" />}
-                  disabled={isSubmitting}
                 >
-                  {isSubmitting ? 'Creating...' : 'Create Lead'}
+                  {createMutation.isPending ? 'Creating...' : 'Create Lead'}
                 </Button>
               </div>
             </div>
