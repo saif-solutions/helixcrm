@@ -13,9 +13,6 @@ import {
   createDefaultDialogActions,
   DialogEvent,
   normalizeDialogEvent,
-  OverlayRenderParams,
-  HeaderRenderParams,
-  FooterRenderParams,
 } from './Dialog.types';
 import {
   dialogClasses,
@@ -849,6 +846,9 @@ export const Dialog = React.forwardRef<DialogRef, DialogProps>((props, forwarded
         clearTimeout(exitActiveTimer);
       };
     }
+    
+    // Add this return for the case when neither condition is true
+    return undefined;
   }, [
     open,
     isVisible,
@@ -1017,7 +1017,7 @@ export const Dialog = React.forwardRef<DialogRef, DialogProps>((props, forwarded
 
   const shouldRenderHeader = React.useMemo((): boolean => {
     if (typeof header === 'boolean') {
-      return header && (title || description || icon);
+      return header && !!(title || description || icon);
     }
     return true;
   }, [header, title, description, icon]);
@@ -1189,13 +1189,16 @@ export const Dialog = React.forwardRef<DialogRef, DialogProps>((props, forwarded
 
     if (renderFooter) {
       // Custom render footer with parameters
-      // eslint-disable-next-line react-hooks/refs
-      return renderFooter({
-        defaultActions,
-        footerProps,
-        testId,
-        nestedLevel,
-      });
+      return renderFooter(
+        footerProps?.actions || defaultActions,
+        () => (
+          <DialogFooter
+            {...footerProps}
+            data-testid={getDialogTestId(testId, 'footer', nestedLevel)}
+            id={dialogIds.footerId}
+          />
+        )
+      );
     }
 
     // Default footer with ref attached internally by DialogFooter

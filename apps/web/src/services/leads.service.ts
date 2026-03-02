@@ -60,7 +60,7 @@ export const leadsService = {
     if (status) queryParams.append('status', status);
 
     const response = await apiClient.get<PaginatedResponse<Lead>>(`/leads?${queryParams.toString()}`);
-    return response.data;
+    return response; // Return the full paginated response
   },
 
   // Get single lead by ID
@@ -88,8 +88,7 @@ export const leadsService = {
 
   // Get lead statistics
   getLeadStats: async (): Promise<LeadStatsResponse> => {
-    const response = await apiClient.get<LeadsStats>('/leads/stats');
-    const stats = response.data;
+    const stats = await apiClient.get<LeadsStats>('/leads/stats');
 
     // Calculate conversion rate (qualified / total * 100)
     const total = stats.total || 0;

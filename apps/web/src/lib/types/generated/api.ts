@@ -3023,7 +3023,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            204: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };

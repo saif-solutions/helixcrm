@@ -106,6 +106,14 @@ export interface NormalizedDropdownEvent {
   key?: string;
   button?: number;
   timestamp: number;
+  /** Whether this is a React synthetic event */
+  isReactEvent?: boolean;
+  /** Whether this is a native DOM event */
+  isDomEvent?: boolean;
+  /** Original event object */
+  event?: DropdownEvent;
+  /** Whether the event's default was prevented */
+  defaultPrevented?: boolean;
 }
 
 // ============================================================================
@@ -713,10 +721,10 @@ export function normalizeDropdownEvent(event?: DropdownEvent): NormalizedDropdow
 
   return {
     type: isMouse ? 'mouse' : 'keyboard',
+    timestamp: Date.now(),
     isReactEvent: isReact,
     isDomEvent: !isReact,
     event,
-    timestamp: Date.now(),
     defaultPrevented: event.defaultPrevented,
   };
 }

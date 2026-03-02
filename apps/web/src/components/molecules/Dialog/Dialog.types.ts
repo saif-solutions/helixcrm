@@ -176,9 +176,28 @@ export interface DialogProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 
   onCloseComplete?: () => void;
 
   // Enhanced: Custom rendering
-  renderHeader?: (props: DialogHeaderComponentProps) => React.ReactNode;
+  renderHeader?: (props: {
+    headerProps: DialogHeaderProps;
+    onClose: (event?: DialogEvent) => void;
+    id: string;
+    testId: string;
+    nestedLevel: number;
+  }) => React.ReactNode;
   renderFooter?: (actions: DialogAction[], defaultRender: () => React.ReactNode) => React.ReactNode;
-  renderOverlay?: (props: React.HTMLAttributes<HTMLDivElement>) => React.ReactNode;
+  renderOverlay?: (props: {
+    overlayRef: React.RefObject<HTMLDivElement | null>;
+    isVisible: boolean;
+    handleClose: (event?: React.MouseEvent) => void;
+    persistent: boolean;
+    closeOnOverlayClick: boolean;
+    overlayBlur: boolean;
+    overlayClassName?: string;
+    overlayColor?: string;
+    overlayOpacity?: number;
+    testId: string;
+    nestedLevel: number;
+    triggerPersistentFeedback: () => void;
+  }) => React.ReactNode;
 
   // Transition properties
   transitionDuration?: number;

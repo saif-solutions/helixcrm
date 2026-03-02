@@ -1,5 +1,6 @@
 // D:\Projects-In-Hand\helixcrm\apps\web\src\components\molecules\Dialog\DialogContext.tsx
-import * as React from 'react';
+/* eslint-disable react-refresh/only-export-components */
+import React, { useCallback } from 'react';
 // Import from the base types file instead
 import {
   DialogVariant,
@@ -727,8 +728,11 @@ export const useDialogFocusTrapHook = (
   }, [isOpen]);
 
   // Focus trap activation
+  // Focus trap activation
   React.useEffect(() => {
-    if (!isOpen || !dialogRef.current) return;
+    if (!isOpen || !dialogRef.current) {
+      return undefined; // Explicit return
+    }
 
     // Save current active element for restoration
     previousActiveElement.current = document.activeElement as HTMLElement;
@@ -779,6 +783,7 @@ export const useDialogFocusTrapHook = (
   }, [isOpen, dialogRef, initialFocusRef]);
 
   // Focus restoration
+  // Focus restoration
   React.useEffect(() => {
     if (!isOpen && previousActiveElement.current) {
       const returnToElement = returnFocusRef?.current || previousActiveElement.current;
@@ -798,6 +803,7 @@ export const useDialogFocusTrapHook = (
         }
       };
     }
+    return undefined;
   }, [isOpen, returnFocusRef]);
 
   // Handle focus trap
@@ -840,9 +846,11 @@ export const useDialogFocusTrapHook = (
     [isOpen, dialogRef]
   );
 
+  const getPreviousActiveElement = useCallback(() => previousActiveElement.current, []);
+  
   return {
     handleKeyDown,
-    previousActiveElement: previousActiveElement.current,
+    getPreviousActiveElement,
   };
 };
 

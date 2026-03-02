@@ -107,6 +107,7 @@
     "build",
     "coverage",
     ".storybook",
+    "src/pages/archive",
     "**/*.stories.tsx",
     "**/*.test.tsx",
     "**/*.spec.tsx",
