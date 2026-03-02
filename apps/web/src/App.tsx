@@ -17,6 +17,7 @@ import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { ErrorBoundary } from './components/feedback/ErrorBoundary';
 import { initializeApi } from './services/api';
 import { PermissionDebug } from './components/dev/PermissionDebug';
+import { performanceMonitor } from './lib/performance/performance-monitor';
 
 console.log(`🚀 App Configuration:
   - Environment: ${import.meta.env.MODE}
@@ -30,6 +31,9 @@ function App() {
   useEffect(() => {
     const initApp = async () => {
       try {
+        // Initialize performance monitoring
+        performanceMonitor.initialize();
+        
         // Initialize API (CSRF token)
         await initializeApi();
         
