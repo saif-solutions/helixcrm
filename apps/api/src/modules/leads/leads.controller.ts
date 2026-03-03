@@ -41,23 +41,34 @@ export class LeadsController {
     return this.leadsService.create(createLeadDto, user.sub);
   }
 
-  @Get()
-  @RequirePermission('lead:read')  // Note: singular, colon format
-  findAll(
-    @Req() req: Request,
-    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
-    @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
-    @Query('status') status?: PrismaLeadStatus,
-    @Query('search') search?: string,
-  ) {
-    return this.leadsService.findAll({
-      page,
-      limit: Math.min(limit, 100),
-      status,
-      search,
-    });
+@Get()
+@RequirePermission('lead:read')
+async findAll(
+  @Req() req: Request,
+  @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+  @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
+  @Query('status') status?: string,
+  @Query('search') search?: string,
+) {
+  // Ensure limit is within limits
+  limit = Math.min(limit, 100);
+  
+  // Convert status string to enum if it matches valid values
+  let statusEnum: PrismaLeadStatus | undefined = undefined;
+  if (status) {
+    const validStatuses = Object.values(PrismaLeadStatus);
+    if (validStatuses.includes(status as PrismaLeadStatus)) {
+      statusEnum = status as PrismaLeadStatus;
+    }
   }
-
+  
+  return this.leadsService.findAll({
+    page,
+    limit,
+    status: statusEnum,
+    search,
+  });
+}
   @Get('stats')
   @RequirePermission('lead:read')  // Note: singular, colon format
   getStats() {

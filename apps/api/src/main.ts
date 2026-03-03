@@ -168,17 +168,17 @@ logger.log('✅ Security headers (Helmet) registered');
   logger.log('✅ Swagger documentation available at /api/docs');
 
   // ==================== GLOBAL VALIDATION PIPE ====================
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-      transformOptions: {
-        enableImplicitConversion: true,
-      },
-      stopAtFirstError: true,
-    }),
-  );
+app.useGlobalPipes(
+  new ValidationPipe({
+    whitelist: true,
+    forbidNonWhitelisted: true,
+    transform: true,  // CRITICAL for string to number conversion
+    transformOptions: {
+      enableImplicitConversion: true,
+    },
+    stopAtFirstError: true,
+  }),
+);
   logger.log('✅ Global ValidationPipe registered');
 
   // ==================== GLOBAL INTERCEPTORS ====================

@@ -59,12 +59,9 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       await initializeApi();
 
-      // Check if we have a token in cookies before calling /auth/me
-      // This prevents unnecessary 401 errors
       const hasToken = document.cookie.includes('access_token');
       
       if (!hasToken) {
-        // No token, just mark as not authenticated
         set({
           user: null,
           isAuthenticated: false,
@@ -75,17 +72,17 @@ export const useAuthStore = create<AuthState>((set) => ({
         return;
       }
 
-      // Only try to fetch user if we have a token
       const response = await apiClient.get<{ 
         user: User & { permissions?: string[]; roles?: string[] } 
       }>('/auth/me');
       
-      // Restore user context for logging if user is authenticated
+      console.log('🔥 Raw user data from /auth/me:', response);
+      console.log('🔥 Permissions received:', response.user?.permissions);
+      console.log('🔥 Roles received:', response.user?.roles);
+      
       if (response.user) {
         setUserContext(response.user.id, response.user.organizationId);
       }
-      
-      console.log('User data from initialize:', response);
       
       set({
         user: response.user,
@@ -95,7 +92,6 @@ export const useAuthStore = create<AuthState>((set) => ({
         sessionExpired: false,
       });
     } catch {
-      // Not authenticated - clear state
       clearUserContext();
       set({
         user: null,

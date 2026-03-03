@@ -23,7 +23,7 @@ export class DashboardService {
 
   async getStats() {
     // 1. PERMISSION CHECK
-    if (!this.permissionContext.hasPermission('dashboard.read')) {
+    if (!this.permissionContext.hasPermission('report:read')) {
       throw new ForbiddenException(
         'Insufficient permissions: dashboard.read required',
       );
