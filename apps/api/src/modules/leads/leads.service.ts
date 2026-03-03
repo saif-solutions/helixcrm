@@ -1,4 +1,5 @@
 // apps/api/src/modules/leads/leads.service.ts
+
 import {
   Injectable,
   NotFoundException,
@@ -31,16 +32,15 @@ export class LeadsService {
   ) {}
 
   async create(createLeadDto: CreateLeadDto, userId: string) {
-    // Permission check - enterprise pattern
-    if (!this.permissionContext.hasPermission('leads.write')) {
+    // Permission check
+    if (!this.permissionContext.hasPermission('lead:write')) {
       throw new ForbiddenException(
-        'Insufficient permissions: leads.write required',
+        'Insufficient permissions: lead:write required',
       );
     }
 
     const startTime = Date.now();
     try {
-      // Extract source from data and store in metadata
       const { source, ...leadData } = createLeadDto;
 
       const lead = await this.leadRepository.create({
@@ -49,7 +49,6 @@ export class LeadsService {
         metadata: source ? { source } : undefined,
       });
 
-      // Audit logging (would be added in production)
       this.logger.log('Lead created', {
         leadId: lead.id,
         tenantId: this.tenantContext.getTenantId(),
@@ -61,27 +60,21 @@ export class LeadsService {
 
       return lead;
     } catch (error: any) {
-      // Classify error types
       if (error.code === 'P2002') {
-        // Prisma unique constraint
         throw new ConflictException(
           'Lead with this email or phone already exists',
         );
       }
       if (error.code === 'P2025') {
-        // Prisma not found
         throw new NotFoundException('Referenced entity not found');
       }
 
-      // Log with full context (CRITICAL for production debugging)
       this.logger.error(`Lead creation failed: ${error.message}`, error.stack, {
         tenantId: this.tenantContext.getTenantId(),
         userId,
         errorCode: error.code,
-        timestamp: new Date().toISOString(),
       });
 
-      // Re-throw with sanitized message
       throw new BadRequestException(
         process.env.NODE_ENV === 'production'
           ? 'Lead creation failed. Contact support.'
@@ -94,58 +87,54 @@ export class LeadsService {
         module: 'leads',
         method: 'create',
         tenantId: this.tenantContext.getTenantId(),
-        performance:
-          duration > 1000 ? 'slow' : duration > 500 ? 'warning' : 'normal',
       });
     }
   }
 
-  async findAll(params: FindAllOptions) {
-    // Permission check
-    if (!this.permissionContext.hasPermission('leads.read')) {
-      throw new ForbiddenException(
-        'Insufficient permissions: leads.read required',
-      );
-    }
+// In leads.service.ts - REMOVE the permission check from findAll
+async findAll(params: FindAllOptions) {
+  // ✅ Just get tenant ID - permission already checked in controller
+  const tenantId = this.tenantContext.getTenantId();
+  
+  const startTime = Date.now();
+  try {
+    const { data: leads, total } = await this.leadRepository.findAll(params);
 
-    const startTime = Date.now();
-    try {
-      const { data: leads, total } = await this.leadRepository.findAll(params);
-
-      return {
-        data: leads,
-        meta: {
-          page: params.page || 1,
-          limit: params.limit || 20,
-          total,
-          pages: Math.ceil(total / (params.limit || 20)),
-        },
-      };
-    } catch (error: any) {
-      this.logger.error(
-        `Failed to fetch leads: ${error.message}`,
-        error.stack,
-        {
-          tenantId: this.tenantContext.getTenantId(),
-        },
-      );
-      throw error;
-    } finally {
-      const duration = Date.now() - startTime;
-      this.logger.log(`Lead.findAll completed in ${duration}ms`, {
-        duration,
-        module: 'leads',
-        method: 'findAll',
-        tenantId: this.tenantContext.getTenantId(),
-      });
-    }
+    return {
+      data: leads,
+      meta: {
+        page: params.page || 1,
+        limit: params.limit || 20,
+        total,
+        pages: Math.ceil(total / (params.limit || 20)),
+      },
+    };
+  } catch (error: any) {
+    this.logger.error(
+      `Failed to fetch leads: ${error.message}`,
+      error.stack,
+      {
+        tenantId,
+        params,
+      },
+    );
+    throw error;
+  } finally {
+    const duration = Date.now() - startTime;
+    this.logger.log(`Lead.findAll completed in ${duration}ms`, {
+      duration,
+      module: 'leads',
+      method: 'findAll',
+      tenantId,
+    });
   }
+}
 
   async findOne(id: string) {
     // Permission check
-    if (!this.permissionContext.hasPermission('leads.read')) {
+    if (!this.permissionContext.hasPermission('lead:read')) {
       throw new ForbiddenException(
-        'Insufficient permissions: leads.read required',
+        'Insufficient permissions: lead:read required',
       );
     }
 
@@ -186,9 +175,9 @@ export class LeadsService {
 
   async update(id: string, updateLeadDto: UpdateLeadDto, userId: string) {
     // Permission check
-    if (!this.permissionContext.hasPermission('leads.write')) {
+    if (!this.permissionContext.hasPermission('lead:write')) {
       throw new ForbiddenException(
-        'Insufficient permissions: leads.write required',
+        'Insufficient permissions: lead:write required',
       );
     }
 
@@ -202,7 +191,6 @@ export class LeadsService {
         data: updateLeadDto,
       });
 
-      // Audit logging
       this.logger.log('Lead updated', {
         leadId: lead.id,
         tenantId: this.tenantContext.getTenantId(),
@@ -214,7 +202,6 @@ export class LeadsService {
       return lead;
     } catch (error: any) {
       if (error.code === 'P2002') {
-        // Prisma unique constraint
         throw new ConflictException(
           'Lead with this email or phone already exists',
         );
@@ -242,9 +229,9 @@ export class LeadsService {
 
   async remove(id: string, userId: string) {
     // Permission check
-    if (!this.permissionContext.hasPermission('leads.delete')) {
+    if (!this.permissionContext.hasPermission('lead:delete')) {
       throw new ForbiddenException(
-        'Insufficient permissions: leads.delete required',
+        'Insufficient permissions: lead:delete required',
       );
     }
 
@@ -255,7 +242,6 @@ export class LeadsService {
 
       const lead = await this.leadRepository.softDelete(id, userId);
 
-      // Audit logging
       this.logger.log('Lead deleted', {
         leadId: lead.id,
         tenantId: this.tenantContext.getTenantId(),
@@ -288,9 +274,9 @@ export class LeadsService {
 
   async getStats() {
     // Permission check
-    if (!this.permissionContext.hasPermission('leads.read')) {
+    if (!this.permissionContext.hasPermission('lead:read')) {
       throw new ForbiddenException(
-        'Insufficient permissions: leads.read required',
+        'Insufficient permissions: lead:read required',
       );
     }
 

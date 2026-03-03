@@ -1,0 +1,15 @@
+{
+  "collectionId": "evidence-2026-03-03T17-29-49-919Z",
+  "collectedAt": "2026-03-03T17:29:49.924Z",
+  "totalControls": 8,
+  "criteriaBreakdown": {
+    "Security": 3,
+    "Availability": 2,
+    "Confidentiality": 1,
+    "ProcessingIntegrity": 1,
+    "Privacy": 1
+  },
+  "evidencePath": "D:\\Projects-In-Hand\\helixcrm\\apps\\api\\compliance\\evidence\\evidence-2026-03-03T17-29-49-919Z.json",
+  "verificationHash": "28fdaa93c9ad76fbd23ed4398d5013b85ed07fbbf42eee7152a631416ba89c5c",
+  "status": "COMPLETED"
+}

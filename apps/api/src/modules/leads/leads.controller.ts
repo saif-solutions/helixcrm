@@ -17,67 +17,93 @@ import {
   HttpStatus,
   UsePipes,
   ValidationPipe,
+  ForbiddenException,
 } from '@nestjs/common';
 import { AuthGuard } from '../../shared/guards/auth.guard';
 import { TenantGuard } from '../../shared/guards/tenant.guard';
 import { PermissionGuard } from '../../shared/guards/permission.guard';
 import { RequirePermission } from '../../shared/decorators/require-permission.decorator';
 import { LeadsService } from './leads.service';
-import { CreateLeadDto, LeadStatus } from './dto/create-lead.dto';
+import { CreateLeadDto } from './dto/create-lead.dto';
 import { UpdateLeadDto } from './dto/update-lead.dto';
 import { LeadStatus as PrismaLeadStatus } from '@prisma/client';
+import { PermissionContextService } from '../../shared/permissions/context/permission-context.service';
 
 @Controller('leads')
 @UseGuards(AuthGuard, TenantGuard, PermissionGuard)
 export class LeadsController {
-  constructor(private readonly leadsService: LeadsService) {}
+  constructor(
+    private readonly leadsService: LeadsService,
+    private readonly permissionContext: PermissionContextService, // Add this
+  ) {}
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @UsePipes(ValidationPipe)
-  @RequirePermission('leads.write')
+  @RequirePermission('lead:write')
   create(@Body() createLeadDto: CreateLeadDto, @Req() req: Request) {
+    // Ensure permission context is initialized
+    if (!this.permissionContext.isInitialized()) {
+      throw new ForbiddenException('Permission context not initialized');
+    }
     const user = (req as any).user;
     return this.leadsService.create(createLeadDto, user.sub);
   }
 
-@Get()
-@RequirePermission('lead:read')
-async findAll(
-  @Req() req: Request,
-  @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
-  @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
-  @Query('status') status?: string,
-  @Query('search') search?: string,
-) {
-  // Ensure limit is within limits
-  limit = Math.min(limit, 100);
-  
-  // Convert status string to enum if it matches valid values
-  let statusEnum: PrismaLeadStatus | undefined = undefined;
-  if (status) {
-    const validStatuses = Object.values(PrismaLeadStatus);
-    if (validStatuses.includes(status as PrismaLeadStatus)) {
-      statusEnum = status as PrismaLeadStatus;
+  @Get()
+  @RequirePermission('lead:read')
+  async findAll(
+    @Req() req: Request,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
+    @Query('status') status?: string,
+    @Query('search') search?: string,
+  ) {
+    // Force PermissionGuard to run by checking context
+    if (!this.permissionContext.isInitialized()) {
+      throw new ForbiddenException('Permission context not initialized');
     }
+
+    const user = (req as any).user;
+    const tenantId = user?.organizationId || user?.org;
+    
+    if (!tenantId) {
+      throw new ForbiddenException('Tenant context missing - cannot process request');
+    }
+
+    limit = Math.min(limit, 100);
+    
+    let statusEnum: PrismaLeadStatus | undefined = undefined;
+    if (status) {
+      const validStatuses = Object.values(PrismaLeadStatus);
+      if (validStatuses.includes(status as PrismaLeadStatus)) {
+        statusEnum = status as PrismaLeadStatus;
+      }
+    }
+    
+    return this.leadsService.findAll({
+      page,
+      limit,
+      status: statusEnum,
+      search,
+    });
   }
-  
-  return this.leadsService.findAll({
-    page,
-    limit,
-    status: statusEnum,
-    search,
-  });
-}
+
   @Get('stats')
-  @RequirePermission('lead:read')  // Note: singular, colon format
+  @RequirePermission('report:read')
   getStats() {
+    if (!this.permissionContext.isInitialized()) {
+      throw new ForbiddenException('Permission context not initialized');
+    }
     return this.leadsService.getStats();
   }
 
   @Get(':id')
-  @RequirePermission('lead:read')  // Note: singular, colon format
+  @RequirePermission('lead:read')
   findOne(@Param('id') id: string) {
+    if (!this.permissionContext.isInitialized()) {
+      throw new ForbiddenException('Permission context not initialized');
+    }
     return this.leadsService.findOne(id);
   }
 
@@ -85,20 +111,26 @@ async findAll(
   @UsePipes(
     new ValidationPipe({ transform: true, skipMissingProperties: true }),
   )
-  @RequirePermission('leads.write')
+  @RequirePermission('lead:write')
   update(
     @Param('id') id: string,
     @Body() updateLeadDto: UpdateLeadDto,
     @Req() req: Request,
   ) {
+    if (!this.permissionContext.isInitialized()) {
+      throw new ForbiddenException('Permission context not initialized');
+    }
     const user = (req as any).user;
     return this.leadsService.update(id, updateLeadDto, user.sub);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @RequirePermission('leads.delete')
+  @RequirePermission('lead:delete')
   remove(@Param('id') id: string, @Req() req: Request) {
+    if (!this.permissionContext.isInitialized()) {
+      throw new ForbiddenException('Permission context not initialized');
+    }
     const user = (req as any).user;
     return this.leadsService.remove(id, user.sub);
   }

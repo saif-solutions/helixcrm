@@ -3,6 +3,7 @@
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
+import { DemoModule } from './modules/demo/demo.module';
 
 // Core application modules
 import { AppController } from './app.controller';
@@ -42,7 +43,6 @@ import { ConfigValidationService } from './config/config-validation.service';
 // ============ MIDDLEWARE IMPORTS ============
 import { CorrelationIdMiddleware } from './shared/middleware/correlation-id.middleware';
 import { RequestContextMiddleware } from './shared/middleware/request-context.middleware';
-import { TenantContextMiddleware } from './shared/middleware/tenant-context.middleware';
 
 // ============ TENANT MODULE ============
 import { TenantModule } from './shared/tenant/module/tenant.module';
@@ -56,6 +56,7 @@ import { TenantModule } from './shared/tenant/module/tenant.module';
       cache: true,
       expandVariables: true,
     }),
+    DemoModule,
 
     ScheduleModule.forRoot(),
 
@@ -112,7 +113,6 @@ export class AppModule implements NestModule {
       .apply(
         CorrelationIdMiddleware,
         RequestContextMiddleware,
-        TenantContextMiddleware,
       )
       .forRoutes('*');
   }

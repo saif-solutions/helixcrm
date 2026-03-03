@@ -1,26 +1,41 @@
 // apps/api/src/shared/permissions/context/permission-context.service.ts
 
-import { Injectable, Scope, Inject, Logger } from '@nestjs/common';
-import { REQUEST } from '@nestjs/core';
-import { Request } from 'express';
+import { Injectable, Logger } from '@nestjs/common';
 import {
   RequestPermissionContext,
   IPermissionContext,
   PermissionContextOptions,
 } from './permission-context.interface';
 import { PrismaService } from '../../prisma/prisma.service';
+import { getTenantContext } from '../../tenant/tenant.context';
 
-@Injectable({ scope: Scope.REQUEST })
+@Injectable() // SINGLETON
 export class PermissionContextService implements IPermissionContext {
   private readonly logger = new Logger(PermissionContextService.name);
 
-  // Store the context for this request
-  private context: RequestPermissionContext | null = null;
+  // Store contexts per request using requestId from tenant context
+  private contexts = new Map<string, RequestPermissionContext>();
 
   constructor(
     private readonly prisma: PrismaService,
-    @Inject(REQUEST) private readonly request: Request,
   ) {}
+
+  /**
+   * Get request ID from tenant context - this is the KEY fix
+   */
+  private getRequestKey(): string {
+    const tenantContext = getTenantContext();
+    // If we have a requestId from the tenant context, use it
+    if (tenantContext?.requestId) {
+      return tenantContext.requestId;
+    }
+    // If we have tenantId but no requestId, use tenantId + timestamp
+    if (tenantContext?.tenantId) {
+      return `${tenantContext.tenantId}-${Date.now()}`;
+    }
+    // Last resort fallback
+    return `req-${Date.now()}-${Math.random()}`;
+  }
 
   /**
    * Build permission context for the current request
@@ -29,14 +44,25 @@ export class PermissionContextService implements IPermissionContext {
   async buildContext(
     options: PermissionContextOptions,
   ): Promise<RequestPermissionContext> {
-    if (this.context) {
-      this.logger.warn(`Permission context already built for current request`);
-      return this.context;
+    const requestKey = this.getRequestKey();
+    
+    // Log current tenant context for debugging
+    const tenantContext = getTenantContext();
+    this.logger.debug(`Building permission context - Current tenant context:`, {
+      tenantId: tenantContext?.tenantId,
+      requestId: tenantContext?.requestId,
+      source: tenantContext?.source,
+      requestKey,
+    });
+
+    // Check if context already exists for this request
+    if (this.contexts.has(requestKey)) {
+      this.logger.debug(`Reusing existing permission context for request ${requestKey}`);
+      return this.contexts.get(requestKey)!;
     }
 
-    const { userId, tenantId, jwtPermissions, skipCache = false } = options;
+    const { userId, tenantId, jwtPermissions } = options;
 
-    // ENTERPRISE FIX: Enhanced permission resolution with better logging
     this.logger.debug(`Building permission context for user ${userId} in tenant ${tenantId}`);
 
     let permissions: string[];
@@ -51,9 +77,7 @@ export class PermissionContextService implements IPermissionContext {
     ) {
       permissions = jwtPermissions;
       source = 'jwt';
-      this.logger.debug(
-        `Using JWT permissions for user ${userId} (${permissions.length} permissions)`,
-      );
+      this.logger.debug(`Using JWT permissions for user ${userId} (${permissions.length} permissions)`);
     }
     // 2. Fall back to database
     else {
@@ -61,13 +85,11 @@ export class PermissionContextService implements IPermissionContext {
       permissions = result.permissions;
       roles = result.roles;
       source = 'database';
-      this.logger.debug(
-        `Fetched ${permissions.length} permissions and ${roles.length} roles from DB for user ${userId}`,
-      );
+      this.logger.debug(`Fetched ${permissions.length} permissions and ${roles.length} roles from DB for user ${userId}`);
     }
 
     // Build the context
-    this.context = {
+    const context: RequestPermissionContext = {
       userId,
       tenantId,
       allowedPermissions: new Set(permissions),
@@ -77,13 +99,23 @@ export class PermissionContextService implements IPermissionContext {
       source,
     };
 
+    // Store in map with requestKey
+    this.contexts.set(requestKey, context);
+
+    // Schedule cleanup after request completes
+    setTimeout(() => {
+      this.contexts.delete(requestKey);
+      this.logger.debug(`Cleaned up permission context for request ${requestKey}`);
+    }, 5000);
+
     this.logger.debug(`Permission context built successfully for user ${userId}`, {
       permissionCount: permissions.length,
       roleCount: roles.length,
       source,
+      requestKey,
     });
 
-    return this.context;
+    return context;
   }
 
   /**
@@ -133,14 +165,10 @@ export class PermissionContextService implements IPermissionContext {
         }
       });
 
-      const result = {
+      return {
         permissions: Array.from(permissions),
         roles: Array.from(roles),
       };
-
-      this.logger.debug(`Database fetch complete for user ${userId}: ${result.permissions.length} permissions, ${result.roles.length} roles`);
-
-      return result;
     } catch (error) {
       this.logger.error(
         `Failed to fetch permissions from DB: ${error.message}`,
@@ -151,50 +179,51 @@ export class PermissionContextService implements IPermissionContext {
   }
 
   /**
-   * Check if user has a specific permission
+   * Get context for current request
    */
+  private getContext(): RequestPermissionContext {
+    const requestKey = this.getRequestKey();
+    const context = this.contexts.get(requestKey);
+    
+    // Log the current tenant context for debugging
+    const tenantContext = getTenantContext();
+    this.logger.debug(`Getting permission context - Request key: ${requestKey}, Tenant: ${tenantContext?.tenantId}, Has context: ${!!context}`);
+
+    if (!context) {
+      const error = new Error(
+        `Permission context not built for request ${requestKey}. Ensure PermissionGuard runs before using PermissionContextService.`,
+      );
+      this.logger.error(error.message);
+      throw error;
+    }
+    return context;
+  }
+
   hasPermission(permission: string | string[]): boolean {
     const context = this.getContext();
     if (Array.isArray(permission)) {
-      const hasAny = permission.some((p) => context.allowedPermissions.has(p));
-      this.logger.debug(`Checking any permission ${permission.join(' OR ')}: ${hasAny}`);
-      return hasAny;
+      return permission.some((p) => context.allowedPermissions.has(p));
     }
-    const hasIt = context.allowedPermissions.has(permission);
-    this.logger.debug(`Checking permission ${permission}: ${hasIt}`);
-    return hasIt;
+    return context.allowedPermissions.has(permission);
   }
 
-  /**
-   * Check if user has ALL specified permissions
-   */
   hasAllPermissions(permissions: string[]): boolean {
     const context = this.getContext();
-    const hasAll = permissions.every((p) => context.allowedPermissions.has(p));
-    this.logger.debug(`Checking all permissions ${permissions.join(' AND ')}: ${hasAll}`);
-    return hasAll;
+    return permissions.every((p) => context.allowedPermissions.has(p));
   }
 
-  /**
-   * Check if user has ANY of the specified permissions
-   */
   hasAnyPermission(permissions: string[]): boolean {
     const context = this.getContext();
-    const hasAny = permissions.some((p) => context.allowedPermissions.has(p));
-    this.logger.debug(`Checking any permission ${permissions.join(' OR ')}: ${hasAny}`);
-    return hasAny;
+    return permissions.some((p) => context.allowedPermissions.has(p));
   }
 
   getPermissions(): string[] {
     const context = this.getContext();
-    const perms = Array.from(context.allowedPermissions);
-    this.logger.debug(`Getting permissions for user ${context.userId}: ${perms.length} permissions`);
-    return perms;
+    return Array.from(context.allowedPermissions);
   }
 
   getRoles(): string[] {
     const context = this.getContext();
-    this.logger.debug(`Getting roles for user ${context.userId}: ${context.roles.length} roles`);
     return context.roles;
   }
 
@@ -222,14 +251,17 @@ export class PermissionContextService implements IPermissionContext {
     return this.getContext();
   }
 
-  private getContext(): RequestPermissionContext {
-    if (!this.context) {
-      const error = new Error(
-        `Permission context not built. Ensure PermissionGuard runs before using PermissionContextService.`,
-      );
-      this.logger.error(error.message);
-      throw error;
+  isInitialized(): boolean {
+    try {
+      const requestKey = this.getRequestKey();
+      return this.contexts.has(requestKey);
+    } catch {
+      return false;
     }
-    return this.context;
+  }
+
+  clearAllContexts(): void {
+    this.contexts.clear();
+    this.logger.debug('All permission contexts cleared');
   }
 }

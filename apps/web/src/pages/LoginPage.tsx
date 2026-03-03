@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -10,6 +10,7 @@ import { useToast } from '../components/feedback/ToastProvider';
 import { SessionExpiredModal } from '../components/auth/SessionExpiredModal';
 import { loginSchema, LoginFormData } from '../lib/schemas/auth.schema';
 import { mapBackendErrorToFormErrors } from '../lib/utils/auth-error-mapper';
+import { demoService, DemoAccount } from '../services/demo.service';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -18,6 +19,9 @@ const LoginPage: React.FC = () => {
 
   const [showPassword, setShowPassword] = React.useState(false);
   const [backendFieldErrors, setBackendFieldErrors] = React.useState<Record<string, string>>({});
+  const [demoAccounts, setDemoAccounts] = useState<DemoAccount[]>([]);
+  const [demoEnabled, setDemoEnabled] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
 
   const {
     register,
@@ -26,7 +30,6 @@ const LoginPage: React.FC = () => {
     setError,
     setFocus,
     clearErrors,
-    reset,
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -36,6 +39,18 @@ const LoginPage: React.FC = () => {
     },
     mode: 'onBlur',
   });
+
+  // Fetch demo accounts on mount
+  useEffect(() => {
+    const loadDemoAccounts = async () => {
+      const response = await demoService.getDemoAccounts();
+      setDemoEnabled(response.enabled);
+      if (response.accounts) {
+        setDemoAccounts(response.accounts);
+      }
+    };
+    loadDemoAccounts();
+  }, []);
 
   // Focus first invalid field
   useEffect(() => {
@@ -82,13 +97,28 @@ const LoginPage: React.FC = () => {
     }
   };
 
-  const handleDemoCredentials = (email: string, password: string) => {
-    reset({ email, password, rememberMe: false });
-    clearErrors();
-    setBackendFieldErrors({});
+  const handleDemoLogin = async (role: string) => {
+    try {
+      setDemoLoading(true);
+      await demoService.loginWithDemo(role as 'admin' | 'user');
+      // Login successful - auth store will handle redirect
+    } catch (_error: unknown) {
+      const formErrors = mapBackendErrorToFormErrors(_error);
+
+      // Set field errors - THIS ACTUALLY USES formErrors
+      if (formErrors.fieldErrors) {
+        setBackendFieldErrors(formErrors.fieldErrors);
+      }
+
+      // Show toast for non-field errors - THIS ALSO USES formErrors
+      if (formErrors.formError && !formErrors.fieldErrors) {
+        showErrorToast('Login Failed', formErrors.formError);
+      }
+    }
+      
   };
 
-  const isSubmittingForm = isSubmitting || isLoading;
+  const isSubmittingForm = isSubmitting || isLoading || demoLoading;
 
   return (
     <>
@@ -232,27 +262,26 @@ const LoginPage: React.FC = () => {
             </div>
           </form>
 
-          {/* Demo Credentials */}
-          <div className="text-center">
-            <p className="text-sm text-gray-600">
-              Demo credentials:{' '}
-              <button
-                onClick={() => handleDemoCredentials('admin@helixcrm.test', 'Admin123!')}
-                className="font-medium text-blue-600 hover:text-blue-500"
-                disabled={isSubmittingForm}
-              >
-                Admin
-              </button>{' '}
-              |{' '}
-              <button
-                onClick={() => handleDemoCredentials('user@helixcrm.test', 'User123!')}
-                className="font-medium text-blue-600 hover:text-blue-500"
-                disabled={isSubmittingForm}
-              >
-                User
-              </button>
-            </p>
-          </div>
+          {/* Demo Credentials - Only show if enabled */}
+          {demoEnabled && demoAccounts.length > 0 && (
+            <div className="text-center">
+              <p className="text-sm text-gray-600">
+                Demo credentials:{' '}
+                {demoAccounts.map((account, index) => (
+                  <React.Fragment key={account.role}>
+                    {index > 0 && <span> | </span>}
+                    <button
+                      onClick={() => handleDemoLogin(account.role.toLowerCase())}
+                      className="font-medium text-blue-600 hover:text-blue-500"
+                      disabled={isSubmittingForm}
+                    >
+                      {account.role}
+                    </button>
+                  </React.Fragment>
+                ))}
+              </p>
+            </div>
+          )}
         </div>
       </div>
 

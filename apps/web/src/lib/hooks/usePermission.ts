@@ -1,27 +1,33 @@
+// apps/web/src/lib/hooks/usePermission.ts
+
 import { useMemo } from 'react';
 import { useAuthStore } from '../../stores/auth.store';
 import { Permission, PermissionContext } from '../../lib/types/permission.types';
 
 export function usePermission(): PermissionContext {
-  const { user } = useAuthStore();
+  const { user, isAuthenticated } = useAuthStore();
 
   const permissions = useMemo(() => {
-    // Get permissions from user object (set by backend)
-    // If user has admin role, they have all permissions
-    if (user?.role === 'admin') {
-      // Return a wildcard that matches all permission checks
+    if (!user) return [];
+    
+    // Check for admin via roles array (now matches backend)
+    const isAdmin = Array.isArray(user.roles) && user.roles.includes('admin');
+    
+    if (isAdmin) {
       return ['*'];
     }
     
     // Return actual permissions from user object
-    return user?.permissions || [];
+    return user.permissions || [];
   }, [user]);
 
   const roles = useMemo(() => {
-    return user?.role ? [user.role] : [];
+    return user?.roles || [];
   }, [user]);
 
   const hasPermission = (permission: Permission | string): boolean => {
+    if (!isAuthenticated || !user) return false;
+    
     // Admin has all permissions
     if (permissions.includes('*')) {
       return true;
@@ -31,6 +37,8 @@ export function usePermission(): PermissionContext {
   };
 
   const hasAnyPermission = (requiredPermissions: (Permission | string)[]): boolean => {
+    if (!isAuthenticated || !user) return false;
+    
     // Admin has all permissions
     if (permissions.includes('*')) {
       return true;
@@ -40,6 +48,8 @@ export function usePermission(): PermissionContext {
   };
 
   const hasAllPermissions = (requiredPermissions: (Permission | string)[]): boolean => {
+    if (!isAuthenticated || !user) return false;
+    
     // Admin has all permissions
     if (permissions.includes('*')) {
       return true;
@@ -49,9 +59,8 @@ export function usePermission(): PermissionContext {
   };
 
   const hasRole = (role: string): boolean => {
-    // roles array contains 'admin' | 'user' | 'manager'
-    // We need to check if the passed string matches any of them
-    return roles.some(r => r === role);
+    if (!isAuthenticated || !user) return false;
+    return Array.isArray(user.roles) && user.roles.includes(role);
   };
 
   return {

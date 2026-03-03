@@ -7,32 +7,29 @@ import {
   ForbiddenException,
   Logger,
 } from '@nestjs/common';
-import { getTenantContext, setTenantContext } from '../tenant/tenant.context';
+import { TenantContextStorage, getTenantContext, setTenantContext } from '../tenant/tenant.context';
 import { TenantContext } from '../tenant/tenant.types';
 
 @Injectable()
 export class TenantGuard implements CanActivate {
   private readonly logger = new Logger(TenantGuard.name);
 
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
 
     try {
-      // Get current context (should be PENDING from middleware)
+      // Log the current context (should be PENDING from middleware)
       const currentContext = getTenantContext();
       
       this.logger.debug(`TenantGuard - Initial state:`, {
         tenantId: currentContext?.tenantId,
-        isSystem: currentContext?.isSystemContext,
         hasUser: !!request.user,
-        userId: request.user?.sub,
-        orgFromUser: request.user?.organizationId || request.user?.org,
         path: request.path
       });
 
-      // We must have a user at this point (AuthGuard runs before)
+      // AuthGuard MUST run before TenantGuard
       if (!request.user) {
-        this.logger.error('No user found in request - AuthGuard must run before TenantGuard');
+        this.logger.error('No user found - AuthGuard must run before TenantGuard');
         throw new ForbiddenException('Authentication required');
       }
 
@@ -40,10 +37,7 @@ export class TenantGuard implements CanActivate {
       const realTenantId = user.organizationId || user.org;
 
       if (!realTenantId) {
-        this.logger.error('User authenticated but missing organization ID', {
-          userId: user.sub,
-          userObject: user
-        });
+        this.logger.error('User missing organization ID', { userId: user.sub });
         throw new ForbiddenException('User missing organization context');
       }
 
@@ -58,10 +52,10 @@ export class TenantGuard implements CanActivate {
         userEmail: user.email,
         roles: user.roles || [],
         permissions: user.permissions || [],
+        requestId: currentContext?.requestId,
       };
 
-      // CRITICAL: Update the context directly using setTenantContext
-      // This replaces the PENDING context with the real one
+      // CRITICAL FIX: Use setTenantContext to update the AsyncLocalStorage
       setTenantContext(realContext);
 
       // Also set on request for backward compatibility
@@ -101,10 +95,6 @@ export class TenantGuard implements CanActivate {
         path: request.path,
         method: request.method,
         stack: error.stack,
-        user: request.user ? {
-          id: request.user.sub,
-          hasOrgId: !!(request.user.organizationId || request.user.org),
-        } : null,
       });
 
       throw new ForbiddenException('Tenant context required for this operation');

@@ -37,7 +37,7 @@ export interface TenantContext {
   userRole?: string;
   roles?: string[];
   permissions?: string[];
-
+  requestId?: string; // for tracking requests
   // Context metadata
   isSystemContext: boolean;
   resolvedAt: Date;

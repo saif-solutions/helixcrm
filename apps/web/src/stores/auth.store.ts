@@ -12,8 +12,8 @@ export interface User {
   firstName?: string;
   lastName?: string;
   organizationId: string;
-  role?: 'admin' | 'user' | 'manager';
-  permissions?: string[];
+  roles?: string[];        // ✅ Changed from 'role?' to 'roles?' array
+  permissions?: string[];   // ✅ Keep permissions array
 }
 
 // Define a type for API errors
@@ -117,6 +117,8 @@ export const useAuthStore = create<AuthState>((set) => ({
         rememberMe: credentials.rememberMe || false,
       });
 
+      console.log('🔥 Login response - user with roles:', response.user);
+
       // Set user context for logging
       if (response.user) {
         setUserContext(response.user.id, response.user.organizationId);
@@ -131,7 +133,12 @@ export const useAuthStore = create<AuthState>((set) => ({
       }>('/auth/me');
 
       // Log what we received for debugging
-      console.log('User data after login:', userResponse);
+      console.log('🔥 User data after login:', {
+        id: userResponse.user.id,
+        email: userResponse.user.email,
+        roles: userResponse.user.roles,
+        permissions: userResponse.user.permissions?.length
+      });
 
       set({
         user: userResponse.user,

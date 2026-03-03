@@ -544,72 +544,97 @@ export class AuditLogService {
 
   // ==================== PRIVATE HELPER METHODS ====================
 
-  /**
-   * Synchronous audit log creation with integrity chain integration
-   */
-  private async createAuditLogEntrySync(auditData: AuditLogData) {
-    try {
-      // Build the base data
-      const data: any = {
-        action: auditData.action,
-        entityType: auditData.entityType,
-        actorEmail: auditData.actorEmail,
-        actorUserId: auditData.actorUserId,
-        entityId: auditData.entityId,
-        metadata: auditData.metadata,
-        severity: auditData.severity,
-        ipAddress: auditData.ipAddress,
-        userAgent: auditData.userAgent,
-        requestId: auditData.requestId,
-      };
+/**
+ * Synchronous audit log creation with integrity chain integration
+ */
+private async createAuditLogEntrySync(auditData: AuditLogData) {
+  try {
+    // Build the base data
+    const data: any = {
+      action: auditData.action,
+      entityType: auditData.entityType,
+      actorEmail: auditData.actorEmail,
+      actorUserId: auditData.actorUserId,
+      entityId: auditData.entityId,
+      metadata: auditData.metadata,
+      severity: auditData.severity,
+      ipAddress: auditData.ipAddress,
+      userAgent: auditData.userAgent,
+      requestId: auditData.requestId,
+    };
 
-      // Handle organizationId - check if we should include it
-      // If organizationId is provided, use it
-      // If it's null/undefined, we need to handle based on database constraints
-      if (auditData.organizationId) {
-        data.organizationId = auditData.organizationId;
-      } else {
-        // For bootstrap actions, we might not have organizationId
-        // Try without it first, if that fails, we'll catch the error
-        // and the main operation will continue (per handleAuditError)
+    // Handle organizationId - try to resolve if missing for LOGIN_SUCCESS
+    let organizationId = auditData.organizationId;
+    
+    if (!organizationId && auditData.action === 'LOGIN_SUCCESS' && auditData.actorUserId) {
+      try {
+        // Try to fetch user's organization for login audit
+        const user = await this.prisma.user.findUnique({
+          where: { id: auditData.actorUserId },
+          select: { organizationId: true }
+        });
+        if (user?.organizationId) {
+          organizationId = user.organizationId;
+          this.logger.debug(`Resolved organization ${organizationId} for login audit log`);
+        }
+      } catch (error) {
+        this.logger.warn('Could not fetch user organization for audit log', { 
+          actorUserId: auditData.actorUserId,
+          error: error.message 
+        });
       }
+    }
 
-      const auditLog = await this.prisma.auditLog.create({
-        data,
-      });
+    // Now set organizationId if we have it
+    if (organizationId) {
+      data.organizationId = organizationId;
+    } else {
+      // For bootstrap actions without organization, log warning and skip
+      if (auditData.action === 'LOGIN_SUCCESS') {
+        this.logger.warn(
+          `Bootstrap audit action: LOGIN_SUCCESS recorded without organization context. ` +
+          `Actor: ${auditData.actorEmail}, Entity: ${auditData.entityType}. ` +
+          `This is acceptable during system bootstrap.`
+        );
+        return null; // Skip audit log creation
+      }
+    }
 
-      // INTEGRITY: Add to append-only chain
-      await this.appendToIntegrityChain(auditLog, auditData);
+    const auditLog = await this.prisma.auditLog.create({
+      data,
+    });
 
-      this.logger.debug(
-        `Audit log created synchronously: ${auditData.action} for ${auditData.entityType}`,
-        {
-          auditId: auditLog.id,
-          actorEmail: auditData.actorEmail,
-          organizationId: auditData.organizationId,
-          mode: 'SYNC',
-        },
+    // INTEGRITY: Add to append-only chain
+    await this.appendToIntegrityChain(auditLog, auditData);
+
+    this.logger.debug(
+      `Audit log created synchronously: ${auditData.action} for ${auditData.entityType}`,
+      {
+        auditId: auditLog.id,
+        actorEmail: auditData.actorEmail,
+        organizationId: organizationId || 'not-provided',
+        mode: 'SYNC',
+      },
+    );
+
+    return auditLog;
+  } catch (error) {
+    // If creation fails due to organizationId constraint, try an alternative approach
+    if (error.message.includes('organization') && !auditData.organizationId) {
+      this.logger.warn(
+        `Audit log creation failed without organizationId for ${auditData.action}. ` +
+        `This is expected for bootstrap actions. Audit will be skipped.`,
       );
 
-      return auditLog;
-    } catch (error) {
-      // If creation fails due to organizationId constraint, try an alternative approach
-      if (error.message.includes('organization') && !auditData.organizationId) {
-        this.logger.warn(
-          `Audit log creation failed without organizationId for ${auditData.action}. ` +
-            `This is expected for bootstrap actions. Audit will be skipped.`,
-        );
-
-        // Return null to indicate audit was skipped
-        // The main operation should continue
-        return null;
-      }
-
-      // Re-throw other errors
-      throw error;
+      // Return null to indicate audit was skipped
+      // The main operation should continue
+      return null;
     }
-  }
 
+    // Re-throw other errors
+    throw error;
+  }
+}
   /**
    * Add audit event to integrity chain
    */

@@ -1,20 +1,27 @@
-// File: src/modules/deals/repositories/deal.repository.ts
+// apps/api/src/modules/deals/repositories/deal.repository.ts
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
 import { TenantAwareRepository } from '../../../shared/database/tenant-aware.repository';
 import { Deal, Prisma, DealStatus } from '@prisma/client';
+// ✅ REMOVED: TenantContextService import - not needed
 
 @Injectable()
 export class DealRepository extends TenantAwareRepository {
   private readonly logger = new Logger(DealRepository.name);
 
-  constructor(prisma: PrismaService) {
-    // REMOVE "private"
-    super(prisma); // PASS prisma to parent
+  constructor(
+    prisma: PrismaService,
+    // ✅ REMOVED: private tenantContext: TenantContextService
+  ) {
+    super(prisma);
   }
 
-  // All methods can continue using this.prisma
-  // The parent class provides the prisma property
+  // All methods can now use this.tenantId from parent class
+  // The parent class (TenantAwareRepository) provides:
+  // - this.tenantId - gets current tenant ID
+  // - this.withTenantFilter() - adds tenant filter to queries
+  // - this.prisma - Prisma client
+
   async findById(id: string, includeDeleted = false): Promise<Deal | null> {
     try {
       const where: any = this.withTenantFilter({ id });
@@ -24,7 +31,6 @@ export class DealRepository extends TenantAwareRepository {
       }
 
       const deal = await this.prisma.deal.findFirst({
-        // ✅ Works - from parent
         where,
         include: {
           contact: true,
@@ -73,7 +79,7 @@ export class DealRepository extends TenantAwareRepository {
     data: Omit<Prisma.DealCreateInput, 'organization'>,
   ): Promise<Deal> {
     try {
-      const tenantId = this.tenantId;
+      const tenantId = this.tenantId; // ✅ From parent class
 
       // Manually add organization connection
       const tenantData: Prisma.DealCreateInput = {
@@ -115,7 +121,7 @@ export class DealRepository extends TenantAwareRepository {
 
       const tenantWhere = {
         id: params.id,
-        organizationId: this.tenantId,
+        organizationId: this.tenantId, // ✅ From parent class
       };
 
       const deal = await this.prisma.deal.update({
@@ -150,7 +156,7 @@ export class DealRepository extends TenantAwareRepository {
 
       const tenantWhere = {
         id,
-        organizationId: this.tenantId,
+        organizationId: this.tenantId, // ✅ From parent class
       };
 
       const deal = await this.prisma.deal.update({
@@ -182,52 +188,29 @@ export class DealRepository extends TenantAwareRepository {
   async findAll(params: {
     skip?: number;
     take?: number;
-    where?: Prisma.DealWhereInput;
-    orderBy?: Prisma.DealOrderByWithRelationInput;
+    where?: any;
+    orderBy?: any;
     includeDeleted?: boolean;
-  }): Promise<Deal[]> {
-    try {
-      const {
-        skip,
-        take,
-        where = {},
-        orderBy,
-        includeDeleted = false,
-      } = params;
+  }) {
+    const { skip, take, where, orderBy, includeDeleted } = params;
+    
+    // Add tenant filter using parent class method
+    const whereWithTenant = this.withTenantFilter({
+      ...where,
+      ...(includeDeleted ? {} : { deletedAt: null }),
+    });
 
-      const tenantWhere = this.withTenantFilter(where);
-
-      if (!includeDeleted) {
-        (tenantWhere as any).deletedAt = null;
-      }
-
-      return this.prisma.deal.findMany({
-        skip,
-        take: Math.min(take || 20, 100), // Cap at 100 for production safety
-        where: tenantWhere,
-        orderBy,
-        include: {
-          contact: {
-            select: { id: true, firstName: true, lastName: true, email: true },
-          },
-          account: {
-            select: { id: true, name: true },
-          },
-          owner: {
-            select: { id: true, email: true, firstName: true, lastName: true },
-          },
-          stage: {
-            select: { id: true, name: true, order: true, probability: true },
-          },
-          pipeline: {
-            select: { id: true, name: true },
-          },
-        },
-      });
-    } catch (error) {
-      this.logger.error(`Failed to find deals: ${error.message}`, error.stack);
-      throw error;
-    }
+    return this.prisma.deal.findMany({
+      skip,
+      take,
+      where: whereWithTenant,
+      orderBy,
+      include: {
+        stage: true,
+        pipeline: true,
+        owner: { select: { id: true, email: true, firstName: true, lastName: true } },
+      },
+    });
   }
 
   /**
@@ -277,7 +260,7 @@ export class DealRepository extends TenantAwareRepository {
       // Update deal stage
       const tenantWhere = {
         id: dealId,
-        organizationId: this.tenantId,
+        organizationId: this.tenantId, // ✅ From parent class
       };
 
       const deal = await this.prisma.deal.update({

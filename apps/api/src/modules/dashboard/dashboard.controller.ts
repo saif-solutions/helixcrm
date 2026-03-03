@@ -24,7 +24,7 @@ export class DashboardController {
 
   @Get('stats')
   @HttpCode(HttpStatus.OK)
-  @RequirePermission('report:read')
+  @RequirePermission('report:read') // ✅ FIXED: already correct
   async getStats(@Req() req: Request) {
     try {
       const userId = (req as any).user.sub;
@@ -120,7 +120,7 @@ export class DashboardController {
 
   @Get('health')
   @HttpCode(HttpStatus.OK)
-  @RequirePermission('report:read')
+  @RequirePermission('report:read') // ✅ FIXED: already correct
   async getDashboardHealth(@Req() req: Request) {
     try {
       // Try to get basic stats as health check

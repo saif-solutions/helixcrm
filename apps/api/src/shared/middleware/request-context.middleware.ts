@@ -1,22 +1,33 @@
-//D:\Projects-In-Hand\helixcrm\apps\api\src\shared\middleware\request-context.middleware.ts
+// apps/api/src/shared/middleware/request-context.middleware.ts
 
 import { Injectable, NestMiddleware } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 import { randomUUID } from 'crypto';
+import { TenantContextStorage } from '../tenant/tenant.context';
+import { TenantContext } from '../tenant/tenant.types';
 
 @Injectable()
 export class RequestContextMiddleware implements NestMiddleware {
   use(req: Request, res: Response, next: NextFunction) {
-    // Reuse incoming request ID or generate cryptographically strong one
     const incomingId = req.header('X-Request-ID');
     const requestId = incomingId || randomUUID();
 
-    // Attach request ID to request object
     (req as any).requestId = requestId;
-
-    // Add request ID to response headers
     res.setHeader('X-Request-ID', requestId);
 
-    next();
+    // CRITICAL: Create initial context with proper TenantContext type
+    const initialContext: TenantContext = {
+      tenantId: 'PENDING',
+      organizationId: 'PENDING',
+      isSystemContext: false,
+      resolvedAt: new Date(),
+      source: 'pending',  // ✅ Fixed: Use 'pending' which is allowed in the union type
+      requestId: requestId,
+    };
+
+    // CRITICAL: Run the entire request within this AsyncLocalStorage context
+    TenantContextStorage.run(initialContext, () => {
+      next();
+    });
   }
 }

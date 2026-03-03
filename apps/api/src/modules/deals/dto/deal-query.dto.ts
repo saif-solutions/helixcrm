@@ -16,6 +16,17 @@ export class DealQueryDto {
   @Type(() => Number)
   limit?: number = 20;
 
+  // ADD THESE TWO PROPERTIES
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  skip?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  take?: number;
+
   @IsOptional()
   @IsString()
   search?: string;
