@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
+import csurf from 'csurf';
 import {
   ValidationPipe,
   ClassSerializerInterceptor,
@@ -26,22 +27,97 @@ async function bootstrap() {
   app.use(cookieParser());
   logger.log('✅ Cookie parser registered');
 
-  // 2. Security headers
-  app.use(
-    helmet({
-      contentSecurityPolicy: {
-        directives: {
-          defaultSrc: ["'self'"],
-          styleSrc: ["'self'", "'unsafe-inline'"],
-          scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // Added unsafe-eval for Swagger
-          imgSrc: ["'self'", 'data:', 'https:'],
-        },
+// 2. CORS MUST be before CSRF (so errors have CORS headers)
+const corsOrigin = process.env.CORS_ORIGIN || 'http://localhost:5173';
+app.enableCors({
+  origin: corsOrigin,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'X-Requested-With',
+    'Accept',
+    'x-csrf-token',
+    'x-request-id',
+    'x-app-version',
+  ],
+});
+logger.log(`✅ CORS enabled for ${corsOrigin}`);
+
+// ==================== CSRF PROTECTION ====================
+const csrfProtection = csurf({
+  cookie: {
+    key: 'X-CSRF-Token',
+    httpOnly: false,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 24 * 60 * 60 * 1000,
+  },
+  value: (req) => {
+    // First check header (this is what frontend sends in requests)
+    const headerToken = req.headers['x-csrf-token'] || req.headers['x-xsrf-token'];
+    if (headerToken) {
+      return headerToken as string;
+    }
+    
+    // Then check cookie (for the initial token generation)
+    if (req.cookies && req.cookies['X-CSRF-Token']) {
+      return req.cookies['X-CSRF-Token'];
+    }
+    
+    return '';
+  },
+});
+
+// Apply CSRF protection with exclusions
+app.use((req, res, next) => {
+  // List of paths that should NEVER require CSRF validation
+  const skipPaths = [
+    '/api/v1/auth/csrf-token',
+    '/api/v1/auth/login',
+    '/api/v1/auth/register',
+    '/api/v1/auth/refresh',
+    '/api/v1/auth/logout', // Logout should be idempotent
+  ];
+
+  // Check if current path should skip CSRF
+  const shouldSkip = skipPaths.some(path => req.path.includes(path));
+  
+  if (shouldSkip) {
+    // Still run csrfProtection to generate token if needed, but don't validate
+    return csrfProtection(req, res, (err) => {
+      if (err && req.path.includes('/csrf-token')) {
+        // For token endpoint, we need the error to propagate
+        return next(err);
+      }
+      // For other skipped paths, ignore CSRF errors
+      next();
+    });
+  }
+
+  // For all other paths, enforce CSRF validation
+  return csrfProtection(req, res, next);
+});
+
+logger.log('✅ CSRF protection configured with exclusions for auth endpoints');
+
+// 3. Security headers (after CSRF)
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+        imgSrc: ["'self'", 'data:', 'https:'],
       },
-      crossOriginEmbedderPolicy: false,
-      crossOriginResourcePolicy: { policy: 'cross-origin' },
-    }),
-  );
-  logger.log('✅ Security headers (Helmet) registered');
+    },
+    crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  }),
+);
+logger.log('✅ Security headers (Helmet) registered');
 
   // ==================== SWAGGER DOCUMENTATION ====================
   logger.log('📚 Setting up Swagger documentation...');
@@ -119,24 +195,6 @@ async function bootstrap() {
   // ==================== GLOBAL PREFIX ====================
   app.setGlobalPrefix('api');
   logger.log('✅ Global prefix set to /api');
-  
-  // ==================== CORS ====================
-  const corsOrigin = process.env.CORS_ORIGIN || 'http://localhost:5173';
-  app.enableCors({
-    origin: corsOrigin,
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: [
-      'Content-Type',
-      'Authorization',
-      'X-Requested-With',
-      'Accept',
-      'x-csrf-token',
-      'x-request-id',
-      'x-app-version',
-    ],
-  });
-  logger.log(`✅ CORS enabled for ${corsOrigin}`);
 
   // ==================== APPLICATION INITIALIZATION ====================
   await app.init();

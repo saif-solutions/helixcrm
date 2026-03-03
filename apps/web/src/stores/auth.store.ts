@@ -59,12 +59,33 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       await initializeApi();
 
-      const response = await apiClient.get<{ user: User }>('/auth/me');
+      // Check if we have a token in cookies before calling /auth/me
+      // This prevents unnecessary 401 errors
+      const hasToken = document.cookie.includes('access_token');
+      
+      if (!hasToken) {
+        // No token, just mark as not authenticated
+        set({
+          user: null,
+          isAuthenticated: false,
+          isLoading: false,
+          authError: null,
+          sessionExpired: false,
+        });
+        return;
+      }
+
+      // Only try to fetch user if we have a token
+      const response = await apiClient.get<{ 
+        user: User & { permissions?: string[]; roles?: string[] } 
+      }>('/auth/me');
       
       // Restore user context for logging if user is authenticated
       if (response.user) {
         setUserContext(response.user.id, response.user.organizationId);
       }
+      
+      console.log('User data from initialize:', response);
       
       set({
         user: response.user,
@@ -101,12 +122,23 @@ export const useAuthStore = create<AuthState>((set) => ({
       });
 
       // Set user context for logging
-      setUserContext(response.user.id, response.user.organizationId);
+      if (response.user) {
+        setUserContext(response.user.id, response.user.organizationId);
+      }
 
+      // Initialize API again to ensure CSRF token is fresh
       await initializeApi();
 
+      // Fetch the full user profile including permissions
+      const userResponse = await apiClient.get<{ 
+        user: User & { permissions?: string[]; roles?: string[] } 
+      }>('/auth/me');
+
+      // Log what we received for debugging
+      console.log('User data after login:', userResponse);
+
       set({
-        user: response.user,
+        user: userResponse.user,
         isAuthenticated: true,
         isLoading: false,
         authError: null,

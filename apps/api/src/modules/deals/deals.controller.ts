@@ -52,21 +52,21 @@ export class DealsController {
   }
 
   @Get()
-  @RequirePermission('deals.read')
+  @RequirePermission('deal:read')  // Note: singular, colon format
   findAll(@Query() query: DealQueryDto, @Req() req: Request) {
     // REMOVED: organizationId parameter - Tenant context handles this
     return this.dealsService.findAll(query);
   }
 
   @Get('stats')
-  @RequirePermission('deals.read')
+  @RequirePermission('deal:read')  // Note: singular, colon format
   getStats(@Req() req: Request, @Query('pipelineId') pipelineId?: string) {
     // REMOVED: organizationId parameter - Tenant context handles this
     return this.dealsService.getDealStats(pipelineId);
   }
 
   @Get('pipeline-performance')
-  @RequirePermission('deals.read')
+  @RequirePermission('deal:read')  // Note: singular, colon format
   getPipelinePerformance(
     @Req() req: Request,
     @Query('pipelineId') pipelineId?: string,
@@ -76,7 +76,7 @@ export class DealsController {
   }
 
   @Get(':id')
-  @RequirePermission('deals.read')
+  @RequirePermission('deal:read')  // Note: singular, colon format
   findOne(
     @Param('id', ParseUUIDPipe) id: string,
     @Req() req: Request,
@@ -87,7 +87,7 @@ export class DealsController {
   }
 
   @Get(':id/stage-history')
-  @RequirePermission('deals.read')
+  @RequirePermission('deal:read')  // Note: singular, colon format
   getStageHistory(@Param('id', ParseUUIDPipe) id: string, @Req() req: Request) {
     // REMOVED: organizationId parameter - Tenant context handles this
     return this.dealsService.getStageHistory(id);

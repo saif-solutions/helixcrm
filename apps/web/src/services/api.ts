@@ -265,7 +265,16 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       logger.warn('Authentication required', { url, requestId: originalRequest?._requestId });
       
+      // Check if this is a refresh endpoint failure
+      if (originalRequest.url?.includes('/auth/refresh')) {
+        logger.error('Token refresh failed - redirecting to login');
+        useAuthStore.getState().setSessionExpired(true);
+        return Promise.reject(error);
+      }
+      
+      // Check if we've already tried refreshing
       if (originalRequest._retry) {
+        logger.error('Token refresh already attempted - giving up');
         useAuthStore.getState().setSessionExpired(true);
         return Promise.reject(error);
       }
@@ -275,6 +284,7 @@ api.interceptors.response.use(
         return Promise.reject(error);
       }
 
+      // Mark as retry attempt
       originalRequest._retry = true;
 
       try {
@@ -333,7 +343,6 @@ api.interceptors.response.use(
 );
 
 // API initialization with retry logic
-// API initialization with retry logic
 export const initializeApi = async (): Promise<void> => {
   let retries = 0;
   const maxRetries = 3;
@@ -343,11 +352,16 @@ export const initializeApi = async (): Promise<void> => {
       // Just call the endpoint - it sets cookie automatically
       await api.get('/auth/csrf-token');
       
+      // Wait a tiny bit for cookie to be available
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       // Verify cookie was set
-      if (csrfManager.getToken()) {
-        console.log('✅ CSRF token initialized from cookie');
+      const token = csrfManager.getToken();
+      if (token) {
+        console.log('✅ CSRF token initialized from cookie:', token.substring(0, 5) + '...');
         return;
       } else {
+        console.warn(`⚠️ CSRF token not found in cookie after initialization (attempt ${retries + 1})`);
         throw new Error('CSRF token not found in cookie after initialization');
       }
     } catch (error) {

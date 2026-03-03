@@ -42,7 +42,7 @@ export class LeadsController {
   }
 
   @Get()
-  @RequirePermission('leads.read')
+  @RequirePermission('lead:read')  // Note: singular, colon format
   findAll(
     @Req() req: Request,
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
@@ -59,13 +59,13 @@ export class LeadsController {
   }
 
   @Get('stats')
-  @RequirePermission('leads.read')
+  @RequirePermission('lead:read')  // Note: singular, colon format
   getStats() {
     return this.leadsService.getStats();
   }
 
   @Get(':id')
-  @RequirePermission('leads.read')
+  @RequirePermission('lead:read')  // Note: singular, colon format
   findOne(@Param('id') id: string) {
     return this.leadsService.findOne(id);
   }
