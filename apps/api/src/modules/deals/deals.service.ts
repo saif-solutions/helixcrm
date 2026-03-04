@@ -113,12 +113,6 @@ export class DealsService {
     const organizationId = this.tenantContext.getTenantId();
 
     try {
-      if (!this.permissionContext.hasPermission('deal:write')) {
-        throw new ForbiddenException(
-          'Insufficient permissions to create deals',
-        );
-      }
-
       const actorEmail = await this.getUserEmail(userId);
       const defaultPipeline = await this.getOrCreateDefaultPipeline(userId);
 
@@ -228,12 +222,6 @@ export class DealsService {
     const organizationId = this.tenantContext.getTenantId();
 
     try {
-      if (!this.permissionContext.hasPermission('deal:write')) {
-        throw new ForbiddenException(
-          'Insufficient permissions to create deals',
-        );
-      }
-
       const actorEmail = await this.getUserEmail(userId);
 
       const pipeline = await this.prisma.pipeline.findFirst({
@@ -436,11 +424,6 @@ async findAll(query: DealQueryDto) {
 
   async findOne(id: string, includeDeleted = false) {
     const organizationId = this.tenantContext.getTenantId();
-
-    if (!this.permissionContext.hasPermission('deal:read')) {
-      throw new ForbiddenException('Insufficient permissions to read deals');
-    }
-
     const deal = await this.dealRepository.findById(id, includeDeleted);
 
     if (!deal) {
@@ -458,12 +441,6 @@ async findAll(query: DealQueryDto) {
     const organizationId = this.tenantContext.getTenantId();
 
     try {
-      if (!this.permissionContext.hasPermission('deal:write')) {
-        throw new ForbiddenException(
-          'Insufficient permissions to update deals',
-        );
-      }
-
       const actorEmail = await this.getUserEmail(userId);
 
       const existingDeal = await this.dealRepository.findById(id);
@@ -570,12 +547,6 @@ async findAll(query: DealQueryDto) {
     const organizationId = this.tenantContext.getTenantId();
 
     try {
-      if (!this.permissionContext.hasPermission('deal:delete')) {
-        throw new ForbiddenException(
-          'Insufficient permissions to delete deals',
-        );
-      }
-
       const actorEmail = await this.getUserEmail(userId);
 
       const deal = await this.dealRepository.findById(id);
@@ -625,11 +596,6 @@ async findAll(query: DealQueryDto) {
 
   async moveStage(id: string, moveData: MoveDealStageDto, userId: string) {
     const organizationId = this.tenantContext.getTenantId();
-
-    if (!this.permissionContext.hasPermission('deal:write')) {
-      throw new ForbiddenException('Insufficient permissions to update deals');
-    }
-
     return this.prisma.$transaction(async (tx) => {
       const actorEmail = await this.getUserEmail(userId);
 
@@ -730,11 +696,6 @@ async findAll(query: DealQueryDto) {
 
   async getStageHistory(dealId: string) {
     const organizationId = this.tenantContext.getTenantId();
-
-    if (!this.permissionContext.hasPermission('deal:read')) {
-      throw new ForbiddenException('Insufficient permissions to read deals');
-    }
-
     const deal = await this.dealRepository.findById(dealId);
     if (!deal || deal.organizationId !== organizationId) {
       throw new NotFoundException(`Deal ${dealId} not found`);
@@ -744,18 +705,10 @@ async findAll(query: DealQueryDto) {
   }
 
   async getDealStats(pipelineId?: string) {
-    if (!this.permissionContext.hasPermission('report:read')) {
-      throw new ForbiddenException('Insufficient permissions to read reports');
-    }
-
     return this.dealRepository.getDealStats(pipelineId);
   }
 
   async getPipelinePerformance(pipelineId?: string) {
-    if (!this.permissionContext.hasPermission('report:read')) {
-      throw new ForbiddenException('Insufficient permissions to read reports');
-    }
-
     return this.dealRepository.getPipelinePerformance(pipelineId);
   }
 }

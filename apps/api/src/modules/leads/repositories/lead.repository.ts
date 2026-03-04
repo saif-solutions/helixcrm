@@ -1,4 +1,5 @@
-// File: src/modules/leads/repositories/lead.repository.ts
+// apps/api/src/modules/leads/repositories/lead.repository.ts
+
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
 import { TenantAwareRepository } from '../../../shared/database/tenant-aware.repository';
@@ -9,8 +10,7 @@ export class LeadRepository extends TenantAwareRepository {
   private readonly logger = new Logger(LeadRepository.name);
 
   constructor(prisma: PrismaService) {
-    // REMOVE "private"
-    super(prisma); // PASS prisma to parent
+    super(prisma);
   }
 
   /**
@@ -18,6 +18,9 @@ export class LeadRepository extends TenantAwareRepository {
    */
   async findById(id: string, includeDeleted = false): Promise<Lead | null> {
     try {
+      // Initialize tenant context at the start of each method
+      this.initTenantContext();
+      
       const where: any = this.withTenantFilter({ id });
 
       if (!includeDeleted) {
@@ -25,7 +28,6 @@ export class LeadRepository extends TenantAwareRepository {
       }
 
       const lead = await this.prisma.lead.findFirst({
-        // ✅ Works - from parent
         where,
       });
 
@@ -63,6 +65,9 @@ export class LeadRepository extends TenantAwareRepository {
     data: Omit<Prisma.LeadCreateInput, 'organization'>,
   ): Promise<Lead> {
     try {
+      // Initialize tenant context at the start of each method
+      this.initTenantContext();
+      
       const tenantId = this.tenantId;
 
       // Manually add organization connection
@@ -93,6 +98,9 @@ export class LeadRepository extends TenantAwareRepository {
     data: Prisma.LeadUpdateInput;
   }): Promise<Lead> {
     try {
+      // Initialize tenant context at the start of each method
+      this.initTenantContext();
+      
       // First verify lead belongs to tenant
       await this.findByIdOrThrow(params.id);
 
@@ -117,6 +125,9 @@ export class LeadRepository extends TenantAwareRepository {
    */
   async softDelete(id: string, deletedBy?: string): Promise<Lead> {
     try {
+      // Initialize tenant context at the start of each method
+      this.initTenantContext();
+      
       // First verify lead belongs to tenant
       await this.findByIdOrThrow(id);
 
@@ -144,6 +155,9 @@ export class LeadRepository extends TenantAwareRepository {
    */
   async hardDelete(id: string): Promise<Lead> {
     try {
+      // Initialize tenant context at the start of each method
+      this.initTenantContext();
+      
       // First verify lead belongs to tenant
       await this.findByIdOrThrow(id, true); // Include deleted
 
@@ -172,6 +186,9 @@ export class LeadRepository extends TenantAwareRepository {
     search?: string;
   }): Promise<{ data: Lead[]; total: number }> {
     try {
+      // Initialize tenant context at the start of each method
+      this.initTenantContext();
+      
       const { page = 1, limit = 20, status, search } = params;
       const skip = (page - 1) * limit;
 
@@ -217,6 +234,9 @@ export class LeadRepository extends TenantAwareRepository {
    */
   async countByStatus(): Promise<Record<LeadStatus, number>> {
     try {
+      // Initialize tenant context at the start of each method
+      this.initTenantContext();
+      
       const stats = await this.prisma.lead.groupBy({
         by: ['status'],
         where: this.withTenantFilter({ deletedAt: null }),
@@ -247,6 +267,9 @@ export class LeadRepository extends TenantAwareRepository {
    */
   async emailExists(email: string, excludeId?: string): Promise<boolean> {
     try {
+      // Initialize tenant context at the start of each method
+      this.initTenantContext();
+      
       const where: any = this.withTenantFilter({ email });
 
       if (excludeId) {

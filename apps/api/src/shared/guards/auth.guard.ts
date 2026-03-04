@@ -7,25 +7,13 @@ import {
   UnauthorizedException,
   Logger,
 } from '@nestjs/common';
+import { setUserInfo } from '../als';
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
-import { PERMISSION_KEY } from '../decorators/require-permission.decorator';
-import { TenantContextService } from '../tenant/context/tenant-context.service';
-import { withTenantContext } from '../tenant/tenant.context';
-
-interface JwtPayload {
-  sub: string;
-  email: string;
-  org?: string;
-  organizationId?: string;
-  version?: number;
-  tokenVersion?: number;
-  permissions?: string[];
-  roles?: string[];
-  [key: string]: any;
-}
+import { PERMISSION_KEY, IS_PUBLIC_KEY } from '../decorators/require-permission.decorator';
+import { getTenantContext } from '../tenant/tenant.context';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -37,7 +25,6 @@ export class AuthGuard implements CanActivate {
     private prisma: PrismaService,
     private reflector: Reflector,
     private configService: ConfigService,
-    private tenantContextService: TenantContextService,
   ) {
     this.secret = this.configService.get<string>('JWT_ACCESS_SECRET');
     if (!this.secret) {
@@ -48,6 +35,17 @@ export class AuthGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     // Check if route is public
+    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+
+    if (isPublic) {
+      this.logger.debug('Public route, allowing access');
+      return true;
+    }
+
+    // Legacy check for routes with empty permissions (for backward compatibility)
     const requiredPermissions = this.reflector.getAllAndOverride<string[]>(
       PERMISSION_KEY,
       [context.getHandler(), context.getClass()],
@@ -66,32 +64,36 @@ export class AuthGuard implements CanActivate {
     }
 
     try {
-      // Verify token
-      const payload = await this.jwtService.verifyAsync<JwtPayload>(token, {
+      const payload = await this.jwtService.verifyAsync(token, {
         secret: this.secret,
       });
 
-      // Handle both property naming conventions
       const organizationId = payload.organizationId || payload.org;
       const tokenVersion = payload.version || payload.tokenVersion;
 
-      if (!payload.sub) {
-        this.logger.warn('Token missing sub claim');
+      if (!payload.sub || !organizationId) {
+        this.logger.warn('Token missing required claims');
         throw new UnauthorizedException('Invalid token');
       }
 
-      if (!organizationId) {
-        this.logger.warn('Token missing organization context');
-        throw new UnauthorizedException('Invalid token: missing organization context');
-      }
-
-      // Verify user exists and is active
+      // ✅ Fetch user with roles and permissions from related tables
       const user = await this.prisma.user.findUnique({
         where: { id: payload.sub },
-        select: {
-          tokenVersion: true,
-          isActive: true,
-          email: true,
+        include: {
+          UserRoles: {
+            where: { organizationId },
+            include: {
+              role: {
+                include: {
+                  permissions: {
+                    include: {
+                      permission: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
         },
       });
 
@@ -105,7 +107,26 @@ export class AuthGuard implements CanActivate {
         throw new UnauthorizedException('Invalid token');
       }
 
-      // Create user object with permissions and roles
+      // ✅ Extract permissions from roles
+      const permissions = new Set<string>();
+      const roles: string[] = [];
+
+      if (user.UserRoles) {
+        user.UserRoles.forEach((userRole) => {
+          if (userRole.role) {
+            roles.push(userRole.role.name);
+            if (userRole.role.permissions) {
+              userRole.role.permissions.forEach((rolePermission) => {
+                if (rolePermission.permission) {
+                  permissions.add(rolePermission.permission.code);
+                }
+              });
+            }
+          }
+        });
+      }
+
+      // ✅ Create user object with permissions and roles
       const userObj = {
         id: payload.sub,
         sub: payload.sub,
@@ -113,18 +134,29 @@ export class AuthGuard implements CanActivate {
         organizationId: organizationId,
         org: organizationId,
         tokenVersion: tokenVersion,
-        permissions: payload.permissions || [],
-        roles: payload.roles || [],
+        permissions: Array.from(permissions),
+        roles: roles,
       };
 
-      // Attach user to request
+      setUserInfo(userObj.sub, userObj.email, userObj.roles, userObj.permissions);
+
+      // ✅ Set user in request
       request.user = userObj;
       request.organizationId = organizationId;
+      
+      // ✅ Also set it in the tenant context for AsyncLocalStorage
+      const tenantContext = getTenantContext();
+      if (tenantContext) {
+        tenantContext.userId = userObj.sub;
+        tenantContext.userEmail = userObj.email;
+        tenantContext.roles = userObj.roles;
+        tenantContext.permissions = userObj.permissions;
+      }
 
-      this.logger.log(`Auth successful for user ${payload.sub} in org ${organizationId}`);
-
-      // The tenant context will be properly set by the TenantGuard
-      // which runs after AuthGuard and calls tenantContextService.resolveContext()
+      this.logger.log(`Auth successful for user ${payload.sub} in org ${organizationId}`, {
+        permissionsCount: userObj.permissions.length,
+        rolesCount: userObj.roles.length,
+      });
       
       return true;
     } catch (error) {

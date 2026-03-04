@@ -13,6 +13,7 @@ import {
   Request,
   HttpCode,
   HttpStatus,
+  ForbiddenException,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -20,15 +21,20 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { UserQueryDto } from './dto/user-query.dto';
 import { AuthGuard } from '../../shared/guards/auth.guard';
 import { TenantGuard } from '../../shared/guards/tenant.guard';
+import { PermissionGuard } from '../../shared/guards/permission.guard';
 import { RequirePermission } from '../../shared/decorators/require-permission.decorator';
+import { PermissionContextService } from '../../shared/permissions/context/permission-context.service'; // ✅ ADD THIS
 
 @Controller('users')
-@UseGuards(AuthGuard, TenantGuard) // TenantContextGuard removed
+@UseGuards(AuthGuard, TenantGuard, PermissionGuard)
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly permissionContext: PermissionContextService, // ✅ ADD THIS
+  ) {}
 
   @Post()
-  @RequirePermission('users.create')
+  @RequirePermission('user:create')
   @HttpCode(HttpStatus.CREATED)
   create(@Body() createUserDto: CreateUserDto, @Request() req: any) {
     const userId = req.user.sub;
@@ -36,39 +42,51 @@ export class UsersController {
   }
 
   @Get()
-  @RequirePermission('users.read')
-  findAll(@Query() query: UserQueryDto) {
+  @RequirePermission('user:read')
+  async findAll(@Query() query: UserQueryDto) {
+    // ✅ Force PermissionGuard to run by checking context
+    if (!this.permissionContext.isInitialized()) {
+      throw new ForbiddenException('Permission context not initialized');
+    }
     return this.usersService.findAll(query);
   }
 
   @Get('me')
-  @RequirePermission('users.read_own')
+  @RequirePermission('user:read_own')
   getProfile(@Request() req: any) {
-    const userId = req.user.sub;
-    return this.usersService.getProfile(userId);
+    return this.usersService.getProfile(req.user.sub);
   }
 
   @Get(':id')
-  @RequirePermission('users.read')
-  findOne(@Param('id') id: string) {
+  @RequirePermission('user:read')
+  async findOne(@Param('id') id: string) {
+    if (!this.permissionContext.isInitialized()) {
+      throw new ForbiddenException('Permission context not initialized');
+    }
     return this.usersService.findOne(id);
   }
 
   @Patch(':id')
-  @RequirePermission('users.update')
-  update(
+  @RequirePermission('user:update')
+  async update(
     @Param('id') id: string,
     @Body() updateUserDto: UpdateUserDto,
     @Request() req: any,
   ) {
+    if (!this.permissionContext.isInitialized()) {
+      throw new ForbiddenException('Permission context not initialized');
+    }
     const userId = req.user.sub;
     return this.usersService.update(id, updateUserDto, userId);
   }
 
   @Delete(':id')
-  @RequirePermission('users.delete')
+  @RequirePermission('user:delete')
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id') id: string, @Request() req: any) {
+  async remove(@Param('id') id: string, @Request() req: any) {
+    if (!this.permissionContext.isInitialized()) {
+      throw new ForbiddenException('Permission context not initialized');
+    }
     const userId = req.user.sub;
     return this.usersService.remove(id, userId);
   }

@@ -301,16 +301,15 @@ export class AuthInvariants {
 
 // Token payload interfaces (not DTOs, used for typing)
 export interface JwtPayload {
-  sub: string; // user id
-  email: string;
-  organizationId: string;
-  tokenVersion: number;
-  permissions: string[];
-  roles: string[];
-  iat: number; // issued at
-  exp: number; // expires at
-  jti?: string; // JWT ID (for refresh tokens)
-  type?: TokenType;
+  sub: string;          // User ID
+  org: string;          // Organization ID
+  role: string;         // User role
+  iat: number;          // Issued at timestamp
+  exp: number;          // Expiration timestamp
+  version: number;      // Token version for invalidation
+  email?: string;       // User email
+  permissions?: string[]; // User permissions
+  roles?: string[];     // User roles
 }
 
 export interface RefreshTokenPayload extends JwtPayload {

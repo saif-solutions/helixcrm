@@ -49,12 +49,6 @@ export class RolesService {
   }
 
   async findAll(query: RoleQueryDto) {
-    // 1. PERMISSION CHECK
-    if (!this.permissionContext.hasPermission('rbac.read')) {
-      throw new ForbiddenException(
-        'Insufficient permissions: rbac.read required',
-      );
-    }
 
     const tenantId = this.tenantContext.getTenantId();
     const userId = this.tenantContext.getUserId();
@@ -83,12 +77,6 @@ export class RolesService {
   }
 
   async findOne(id: string) {
-    // 1. PERMISSION CHECK
-    if (!this.permissionContext.hasPermission('rbac.read')) {
-      throw new ForbiddenException(
-        'Insufficient permissions: rbac.read required',
-      );
-    }
 
     const tenantId = this.tenantContext.getTenantId();
     const userId = this.tenantContext.getUserId();
@@ -125,12 +113,6 @@ export class RolesService {
   }
 
   async create(createRoleDto: CreateRoleDto) {
-    // 1. PERMISSION CHECK
-    if (!this.permissionContext.hasPermission('rbac.manage')) {
-      throw new ForbiddenException(
-        'Insufficient permissions: rbac.manage required',
-      );
-    }
 
     const tenantId = this.tenantContext.getTenantId();
     const userId = this.tenantContext.getUserId();
@@ -216,12 +198,6 @@ export class RolesService {
   }
 
   async update(id: string, updateRoleDto: UpdateRoleDto) {
-    // 1. PERMISSION CHECK
-    if (!this.permissionContext.hasPermission('rbac.manage')) {
-      throw new ForbiddenException(
-        'Insufficient permissions: rbac.manage required',
-      );
-    }
 
     const tenantId = this.tenantContext.getTenantId();
     const userId = this.tenantContext.getUserId();
@@ -307,12 +283,6 @@ export class RolesService {
   }
 
   async remove(id: string) {
-    // 1. PERMISSION CHECK
-    if (!this.permissionContext.hasPermission('rbac.manage')) {
-      throw new ForbiddenException(
-        'Insufficient permissions: rbac.manage required',
-      );
-    }
 
     const tenantId = this.tenantContext.getTenantId();
     const userId = this.tenantContext.getUserId();
@@ -378,12 +348,6 @@ export class RolesService {
   }
 
   async assignRole(assignRoleDto: AssignRoleDto) {
-    // 1. PERMISSION CHECK
-    if (!this.permissionContext.hasPermission('rbac.manage')) {
-      throw new ForbiddenException(
-        'Insufficient permissions: rbac.manage required',
-      );
-    }
 
     const tenantId = this.tenantContext.getTenantId();
     const userId = this.tenantContext.getUserId();
@@ -397,11 +361,6 @@ export class RolesService {
         targetUserId,
         tenantId,
       );
-      if (!user) {
-        throw new NotFoundException(
-          `User with ID ${targetUserId} not found in organization`,
-        );
-      }
       if (!user) {
         throw new NotFoundException(
           `User with ID ${targetUserId} not found in organization`,
@@ -469,12 +428,6 @@ export class RolesService {
   }
 
   async removeRole(removeRoleDto: RemoveRoleDto) {
-    // 1. PERMISSION CHECK
-    if (!this.permissionContext.hasPermission('rbac.manage')) {
-      throw new ForbiddenException(
-        'Insufficient permissions: rbac.manage required',
-      );
-    }
 
     const tenantId = this.tenantContext.getTenantId();
     const userId = this.tenantContext.getUserId();
@@ -544,12 +497,6 @@ export class RolesService {
   }
 
   async getUserRoles(targetUserId: string) {
-    // 1. PERMISSION CHECK
-    if (!this.permissionContext.hasPermission('rbac.read')) {
-      throw new ForbiddenException(
-        'Insufficient permissions: rbac.read required',
-      );
-    }
 
     const tenantId = this.tenantContext.getTenantId();
     const userId = this.tenantContext.getUserId();

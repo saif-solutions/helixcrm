@@ -42,10 +42,10 @@ export class FileStorageService {
    * Upload a new file
    */
   async uploadFile(uploadDto: UploadFileDto) {
-    // Permission check
-    if (!this.permissionContext.hasPermission('files.upload')) {
+    // Permission check - FIXED: 'files.upload' → 'file:upload'
+    if (!this.permissionContext.hasPermission('file:upload')) {
       throw new ForbiddenException(
-        'Insufficient permissions: files.upload required',
+        'Insufficient permissions: file:upload required',
       );
     }
 
@@ -112,10 +112,10 @@ export class FileStorageService {
    * Get file by ID
    */
   async getFileById(id: string) {
-    // Permission check
-    if (!this.permissionContext.hasPermission('files.download')) {
+    // Permission check - FIXED: 'files.download' → 'file:download'
+    if (!this.permissionContext.hasPermission('file:download')) {
       throw new ForbiddenException(
-        'Insufficient permissions: files.download required',
+        'Insufficient permissions: file:download required',
       );
     }
 
@@ -154,10 +154,10 @@ export class FileStorageService {
    * Get all files for current tenant
    */
   async getAllFiles(options?: { skip?: number; take?: number }) {
-    // Permission check
-    if (!this.permissionContext.hasPermission('files.read')) {
+    // Permission check - FIXED: 'files.read' → 'file:read'
+    if (!this.permissionContext.hasPermission('file:read')) {
       throw new ForbiddenException(
-        'Insufficient permissions: files.read required',
+        'Insufficient permissions: file:read required',
       );
     }
 
@@ -198,10 +198,10 @@ export class FileStorageService {
    * Delete file (soft delete)
    */
   async deleteFile(id: string) {
-    // Permission check
-    if (!this.permissionContext.hasPermission('files.manage')) {
+    // Permission check - FIXED: 'files.manage' → 'file:manage'
+    if (!this.permissionContext.hasPermission('file:manage')) {
       throw new ForbiddenException(
-        'Insufficient permissions: files.manage required',
+        'Insufficient permissions: file:manage required',
       );
     }
 

@@ -39,12 +39,6 @@ export class PipelinesService {
   // ==================== PIPELINE METHODS ====================
 
   async create(data: CreatePipelineDto) {
-    // 1. PERMISSION CHECK
-    if (!this.permissionContext.hasPermission('pipelines.write')) {
-      throw new ForbiddenException(
-        'Insufficient permissions: pipelines.write required',
-      );
-    }
 
     const startTime = Date.now();
     const tenantId = this.tenantContext.getTenantId();
@@ -136,12 +130,6 @@ export class PipelinesService {
     sortOrder,
     isDefault,
   }: FindAllOptions) {
-    // 1. PERMISSION CHECK
-    if (!this.permissionContext.hasPermission('pipelines.read')) {
-      throw new ForbiddenException(
-        'Insufficient permissions: pipelines.read required',
-      );
-    }
 
     const startTime = Date.now();
     const tenantId = this.tenantContext.getTenantId();
@@ -214,12 +202,6 @@ export class PipelinesService {
   }
 
   async findOne(id: string) {
-    // 1. PERMISSION CHECK
-    if (!this.permissionContext.hasPermission('pipelines.read')) {
-      throw new ForbiddenException(
-        'Insufficient permissions: pipelines.read required',
-      );
-    }
 
     const startTime = Date.now();
     const tenantId = this.tenantContext.getTenantId();
@@ -263,12 +245,6 @@ export class PipelinesService {
   }
 
   async update(id: string, updatePipelineDto: UpdatePipelineDto) {
-    // 1. PERMISSION CHECK
-    if (!this.permissionContext.hasPermission('pipelines.write')) {
-      throw new ForbiddenException(
-        'Insufficient permissions: pipelines.write required',
-      );
-    }
 
     const startTime = Date.now();
     const tenantId = this.tenantContext.getTenantId();
@@ -350,12 +326,6 @@ export class PipelinesService {
   }
 
   async remove(id: string) {
-    // 1. PERMISSION CHECK
-    if (!this.permissionContext.hasPermission('pipelines.manage')) {
-      throw new ForbiddenException(
-        'Insufficient permissions: pipelines.manage required',
-      );
-    }
 
     const startTime = Date.now();
     const tenantId = this.tenantContext.getTenantId();
@@ -447,12 +417,6 @@ export class PipelinesService {
   }
 
   async getDefaultPipeline() {
-    // 1. PERMISSION CHECK
-    if (!this.permissionContext.hasPermission('pipelines.read')) {
-      throw new ForbiddenException(
-        'Insufficient permissions: pipelines.read required',
-      );
-    }
 
     const startTime = Date.now();
     const tenantId = this.tenantContext.getTenantId();
@@ -504,12 +468,6 @@ export class PipelinesService {
   // ==================== PIPELINE STAGE METHODS ====================
 
   async createStage(pipelineId: string, data: CreatePipelineStageDto) {
-    // 1. PERMISSION CHECK
-    if (!this.permissionContext.hasPermission('pipelines.write')) {
-      throw new ForbiddenException(
-        'Insufficient permissions: pipelines.write required',
-      );
-    }
 
     const startTime = Date.now();
     const tenantId = this.tenantContext.getTenantId();
@@ -599,12 +557,7 @@ export class PipelinesService {
   }
 
   async updateStage(stageId: string, updateDto: UpdatePipelineStageDto) {
-    // 1. PERMISSION CHECK
-    if (!this.permissionContext.hasPermission('pipelines.write')) {
-      throw new ForbiddenException(
-        'Insufficient permissions: pipelines.write required',
-      );
-    }
+
 
     const startTime = Date.now();
     const tenantId = this.tenantContext.getTenantId();
@@ -704,12 +657,6 @@ export class PipelinesService {
   }
 
   async removeStage(stageId: string) {
-    // 1. PERMISSION CHECK
-    if (!this.permissionContext.hasPermission('pipelines.manage')) {
-      throw new ForbiddenException(
-        'Insufficient permissions: pipelines.manage required',
-      );
-    }
 
     const startTime = Date.now();
     const tenantId = this.tenantContext.getTenantId();
@@ -812,12 +759,6 @@ export class PipelinesService {
   }
 
   async reorderStages(pipelineId: string, stageIds: string[]) {
-    // 1. PERMISSION CHECK
-    if (!this.permissionContext.hasPermission('pipelines.manage')) {
-      throw new ForbiddenException(
-        'Insufficient permissions: pipelines.manage required',
-      );
-    }
 
     const startTime = Date.now();
     const tenantId = this.tenantContext.getTenantId();

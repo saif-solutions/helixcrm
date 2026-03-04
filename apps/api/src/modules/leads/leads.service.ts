@@ -12,7 +12,6 @@ import { CreateLeadDto } from './dto/create-lead.dto';
 import { UpdateLeadDto } from './dto/update-lead.dto';
 import { LeadStatus as PrismaLeadStatus } from '@prisma/client';
 import { LeadRepository } from './repositories/lead.repository';
-import { PermissionContextService } from '../../shared/permissions/context/permission-context.service';
 import { TenantContextService } from '../../shared/tenant/context/tenant-context.service';
 
 interface FindAllOptions {
@@ -26,19 +25,13 @@ interface FindAllOptions {
 export class LeadsService {
   constructor(
     private leadRepository: LeadRepository,
-    private permissionContext: PermissionContextService,
     private tenantContext: TenantContextService,
     private logger: AppLogger,
   ) {}
 
   async create(createLeadDto: CreateLeadDto, userId: string) {
-    // Permission check
-    if (!this.permissionContext.hasPermission('lead:write')) {
-      throw new ForbiddenException(
-        'Insufficient permissions: lead:write required',
-      );
-    }
-
+    // ✅ REMOVED permission check - handled in controller
+    
     const startTime = Date.now();
     try {
       const { source, ...leadData } = createLeadDto;
@@ -91,53 +84,46 @@ export class LeadsService {
     }
   }
 
-// In leads.service.ts - REMOVE the permission check from findAll
-async findAll(params: FindAllOptions) {
-  // ✅ Just get tenant ID - permission already checked in controller
-  const tenantId = this.tenantContext.getTenantId();
-  
-  const startTime = Date.now();
-  try {
-    const { data: leads, total } = await this.leadRepository.findAll(params);
+  async findAll(params: FindAllOptions) {
+    const tenantId = this.tenantContext.getTenantId();
+    
+    const startTime = Date.now();
+    try {
+      const { data: leads, total } = await this.leadRepository.findAll(params);
 
-    return {
-      data: leads,
-      meta: {
-        page: params.page || 1,
-        limit: params.limit || 20,
-        total,
-        pages: Math.ceil(total / (params.limit || 20)),
-      },
-    };
-  } catch (error: any) {
-    this.logger.error(
-      `Failed to fetch leads: ${error.message}`,
-      error.stack,
-      {
+      return {
+        data: leads,
+        meta: {
+          page: params.page || 1,
+          limit: params.limit || 20,
+          total,
+          pages: Math.ceil(total / (params.limit || 20)),
+        },
+      };
+    } catch (error: any) {
+      this.logger.error(
+        `Failed to fetch leads: ${error.message}`,
+        error.stack,
+        {
+          tenantId,
+          params,
+        },
+      );
+      throw error;
+    } finally {
+      const duration = Date.now() - startTime;
+      this.logger.log(`Lead.findAll completed in ${duration}ms`, {
+        duration,
+        module: 'leads',
+        method: 'findAll',
         tenantId,
-        params,
-      },
-    );
-    throw error;
-  } finally {
-    const duration = Date.now() - startTime;
-    this.logger.log(`Lead.findAll completed in ${duration}ms`, {
-      duration,
-      module: 'leads',
-      method: 'findAll',
-      tenantId,
-    });
+      });
+    }
   }
-}
 
   async findOne(id: string) {
-    // Permission check
-    if (!this.permissionContext.hasPermission('lead:read')) {
-      throw new ForbiddenException(
-        'Insufficient permissions: lead:read required',
-      );
-    }
-
+    // ✅ REMOVED permission check - handled in controller
+    
     const startTime = Date.now();
     try {
       const lead = await this.leadRepository.findByIdOrThrow(id);
@@ -174,13 +160,8 @@ async findAll(params: FindAllOptions) {
   }
 
   async update(id: string, updateLeadDto: UpdateLeadDto, userId: string) {
-    // Permission check
-    if (!this.permissionContext.hasPermission('lead:write')) {
-      throw new ForbiddenException(
-        'Insufficient permissions: lead:write required',
-      );
-    }
-
+    // ✅ REMOVED permission check - handled in controller
+    
     const startTime = Date.now();
     try {
       // First verify lead belongs to tenant
@@ -228,13 +209,8 @@ async findAll(params: FindAllOptions) {
   }
 
   async remove(id: string, userId: string) {
-    // Permission check
-    if (!this.permissionContext.hasPermission('lead:delete')) {
-      throw new ForbiddenException(
-        'Insufficient permissions: lead:delete required',
-      );
-    }
-
+    // ✅ REMOVED permission check - handled in controller
+    
     const startTime = Date.now();
     try {
       // First verify lead belongs to tenant
@@ -273,13 +249,8 @@ async findAll(params: FindAllOptions) {
   }
 
   async getStats() {
-    // Permission check
-    if (!this.permissionContext.hasPermission('lead:read')) {
-      throw new ForbiddenException(
-        'Insufficient permissions: lead:read required',
-      );
-    }
-
+    // ✅ REMOVED permission check - handled in controller
+    
     const startTime = Date.now();
     try {
       const stats = await this.leadRepository.countByStatus();

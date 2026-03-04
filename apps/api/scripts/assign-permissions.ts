@@ -125,9 +125,9 @@ async function assignPermissions() {
   const uniquePermissions = [...new Set(permissions || [])];
   uniquePermissions.sort().forEach(p => console.log(`  - ${p}`));
 
-  // Check if user has contacts.read permission
-  const hasContactsRead = uniquePermissions.includes('contacts.read');
-  console.log(`\n🔍 contacts.read permission: ${hasContactsRead ? '✅' : '❌'}`);
+  // Check if user has contact:read permission (using colon format)
+  const hasContactRead = uniquePermissions.includes('contact:read'); // ✅ Fixed: 'contacts.read' → 'contact:read'
+  console.log(`\n🔍 contact:read permission: ${hasContactRead ? '✅' : '❌'}`);
 
   console.log('\n✅ Permission assignment complete!');
 }

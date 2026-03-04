@@ -21,17 +21,6 @@ if (!process.env.DATABASE_URL) {
   console.error('   Example: DATABASE_URL="postgresql://user:password@localhost:5432/helixcrm"');
   process.exit(1);
 }
-for (const envPath of envPaths) {
-  dotenv.config({ path: envPath });
-}
-
-// Verify DATABASE_URL is set
-if (!process.env.DATABASE_URL) {
-  console.error('❌ DATABASE_URL environment variable is not set.');
-  console.error('   Please set it in .env, .env.local, or .env.development');
-  console.error('   Example: DATABASE_URL="postgresql://user:password@localhost:5432/helixcrm"');
-  process.exit(1);
-}
 
 import { PrismaClient } from '@prisma/client';
 
@@ -46,35 +35,35 @@ async function initializeRBACSystem() {
     
     const corePermissions = [
       // Contacts module
-      { code: 'contacts.read', name: 'Read Contacts', description: 'View contacts', module: 'contacts' },
-      { code: 'contacts.write', name: 'Write Contacts', description: 'Create and update contacts', module: 'contacts' },
-      { code: 'contacts.delete', name: 'Delete Contacts', description: 'Delete contacts', module: 'contacts' },
+      { code: 'contact:read', name: 'Read Contacts', description: 'View contacts', module: 'contacts' },
+      { code: 'contact:write', name: 'Write Contacts', description: 'Create and update contacts', module: 'contacts' },
+      { code: 'contact:delete', name: 'Delete Contacts', description: 'Delete contacts', module: 'contacts' },
       
       // Deals module
-      { code: 'deals.read', name: 'Read Deals', description: 'View deals', module: 'deals' },
-      { code: 'deals.write', name: 'Write Deals', description: 'Create and update deals', module: 'deals' },
-      { code: 'deals.delete', name: 'Delete Deals', description: 'Delete deals', module: 'deals' },
+      { code: 'deal:read', name: 'Read Deals', description: 'View deals', module: 'deals' },
+      { code: 'deal:write', name: 'Write Deals', description: 'Create and update deals', module: 'deals' },
+      { code: 'deal:delete', name: 'Delete Deals', description: 'Delete deals', module: 'deals' },
       
       // Leads module
-      { code: 'leads.read', name: 'Read Leads', description: 'View leads', module: 'leads' },
-      { code: 'leads.write', name: 'Write Leads', description: 'Create and update leads', module: 'leads' },
-      { code: 'leads.delete', name: 'Delete Leads', description: 'Delete leads', module: 'leads' },
+      { code: 'lead:read', name: 'Read Leads', description: 'View leads', module: 'leads' },
+      { code: 'lead:write', name: 'Write Leads', description: 'Create and update leads', module: 'leads' },
+      { code: 'lead:delete', name: 'Delete Leads', description: 'Delete leads', module: 'leads' },
       
       // Pipelines module
-      { code: 'pipelines.read', name: 'Read Pipelines', description: 'View pipelines', module: 'pipelines' },
-      { code: 'pipelines.write', name: 'Write Pipelines', description: 'Create and update pipelines', module: 'pipelines' },
-      { code: 'pipelines.manage', name: 'Manage Pipelines', description: 'Manage pipeline stages and settings', module: 'pipelines' },
+      { code: 'pipeline:read', name: 'Read Pipelines', description: 'View pipelines', module: 'pipelines' },
+      { code: 'pipeline:write', name: 'Write Pipelines', description: 'Create and update pipelines', module: 'pipelines' },
+      { code: 'pipeline:manage', name: 'Manage Pipelines', description: 'Manage pipeline stages and settings', module: 'pipelines' },
       
       // Analytics module
-      { code: 'analytics.read', name: 'Read Analytics', description: 'View analytics data', module: 'analytics' },
-      { code: 'analytics.export', name: 'Export Analytics', description: 'Export analytics data', module: 'analytics' },
+      { code: 'report:read', name: 'Read Reports', description: 'View analytics data', module: 'analytics' },
+      { code: 'report:export', name: 'Export Reports', description: 'Export analytics data', module: 'analytics' },
       
       // RBAC module
-      { code: 'rbac.read', name: 'Read RBAC', description: 'View roles and permissions', module: 'rbac' },
-      { code: 'rbac.manage', name: 'Manage RBAC', description: 'Manage roles and permissions', module: 'rbac' },
+      { code: 'rbac:read', name: 'Read RBAC', description: 'View roles and permissions', module: 'rbac' },
+      { code: 'rbac:manage', name: 'Manage RBAC', description: 'Manage roles and permissions', module: 'rbac' },
       
       // Dashboard module
-      { code: 'dashboard.read', name: 'Read Dashboard', description: 'View dashboard', module: 'dashboard' },
+      { code: 'dashboard:read', name: 'Read Dashboard', description: 'View dashboard', module: 'dashboard' },
     ];
 
     for (const perm of corePermissions) {
@@ -168,12 +157,12 @@ async function initializeRBACSystem() {
         where: {
           code: {
             in: [
-              'contacts.read', 'contacts.write',
-              'deals.read', 'deals.write',
-              'leads.read', 'leads.write',
-              'pipelines.read', 'pipelines.write',
-              'analytics.read',
-              'dashboard.read',
+              'contact:read', 'contact:write',
+              'deal:read', 'deal:write',
+              'lead:read', 'lead:write',
+              'pipeline:read', 'pipeline:write',
+              'report:read',
+              'dashboard:read',
             ],
           },
         },
@@ -220,10 +209,10 @@ async function initializeRBACSystem() {
         where: {
           code: {
             in: [
-              'contacts.read', 'contacts.write',
-              'deals.read', 'deals.write',
-              'leads.read', 'leads.write',
-              'dashboard.read',
+              'contact:read', 'contact:write',
+              'deal:read', 'deal:write',
+              'lead:read', 'lead:write',
+              'dashboard:read',
             ],
           },
         },
@@ -270,12 +259,12 @@ async function initializeRBACSystem() {
         where: {
           code: {
             in: [
-              'contacts.read',
-              'deals.read',
-              'leads.read',
-              'pipelines.read',
-              'analytics.read',
-              'dashboard.read',
+              'contact:read',
+              'deal:read',
+              'lead:read',
+              'pipeline:read',
+              'report:read',
+              'dashboard:read',
             ],
           },
         },

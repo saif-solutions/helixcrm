@@ -1,9 +1,10 @@
+// apps/api/src/main.ts
+
 import { NestFactory, Reflector } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
-import csurf from 'csurf';
 import {
   ValidationPipe,
   ClassSerializerInterceptor,
@@ -11,7 +12,10 @@ import {
 } from '@nestjs/common';
 import { VersioningType } from '@nestjs/common';
 import { ConfigValidationService } from './config/config-validation.service';
-import { RequestContextMiddleware } from './shared/middleware/request-context.middleware'; // ✅ ADDED
+import { RequestContextMiddleware } from './shared/middleware/request-context.middleware';
+import { CsrfMiddleware } from './shared/security/csrf.middleware';
+import { als } from './shared/als'; // ✅ Import ALS
+import { randomUUID } from 'crypto'; // ✅ Add this import
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
@@ -19,6 +23,15 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     logger: ['error', 'warn', 'log'],
   });
+
+  // ==================== ALS MIDDLEWARE (MUST BE FIRST) ====================
+  app.use((req, res, next) => {
+    const requestId = (req.headers['x-request-id'] as string) || randomUUID();
+    als.run({ requestId }, () => {
+      next();
+    });
+  });
+  logger.log('✅ ALS context initialized for all requests');
 
   // ==================== LOGGING MIDDLEWARE REGISTRATION ====================
   logger.log('📋 Registering middleware...');
@@ -28,7 +41,7 @@ async function bootstrap() {
   app.use(cookieParser());
   logger.log('✅ Cookie parser registered');
 
-  // ✅ 2. CRITICAL: RequestContextMiddleware - Creates AsyncLocalStorage scope for EVERY request
+  // 2. RequestContextMiddleware - Creates AsyncLocalStorage scope for EVERY request
   const requestContextMiddleware = new RequestContextMiddleware();
   app.use(requestContextMiddleware.use.bind(requestContextMiddleware));
   logger.log('✅ Request Context middleware registered - AsyncLocalStorage scope created for all requests');
@@ -52,63 +65,12 @@ async function bootstrap() {
   });
   logger.log(`✅ CORS enabled for ${corsOrigin}`);
 
-  // ==================== CSRF PROTECTION ====================
-  const csrfProtection = csurf({
-    cookie: {
-      key: 'X-CSRF-Token',
-      httpOnly: false,
-      sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 24 * 60 * 60 * 1000,
-    },
-    value: (req) => {
-      // First check header (this is what frontend sends in requests)
-      const headerToken = req.headers['x-csrf-token'] || req.headers['x-xsrf-token'];
-      if (headerToken) {
-        return headerToken as string;
-      }
-      
-      // Then check cookie (for the initial token generation)
-      if (req.cookies && req.cookies['X-CSRF-Token']) {
-        return req.cookies['X-CSRF-Token'];
-      }
-      
-      return '';
-    },
-  });
+  // 4. CSRF protection (centralized)
+  const csrfMiddleware = new CsrfMiddleware();
+  app.use(csrfMiddleware.use.bind(csrfMiddleware));
+  logger.log('✅ CSRF middleware registered with exclusions for auth endpoints');
 
-  // Apply CSRF protection with exclusions
-  app.use((req, res, next) => {
-    // List of paths that should NEVER require CSRF validation
-    const skipPaths = [
-      '/api/v1/auth/csrf-token',
-      '/api/v1/auth/login',
-      '/api/v1/auth/register',
-      '/api/v1/auth/refresh',
-      '/api/v1/auth/logout', // Logout should be idempotent
-    ];
-
-    // Check if current path should skip CSRF
-    const shouldSkip = skipPaths.some(path => req.path.includes(path));
-    
-    if (shouldSkip) {
-      // Still run csrfProtection to generate token if needed, but don't validate
-      return csrfProtection(req, res, (err) => {
-        if (err && req.path.includes('/csrf-token')) {
-          // For token endpoint, we need the error to propagate
-          return next(err);
-        }
-        // For other skipped paths, ignore CSRF errors
-        next();
-      });
-    }
-
-    // For all other paths, enforce CSRF validation
-    return csrfProtection(req, res, next);
-  });
-  logger.log('✅ CSRF protection configured with exclusions for auth endpoints');
-
-  // 4. Security headers (after CSRF)
+  // 5. Security headers (after CSRF)
   app.use(
     helmet({
       contentSecurityPolicy: {
@@ -158,7 +120,6 @@ async function bootstrap() {
     
   const document = SwaggerModule.createDocument(app, config);
   
-  // Setup Swagger UI with custom options
   SwaggerModule.setup('api/docs', app, document, {
     swaggerOptions: {
       persistAuthorization: true,
@@ -178,7 +139,7 @@ async function bootstrap() {
     new ValidationPipe({
       whitelist: true,
       forbidNonWhitelisted: true,
-      transform: true,  // CRITICAL for string to number conversion
+      transform: true,
       transformOptions: {
         enableImplicitConversion: true,
       },
@@ -188,7 +149,9 @@ async function bootstrap() {
   logger.log('✅ Global ValidationPipe registered');
 
   // ==================== GLOBAL INTERCEPTORS ====================
-  app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
+  app.useGlobalInterceptors(
+    new ClassSerializerInterceptor(app.get(Reflector))
+  );
   logger.log('✅ Global ClassSerializerInterceptor registered');
 
   // ==================== API VERSIONING ====================
@@ -286,7 +249,7 @@ async function bootstrap() {
   logger.log(`🔒 Security: ACTIVE`);
   logger.log(`🌐 CORS: Enabled for ${corsOrigin}`);
   logger.log(`⚙️ Environment: ${process.env.NODE_ENV || 'development'}`);
-  logger.log(`🔄 AsyncLocalStorage: ACTIVE - Tenant context will persist through async operations`);
+  logger.log(`🔄 AsyncLocalStorage: ACTIVE - Single ALS instance for entire app`);
 
   // Log analytics module status
   if (

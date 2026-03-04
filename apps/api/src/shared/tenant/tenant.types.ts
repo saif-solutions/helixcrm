@@ -1,6 +1,7 @@
 // apps/api/src/shared/tenant/tenant.types.ts
 
 import { Request } from 'express';
+import { RequestPermissionContext } from '../permissions/context/permission-context.interface';
 
 /**
  * JWT User structure used by your auth system
@@ -42,6 +43,7 @@ export interface TenantContext {
   isSystemContext: boolean;
   resolvedAt: Date;
   source: 'header' | 'token' | 'system' | 'pending';
+  permissionContext?: RequestPermissionContext;
 }
 
 /**

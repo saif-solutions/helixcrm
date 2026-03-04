@@ -68,10 +68,10 @@ export class EmailTemplatesService {
    * Create a new email template
    */
   async createEmailTemplate(createDto: CreateEmailTemplateDto) {
-    // 1. PERMISSION CHECK
-    if (!this.permissionContext.hasPermission('email_templates.manage')) {
+    // 1. PERMISSION CHECK - FIXED: 'email_templates.manage' → 'email:manage'
+    if (!this.permissionContext.hasPermission('email:manage')) {
       throw new ForbiddenException(
-        'Insufficient permissions: email_templates.manage required',
+        'Insufficient permissions: email:manage required',
       );
     }
 
@@ -159,10 +159,10 @@ export class EmailTemplatesService {
     page?: number;
     limit?: number;
   }) {
-    // 1. PERMISSION CHECK
-    if (!this.permissionContext.hasPermission('email_templates.read')) {
+    // 1. PERMISSION CHECK - FIXED: 'email_templates.read' → 'email:read'
+    if (!this.permissionContext.hasPermission('email:read')) {
       throw new ForbiddenException(
-        'Insufficient permissions: email_templates.read required',
+        'Insufficient permissions: email:read required',
       );
     }
 
@@ -217,10 +217,10 @@ export class EmailTemplatesService {
    * Get email template by ID
    */
   async getEmailTemplateById(id: string) {
-    // 1. PERMISSION CHECK
-    if (!this.permissionContext.hasPermission('email_templates.read')) {
+    // 1. PERMISSION CHECK - FIXED: 'email_templates.read' → 'email:read'
+    if (!this.permissionContext.hasPermission('email:read')) {
       throw new ForbiddenException(
-        'Insufficient permissions: email_templates.read required',
+        'Insufficient permissions: email:read required',
       );
     }
 
@@ -263,10 +263,10 @@ export class EmailTemplatesService {
    * Update email template
    */
   async updateEmailTemplate(id: string, updateDto: UpdateEmailTemplateDto) {
-    // 1. PERMISSION CHECK
-    if (!this.permissionContext.hasPermission('email_templates.manage')) {
+    // 1. PERMISSION CHECK - FIXED: 'email_templates.manage' → 'email:manage'
+    if (!this.permissionContext.hasPermission('email:manage')) {
       throw new ForbiddenException(
-        'Insufficient permissions: email_templates.manage required',
+        'Insufficient permissions: email:manage required',
       );
     }
 
@@ -365,10 +365,10 @@ export class EmailTemplatesService {
    * Delete email template
    */
   async deleteEmailTemplate(id: string) {
-    // 1. PERMISSION CHECK
-    if (!this.permissionContext.hasPermission('email_templates.manage')) {
+    // 1. PERMISSION CHECK - FIXED: 'email_templates.manage' → 'email:manage'
+    if (!this.permissionContext.hasPermission('email:manage')) {
       throw new ForbiddenException(
-        'Insufficient permissions: email_templates.manage required',
+        'Insufficient permissions: email:manage required',
       );
     }
 
@@ -451,10 +451,10 @@ export class EmailTemplatesService {
    * Render template with variables
    */
   async renderTemplate(renderDto: RenderTemplateDto) {
-    // 1. PERMISSION CHECK
-    if (!this.permissionContext.hasPermission('email_templates.read')) {
+    // 1. PERMISSION CHECK - FIXED: 'email_templates.read' → 'email:read'
+    if (!this.permissionContext.hasPermission('email:read')) {
       throw new ForbiddenException(
-        'Insufficient permissions: email_templates.read required',
+        'Insufficient permissions: email:read required',
       );
     }
 
@@ -537,10 +537,10 @@ export class EmailTemplatesService {
    * Send email using template
    */
   async sendEmail(sendDto: SendEmailDto) {
-    // 1. PERMISSION CHECK
-    if (!this.permissionContext.hasPermission('email_templates.send')) {
+    // 1. PERMISSION CHECK - FIXED: 'email_templates.send' → 'email:send'
+    if (!this.permissionContext.hasPermission('email:send')) {
       throw new ForbiddenException(
-        'Insufficient permissions: email_templates.send required',
+        'Insufficient permissions: email:send required',
       );
     }
 

@@ -10,7 +10,6 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserQueryDto } from './dto/user-query.dto';
 import * as bcrypt from 'bcrypt';
-import { PermissionContextService } from '../../shared/permissions/context/permission-context.service';
 import { UserRepository } from './repositories/user.repository';
 import { TenantContextService } from '../../shared/tenant/context/tenant-context.service';
 
@@ -20,26 +19,13 @@ export class UsersService {
 
   constructor(
     private userRepository: UserRepository,
-    private permissionContext: PermissionContextService,
-    private tenantContext: TenantContextService,
+    private tenantContext: TenantContextService, // ✅ Keep only tenant context
   ) {}
 
   /**
    * Create a new user in the current tenant
-   * DEMONSTRATES: Using repository pattern with automatic tenant filtering
-   */
-  /**
-   * Create a new user in the current tenant
    */
   async create(createUserDto: CreateUserDto, createdById?: string) {
-    // PERMISSION CHECK: Using the pre-computed permission context
-    if (!this.permissionContext.hasPermission('user:create')) {
-      this.logger.warn(
-        `Permission denied: User ${this.permissionContext.getUserId()} lacks user:create permission`,
-      );
-      throw new ForbiddenException('Insufficient permissions to create users');
-    }
-
     const {
       email,
       password,
@@ -56,15 +42,6 @@ export class UsersService {
       throw new ConflictException(
         `User with email ${email} already exists in this organization`,
       );
-    }
-
-    // ROLE ASSIGNMENT CHECK: Using permission context
-    if (
-      role === 'admin' &&
-      !this.permissionContext.hasPermission('user:assign_admin')
-    ) {
-      this.logger.warn(`Permission denied: Cannot assign admin role`);
-      throw new ForbiddenException('Cannot assign admin role');
     }
 
     // Hash password
@@ -90,12 +67,12 @@ export class UsersService {
       },
     });
 
-    // AUDIT LOGGING
+    // AUDIT LOGGING - use tenantContext.getUserId() instead
     this.logger.log(`User created successfully`, {
       event: 'user_created',
       newUserId: user.id,
       newUserEmail: user.email,
-      createdByUserId: createdById || this.permissionContext.getUserId(),
+      createdByUserId: createdById || this.tenantContext.getUserId(), // ✅ FIXED
       organizationId,
     });
 
@@ -106,14 +83,8 @@ export class UsersService {
 
   /**
    * Find all users in current tenant
-   * DEMONSTRATES: Simple permission check with context
    */
   async findAll(query: UserQueryDto) {
-    // SINGLE PERMISSION CHECK: No DB recomputation needed
-    if (!this.permissionContext.hasPermission('user:read')) {
-      throw new ForbiddenException('Insufficient permissions to view users');
-    }
-
     const { isActive, search, role } = query;
     const where: any = {};
 
@@ -137,10 +108,10 @@ export class UsersService {
       ({ passwordHash: _, ...user }) => user,
     );
 
-    // DEBUG LOGGING: Show permission context in action
+    // DEBUG LOGGING - use tenantContext.getUserId() instead
     this.logger.debug(`User list fetched`, {
       userCount: users.length,
-      requesterId: this.permissionContext.getUserId(),
+      requesterId: this.tenantContext.getUserId(), // ✅ FIXED
       organizationId: this.tenantContext.getTenantId(),
     });
 
@@ -149,25 +120,8 @@ export class UsersService {
 
   /**
    * Find a user by ID within current tenant
-   * DEMONSTRATES: Multiple permission checks with context
    */
   async findOne(id: string) {
-    // MULTIPLE PERMISSION OPTIONS: Check different permission combinations
-    const canViewAll = this.permissionContext.hasPermission('user:read_all');
-    const canViewOwn = this.permissionContext.hasPermission('user:read_own');
-
-    if (!canViewAll && !canViewOwn) {
-      throw new ForbiddenException(
-        'Insufficient permissions to view user details',
-      );
-    }
-
-    // If can only view own, check if this is their own ID
-    const currentUserId = this.permissionContext.getUserId();
-    if (!canViewAll && canViewOwn && id !== currentUserId) {
-      throw new ForbiddenException('Can only view your own user details');
-    }
-
     const user = await this.userRepository.findById(id);
 
     if (!user) {
@@ -184,40 +138,13 @@ export class UsersService {
   /**
    * Update user in current tenant
    */
-  /**
-   * Update user in current tenant
-   */
   async update(id: string, updateUserDto: UpdateUserDto, updatedById?: string) {
-    // PERMISSION CHECK
-    const canUpdateAll =
-      this.permissionContext.hasPermission('user:update_all');
-    const canUpdateOwn =
-      this.permissionContext.hasPermission('user:update_own');
-
-    if (!canUpdateAll && !canUpdateOwn) {
-      throw new ForbiddenException('Insufficient permissions to update users');
-    }
-
-    // If can only update own, check if this is their own ID
-    const currentUserId = this.permissionContext.getUserId();
-    if (!canUpdateAll && canUpdateOwn && id !== currentUserId) {
-      throw new ForbiddenException('Can only update your own user details');
-    }
-
     // Check if user exists in current tenant
     const existingUser = await this.userRepository.findById(id);
     if (!existingUser) {
       throw new NotFoundException(
         `User with ID ${id} not found in this organization`,
       );
-    }
-
-    // ROLE ASSIGNMENT CHECK
-    if (
-      updateUserDto.role === 'admin' &&
-      !this.permissionContext.hasPermission('user:assign_admin')
-    ) {
-      throw new ForbiddenException('Cannot assign admin role');
     }
 
     // Prepare update data
@@ -229,7 +156,6 @@ export class UsersService {
     if (updateUserDto.isActive !== undefined)
       updateData.isActive = updateUserDto.isActive;
     if (updateUserDto.role !== undefined) updateData.role = updateUserDto.role;
-    // Note: emailVerified was removed since it's not in UpdateUserDto
 
     // Update user using repository
     const updatedUser = await this.userRepository.update({
@@ -240,7 +166,7 @@ export class UsersService {
     this.logger.log(`User updated`, {
       event: 'user_updated',
       userId: id,
-      updatedBy: updatedById || currentUserId,
+      updatedBy: updatedById || this.tenantContext.getUserId(), // ✅ FIXED
       organizationId: this.tenantContext.getTenantId(),
     });
 
@@ -253,13 +179,8 @@ export class UsersService {
    * Remove user from current tenant
    */
   async remove(id: string, deletedById?: string) {
-    // PERMISSION CHECK
-    if (!this.permissionContext.hasPermission('user:delete')) {
-      throw new ForbiddenException('Insufficient permissions to delete users');
-    }
-
     // Cannot delete yourself
-    const currentUserId = this.permissionContext.getUserId();
+    const currentUserId = this.tenantContext.getUserId(); // ✅ FIXED
     if (id === currentUserId) {
       throw new ForbiddenException('Cannot delete your own account');
     }
@@ -307,11 +228,7 @@ export class UsersService {
    * Soft delete user (archive)
    */
   async archive(id: string, archivedById?: string) {
-    if (!this.permissionContext.hasPermission('user:delete')) {
-      throw new ForbiddenException('Insufficient permissions to archive users');
-    }
-
-    const currentUserId = this.permissionContext.getUserId();
+    const currentUserId = this.tenantContext.getUserId(); // ✅ FIXED
     if (id === currentUserId) {
       throw new ForbiddenException('Cannot archive your own account');
     }
@@ -334,10 +251,6 @@ export class UsersService {
    * Search users in current tenant
    */
   async search(searchTerm: string) {
-    if (!this.permissionContext.hasPermission('user:read')) {
-      throw new ForbiddenException('Insufficient permissions to search users');
-    }
-
     const users = await this.userRepository.findAll({
       where: {
         OR: [

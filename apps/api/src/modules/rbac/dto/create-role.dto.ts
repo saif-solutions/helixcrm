@@ -26,7 +26,7 @@ export class CreateRoleDto {
 
   @ApiProperty({
     description: 'Permission codes to assign to role',
-    example: ['deals.read', 'deals.write', 'pipelines.manage'],
+    example: ['deal:read', 'deal:write', 'pipeline:manage'], // ✅ FIXED: Changed from dot format to colon format
     type: [String],
   })
   @IsArray()

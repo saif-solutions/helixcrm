@@ -5,12 +5,12 @@ const prisma = new PrismaClient();
 async function fixPermissionFormat() {
   console.log('Fixing permission codes from dot to colon notation...');
   
-  // Permissions to fix
+  // Permissions to fix - UPDATED to correct colon format
   const permissionUpdates = [
-    { old: 'users.read', new: 'users:read' },
-    { old: 'users.create', new: 'users:create' },
-    { old: 'users.update', new: 'users:update' },
-    { old: 'users.delete', new: 'users:delete' },
+    { old: 'users.read', new: 'user:read' },      // ✅ Fixed: 'users:read' → 'user:read'
+    { old: 'users.create', new: 'user:create' },  // ✅ Fixed: 'users:create' → 'user:create'
+    { old: 'users.update', new: 'user:update' },  // ✅ Fixed: 'users:update' → 'user:update'
+    { old: 'users.delete', new: 'user:delete' },  // ✅ Fixed: 'users:delete' → 'user:delete'
   ];
 
   for (const update of permissionUpdates) {

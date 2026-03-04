@@ -1,5 +1,5 @@
 // src/modules/rbac/permissions.service.ts
-import { Injectable, ForbiddenException } from '@nestjs/common'; // Added ForbiddenException
+import { Injectable, ForbiddenException } from '@nestjs/common';
 import { PermissionRepository } from './repositories/permission.repository';
 import { TenantContextService } from '../../shared/tenant/context/tenant-context.service';
 import { PermissionContextService } from '../../shared/permissions/context/permission-context.service';
@@ -13,10 +13,10 @@ export class PermissionsService {
   ) {}
 
   async findAll() {
-    // 1. PERMISSION CHECK
-    if (!this.permissionContext.hasPermission('rbac.read')) {
+    // 1. PERMISSION CHECK - FIXED: 'rbac.read' → 'rbac:read'
+    if (!this.permissionContext.hasPermission('rbac:read')) {
       throw new ForbiddenException(
-        'Insufficient permissions: rbac.read required',
+        'Insufficient permissions: rbac:read required',
       );
     }
 
@@ -40,10 +40,10 @@ export class PermissionsService {
   }
 
   async findGrouped() {
-    // 1. PERMISSION CHECK
-    if (!this.permissionContext.hasPermission('rbac.read')) {
+    // 1. PERMISSION CHECK - FIXED: 'rbac.read' → 'rbac:read'
+    if (!this.permissionContext.hasPermission('rbac:read')) {
       throw new ForbiddenException(
-        'Insufficient permissions: rbac.read required',
+        'Insufficient permissions: rbac:read required',
       );
     }
 
@@ -55,9 +55,10 @@ export class PermissionsService {
       const permissions = await this.permissionRepository.findAll();
 
       // 3. GROUP BY MODULE (PRESERVE ORIGINAL BUSINESS LOGIC)
+      // Note: Permission codes are now in colon format (module:action)
       const grouped = permissions.reduce(
         (acc, permission) => {
-          const [module] = permission.code.split('.');
+          const [module] = permission.code.split(':');
           if (!acc[module]) {
             acc[module] = [];
           }
@@ -83,10 +84,10 @@ export class PermissionsService {
   }
 
   async getPermissionHierarchy() {
-    // 1. PERMISSION CHECK
-    if (!this.permissionContext.hasPermission('rbac.read')) {
+    // 1. PERMISSION CHECK - FIXED: 'rbac.read' → 'rbac:read'
+    if (!this.permissionContext.hasPermission('rbac:read')) {
       throw new ForbiddenException(
-        'Insufficient permissions: rbac.read required',
+        'Insufficient permissions: rbac:read required',
       );
     }
 
@@ -98,10 +99,11 @@ export class PermissionsService {
       const permissions = await this.permissionRepository.findAll();
 
       // 3. ORGANIZE BY MODULE.ACTION (PRESERVE ORIGINAL BUSINESS LOGIC)
+      // Updated to handle colon format (module:action)
       const hierarchy: Record<string, any> = {};
 
       permissions.forEach((permission) => {
-        const [module, action, scope] = permission.code.split('.');
+        const [module, action] = permission.code.split(':');
 
         if (!hierarchy[module]) {
           hierarchy[module] = {};
@@ -111,9 +113,8 @@ export class PermissionsService {
           hierarchy[module][action] = [];
         }
 
-        if (scope) {
-          hierarchy[module][action].push(scope);
-        }
+        // Note: No scope in colon format - this part is simplified
+        // If you need scope, you might want to use format like module:action:scope
       });
 
       return hierarchy;

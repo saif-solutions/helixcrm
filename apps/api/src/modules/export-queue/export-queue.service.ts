@@ -73,10 +73,10 @@ export class ExportQueueService {
     filters?: Record<string, any>,
     options?: ExportJobData['options'],
   ): Promise<{ jobId: string; message: string; estimatedTime?: number }> {
-    // 1. PERMISSION CHECK
-    if (!this.permissionContext.hasPermission(`export.${exportType}`)) {
+    // 1. PERMISSION CHECK - FIXED: 'export.${exportType}' → 'export:${exportType}'
+    if (!this.permissionContext.hasPermission(`export:${exportType}`)) {
       throw new ForbiddenException(
-        `Insufficient permissions: export.${exportType} required`,
+        `Insufficient permissions: export:${exportType} required`,
       );
     }
 
@@ -219,10 +219,10 @@ export class ExportQueueService {
    * Get status of an export job
    */
   async getJobStatus(jobId: string): Promise<ExportJobResult> {
-    // 1. PERMISSION CHECK
-    if (!this.permissionContext.hasPermission('export.read')) {
+    // 1. PERMISSION CHECK - FIXED: 'export.read' → 'export:read'
+    if (!this.permissionContext.hasPermission('export:read')) {
       throw new ForbiddenException(
-        'Insufficient permissions: export.read required',
+        'Insufficient permissions: export:read required',
       );
     }
 
@@ -243,9 +243,9 @@ export class ExportQueueService {
         throw new ForbiddenException('Access denied to this export job');
       }
 
-      // 4. VALIDATE USER ACCESS (unless admin)
+      // 4. VALIDATE USER ACCESS (unless admin) - FIXED: 'export.manage' → 'export:manage'
       if (
-        !this.permissionContext.hasPermission('export.manage') &&
+        !this.permissionContext.hasPermission('export:manage') &&
         job.userId !== userId
       ) {
         throw new ForbiddenException('Can only view your own export jobs');
@@ -321,10 +321,10 @@ export class ExportQueueService {
     limit = 20,
     status?: string,
   ): Promise<{ data: ExportJobResult[]; meta: any }> {
-    // 1. PERMISSION CHECK
-    if (!this.permissionContext.hasPermission('export.read')) {
+    // 1. PERMISSION CHECK - FIXED: 'export.read' → 'export:read'
+    if (!this.permissionContext.hasPermission('export:read')) {
       throw new ForbiddenException(
-        'Insufficient permissions: export.read required',
+        'Insufficient permissions: export:read required',
       );
     }
 
@@ -336,8 +336,8 @@ export class ExportQueueService {
       // 2. BUILD QUERY FILTERS
       const filters: any = { tenantId };
 
-      // Regular users can only see their own jobs
-      if (!this.permissionContext.hasPermission('export.manage')) {
+      // Regular users can only see their own jobs - FIXED: 'export.manage' → 'export:manage'
+      if (!this.permissionContext.hasPermission('export:manage')) {
         filters.userId = userId;
       }
 
@@ -408,10 +408,10 @@ export class ExportQueueService {
    * Cancel an export job
    */
   async cancelJob(jobId: string): Promise<{ message: string }> {
-    // 1. PERMISSION CHECK
-    if (!this.permissionContext.hasPermission('export.manage')) {
+    // 1. PERMISSION CHECK - FIXED: 'export.manage' → 'export:manage'
+    if (!this.permissionContext.hasPermission('export:manage')) {
       throw new ForbiddenException(
-        'Insufficient permissions: export.manage required',
+        'Insufficient permissions: export:manage required',
       );
     }
 
@@ -509,10 +509,10 @@ export class ExportQueueService {
     fileSize: number;
     contentType: string;
   }> {
-    // 1. PERMISSION CHECK
-    if (!this.permissionContext.hasPermission('export.read')) {
+    // 1. PERMISSION CHECK - FIXED: 'export.read' → 'export:read'
+    if (!this.permissionContext.hasPermission('export:read')) {
       throw new ForbiddenException(
-        'Insufficient permissions: export.read required',
+        'Insufficient permissions: export:read required',
       );
     }
 
@@ -533,9 +533,9 @@ export class ExportQueueService {
         throw new ForbiddenException('Access denied to this export job');
       }
 
-      // 4. VALIDATE USER ACCESS
+      // 4. VALIDATE USER ACCESS - FIXED: 'export.manage' → 'export:manage'
       if (
-        !this.permissionContext.hasPermission('export.manage') &&
+        !this.permissionContext.hasPermission('export:manage') &&
         job.userId !== userId
       ) {
         throw new ForbiddenException('Can only download your own export files');
@@ -634,10 +634,10 @@ export class ExportQueueService {
       cancelled: number;
     };
   }> {
-    // 1. PERMISSION CHECK - SYSTEM ADMIN ONLY
-    if (!this.permissionContext.hasPermission('system.admin')) {
+    // 1. PERMISSION CHECK - SYSTEM ADMIN ONLY - FIXED: 'system.admin' → 'system:admin'
+    if (!this.permissionContext.hasPermission('system:admin')) {
       throw new ForbiddenException(
-        'Insufficient permissions: system.admin required',
+        'Insufficient permissions: system:admin required',
       );
     }
 
@@ -711,10 +711,10 @@ export class ExportQueueService {
   async getStatistics(
     timeframe: 'day' | 'week' | 'month' = 'week',
   ): Promise<any> {
-    // 1. PERMISSION CHECK
-    if (!this.permissionContext.hasPermission('export.manage')) {
+    // 1. PERMISSION CHECK - FIXED: 'export.manage' → 'export:manage'
+    if (!this.permissionContext.hasPermission('export:manage')) {
       throw new ForbiddenException(
-        'Insufficient permissions: export.manage required',
+        'Insufficient permissions: export:manage required',
       );
     }
 

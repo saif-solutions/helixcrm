@@ -77,10 +77,10 @@ export class WebhooksService {
    * Create a new webhook
    */
   async createWebhook(createWebhookDto: CreateWebhookDto) {
-    // 1. PERMISSION CHECK
-    if (!this.permissionContext.hasPermission('webhooks.manage')) {
+    // 1. PERMISSION CHECK - FIXED: 'webhooks.manage' → 'webhook:manage'
+    if (!this.permissionContext.hasPermission('webhook:manage')) {
       throw new ForbiddenException(
-        'Insufficient permissions: webhooks.manage required',
+        'Insufficient permissions: webhook:manage required',
       );
     }
 
@@ -175,10 +175,10 @@ export class WebhooksService {
    * Update an existing webhook
    */
   async updateWebhook(webhookId: string, updateWebhookDto: UpdateWebhookDto) {
-    // 1. PERMISSION CHECK
-    if (!this.permissionContext.hasPermission('webhooks.manage')) {
+    // 1. PERMISSION CHECK - FIXED: 'webhooks.manage' → 'webhook:manage'
+    if (!this.permissionContext.hasPermission('webhook:manage')) {
       throw new ForbiddenException(
-        'Insufficient permissions: webhooks.manage required',
+        'Insufficient permissions: webhook:manage required',
       );
     }
 
@@ -281,10 +281,10 @@ export class WebhooksService {
    * Delete a webhook
    */
   async deleteWebhook(webhookId: string) {
-    // 1. PERMISSION CHECK
-    if (!this.permissionContext.hasPermission('webhooks.manage')) {
+    // 1. PERMISSION CHECK - FIXED: 'webhooks.manage' → 'webhook:manage'
+    if (!this.permissionContext.hasPermission('webhook:manage')) {
       throw new ForbiddenException(
-        'Insufficient permissions: webhooks.manage required',
+        'Insufficient permissions: webhook:manage required',
       );
     }
 
@@ -357,10 +357,10 @@ export class WebhooksService {
    * Get all webhooks for current tenant
    */
   async getAllWebhooks() {
-    // 1. PERMISSION CHECK
-    if (!this.permissionContext.hasPermission('webhooks.read')) {
+    // 1. PERMISSION CHECK - FIXED: 'webhooks.read' → 'webhook:read'
+    if (!this.permissionContext.hasPermission('webhook:read')) {
       throw new ForbiddenException(
-        'Insufficient permissions: webhooks.read required',
+        'Insufficient permissions: webhook:read required',
       );
     }
 
@@ -391,10 +391,10 @@ export class WebhooksService {
    * Get webhook by ID
    */
   async getWebhookById(webhookId: string) {
-    // 1. PERMISSION CHECK
-    if (!this.permissionContext.hasPermission('webhooks.read')) {
+    // 1. PERMISSION CHECK - FIXED: 'webhooks.read' → 'webhook:read'
+    if (!this.permissionContext.hasPermission('webhook:read')) {
       throw new ForbiddenException(
-        'Insufficient permissions: webhooks.read required',
+        'Insufficient permissions: webhook:read required',
       );
     }
 
@@ -439,10 +439,10 @@ export class WebhooksService {
    * Trigger a webhook delivery
    */
   async triggerWebhook(webhookId: string, payload: WebhookPayload) {
-    // 1. PERMISSION CHECK
-    if (!this.permissionContext.hasPermission('webhooks.trigger')) {
+    // 1. PERMISSION CHECK - FIXED: 'webhooks.trigger' → 'webhook:trigger'
+    if (!this.permissionContext.hasPermission('webhook:trigger')) {
       throw new ForbiddenException(
-        'Insufficient permissions: webhooks.trigger required',
+        'Insufficient permissions: webhook:trigger required',
       );
     }
 
@@ -574,10 +574,10 @@ export class WebhooksService {
    * Get webhook delivery history
    */
   async getDeliveryHistory(webhookId: string, page = 1, limit = 20) {
-    // 1. PERMISSION CHECK
-    if (!this.permissionContext.hasPermission('webhooks.read')) {
+    // 1. PERMISSION CHECK - FIXED: 'webhooks.read' → 'webhook:read'
+    if (!this.permissionContext.hasPermission('webhook:read')) {
       throw new ForbiddenException(
-        'Insufficient permissions: webhooks.read required',
+        'Insufficient permissions: webhook:read required',
       );
     }
 
@@ -636,10 +636,10 @@ export class WebhooksService {
    * Get delivery status
    */
   async getDeliveryStatus(deliveryId: string) {
-    // 1. PERMISSION CHECK
-    if (!this.permissionContext.hasPermission('webhooks.read')) {
+    // 1. PERMISSION CHECK - FIXED: 'webhooks.read' → 'webhook:read'
+    if (!this.permissionContext.hasPermission('webhook:read')) {
       throw new ForbiddenException(
-        'Insufficient permissions: webhooks.read required',
+        'Insufficient permissions: webhook:read required',
       );
     }
 
@@ -682,10 +682,10 @@ export class WebhooksService {
    * Retry failed delivery
    */
   async retryDelivery(deliveryId: string) {
-    // 1. PERMISSION CHECK
-    if (!this.permissionContext.hasPermission('webhooks.manage')) {
+    // 1. PERMISSION CHECK - FIXED: 'webhooks.manage' → 'webhook:manage'
+    if (!this.permissionContext.hasPermission('webhook:manage')) {
       throw new ForbiddenException(
-        'Insufficient permissions: webhooks.manage required',
+        'Insufficient permissions: webhook:manage required',
       );
     }
 
@@ -853,10 +853,10 @@ export class WebhooksService {
   async getStatistics(
     timeframe: 'day' | 'week' | 'month' = 'week',
   ): Promise<any> {
-    // 1. PERMISSION CHECK
-    if (!this.permissionContext.hasPermission('webhooks.read')) {
+    // 1. PERMISSION CHECK - FIXED: 'webhooks.read' → 'webhook:read'
+    if (!this.permissionContext.hasPermission('webhook:read')) {
       throw new ForbiddenException(
-        'Insufficient permissions: webhooks.read required',
+        'Insufficient permissions: webhook:read required',
       );
     }
 
@@ -883,10 +883,10 @@ export class WebhooksService {
   async cleanupOldDeliveries(
     daysToKeep: number = 90,
   ): Promise<{ deleted: number; message: string }> {
-    // 1. PERMISSION CHECK - SYSTEM ADMIN ONLY
-    if (!this.permissionContext.hasPermission('system.admin')) {
+    // 1. PERMISSION CHECK - SYSTEM ADMIN ONLY - FIXED: 'system.admin' → 'system:admin'
+    if (!this.permissionContext.hasPermission('system:admin')) {
       throw new ForbiddenException(
-        'Insufficient permissions: system.admin required',
+        'Insufficient permissions: system:admin required',
       );
     }
 

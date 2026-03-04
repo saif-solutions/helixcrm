@@ -6,10 +6,10 @@ async function addUserPermissions() {
   console.log('Adding user management permissions...');
 
   const userPermissions = [
-    { code: 'users.read', name: 'Read Users', description: 'View users in organization', module: 'users' },
-    { code: 'users.create', name: 'Create Users', description: 'Create new users', module: 'users' },
-    { code: 'users.update', name: 'Update Users', description: 'Update user information', module: 'users' },
-    { code: 'users.delete', name: 'Delete Users', description: 'Delete users', module: 'users' },
+    { code: 'user:read', name: 'Read Users', description: 'View users in organization', module: 'users' },      // ✅ Fixed: 'users.read' → 'user:read'
+    { code: 'user:create', name: 'Create Users', description: 'Create new users', module: 'users' },            // ✅ Fixed: 'users.create' → 'user:create'
+    { code: 'user:update', name: 'Update Users', description: 'Update user information', module: 'users' },    // ✅ Fixed: 'users.update' → 'user:update'
+    { code: 'user:delete', name: 'Delete Users', description: 'Delete users', module: 'users' },               // ✅ Fixed: 'users.delete' → 'user:delete'
   ];
 
   for (const perm of userPermissions) {

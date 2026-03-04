@@ -81,10 +81,10 @@ export class AnalyticsService {
 
   // ==================== DEAL ANALYTICS ====================
   async getDealAnalytics(query: DealAnalyticsQueryDto) {
-    // 1. PERMISSION CHECK
-    if (!this.permissionContext.hasPermission('analytics.read')) {
+    // 1. PERMISSION CHECK - FIXED: 'analytics.read' → 'report:read'
+    if (!this.permissionContext.hasPermission('report:read')) {
       throw new ForbiddenException(
-        'Insufficient permissions: analytics.read required',
+        'Insufficient permissions: report:read required',
       );
     }
 
@@ -174,10 +174,10 @@ export class AnalyticsService {
 
   // ==================== REVENUE ANALYTICS ====================
   async getRevenueAnalytics(query: RevenueAnalyticsQueryDto) {
-    // 1. PERMISSION CHECK
-    if (!this.permissionContext.hasPermission('analytics.read')) {
+    // 1. PERMISSION CHECK - FIXED: 'analytics.read' → 'report:read'
+    if (!this.permissionContext.hasPermission('report:read')) {
       throw new ForbiddenException(
-        'Insufficient permissions: analytics.read required',
+        'Insufficient permissions: report:read required',
       );
     }
 
@@ -263,10 +263,10 @@ export class AnalyticsService {
 
   // ==================== PIPELINE ANALYTICS ====================
   async getPipelineAnalytics(query: PipelineAnalyticsQueryDto) {
-    // 1. PERMISSION CHECK
-    if (!this.permissionContext.hasPermission('analytics.read')) {
+    // 1. PERMISSION CHECK - FIXED: 'analytics.read' → 'report:read'
+    if (!this.permissionContext.hasPermission('report:read')) {
       throw new ForbiddenException(
-        'Insufficient permissions: analytics.read required',
+        'Insufficient permissions: report:read required',
       );
     }
 
@@ -355,10 +355,10 @@ export class AnalyticsService {
 
   // ==================== ACTIVITY ANALYTICS ====================
   async getActivityAnalytics(query: ActivityAnalyticsQueryDto) {
-    // 1. PERMISSION CHECK
-    if (!this.permissionContext.hasPermission('analytics.read')) {
+    // 1. PERMISSION CHECK - FIXED: 'analytics.read' → 'report:read'
+    if (!this.permissionContext.hasPermission('report:read')) {
       throw new ForbiddenException(
-        'Insufficient permissions: analytics.read required',
+        'Insufficient permissions: report:read required',
       );
     }
 
@@ -445,10 +445,10 @@ export class AnalyticsService {
   // ==================== EXPORT FUNCTIONS ====================
 
   async createAnalyticsExport(query: AnalyticsExportQueryDto) {
-    // 1. PERMISSION CHECK (SPECIFIC EXPORT PERMISSION)
-    if (!this.permissionContext.hasPermission('analytics.export')) {
+    // 1. PERMISSION CHECK - FIXED: 'analytics.export' → 'report:export'
+    if (!this.permissionContext.hasPermission('report:export')) {
       throw new ForbiddenException(
-        'Insufficient permissions: analytics.export required',
+        'Insufficient permissions: report:export required',
       );
     }
 
@@ -485,7 +485,7 @@ export class AnalyticsService {
       await this.auditLogService.logEvent({
         action: 'ANALYTICS_EXPORT_REQUESTED', // or appropriate action from AuditAction enum
         entityType: 'ExportJob' as AuditEntityType,
-        actorEmail: await this.getUserEmail(userId), // You need to implement getUserEmail()
+        actorEmail: await this.getUserEmail(userId),
         actorUserId: userId,
         entityId: exportJob.id,
         metadata: {
@@ -541,10 +541,10 @@ export class AnalyticsService {
   }
 
   async getExportStatus(jobId: string) {
-    // 1. PERMISSION CHECK
-    if (!this.permissionContext.hasPermission('analytics.read')) {
+    // 1. PERMISSION CHECK - FIXED: 'analytics.read' → 'report:read'
+    if (!this.permissionContext.hasPermission('report:read')) {
       throw new ForbiddenException(
-        'Insufficient permissions: analytics.read required',
+        'Insufficient permissions: report:read required',
       );
     }
 
@@ -620,10 +620,10 @@ export class AnalyticsService {
   }
 
   async downloadExport(jobId: string, token: string) {
-    // 1. PERMISSION CHECK
-    if (!this.permissionContext.hasPermission('analytics.export')) {
+    // 1. PERMISSION CHECK - FIXED: 'analytics.export' → 'report:export'
+    if (!this.permissionContext.hasPermission('report:export')) {
       throw new ForbiddenException(
-        'Insufficient permissions: analytics.export required',
+        'Insufficient permissions: report:export required',
       );
     }
 
@@ -654,7 +654,7 @@ export class AnalyticsService {
       await this.auditLogService.logEvent({
         action: 'ANALYTICS_EXPORT_DOWNLOADED', // or appropriate action from AuditAction enum
         entityType: 'ExportJob' as AuditEntityType,
-        actorEmail: await this.getUserEmail(userId), // You need to implement getUserEmail()
+        actorEmail: await this.getUserEmail(userId),
         actorUserId: userId,
         entityId: jobId,
         metadata: {
@@ -707,10 +707,10 @@ export class AnalyticsService {
   }
 
   async getAvailableExports(query: AnalyticsExportQueryDto) {
-    // 1. PERMISSION CHECK
-    if (!this.permissionContext.hasPermission('analytics.read')) {
+    // 1. PERMISSION CHECK - FIXED: 'analytics.read' → 'report:read'
+    if (!this.permissionContext.hasPermission('report:read')) {
       throw new ForbiddenException(
-        'Insufficient permissions: analytics.read required',
+        'Insufficient permissions: report:read required',
       );
     }
 

@@ -1,4 +1,5 @@
 // apps/api/src/modules/leads/leads.controller.ts
+
 import {
   Controller,
   Get,
@@ -21,20 +22,20 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '../../shared/guards/auth.guard';
 import { TenantGuard } from '../../shared/guards/tenant.guard';
-import { PermissionGuard } from '../../shared/guards/permission.guard';
+import { PermissionGuard } from '../../shared/guards/permission.guard'; // ✅ ADD THIS
 import { RequirePermission } from '../../shared/decorators/require-permission.decorator';
 import { LeadsService } from './leads.service';
-import { CreateLeadDto } from './dto/create-lead.dto';
+import { CreateLeadDto, LeadStatus } from './dto/create-lead.dto';
 import { UpdateLeadDto } from './dto/update-lead.dto';
 import { LeadStatus as PrismaLeadStatus } from '@prisma/client';
-import { PermissionContextService } from '../../shared/permissions/context/permission-context.service';
+import { PermissionContextService } from '../../shared/permissions/context/permission-context.service'; // ✅ ADD THIS
 
 @Controller('leads')
-@UseGuards(AuthGuard, TenantGuard, PermissionGuard)
+@UseGuards(AuthGuard, TenantGuard, PermissionGuard) // ✅ ADD PermissionGuard here
 export class LeadsController {
   constructor(
     private readonly leadsService: LeadsService,
-    private readonly permissionContext: PermissionContextService, // Add this
+    private readonly permissionContext: PermissionContextService, // ✅ ADD THIS
   ) {}
 
   @Post()
@@ -42,7 +43,7 @@ export class LeadsController {
   @UsePipes(ValidationPipe)
   @RequirePermission('lead:write')
   create(@Body() createLeadDto: CreateLeadDto, @Req() req: Request) {
-    // Ensure permission context is initialized
+    // ✅ Force PermissionGuard to run
     if (!this.permissionContext.isInitialized()) {
       throw new ForbiddenException('Permission context not initialized');
     }
@@ -59,7 +60,6 @@ export class LeadsController {
     @Query('status') status?: string,
     @Query('search') search?: string,
   ) {
-    // Force PermissionGuard to run by checking context
     if (!this.permissionContext.isInitialized()) {
       throw new ForbiddenException('Permission context not initialized');
     }

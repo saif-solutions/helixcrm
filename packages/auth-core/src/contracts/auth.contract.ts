@@ -1,17 +1,20 @@
 /**
  * Auth Core Contract Definition - PRODUCTION GRADE
- * Version: 1.0.0
- * Status: FROZEN for MVP-1
+ * Version: 1.1.0
+ * Status: UPDATED with permissions support
  */
 
 // ==================== DOMAIN TYPES ====================
 export interface JwtPayload {
   sub: string;          // User ID
   org: string;          // Organization ID
-  role: string;         // User role
+  role: string;         // Primary user role
   iat: number;          // Issued at timestamp
   exp: number;          // Expiration timestamp
   version: number;      // Token version for invalidation
+  email?: string;       // User email (optional, for context)
+  permissions?: string[]; // User permissions array
+  roles?: string[];     // All user roles
 }
 
 export interface RefreshTokenPayload {

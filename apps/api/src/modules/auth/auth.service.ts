@@ -200,20 +200,22 @@ export class AuthService {
 
   async login(user: any, res: any, request?: any) {
     try {
-      // Get user permissions
-      const { permissions, roles } = await this.getUserPermissions(
-        user.id,
-        user.organizationId,
-      );
+// Get user permissions
+const { permissions, roles } = await this.getUserPermissions(
+  user.id,
+  user.organizationId,
+);
 
-      // Use auth-core token manager service for access token
-      const accessToken = await this.authCoreAdapter.authCore.issueAccessToken({
-        sub: user.id,
-        org: user.organizationId,
-        role: roles.includes('SystemAdmin') ? 'admin' : 'user',
-        version: user.tokenVersion,
-      });
-
+// Use auth-core token manager service for access token
+const accessToken = await this.authCoreAdapter.authCore.issueAccessToken({
+  sub: user.id,
+  org: user.organizationId,        // Note: uses 'org' not 'organizationId'
+  role: roles.includes('SystemAdmin') ? 'admin' : 'user',
+  version: user.tokenVersion,       // Note: uses 'version' not 'tokenVersion'
+  email: user.email,
+  permissions: permissions,
+  roles: roles,
+});
       // IMPORTANT: Let auth-core generate refresh token with its own jti
       // DO NOT pass version parameter - auth-core will create jti automatically
       const refreshToken =
@@ -914,37 +916,36 @@ export class AuthService {
       `Creating default roles for organization: ${organizationId.substring(0, 8)}...`,
     );
 
-    // Ensure core permissions exist
+    // Ensure core permissions exist - ALL USING COLON FORMAT
     const corePermissions = [
-      'users.read',
-      'users.create',
-      'users.update',
-      'users.delete',
-      'contacts.read',
-      'contacts.write',
-      'contacts.delete',
-      'deals.read',
-      'deals.write',
-      'deals.delete',
-      'leads.read',
-      'leads.write',
-      'leads.delete',
-      'pipelines.read',
-      'pipelines.write',
-      'pipelines.manage',
-      'analytics.read',
-      'analytics.export',
-      'rbac.read',
-      'rbac.manage',
-      'dashboard.read',
-      'audit.read',
+      'user:read',
+      'user:write',
+      'user:delete',
+      'contact:read',
+      'contact:write',
+      'contact:delete',
+      'deal:read',
+      'deal:write',
+      'deal:delete',
+      'lead:read',
+      'lead:write',
+      'lead:delete',
+      'pipeline:read',
+      'pipeline:write',
+      'pipeline:manage',
+      'report:read',
+      'report:export',
+      'rbac:read',
+      'rbac:manage',
+      'dashboard:read',
+      'audit:read',
     ];
 
     // Create any missing permissions
     for (const code of corePermissions) {
       const name = this.formatPermissionName(code);
       const description = this.getPermissionDescription(code);
-      const module = code.split('.')[0];
+      const module = code.split(':')[0];
 
       await this.prisma.permission.upsert({
         where: { code },
@@ -1014,21 +1015,21 @@ export class AuthService {
       },
     });
 
-    // Assign manager permissions
+    // Assign manager permissions - USING COLON FORMAT
     const managerPermissions = await this.prisma.permission.findMany({
       where: {
         code: {
           in: [
-            'contacts.read',
-            'contacts.write',
-            'deals.read',
-            'deals.write',
-            'leads.read',
-            'leads.write',
-            'pipelines.read',
-            'pipelines.write',
-            'analytics.read',
-            'dashboard.read',
+            'contact:read',
+            'contact:write',
+            'deal:read',
+            'deal:write',
+            'lead:read',
+            'lead:write',
+            'pipeline:read',
+            'pipeline:write',
+            'report:read',
+            'dashboard:read',
           ],
         },
       },
@@ -1077,13 +1078,13 @@ export class AuthService {
       where: {
         code: {
           in: [
-            'contacts.read',
-            'contacts.write',
-            'deals.read',
-            'deals.write',
-            'leads.read',
-            'leads.write',
-            'dashboard.read',
+            'contact:read',
+            'contact:write',
+            'deal:read',
+            'deal:write',
+            'lead:read',
+            'lead:write',
+            'dashboard:read',
           ],
         },
       },
@@ -1132,12 +1133,12 @@ export class AuthService {
       where: {
         code: {
           in: [
-            'contacts.read',
-            'deals.read',
-            'leads.read',
-            'pipelines.read',
-            'analytics.read',
-            'dashboard.read',
+            'contact:read',
+            'deal:read',
+            'lead:read',
+            'pipeline:read',
+            'report:read',
+            'dashboard:read',
           ],
         },
       },
@@ -1202,7 +1203,7 @@ export class AuthService {
    * Helper: Format permission code into readable name
    */
   private formatPermissionName(code: string): string {
-    const [module, action] = code.split('.');
+    const [module, action] = code.split(':');
     return `${module.charAt(0).toUpperCase() + module.slice(1)} ${action.charAt(0).toUpperCase() + action.slice(1)}`;
   }
 
@@ -1211,28 +1212,27 @@ export class AuthService {
    */
   private getPermissionDescription(code: string): string {
     const descriptions: Record<string, string> = {
-      'users.read': 'View users in organization',
-      'users.create': 'Create new users',
-      'users.update': 'Update user information',
-      'users.delete': 'Delete users',
-      'contacts.read': 'View contacts',
-      'contacts.write': 'Create and update contacts',
-      'contacts.delete': 'Delete contacts',
-      'deals.read': 'View deals',
-      'deals.write': 'Create and update deals',
-      'deals.delete': 'Delete deals',
-      'leads.read': 'View leads',
-      'leads.write': 'Create and update leads',
-      'leads.delete': 'Delete leads',
-      'pipelines.read': 'View pipelines',
-      'pipelines.write': 'Create and update pipelines',
-      'pipelines.manage': 'Manage pipeline stages and settings',
-      'analytics.read': 'View analytics data',
-      'analytics.export': 'Export analytics data',
-      'rbac.read': 'View roles and permissions',
-      'rbac.manage': 'Manage roles and permissions',
-      'dashboard.read': 'View dashboard',
-      'audit.read': 'View audit logs',
+      'user:read': 'View users in organization',
+      'user:write': 'Create and update users',
+      'user:delete': 'Delete users',
+      'contact:read': 'View contacts',
+      'contact:write': 'Create and update contacts',
+      'contact:delete': 'Delete contacts',
+      'deal:read': 'View deals',
+      'deal:write': 'Create and update deals',
+      'deal:delete': 'Delete deals',
+      'lead:read': 'View leads',
+      'lead:write': 'Create and update leads',
+      'lead:delete': 'Delete leads',
+      'pipeline:read': 'View pipelines',
+      'pipeline:write': 'Create and update pipelines',
+      'pipeline:manage': 'Manage pipeline stages and settings',
+      'report:read': 'View reports and analytics',
+      'report:export': 'Export reports and analytics',
+      'rbac:read': 'View roles and permissions',
+      'rbac:manage': 'Manage roles and permissions',
+      'dashboard:read': 'View dashboard',
+      'audit:read': 'View audit logs',
     };
 
     return descriptions[code] || `${code} permission`;

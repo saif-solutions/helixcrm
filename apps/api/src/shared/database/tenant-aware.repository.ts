@@ -1,82 +1,74 @@
-import {
-  requireTenantContext,
-  getTenantContext,
-} from '../tenant/tenant.context';
-import { PrismaService } from '../prisma/prisma.service';
+// apps/api/src/shared/database/tenant-aware.repository.ts
 
-// Define a local error class if the imported one doesn't accept parameters
-class TenantContextMissingError extends Error {
+import { PrismaService } from '../prisma/prisma.service';
+import { getTenantId, requireTenantId } from '../als'; // ✅ Import from als.ts
+
+export class TenantContextMissingError extends Error {
   constructor(message?: string) {
     super(message);
     this.name = 'TenantContextMissingError';
   }
 }
 
-/**
- * PRODUCTION-READY TENANT AWARE REPOSITORY BASE CLASS
- * No decorators - compatible with TypeScript 5.9.3
- * Flexible constructor for all repository patterns
- */
 export abstract class TenantAwareRepository {
-  // Use a more flexible approach - don't enforce strict visibility
-  // Child classes can declare prisma as they need
   protected prisma: PrismaService;
+  
+  // Cache the tenant ID for the current request
+  private cachedTenantId: string | null = null;
 
-  /**
-   * FLEXIBLE CONSTRUCTOR: Handles ALL patterns:
-   * Pattern 1: super() - no parameter (prisma injected via NestJS)
-   * Pattern 2: super(prisma) - with parameter (manual injection)
-   * Pattern 3: No super call (prisma set later)
-   */
   constructor(prisma?: PrismaService) {
     if (prisma) {
       this.prisma = prisma;
     }
-    // If prisma not provided, child class must set it via setPrisma()
   }
 
-  /**
-   * Set Prisma instance (for child classes using pattern 1 or 3)
-   * This is a protected method that child classes can use
-   */
   protected setPrismaService(prisma: PrismaService): void {
     this.prisma = prisma;
   }
 
-  /**
-   * Get Prisma instance with safety check
-   */
   protected getPrisma(): PrismaService {
     if (!this.prisma) {
-      throw new Error(
-        'PrismaService not initialized. ' +
-          'Options: 1) Pass to constructor, 2) Call setPrismaService(), or 3) Ensure NestJS injection',
-      );
+      throw new Error('PrismaService not initialized');
     }
     return this.prisma;
+  }
+
+  /**
+   * Initialize tenant context from ALS
+   */
+  protected initTenantContext(): void {
+    if (!this.cachedTenantId) {
+      this.cachedTenantId = getTenantId();
+      if (!this.cachedTenantId) {
+        throw new TenantContextMissingError(
+          'Tenant context is required for database operations',
+        );
+      }
+    }
   }
 
   /**
    * Get current tenant ID (throws if context missing)
    */
   protected get tenantId(): string {
-    const context = requireTenantContext();
-
-    if (!context?.tenantId) {
-      throw new TenantContextMissingError(
-        'Tenant context is required for database operations',
-      );
+    if (this.cachedTenantId) {
+      return this.cachedTenantId;
     }
-
-    return context.tenantId;
+    
+    this.initTenantContext();
+    return this.cachedTenantId!;
   }
 
   /**
    * Get tenant ID safely (for optional operations)
    */
   protected get tenantIdOrUndefined(): string | undefined {
-    const context = getTenantContext();
-    return context?.tenantId;
+    if (this.cachedTenantId) {
+      return this.cachedTenantId;
+    }
+    
+    this.cachedTenantId = getTenantId();
+    return this.cachedTenantId;
   }
 
   /**
@@ -86,7 +78,6 @@ export abstract class TenantAwareRepository {
     where?: T,
   ): T & { organizationId: string } {
     const tenantId = this.tenantId;
-
     return {
       ...where,
       organizationId: tenantId,
@@ -100,7 +91,6 @@ export abstract class TenantAwareRepository {
     data: Omit<T, 'organizationId'>,
   ): T & { organizationId: string } {
     const tenantId = this.tenantId;
-
     return {
       ...data,
       organizationId: tenantId,
@@ -112,7 +102,6 @@ export abstract class TenantAwareRepository {
    */
   protected assertTenantOwnership(entity: { organizationId: string }): void {
     const tenantId = this.tenantId;
-
     if (entity.organizationId !== tenantId) {
       throw new TenantContextMissingError(
         `Access denied: Entity belongs to organization ${entity.organizationId}, ` +
@@ -121,18 +110,12 @@ export abstract class TenantAwareRepository {
     }
   }
 
-  /**
-   * Execute transaction with tenant context preservation
-   */
   protected async transaction<T>(
     fn: (prisma: PrismaService) => Promise<T>,
   ): Promise<T> {
     return this.getPrisma().$transaction(fn);
   }
 
-  /**
-   * Performance monitoring hook
-   */
   protected async measurePerformance<T>(
     operationName: string,
     operation: () => Promise<T>,
@@ -169,9 +152,6 @@ export abstract class TenantAwareRepository {
     }
   }
 
-  /**
-   * Generate cache key with tenant isolation
-   */
   protected buildCacheKey(prefix: string, ...parts: string[]): string {
     const tenantId = this.tenantId;
     const keyParts = [prefix, tenantId, ...parts].filter(Boolean);
