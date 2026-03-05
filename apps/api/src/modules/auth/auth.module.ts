@@ -1,4 +1,4 @@
-// File: apps/api/src/modules/auth/auth.module.ts
+// apps/api/src/modules/auth/auth.module.ts
 
 import { Module, forwardRef } from '@nestjs/common';
 import { ThrottlerModule } from '@nestjs/throttler';
@@ -6,6 +6,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 
 import { AuthController } from './auth.controller';
+import { CsrfController } from './csrf.controller'; // ✅ ADDED - CSRF controller
 import { AuthService } from './auth.service';
 
 import { PasswordResetController } from './controllers/password-reset.controller';
@@ -48,6 +49,7 @@ export const TOKEN_REPOSITORY = 'TOKEN_REPOSITORY';
   controllers: [
     AuthController,
     PasswordResetController,
+    CsrfController, // ✅ ADDED - CSRF controller
   ],
 
   providers: [

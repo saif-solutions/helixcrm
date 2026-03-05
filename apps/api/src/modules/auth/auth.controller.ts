@@ -1,4 +1,5 @@
-// File: apps/api/src/modules/auth/auth.controller.ts
+// apps/api/src/modules/auth/auth.controller.ts
+
 import {
   Controller,
   Post,
@@ -12,6 +13,7 @@ import {
   Get,
   BadRequestException,
   Query,
+  Logger,
 } from '@nestjs/common';
 import type { Response, Request } from 'express';
 import { Throttle } from '@nestjs/throttler';
@@ -19,9 +21,6 @@ import { AuthService } from './auth.service';
 import { AuthGuard } from '../../shared/guards/auth.guard';
 import { Public } from '../../shared/decorators/require-permission.decorator';
 import SecurityConfig from '../../config/security.config';
-import { Logger } from '@nestjs/common';
-
-// ADD THESE IMPORTS:
 import {
   AuditLogService,
   AuditAction,
@@ -31,81 +30,12 @@ import {
 
 @Controller('auth')
 export class AuthController {
+  private readonly logger = new Logger(AuthController.name);
+
   constructor(
     private authService: AuthService,
-    private auditLogService: AuditLogService, // ADD THIS
+    private auditLogService: AuditLogService,
   ) {}
-private readonly logger = new Logger(AuthController.name);
-
-  @Get('csrf-token')
-  @Public()
-  @HttpCode(HttpStatus.OK)
-  getCsrfToken(@Req() req: Request) {
-    try {
-      // Check if CSRF middleware ran and attached the function
-      if (typeof (req as any).csrfToken !== 'function') {
-        throw new BadRequestException({
-          message: 'CSRF middleware not properly configured',
-          details: 'The CSRF middleware did not run for this endpoint',
-          code: 'CSRF_MIDDLEWARE_MISSING',
-          timestamp: new Date().toISOString(),
-          path: '/api/v1/auth/csrf-token',
-        });
-      }
-
-      // Generate the CSRF token
-      const csrfToken = (req as any).csrfToken();
-
-      // Validate the token
-      if (
-        !csrfToken ||
-        typeof csrfToken !== 'string' ||
-        csrfToken.length < 10
-      ) {
-        throw new BadRequestException({
-          message: 'Invalid CSRF token generated',
-          details: 'Generated token is invalid or too short',
-          code: 'INVALID_CSRF_TOKEN',
-          timestamp: new Date().toISOString(),
-          path: '/api/v1/auth/csrf-token',
-        });
-      }
-
-      // CRITICAL: Ensure we never return 'development-mode'
-      if (csrfToken === 'development-mode') {
-        throw new BadRequestException({
-          message: 'CSRF configuration error',
-          details:
-            'CSRF is still in development mode. Check middleware configuration.',
-          code: 'CSRF_DEVELOPMENT_MODE_ERROR',
-          timestamp: new Date().toISOString(),
-          path: '/api/v1/auth/csrf-token',
-        });
-      }
-
-      return {
-        csrfToken,
-        timestamp: new Date().toISOString(),
-        expiresIn: 'Session',
-        note: 'Include this token in X-CSRF-Token header for state-changing requests (POST, PUT, DELETE, PATCH)',
-      };
-    } catch (error) {
-      // If it's already a BadRequestException, re-throw it
-      if (error instanceof BadRequestException) {
-        throw error;
-      }
-
-      // Otherwise, wrap in a BadRequestException with proper structure
-      throw new BadRequestException({
-        message: 'CSRF token generation failed',
-        error: error.message,
-        details: 'An unexpected error occurred while generating CSRF token',
-        code: 'CSRF_GENERATION_ERROR',
-        timestamp: new Date().toISOString(),
-        path: '/api/v1/auth/csrf-token',
-      });
-    }
-  }
 
   @Post('login')
   @Public()
@@ -217,8 +147,7 @@ private readonly logger = new Logger(AuthController.name);
   ) {
     const result = await this.authService.register(registerDto, req);
 
-    // Log user registration - check if result has user property
-    // The register method might return different structure, so we need to handle it
+    // Log user registration
     const userEmail = registerDto.email;
     const userId =
       (result as any).user?.id || (result as any).userId || 'unknown';
@@ -240,8 +169,6 @@ private readonly logger = new Logger(AuthController.name);
 
     return result;
   }
-
-  // ============== NEW SESSION MANAGEMENT ENDPOINTS ==============
 
   @Get('sessions')
   @UseGuards(AuthGuard)
@@ -294,7 +221,7 @@ private readonly logger = new Logger(AuthController.name);
       shouldKeepCurrent,
     );
 
-    // Log session invalidation - handle different return types
+    // Log session invalidation
     const invalidatedCount =
       (result as any).invalidatedCount || (result as any).count || 0;
 
@@ -316,7 +243,7 @@ private readonly logger = new Logger(AuthController.name);
     return result;
   }
 
-    @Get('debug-cookie')
+  @Get('debug-cookie')
   @Public()
   debugCookie(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     this.logger.log('🔍 Debug cookie endpoint called');
@@ -338,4 +265,3 @@ private readonly logger = new Logger(AuthController.name);
     };
   }
 }
-

@@ -15,6 +15,18 @@ import { Lead, Contact, Deal, CreateDealSimpleDto, DashboardStats } from '../lib
 import type { CreateContactDto, UpdateContactDto } from '../lib/types/crm.types';
 import { requestIdInterceptor } from '../lib/middleware/request-id.middleware';
 
+// ✅ FIXED: Always returns a value (undefined if not found)
+const getCookie = (name: string): string | undefined => {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) {
+    const lastPart = parts.pop();
+    if (lastPart) {
+      return lastPart.split(';').shift();
+    }
+  }
+  return undefined;
+};
 
 interface RetryableRequestConfig extends InternalAxiosRequestConfig {
   _retry?: boolean;
@@ -72,102 +84,6 @@ export type LeadResponse = PaginatedResponse<Lead>;
 export type ContactResponse = PaginatedResponse<Contact>;
 export type DealResponse = PaginatedResponse<Deal>;
 
-// CSRF Token Manager
-class CsrfTokenManager {
-  private isRefreshing = false;
-  private refreshQueue: Array<() => void> = [];
-  private initialized = false;
-
-/**
- * Get CSRF token from cookie (set by backend)
- */
-getToken(): string | null {
-  // Read from cookie - backend sets this as '_csrf' cookie
-  const cookies = document.cookie.split('; ');
-  
-  // Debug: log all cookies to see what's available
-  if (import.meta.env.DEV) {
-    console.log('🍪 All cookies:', document.cookie);
-  }
-  
-  // ✅ Look for '_csrf' cookie (what backend actually sets)
-  const csrfCookie = cookies.find(cookie => cookie.trim().startsWith('_csrf='));
-  
-  if (csrfCookie) {
-    const token = csrfCookie.split('=')[1];
-    if (import.meta.env.DEV) {
-      console.log('🍪 Found CSRF cookie _csrf:', token.substring(0, 10) + '...');
-    }
-    return token;
-  }
-  
-  if (import.meta.env.DEV) {
-    console.warn('🍪 No CSRF cookie found. Available cookies:', document.cookie || '(none)');
-  }
-  
-  return null;
-}
-
-  /**
-   * No need to set token manually - it comes from cookie
-   */
-  setToken(_token: string): void {
-    // This method is kept for backward compatibility but does nothing
-    // Token should only come from cookie
-    if (import.meta.env.DEV) {
-      console.warn('⚠️ Manual CSRF token setting attempted - token should come from cookie only');
-    }
-    // Mark _token as used to satisfy ESLint
-    void _token;
-  }
-
-  clearToken(): void {
-    // Can't clear HTTP-only cookie from frontend
-    // Just log in development
-    if (import.meta.env.DEV) {
-      console.log('🧹 CSRF token cleared from memory (cookie remains)');
-    }
-    this.initialized = false;
-  }
-
-  isInitialized(): boolean {
-    // Check if we have a token in cookie
-    return this.getToken() !== null;
-  }
-
-  async refreshCsrfToken(api: AxiosInstance): Promise<void> {
-    if (this.isRefreshing) {
-      return new Promise((resolve) => {
-        this.refreshQueue.push(resolve);
-      });
-    }
-
-    this.isRefreshing = true;
-
-    try {
-      // This endpoint sets a new CSRF token in cookie
-      await api.get('/auth/csrf-token');
-      
-      if (import.meta.env.DEV) {
-        console.log('✅ CSRF token refreshed (set in cookie)');
-      }
-      
-      // Resolve all queued requests
-      this.refreshQueue.forEach((resolve) => resolve());
-      this.refreshQueue = [];
-      this.initialized = true;
-    } catch (error) {
-      console.error('❌ Could not refresh CSRF token', error);
-      throw error;
-    } finally {
-      this.isRefreshing = false;
-    }
-  }
-}
-
-// Create CSRF manager singleton
-export const csrfManager = new CsrfTokenManager();
-
 // Create Axios instance
 const api: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -179,7 +95,6 @@ const api: AxiosInstance = axios.create({
   },
 });
 
-// Request interceptor
 // Request interceptor
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
@@ -194,15 +109,18 @@ api.interceptors.request.use(
         method: config.method,
         url: config.url,
         hasData: !!config.data,
-        hasCsrf: !!config.headers['X-CSRF-Token'],
+        hasCsrf: !!config.headers['X-XSRF-TOKEN'],
       });
     }
 
-    // Add CSRF token for mutating requests
+    // ✅ UPDATED: Add CSRF token for mutating requests
     if (config.method && ['post', 'put', 'patch', 'delete'].includes(config.method.toLowerCase())) {
-      const csrfToken = csrfManager.getToken();
+      const csrfToken = getCookie('XSRF-TOKEN');
       if (csrfToken) {
-        config.headers['X-CSRF-Token'] = csrfToken;
+        config.headers['X-XSRF-TOKEN'] = csrfToken;
+        if (IS_DEV) {
+          console.log('🔑 Adding CSRF token to request');
+        }
       }
     }
 
@@ -214,7 +132,6 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor
 // Response interceptor
 api.interceptors.response.use(
   (response: AxiosResponse) => {
@@ -316,27 +233,28 @@ api.interceptors.response.use(
       }
     }
 
-    // CSRF token expired (403)
-    if (error.response?.status === 403 && error.response?.data?.code === 'INVALID_CSRF_TOKEN') {
-      logger.warn('CSRF token expired, attempting refresh');
-      
-      originalRequest._csrfRetryCount = (originalRequest._csrfRetryCount || 0) + 1;
-      if (originalRequest._csrfRetryCount > 1) {
-        logger.error('CSRF retry limit exceeded');
-        useAuthStore.getState().setSessionExpired(true);
-        return Promise.reject(error);
-      }
+// CSRF token expired (403)
+if (error.response?.status === 403 && error.response?.data?.code === 'INVALID_CSRF_TOKEN') {
+  logger.warn('CSRF token expired, attempting refresh');
+  
+  originalRequest._csrfRetryCount = (originalRequest._csrfRetryCount || 0) + 1;
+  if (originalRequest._csrfRetryCount > 1) {
+    logger.error('CSRF retry limit exceeded');
+    useAuthStore.getState().setSessionExpired(true);
+    return Promise.reject(error);
+  }
 
-      try {
-        await csrfManager.refreshCsrfToken(api);
-        logger.info('CSRF token refreshed');
-        return api(originalRequest);
-      } catch (refreshError) {
-        logger.error('CSRF refresh failed', refreshError as Error);
-        useAuthStore.getState().setSessionExpired(true);
-        return Promise.reject(refreshError);
-      }
-    }
+  try {
+    // ✅ UPDATE THIS LINE - Replace csrfManager.refreshCsrfToken with direct API call
+    await api.get('/auth/csrf-token');
+    logger.info('CSRF token refreshed');
+    return api(originalRequest);
+  } catch (refreshError) {
+    logger.error('CSRF refresh failed', refreshError as Error);
+    useAuthStore.getState().setSessionExpired(true);
+    return Promise.reject(refreshError);
+  }
+}
 
     // Extract correlation ID from backend response headers
     const correlationId = error.response?.headers['x-request-id'] || 
@@ -359,46 +277,23 @@ api.interceptors.response.use(
   }
 );
 
-// API initialization with retry logic
+// ✅ REPLACE WITH THIS SIMPLIFIED VERSION
 export const initializeApi = async (): Promise<void> => {
-  let retries = 0;
-  const maxRetries = 3;
-
-  while (retries < maxRetries) {
-    try {
-      // Just call the endpoint - it sets cookie automatically
-      await api.get('/auth/csrf-token');
-      
-      // Wait longer for cookie to be available (cookie needs time to set)
-      await new Promise(resolve => setTimeout(resolve, 500)); // Increased from 100ms to 500ms
-      
-      // Verify cookie was set
-      const token = csrfManager.getToken();
-      if (token) {
-        console.log('✅ CSRF token initialized from cookie:', token.substring(0, 5) + '...');
-        return;
-      } else {
-        console.warn(`⚠️ CSRF token not found in cookie after initialization (attempt ${retries + 1})`);
-        // If no cookie, try one more time
-        retries++;
-        if (retries < maxRetries) {
-          console.warn(`⚠️ Retrying (${retries + 1}/${maxRetries}) in 1s...`);
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        } else {
-          throw new Error('CSRF token not found in cookie after initialization');
-        }
-      }
-    } catch (error) {
-      retries++;
-      
-      if (retries < maxRetries) {
-        console.warn(`⚠️ CSRF initialization failed (attempt ${retries}/${maxRetries}), retrying in 2s...`);
-        await new Promise(resolve => setTimeout(resolve, 2000));
-      } else {
-        console.error('❌ Could not initialize CSRF token - backend might be offline');
-        throw error;
-      }
+  try {
+    // Just call the endpoint - it sets cookie automatically
+    await api.get('/auth/csrf-token');
+    
+    // Verify cookie was set
+    const token = getCookie('XSRF-TOKEN');
+    if (token) {
+      console.log('✅ CSRF token initialized successfully');
+      return;
+    } else {
+      throw new Error('CSRF token not found in cookie');
     }
+  } catch (error) {
+    console.error('❌ Failed to initialize CSRF token:', error);
+    throw error;
   }
 };
 
