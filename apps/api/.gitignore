@@ -9,3 +9,5 @@ node_modules
 
 # Evidence JSON files (timestamped) – ignore all in compliance/evidence/
 compliance/evidence/*.json
+
+.env.production
