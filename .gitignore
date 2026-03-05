@@ -162,3 +162,4 @@ yarn.lock
 scripts/backups/.env.backup
 scripts/backups/*.sql
 scripts/backups/*.sql.gz
+.env
