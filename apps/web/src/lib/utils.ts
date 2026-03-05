@@ -1,3 +1,5 @@
+// apps/web/src/lib/utils.ts
+
 // Simple utility functions without external dependencies
 
 /**
@@ -44,20 +46,20 @@ export function truncateText(text: string, maxLength: number): string {
  * Generate a unique ID
  */
 export function generateId(prefix = 'id'): string {
-  return `${prefix}-${Math.random().toString(36).substr(2, 9)}`;
+  return `${prefix}-${Math.random().toString(36).substring(2, 11)}`; // Fixed: substr is deprecated
 }
 
 /**
  * Debounce a function
  */
-export function debounce<T extends (...args: any[]) => any>(
+export function debounce<T extends (...args: unknown[]) => unknown>(
   func: T,
   wait: number
 ): (...args: Parameters<T>) => void {
-  let timeout: number | undefined;
+  let timeout: NodeJS.Timeout | undefined;
   return (...args: Parameters<T>) => {
     clearTimeout(timeout);
-    timeout = window.setTimeout(() => func(...args), wait);
+    timeout = setTimeout(() => func(...args), wait);
   };
 }
 
@@ -99,7 +101,7 @@ export function deepClone<T>(obj: T): T {
 /**
  * Check if an object is empty
  */
-export function isEmpty(obj: Record<string, any>): boolean {
+export function isEmpty(obj: Record<string, unknown>): boolean {
   return Object.keys(obj).length === 0;
 }
 

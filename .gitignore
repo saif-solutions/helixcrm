@@ -159,3 +159,6 @@ docs/_archive/pre-mvp-cleanup/
 # === PACKAGE LOCK FILES (if using pnpm) ===
 package-lock.json
 yarn.lock
+scripts/backups/.env.backup
+scripts/backups/*.sql
+scripts/backups/*.sql.gz
