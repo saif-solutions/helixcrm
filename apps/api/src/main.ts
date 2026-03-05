@@ -1,5 +1,5 @@
 // apps/api/src/main.ts
-
+import './instrument';
 import { NestFactory, Reflector } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
@@ -166,6 +166,7 @@ async function bootstrap() {
   // ==================== GLOBAL PREFIX ====================
   app.setGlobalPrefix('api');
   logger.log('✅ Global prefix set to /api');
+
 
   // ==================== APPLICATION INITIALIZATION ====================
   await app.init();

@@ -1,9 +1,11 @@
-// apps/api/src/modules/debug/debug.controller.ts (temporary - remove after testing)
+// apps/api/src/modules/debug/debug.controller.ts
+// IMPORTANT: This is a temporary debug controller - remove in production!
 
 import { Controller, Get, UseGuards, Req } from '@nestjs/common';
 import { AuthGuard } from '../../shared/guards/auth.guard';
 import { TenantGuard } from '../../shared/guards/tenant.guard';
 import { PermissionGuard } from '../../shared/guards/permission.guard';
+import { Public } from '../../shared/decorators/require-permission.decorator';
 
 @Controller('debug')
 @UseGuards(AuthGuard, TenantGuard, PermissionGuard)

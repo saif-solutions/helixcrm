@@ -47,9 +47,16 @@ import { CsrfMiddleware } from './shared/security/csrf.middleware'; // ✅ ADDED
 
 // ============ TENANT MODULE ============
 import { TenantModule } from './shared/tenant/module/tenant.module';
+import { DebugController } from './modules/debug/debug.controller';
+import { SentryModule } from '@sentry/nestjs/setup';
+import { APP_FILTER } from '@nestjs/core';
+import { SentryGlobalFilter } from '@sentry/nestjs/setup';
+
+
 
 @Module({
   imports: [
+    SentryModule.forRoot(),
     // ============ CORE INFRASTRUCTURE ============
     ConfigModule.forRoot({
       isGlobal: true,
@@ -63,7 +70,7 @@ import { TenantModule } from './shared/tenant/module/tenant.module';
 
     // ============ SHARED INFRASTRUCTURE ============
     SharedModule,
-    TenantModule, // Add TenantModule here
+    TenantModule, 
 
     // ============ PHASE 2A: COMPLIANCE & SECURITY ============
     AuditIntegrityModule,
@@ -88,9 +95,17 @@ import { TenantModule } from './shared/tenant/module/tenant.module';
     AuditLogsModule,
   ],
 
-  controllers: [AppController, HealthController],
+  controllers: [
+    AppController, 
+    HealthController,
+    DebugController
+  ],
 
   providers: [
+    {
+      provide: APP_FILTER,
+      useClass: SentryGlobalFilter,
+    },
     AppService,
     ConfigValidationService,
   ],
