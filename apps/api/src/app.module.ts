@@ -43,6 +43,7 @@ import { ConfigValidationService } from './config/config-validation.service';
 // ============ MIDDLEWARE IMPORTS ============
 import { CorrelationIdMiddleware } from './shared/middleware/correlation-id.middleware';
 import { RequestContextMiddleware } from './shared/middleware/request-context.middleware';
+import { CsrfMiddleware } from './shared/security/csrf.middleware'; // ✅ ADDED - Critical for CSRF protection
 
 // ============ TENANT MODULE ============
 import { TenantModule } from './shared/tenant/module/tenant.module';
@@ -109,11 +110,16 @@ export class AppModule implements NestModule {
   }
 
   configure(consumer: MiddlewareConsumer) {
+    // CRITICAL: Middleware order matters!
+    // 1. CorrelationIdMiddleware - Adds correlation ID for request tracing
+    // 2. RequestContextMiddleware - Sets up AsyncLocalStorage context
+    // 3. CsrfMiddleware - CSRF protection (must come after context but before controllers)
     consumer
       .apply(
         CorrelationIdMiddleware,
         RequestContextMiddleware,
+        CsrfMiddleware, // ✅ ADDED - This was missing and causing the 400 error
       )
-      .forRoutes('*');
+      .forRoutes('*'); // Apply to all routes
   }
 }

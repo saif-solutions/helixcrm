@@ -3,8 +3,7 @@
 import { Injectable, NestMiddleware } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 import { randomUUID } from 'crypto';
-import { TenantContextStorage } from '../tenant/tenant.context';
-import { TenantContext } from '../tenant/tenant.types';
+import { als } from '../als'; // ✅ Import the SINGLE ALS instance
 
 @Injectable()
 export class RequestContextMiddleware implements NestMiddleware {
@@ -12,21 +11,23 @@ export class RequestContextMiddleware implements NestMiddleware {
     const incomingId = req.header('X-Request-ID');
     const requestId = incomingId || randomUUID();
 
+    // Set request ID on request object and response header
     (req as any).requestId = requestId;
     res.setHeader('X-Request-ID', requestId);
 
-    // CRITICAL: Create initial context with proper TenantContext type
-    const initialContext: TenantContext = {
-      tenantId: 'PENDING',
-      organizationId: 'PENDING',
-      isSystemContext: false,
-      resolvedAt: new Date(),
-      source: 'pending',  // ✅ Fixed: Use 'pending' which is allowed in the union type
-      requestId: requestId,
+    // ✅ Use the single ALS instance
+    // Create initial context
+    const store = {
+      requestId,
+      tenantId: undefined, // Will be set by TenantGuard
+      userId: undefined,    // Will be set after authentication
+      userEmail: undefined,
+      roles: undefined,
+      permissions: undefined
     };
 
-    // CRITICAL: Run the entire request within this AsyncLocalStorage context
-    TenantContextStorage.run(initialContext, () => {
+    // ✅ Run the entire request within the single ALS context
+    als.run(store, () => {
       next();
     });
   }

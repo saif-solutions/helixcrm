@@ -13,6 +13,8 @@ import { logger, generateCorrelationId } from '../lib/logging/logger.service';
 // Import types
 import { Lead, Contact, Deal, CreateDealSimpleDto, DashboardStats } from '../lib/types/crm.types';
 import type { CreateContactDto, UpdateContactDto } from '../lib/types/crm.types';
+import { requestIdInterceptor } from '../lib/middleware/request-id.middleware';
+
 
 interface RetryableRequestConfig extends InternalAxiosRequestConfig {
   _retry?: boolean;
@@ -76,20 +78,35 @@ class CsrfTokenManager {
   private refreshQueue: Array<() => void> = [];
   private initialized = false;
 
-  /**
-   * Get CSRF token from cookie (set by backend)
-   */
-  getToken(): string | null {
-    // Read from cookie - backend sets this as a non-httpOnly cookie
-    const cookies = document.cookie.split('; ');
-    const csrfCookie = cookies.find(cookie => cookie.startsWith('X-CSRF-Token='));
-    
-    if (csrfCookie) {
-      return csrfCookie.split('=')[1];
-    }
-    
-    return null;
+/**
+ * Get CSRF token from cookie (set by backend)
+ */
+getToken(): string | null {
+  // Read from cookie - backend sets this as '_csrf' cookie
+  const cookies = document.cookie.split('; ');
+  
+  // Debug: log all cookies to see what's available
+  if (import.meta.env.DEV) {
+    console.log('🍪 All cookies:', document.cookie);
   }
+  
+  // ✅ Look for '_csrf' cookie (what backend actually sets)
+  const csrfCookie = cookies.find(cookie => cookie.trim().startsWith('_csrf='));
+  
+  if (csrfCookie) {
+    const token = csrfCookie.split('=')[1];
+    if (import.meta.env.DEV) {
+      console.log('🍪 Found CSRF cookie _csrf:', token.substring(0, 10) + '...');
+    }
+    return token;
+  }
+  
+  if (import.meta.env.DEV) {
+    console.warn('🍪 No CSRF cookie found. Available cookies:', document.cookie || '(none)');
+  }
+  
+  return null;
+}
 
   /**
    * No need to set token manually - it comes from cookie
@@ -352,8 +369,8 @@ export const initializeApi = async (): Promise<void> => {
       // Just call the endpoint - it sets cookie automatically
       await api.get('/auth/csrf-token');
       
-      // Wait a tiny bit for cookie to be available
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Wait longer for cookie to be available (cookie needs time to set)
+      await new Promise(resolve => setTimeout(resolve, 500)); // Increased from 100ms to 500ms
       
       // Verify cookie was set
       const token = csrfManager.getToken();
@@ -362,7 +379,14 @@ export const initializeApi = async (): Promise<void> => {
         return;
       } else {
         console.warn(`⚠️ CSRF token not found in cookie after initialization (attempt ${retries + 1})`);
-        throw new Error('CSRF token not found in cookie after initialization');
+        // If no cookie, try one more time
+        retries++;
+        if (retries < maxRetries) {
+          console.warn(`⚠️ Retrying (${retries + 1}/${maxRetries}) in 1s...`);
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        } else {
+          throw new Error('CSRF token not found in cookie after initialization');
+        }
       }
     } catch (error) {
       retries++;
@@ -383,7 +407,14 @@ export const createAbortController = (): AbortController => {
   return new AbortController();
 };
 
-// Export API methods with types
+// ✅ Apply request ID interceptor to the EXISTING api instance
+requestIdInterceptor(api, {
+  enabled: true,
+  headerName: 'X-Request-ID',
+  logToConsole: import.meta.env.DEV
+});
+
+// THEN create your wrapped client using the existing api instance
 export const apiClient = {
   get: <T>(url: string, config?: AxiosRequestConfig) =>
     api.get<T>(url, config).then((res) => res.data),
@@ -400,7 +431,6 @@ export const apiClient = {
   delete: <T>(url: string, config?: AxiosRequestConfig) =>
     api.delete<T>(url, config).then((res) => res.data),
 };
-
 // ============================================================================
 // CRM API METHODS
 // ============================================================================

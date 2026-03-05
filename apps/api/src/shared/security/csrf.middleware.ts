@@ -7,83 +7,76 @@ import SecurityConfig from '../../config/security.config';
 
 @Injectable()
 export class CsrfMiddleware implements NestMiddleware {
-  private csrfProtection: any;
   private readonly logger = new Logger(CsrfMiddleware.name);
+  private csrfProtection;
 
   constructor() {
     this.csrfProtection = csurf({
-      cookie: SecurityConfig.cookies.csrfToken(),
+      cookie: {
+        key: SecurityConfig.csrf.cookieName, // "_csrf"
+        httpOnly: false,
+        secure: SecurityConfig.isProduction,
+        sameSite: 'lax',
+        path: '/',
+      },
+
+      ignoreMethods: SecurityConfig.csrf.ignoreMethods,
+
       value: (req: any) => {
         return (
-          (req.headers[SecurityConfig.csrf.headerName.toLowerCase()] as string) ||
-          (req.body && req.body._csrf) ||
-          (req.query._csrf as string)
+          req.headers['x-csrf-token'] ||
+          req.headers['x-xsrf-token'] ||
+          req.body?._csrf ||
+          req.query?._csrf
         );
       },
-      ignoreMethods: SecurityConfig.csrf.ignoreMethods as any,
     });
   }
 
-  use(req: Request, res: Response, next: NextFunction) {
-    // DEBUG: Log every request that hits this middleware
-    this.logger.debug(`🔥 CSRF middleware processing: ${req.method} ${req.url}`);
-    
-    const skipCsrfPaths = [
+use(req: Request, res: Response, next: NextFunction) {
+  this.logger.debug(`🔥 CSRF middleware DEFINITELY HIT: ${req.method} ${req.path}`);
+    this.logger.debug(`CSRF check: ${req.method} ${req.path}`);
+
+    const skipPaths = [
       '/api/v1/auth/login',
       '/api/v1/auth/register',
       '/api/v1/auth/refresh',
       '/api/v1/auth/logout',
-      '/api/auth/csrf-token',
+      '/api/v1/auth/csrf-token', // ✅ Fixed - includes /v1/
       '/api/health',
-      '/health',
     ];
 
-    const shouldSkip = skipCsrfPaths.some((path) => req.path.startsWith(path));
-    
-    this.logger.debug(`Path: ${req.path}, Should skip: ${shouldSkip}`);
+    const shouldSkip = skipPaths.some((path) => req.path.startsWith(path));
 
     if (shouldSkip) {
-      this.logger.debug(`✅ Skipping CSRF for ${req.method} ${req.path}`);
+      this.logger.debug(`Skipping CSRF for ${req.path}`);
       return next();
     }
 
-    try {
-      this.csrfProtection(req, res, (err: any) => {
-        if (err) {
-          if (err.code === 'EBADCSRFTOKEN') {
-            this.logger.warn(
-              `CSRF validation failed for ${req.method} ${req.path}`,
-              {
-                requestId: (req as any).requestId,
-                ip: req.ip,
-                userAgent: req.get('user-agent'),
-                timestamp: new Date().toISOString(),
-              },
-            );
+    this.csrfProtection(req, res, (err: any) => {
+      if (!err) {
+        return next();
+      }
 
-            return res.status(403).json({
-              statusCode: 403,
-              message: 'Invalid CSRF token',
-              error: 'Forbidden',
-              timestamp: new Date().toISOString(),
-              path: req.path,
-              requestId: (req as any).requestId,
-              code: 'INVALID_CSRF_TOKEN',
-              suggestion: 'Get a new CSRF token from /api/v1/auth/csrf-token',
-            });
-          }
+      if (err.code === 'EBADCSRFTOKEN') {
+        this.logger.warn('CSRF validation failed', {
+          path: req.path,
+          ip: req.ip,
+          userAgent: req.headers['user-agent'],
+          requestId: (req as any).requestId,
+        });
 
-          return next(err);
-        }
+        return res.status(403).json({
+          statusCode: 403,
+          message: 'Invalid or missing CSRF token',
+          error: 'Forbidden',
+          code: 'INVALID_CSRF_TOKEN',
+          path: req.path,
+          timestamp: new Date().toISOString(),
+        });
+      }
 
-        next();
-      });
-    } catch (error) {
-      this.logger.error(`CSRF middleware error: ${error.message}`, {
-        stack: error.stack,
-        timestamp: new Date().toISOString(),
-      });
-      return next(error);
-    }
+      return next(err);
+    });
   }
 }

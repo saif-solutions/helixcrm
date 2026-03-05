@@ -24,6 +24,7 @@ async function bootstrap() {
     logger: ['error', 'warn', 'log'],
   });
 
+  app.use(cookieParser()); 
   // ==================== ALS MIDDLEWARE (MUST BE FIRST) ====================
   app.use((req, res, next) => {
     const requestId = (req.headers['x-request-id'] as string) || randomUUID();
@@ -51,6 +52,7 @@ async function bootstrap() {
   app.enableCors({
     origin: corsOrigin,
     credentials: true,
+    exposedHeaders: ['set-cookie'],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: [
       'Content-Type',

@@ -19,6 +19,8 @@ import { AuthService } from './auth.service';
 import { AuthGuard } from '../../shared/guards/auth.guard';
 import { Public } from '../../shared/decorators/require-permission.decorator';
 import SecurityConfig from '../../config/security.config';
+import { Logger } from '@nestjs/common';
+
 // ADD THESE IMPORTS:
 import {
   AuditLogService,
@@ -33,6 +35,7 @@ export class AuthController {
     private authService: AuthService,
     private auditLogService: AuditLogService, // ADD THIS
   ) {}
+private readonly logger = new Logger(AuthController.name);
 
   @Get('csrf-token')
   @Public()
@@ -312,4 +315,27 @@ export class AuthController {
 
     return result;
   }
+
+    @Get('debug-cookie')
+  @Public()
+  debugCookie(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    this.logger.log('🔍 Debug cookie endpoint called');
+    
+    // Set a test cookie
+    res.cookie('test_cookie', 'hello123', {
+      httpOnly: false,
+      secure: false,
+      sameSite: 'lax',
+      path: '/'
+    });
+    
+    // Return info about existing cookies
+    return {
+      message: 'Test cookie set',
+      cookies: req.cookies,
+      hasTestCookie: !!req.cookies?.test_cookie,
+      timestamp: new Date().toISOString()
+    };
+  }
 }
+
