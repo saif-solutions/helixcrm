@@ -52,11 +52,21 @@ import { SentryModule } from '@sentry/nestjs/setup';
 import { APP_FILTER } from '@nestjs/core';
 import { SentryGlobalFilter } from '@sentry/nestjs/setup';
 
+import { ThrottlerModule } from '@nestjs/throttler';
+
+
 
 
 @Module({
   imports: [
     SentryModule.forRoot(),
+    
+    // ============ RATE LIMITING ============
+ThrottlerModule.forRoot({
+  ttl: 60, // Time to live in seconds
+  limit: 100, // Maximum number of requests within TTL
+}),
+    
     // ============ CORE INFRASTRUCTURE ============
     ConfigModule.forRoot({
       isGlobal: true,
@@ -65,7 +75,6 @@ import { SentryGlobalFilter } from '@sentry/nestjs/setup';
       expandVariables: true,
     }),
     DemoModule,
-
     ScheduleModule.forRoot(),
 
     // ============ SHARED INFRASTRUCTURE ============
