@@ -18,7 +18,6 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "test:unit": "jest tests/unit --passWithNoTests",
     "test:integration": "jest tests/integration --passWithNoTests",
     "test:security": "jest tests/security --passWithNoTests",
     "type-check": "tsc --noEmit --skipLibCheck",
@@ -38,7 +37,12 @@
     "perf:verify": "cd ../.. && ts-node -e \"import('./scripts/performance/final-runner.ts').then(m => m.verifySetup ? console.log('Verification complete') : console.log('Verification not available'))\"",
     "compliance:collect": "ts-node scripts/test-compliance.ts",
     "compliance:test": "ts-node -r tsconfig-paths/register scripts/test-compliance.ts",
-    "build:compliance": "tsc -p scripts/compliance/tsconfig.json"
+    "build:compliance": "tsc -p scripts/compliance/tsconfig.json",
+"test:unit": "jest tests/unit --verbose",
+"test:unit:auth": "jest tests/unit/auth",
+"test:unit:leads": "jest tests/unit/leads",
+"test:unit:guards": "jest tests/unit/guards",
+"test:cov:unit": "jest tests/unit --coverage"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -114,33 +118,21 @@
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.1.3"
   },
-  "jest": {
-    "moduleFileExtensions": [
-      "js",
-      "json",
-      "ts"
-    ],
-    "rootDir": ".",
-    "testRegex": ".*\\.spec\\.ts$",
-    "transform": {
-      "^.+\\.(t|j)s$": "ts-jest"
-    },
-    "collectCoverageFrom": [
-      "**/*.(t|j)s"
-    ],
-    "coverageDirectory": "../coverage",
-    "testEnvironment": "node",
-    "roots": [
-      "<rootDir>/src/",
-      "<rootDir>/tests/"
-    ],
-    "moduleNameMapper": {
-      "^src/(.*)$": "<rootDir>/src/$1"
-    },
-    "testPathIgnorePatterns": [
-      "/node_modules/",
-      "/dist/",
-      "\\.backup"
-    ]
-  }
+"jest": {
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": ".",
+  "roots": ["<rootDir>/src/", "<rootDir>/tests/"],
+  "testRegex": ".*\\.spec\\.ts$",
+  "transform": {
+    "^.+\\.(t|j)s$": "ts-jest"
+  },
+  "collectCoverageFrom": ["**/*.(t|j)s"],
+  "coverageDirectory": "../coverage",
+  "testEnvironment": "node",
+  "testPathIgnorePatterns": [
+    "/node_modules/",
+    "/dist/",
+    "\\.backup"
+  ]
+}
 }

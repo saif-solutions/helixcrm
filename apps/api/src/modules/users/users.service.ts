@@ -227,25 +227,30 @@ export class UsersService {
   /**
    * Soft delete user (archive)
    */
-  async archive(id: string, archivedById?: string) {
-    const currentUserId = this.tenantContext.getUserId(); // ✅ FIXED
-    if (id === currentUserId) {
-      throw new ForbiddenException('Cannot archive your own account');
-    }
-
-    const archivedUser = await this.userRepository.softDelete(id);
-
-    this.logger.log(`User archived`, {
-      event: 'user_archived',
-      userId: id,
-      archivedBy: archivedById || currentUserId,
-      organizationId: this.tenantContext.getTenantId(),
-    });
-
-    // Remove password hash
-    const { passwordHash: _, ...userWithoutPassword } = archivedUser;
-    return userWithoutPassword;
+async archive(id: string, archivedById?: string) {
+  console.log('Archive method called with id:', id);
+  
+  const currentUserId = this.tenantContext.getUserId();
+  console.log('Current user ID:', currentUserId);
+  
+  if (id === currentUserId) {
+    throw new ForbiddenException('Cannot archive your own account');
   }
+
+  const user = await this.userRepository.findById(id);
+  console.log('User found:', user ? 'yes' : 'no');
+  
+  if (!user) {
+    throw new NotFoundException('User not found');
+  }
+
+  const archivedUser = await this.userRepository.softDelete(id);
+  console.log('User archived:', archivedUser.id);
+
+  // Remove password hash
+  const { passwordHash: _, ...userWithoutPassword } = archivedUser;
+  return userWithoutPassword;
+}
 
   /**
    * Search users in current tenant
