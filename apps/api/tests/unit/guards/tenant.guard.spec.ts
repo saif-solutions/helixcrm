@@ -1,148 +1,130 @@
-import { PermissionGuard } from '../../../src/shared/guards/permission.guard';
+import { TenantGuard } from '../../../src/shared/guards/tenant.guard';
 import { Reflector } from '@nestjs/core';
-import { PermissionContextService } from '../../../src/shared/permissions/context/permission-context.service';
-import { TenantContextService } from '../../../src/shared/tenant/context/tenant-context.service';
-import { UnauthorizedException, ForbiddenException } from '@nestjs/common';
-import { PERMISSION_KEY } from '../../../src/shared/decorators/require-permission.decorator';
-import { getTenantContext } from '../../../src/shared/tenant/tenant.context';
+import { ForbiddenException } from '@nestjs/common';
+import { setTenantId } from '../../../src/shared/als';
+import { IS_PUBLIC_KEY } from '../../../src/shared/decorators/require-permission.decorator';
 
-// Mock tenant context
-jest.mock('../../../src/shared/tenant/tenant.context', () => ({
-  getTenantContext: jest.fn(),
+// Mock the ALS module
+jest.mock('../../../src/shared/als', () => ({
+  setTenantId: jest.fn(),
 }));
 
-describe('PermissionGuard', () => {
-  let guard: PermissionGuard;
+describe('TenantGuard', () => {
+  let guard: TenantGuard;
   let reflector: Reflector;
-  let permissionContext: jest.Mocked<PermissionContextService>;
-  let tenantContext: jest.Mocked<TenantContextService>;
   let mockContext: any;
   let mockRequest: any;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     reflector = new Reflector();
-    permissionContext = {
-      buildContext: jest.fn(),
-      isInitialized: jest.fn().mockReturnValue(true),
-      getPermissions: jest.fn().mockReturnValue([]),
-      getRoles: jest.fn().mockReturnValue([]),
-      hasAnyPermission: jest.fn(),
-    } as any;
-
-    tenantContext = {
-      getTenantId: jest.fn().mockReturnValue('org-123'),
-    } as any;
-
-    guard = new PermissionGuard(reflector, permissionContext, tenantContext);
+    guard = new TenantGuard(reflector);
 
     mockRequest = {
-      method: 'GET',
-      url: '/api/leads',
+      path: '/api/leads',
       user: {
         sub: 'user-123',
-        id: 'user-123',
-        email: 'test@example.com',
         organizationId: 'org-123',
         org: 'org-123',
-        permissions: ['lead:read'],
-        roles: ['User'],
       },
     };
-
-    // ✅ FIX: Properly mock the context methods with jest.fn()
-    const mockHandler = { name: 'testHandler' };
-    const mockClass = { name: 'TestController' };
 
     mockContext = {
       switchToHttp: () => ({
         getRequest: () => mockRequest,
       }),
-      getHandler: jest.fn().mockReturnValue(mockHandler),
-      getClass: jest.fn().mockReturnValue(mockClass),
+      getHandler: jest.fn(),
+      getClass: jest.fn(),
     };
-
-    (getTenantContext as jest.Mock).mockReturnValue({
-      tenantId: 'org-123',
-      userId: 'user-123',
-      source: 'tenant.guard',
-    });
 
     jest.clearAllMocks();
   });
 
-  it('should allow access if no permissions required', async () => {
-    jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(undefined);
+  describe('public routes', () => {
+    it('should skip tenant check for public routes', async () => {
+      jest.spyOn(reflector, 'get').mockImplementation((key) => {
+        if (key === IS_PUBLIC_KEY) return true;
+        return false;
+      });
 
-    const result = await guard.canActivate(mockContext);
+      const result = await guard.canActivate(mockContext);
 
-    expect(result).toBe(true);
-    expect(permissionContext.buildContext).not.toHaveBeenCalled();
+      expect(result).toBe(true);
+      expect(setTenantId).not.toHaveBeenCalled();
+    });
   });
 
-  it('should allow access for public routes (empty permissions)', async () => {
-    jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([]);
-
-    const result = await guard.canActivate(mockContext);
-
-    expect(result).toBe(true);
-    expect(permissionContext.buildContext).not.toHaveBeenCalled();
-  });
-
-  it('should throw UnauthorizedException if no user', async () => {
-    jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(['lead:read']);
-    mockRequest.user = null;
-
-    await expect(guard.canActivate(mockContext)).rejects.toThrow(UnauthorizedException);
-  });
-
-  it('should throw ForbiddenException if tenant context missing', async () => {
-    jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(['lead:read']);
-    tenantContext.getTenantId.mockImplementation(() => {
-      throw new Error('Tenant context missing');
+  describe('non-public routes', () => {
+    beforeEach(() => {
+      jest.spyOn(reflector, 'get').mockReturnValue(false);
     });
 
-    await expect(guard.canActivate(mockContext)).rejects.toThrow(ForbiddenException);
-  });
+    it('should throw ForbiddenException if no user found', async () => {
+      mockRequest.user = null;
 
-  it('should build permission context and grant access if user has permission', async () => {
-    jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(['lead:read']);
-    permissionContext.hasAnyPermission.mockReturnValue(true);
-
-    const result = await guard.canActivate(mockContext);
-
-    expect(result).toBe(true);
-    expect(permissionContext.buildContext).toHaveBeenCalledWith({
-      userId: 'user-123',
-      tenantId: 'org-123',
-      jwtPermissions: ['lead:read'],
+      await expect(guard.canActivate(mockContext)).rejects.toThrow(ForbiddenException);
+      expect(setTenantId).not.toHaveBeenCalled();
     });
-    expect(permissionContext.hasAnyPermission).toHaveBeenCalledWith(['lead:read']);
-  });
 
-  it('should deny access if user lacks required permissions', async () => {
-    jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(['lead:write']);
-    permissionContext.hasAnyPermission.mockReturnValue(false);
-    permissionContext.getPermissions.mockReturnValue(['lead:read']);
-    permissionContext.getRoles.mockReturnValue(['User']);
+    it('should throw ForbiddenException if user missing organization ID', async () => {
+      mockRequest.user = { sub: 'user-123' }; // No org or organizationId
 
-    await expect(guard.canActivate(mockContext)).rejects.toThrow(ForbiddenException);
-    expect(permissionContext.hasAnyPermission).toHaveBeenCalledWith(['lead:write']);
-  });
+      await expect(guard.canActivate(mockContext)).rejects.toThrow(ForbiddenException);
+      expect(setTenantId).not.toHaveBeenCalled();
+    });
 
-  it('should handle multiple required permissions (OR logic)', async () => {
-    jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(['lead:write', 'lead:admin']);
-    permissionContext.hasAnyPermission.mockReturnValue(true);
+    it('should set tenant ID from user.organizationId', async () => {
+      mockRequest.user = {
+        sub: 'user-123',
+        organizationId: 'org-456',
+      };
 
-    const result = await guard.canActivate(mockContext);
+      const result = await guard.canActivate(mockContext);
 
-    expect(result).toBe(true);
-    expect(permissionContext.hasAnyPermission).toHaveBeenCalledWith(['lead:write', 'lead:admin']);
-  });
+      expect(result).toBe(true);
+      expect(setTenantId).toHaveBeenCalledWith('org-456');
+      expect(mockRequest.organizationId).toBe('org-456');
+    });
 
-  it('should throw ForbiddenException if permission context fails to initialize', async () => {
-    jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(['lead:read']);
-    permissionContext.isInitialized.mockReturnValue(false);
+    it('should set tenant ID from user.org if organizationId not present', async () => {
+      mockRequest.user = {
+        sub: 'user-123',
+        org: 'org-789',
+      };
 
-    await expect(guard.canActivate(mockContext)).rejects.toThrow(ForbiddenException);
+      const result = await guard.canActivate(mockContext);
+
+      expect(result).toBe(true);
+      expect(setTenantId).toHaveBeenCalledWith('org-789');
+      expect(mockRequest.organizationId).toBe('org-789');
+    });
+
+    it('should log debug message for public routes', async () => {
+      jest.spyOn(reflector, 'get').mockImplementation((key) => {
+        if (key === IS_PUBLIC_KEY) return true;
+        return false;
+      });
+
+      const debugSpy = jest.spyOn((guard as any).logger, 'debug');
+
+      await guard.canActivate(mockContext);
+
+      expect(debugSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Skipping TenantGuard for public route')
+      );
+    });
+
+    it('should log error when user missing organization ID', async () => {
+      mockRequest.user = { sub: 'user-123' };
+      const errorSpy = jest.spyOn((guard as any).logger, 'error');
+
+      try {
+        await guard.canActivate(mockContext);
+      } catch (error) {
+        expect(errorSpy).toHaveBeenCalledWith(
+          'User missing organization ID',
+          { userId: 'user-123' }
+        );
+      }
+    });
   });
 });
