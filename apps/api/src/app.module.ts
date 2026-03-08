@@ -3,9 +3,13 @@
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
-import { DemoModule } from './modules/demo/demo.module';
+import { APP_FILTER } from '@nestjs/core';
 
-// Core application modules
+import { SentryModule } from '@sentry/nestjs/setup';
+import { SentryGlobalFilter } from '@sentry/nestjs/setup';
+import { ThrottlerModule } from '@nestjs/throttler';
+
+// Core
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { HealthController } from './health.controller';
@@ -26,67 +30,66 @@ import { EmailTemplatesModule } from './modules/email-templates/email-templates.
 import { ExportQueueModule } from './modules/export-queue/export-queue.module';
 import { FileStorageModule } from './modules/file-storage/file-storage.module';
 import { WebhooksModule } from './modules/webhooks/webhooks.module';
+import { DemoModule } from './modules/demo/demo.module';
 
-// Shared infrastructure modules
+// Shared infrastructure
 import { SharedModule } from './shared/shared.module';
+import { TenantModule } from './shared/tenant/module/tenant.module';
 
-// Phase 2A Compliance Modules (Weeks 1-6)
+// Compliance modules
 import { AuditIntegrityModule } from './shared/audit-integrity/audit-integrity.module';
 import { ComplianceModule } from './shared/compliance/compliance.module';
-
-// Performance monitoring (Week 3-4)
 import { PerformanceMetricsModule } from './shared/performance/performance-metrics.module';
 
-// Configuration validation
-import { ConfigValidationService } from './config/config-validation.service';
-
-// ============ MIDDLEWARE IMPORTS ============
+// Middleware
 import { CorrelationIdMiddleware } from './shared/middleware/correlation-id.middleware';
 import { RequestContextMiddleware } from './shared/middleware/request-context.middleware';
-import { CsrfMiddleware } from './shared/security/csrf.middleware'; // ✅ ADDED - Critical for CSRF protection
+import { CsrfMiddleware } from './shared/security/csrf.middleware';
 
-// ============ TENANT MODULE ============
-import { TenantModule } from './shared/tenant/module/tenant.module';
+// Config validation
+import { ConfigValidationService } from './config/config-validation.service';
+
 import { DebugController } from './modules/debug/debug.controller';
-import { SentryModule } from '@sentry/nestjs/setup';
-import { APP_FILTER } from '@nestjs/core';
-import { SentryGlobalFilter } from '@sentry/nestjs/setup';
-
-import { ThrottlerModule } from '@nestjs/throttler';
-
-
-
 
 @Module({
   imports: [
-    SentryModule.forRoot(),
-    
-    // ============ RATE LIMITING ============
-ThrottlerModule.forRoot({
-  ttl: 60, // Time to live in seconds
-  limit: 100, // Maximum number of requests within TTL
-}),
-    
-    // ============ CORE INFRASTRUCTURE ============
+    // ================= CONFIG =================
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '.env',
       cache: true,
       expandVariables: true,
+      envFilePath: [
+        `.env.${process.env.NODE_ENV || 'development'}`,
+        '.env',
+      ],
     }),
-    DemoModule,
+
+    // ================= SENTRY =================
+    SentryModule.forRoot(),
+
+    // ================= RATE LIMITING =================
+    ThrottlerModule.forRoot([
+      {
+        name: 'default',
+        ttl: 60,
+        limit: 100,
+      },
+    ]),
+
+    // ================= CORE =================
     ScheduleModule.forRoot(),
 
-    // ============ SHARED INFRASTRUCTURE ============
+    // ================= SHARED =================
     SharedModule,
-    TenantModule, 
+    TenantModule,
 
-    // ============ PHASE 2A: COMPLIANCE & SECURITY ============
+    // ================= COMPLIANCE =================
     AuditIntegrityModule,
     ComplianceModule,
     PerformanceMetricsModule,
 
-    // ============ BUSINESS FEATURES ============
+    // ================= FEATURES =================
+    DemoModule,
     AuthModule,
     UsersModule,
     RbacModule,
@@ -105,9 +108,9 @@ ThrottlerModule.forRoot({
   ],
 
   controllers: [
-    AppController, 
+    AppController,
     HealthController,
-    DebugController
+    DebugController,
   ],
 
   providers: [
@@ -125,6 +128,7 @@ ThrottlerModule.forRoot({
   ],
 })
 export class AppModule implements NestModule {
+
   constructor() {
     console.log('AppModule initialized with Phase 2A compliance features:');
     console.log('✅ Audit Integrity (Weeks 1-2)');
@@ -134,16 +138,12 @@ export class AppModule implements NestModule {
   }
 
   configure(consumer: MiddlewareConsumer) {
-    // CRITICAL: Middleware order matters!
-    // 1. CorrelationIdMiddleware - Adds correlation ID for request tracing
-    // 2. RequestContextMiddleware - Sets up AsyncLocalStorage context
-    // 3. CsrfMiddleware - CSRF protection (must come after context but before controllers)
     consumer
       .apply(
         CorrelationIdMiddleware,
         RequestContextMiddleware,
-        CsrfMiddleware, // ✅ ADDED - This was missing and causing the 400 error
+        CsrfMiddleware,
       )
-      .forRoutes('*'); // Apply to all routes
+      .forRoutes('*');
   }
 }

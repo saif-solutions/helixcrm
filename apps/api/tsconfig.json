@@ -1,31 +1,42 @@
 {
   "compilerOptions": {
-    "allowJs": true,
+    "target": "ES2022",
     "module": "commonjs",
+    "moduleResolution": "node",
+    "allowJs": true,
     "declaration": true,
     "removeComments": true,
+    "sourceMap": true,
+    "outDir": "./dist",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
-    "target": "ES2022",
-    "sourceMap": true,
-    "outDir": "./dist",
-    "baseUrl": "./",
     "incremental": true,
     "skipLibCheck": true,
+    "strict": false,
     "strictNullChecks": false,
     "noImplicitAny": false,
     "strictBindCallApply": false,
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false,
-    "useDefineForClassFields": false,  // CRITICAL: Must be false
+    "downlevelIteration": true,
+    "useDefineForClassFields": false,
     "lib": ["ES2022"],
-    "moduleResolution": "node",
+    "baseUrl": "./",
     "typeRoots": ["./node_modules/@types"],
-    "types": ["node", "jest"],
-    "verbatimModuleSyntax": false  // ADD THIS: Allows type-only imports
+    "types": ["node"],
+    "verbatimModuleSyntax": false
   },
-  "include": ["src/**/*", "tests/**/*", "scripts/verify-migration-progress.js"],
-  "exclude": ["node_modules", "dist", "scripts"]
+  "include": [
+    "src/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "test",
+    "tests",
+    "**/*.spec.ts",
+    "**/*.test.ts"
+  ]
 }

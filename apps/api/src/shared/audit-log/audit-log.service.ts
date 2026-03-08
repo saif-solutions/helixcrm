@@ -150,6 +150,7 @@ export class AuditLogService {
     @Optional()
     @Inject(AuditQueueService)
     private readonly auditQueueService?: AuditQueueService,
+    
     @Optional()
     @Inject(AuditIntegrityService)
     private readonly auditIntegrityService?: AuditIntegrityService,

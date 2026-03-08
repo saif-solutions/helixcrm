@@ -1,4 +1,5 @@
 // apps/api/src/shared/compliance/soc2/soc2-evidence.service.ts
+import 'core-js/actual/iterator';
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import * as fs from 'fs';

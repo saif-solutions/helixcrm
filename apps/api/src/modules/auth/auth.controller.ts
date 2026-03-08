@@ -40,7 +40,7 @@ export class AuthController {
   @Post('login')
   @Public()
   @HttpCode(HttpStatus.OK)
-  @Throttle(5, 60000)
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async login(
     @Body() loginDto: { email: string; password: string },
     @Req() req: Request,
@@ -133,7 +133,7 @@ export class AuthController {
 
   @Post('register')
   @Public()
-  @Throttle(3, 60000)
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async register(
     @Body()
     registerDto: {

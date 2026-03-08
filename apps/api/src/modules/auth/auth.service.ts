@@ -32,13 +32,19 @@ export class AuthService {
 
   // ==================== USER VALIDATION ====================
 
-  async validateUser(email: string, password: string, request?: any) {
-    const normalizedEmail = email.toLowerCase().trim();
+async validateUser(email: string, password: string, request?: any) {
+  console.log('🔍 validateUser called with email:', email);
+  
+  const normalizedEmail = email.toLowerCase().trim();
+  console.log('🔍 normalizedEmail:', normalizedEmail);
 
-    // Check if account is locked
-    const lockStatus = await this.accountLockoutService.isAccountLocked(email);
+  // Check if account is locked
+  console.log('🔍 Checking account lockout...');
+  const lockStatus = await this.accountLockoutService.isAccountLocked(email);
+  console.log('🔍 lockStatus:', lockStatus);
 
-    if (lockStatus.isLocked) {
+  if (lockStatus.isLocked) {
+    console.log('🔍 Account is locked!');
       this.logger.warn(`Login attempt for locked account: ${email}`, {
         lockedUntil: lockStatus.lockedUntil,
         event: 'account_locked_login_attempt',
@@ -63,19 +69,28 @@ export class AuthService {
       );
     }
 
-    const user = await this.prisma.user.findUnique({
-      where: { email: normalizedEmail },
-      include: {
-        organization: {
-          select: {
-            id: true,
-            name: true,
-          },
+  console.log('🔍 Looking up user in database...');
+  const user = await this.prisma.user.findUnique({
+    where: { email: normalizedEmail },
+    include: {
+      organization: {
+        select: {
+          id: true,
+          name: true,
         },
       },
-    });
+    },
+  });
+  
+  console.log('🔍 User found:', user ? 'Yes' : 'No');
+  if (user) {
+    console.log('🔍 User fields:', Object.keys(user));
+    console.log('🔍 isActive:', user.isActive);
+    console.log('🔍 passwordHash exists:', !!user.passwordHash);
+  }
 
-    if (!user || !user.isActive) {
+  if (!user || !user.isActive) {
+    console.log('🔍 User not found or inactive');
       // Record failed attempt even if user doesn't exist (security through obscurity)
       if (user) {
         await this.accountLockoutService.recordFailedAttempt(user.id);
@@ -95,10 +110,13 @@ export class AuthService {
       return null;
     }
 
-    const isValid = await this.authCoreAdapter.password.verify(
-      password,
-      user.passwordHash,
-    );
+  console.log('🔍 Verifying password...');
+  const isValid = await this.authCoreAdapter.password.verify(
+    password,
+    user.passwordHash,
+  );
+  console.log('🔍 Password valid:', isValid);
+  
     if (!isValid) {
       // Record failed attempt
       await this.accountLockoutService.recordFailedAttempt(user.id);

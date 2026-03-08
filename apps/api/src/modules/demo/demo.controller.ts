@@ -20,7 +20,7 @@ export class DemoController {
 
   @Get('credentials')
   @Public()
-  @Throttle(10, 60000)  // limit, ttl in milliseconds
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   getDemoCredentials() {
     const config = getDemoConfig();
@@ -50,7 +50,7 @@ export class DemoController {
 
   @Post('login/:role')
   @Public()
-  @Throttle(5, 60000)
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   async loginWithDemo(
     @Param('role') role: string,
