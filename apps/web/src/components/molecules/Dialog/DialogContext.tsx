@@ -1,5 +1,4 @@
 // D:\Projects-In-Hand\helixcrm\apps\web\src\components\molecules\Dialog\DialogContext.tsx
-/* eslint-disable react-refresh/only-export-components */
 import React, { useCallback } from 'react';
 // Import from the base types file instead
 import {

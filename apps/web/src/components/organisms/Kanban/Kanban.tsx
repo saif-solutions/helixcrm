@@ -73,7 +73,6 @@ export const Kanban = React.memo(
         allowColumnReorder = true,
         allowCardReorder = true,
         allowCardMoveBetweenColumns = true,
-        showEmptyColumns = true,
         maxHeight = defaultKanbanStyleProps.maxHeight,
         minColumnWidth = defaultKanbanStyleProps.minColumnWidth,
         showAnalytics = false,
@@ -87,8 +86,6 @@ export const Kanban = React.memo(
         onAddColumn,
         onDeleteCard,
         onDeleteColumn,
-        onCardValueChange,
-        onProbabilityChange,
         renderCard,
         renderColumnHeader,
         renderColumnFooter,
@@ -114,11 +111,11 @@ export const Kanban = React.memo(
       const [activeColumn, setActiveColumn] = React.useState<KanbanColumn | undefined>();
 
       // Update columns when props change
-      React.useEffect(() => {
-        if (JSON.stringify(initialColumns) !== JSON.stringify(columns)) {
-          setColumns(initialColumns);
-        }
-      }, [initialColumns]);
+React.useEffect(() => {
+  if (JSON.stringify(initialColumns) !== JSON.stringify(columns)) {
+    setColumns(initialColumns);
+  }
+}, [initialColumns, columns]);
 
       // Handle card drag start
       const handleCardDragStart = React.useCallback(
@@ -257,23 +254,6 @@ export const Kanban = React.memo(
           setDragState({ type: 'none' });
         },
         [readOnly, dragState, columns, onChange]
-      );
-
-      // Handle add card
-      const handleAddCard = React.useCallback(
-        (column: KanbanColumn) => {
-          if (readOnly) return;
-
-          const newCard = createKanbanCard();
-          const updatedColumns = columns.map((col) =>
-            col.id === column.id ? { ...col, cards: [...col.cards, newCard] } : col
-          );
-
-          setColumns(updatedColumns);
-          onChange?.(updatedColumns, newCard, undefined, column);
-          onAddCard?.(column);
-        },
-        [readOnly, columns, onChange, onAddCard]
       );
 
       // Handle delete card
@@ -620,170 +600,180 @@ export const Kanban = React.memo(
           showCardValue,
           showProbability,
           testId,
+    showCardActions,
         ]
       );
 
-      // Render default column
-      const renderDefaultColumn = React.useCallback(
-        (column: KanbanColumn, index: number) => {
-          const isDragging =
-            dragState.sourceColumn?.id === column.id && dragState.type === 'column';
-          const isOver = dragState.targetColumn?.id === column.id;
-          const wipClass = getWipLimitClass(column.cards.length, column.wipLimit);
-          const columnValue = column.cards.reduce((total, card) => total + (card.value || 0), 0);
-          const columnWeightedValue = column.cards.reduce(
-            (total, card) => total + calculateWeightedValue(card),
-            0
-          );
+// Top-level stable callback for adding a card
+const handleAddCardForColumn = React.useCallback(
+  (column: KanbanColumn) => {
+    if (readOnly) return;
 
-          return (
-            <div
-              key={column.id}
-              className={getColumnClasses(
-                column.color,
-                isDragging,
-                isOver,
-                column.isCollapsed,
-                column.className
-              )}
-              draggable={!readOnly && allowColumnReorder}
-              onDragStart={(e) => handleColumnDragStart(column, e)}
-              onDragOver={(e) => {
-                if (allowColumnReorder) {
-                  e.preventDefault();
-                }
-              }}
-              onDrop={(e) => handleColumnDrop(index, e)}
-              onClick={(e) => handleColumnClick(column, e)}
-              style={{
-                minWidth: minColumnWidth,
-                ...column.style,
-              }}
-              role={onColumnClick ? 'button' : 'region'}
-              tabIndex={onColumnClick ? 0 : undefined}
-              aria-label={`Column: ${column.title}. ${column.cards.length} cards. ${column.description || ''}`}
-              data-testid={`${testId}-column-${column.id}`}
-            >
-              {/* Column Header */}
-              <div className={kanbanClasses.column.header}>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">
-                    {column.title}
-                  </h3>
-                  {column.description && (
-                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                      {column.description}
-                    </p>
-                  )}
-                </div>
+    const newCard = createKanbanCard();
+    const updatedColumns = columns.map((col) =>
+      col.id === column.id ? { ...col, cards: [...col.cards, newCard] } : col
+    );
 
-                {/* Column Stats */}
-                <div className="flex items-center gap-2">
-                  {showCardCounts && (
-                    <span
-                      className={kanbanClasses.column.count}
-                      data-testid={`${testId}-card-count-${column.id}`}
-                    >
-                      {column.cards.length}
-                      {column.maxCards && `/${column.maxCards}`}
-                    </span>
-                  )}
+    setColumns(updatedColumns);
+    onChange?.(updatedColumns, newCard, undefined, column);
+    onAddCard?.(column);
+  },
+  [readOnly, columns, onChange, onAddCard] // ✅ onAddCard is now included
+);
 
-                  {showWipLimits && column.wipLimit && (
-                    <span className={wipClass}>
-                      {column.cards.length}/{column.wipLimit}
-                    </span>
-                  )}
+// Render default column
+// Update the renderDefaultColumn function (around line 754)
+const renderDefaultColumn = React.useCallback(
+  (column: KanbanColumn, index: number) => {
+    const isDragging =
+      dragState.sourceColumn?.id === column.id && dragState.type === 'column';
+    const isOver = dragState.targetColumn?.id === column.id;
+    const wipClass = getWipLimitClass(column.cards.length, column.wipLimit);
+    const columnValue = column.cards.reduce((total, card) => total + (card.value || 0), 0);
+    const columnWeightedValue = column.cards.reduce(
+      (total, card) => total + calculateWeightedValue(card),
+      0
+    );
 
-                  {showColumnActions && !readOnly && (
-                    <button
-                      className={cn(kanbanClasses.action.base, kanbanClasses.action.delete)}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteColumn(column);
-                      }}
-                      aria-label={`Delete column: ${column.title}`}
-                      data-testid={`${testId}-delete-column-${column.id}`}
-                    >
-                      ×
-                    </button>
-                  )}
-                </div>
-              </div>
+    return (
+      <div
+        key={column.id}
+        className={getColumnClasses(
+          column.color,
+          isDragging,
+          isOver,
+          column.isCollapsed,
+          column.className
+        )}
+        draggable={!readOnly && allowColumnReorder}
+        onDragStart={(e) => handleColumnDragStart(column, e)}
+        onDragOver={(e) => {
+          if (allowColumnReorder) e.preventDefault();
+        }}
+        onDrop={(e) => handleColumnDrop(index, e)}
+        onClick={(e) => handleColumnClick(column, e)}
+        style={{ minWidth: minColumnWidth, ...column.style }}
+        role={onColumnClick ? 'button' : 'region'}
+        tabIndex={onColumnClick ? 0 : undefined}
+        aria-label={`Column: ${column.title}. ${column.cards.length} cards. ${column.description || ''}`}
+        data-testid={`${testId}-column-${column.id}`}
+      >
+        {/* Column Header */}
+        <div className={kanbanClasses.column.header}>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">{column.title}</h3>
+            {column.description && (
+              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{column.description}</p>
+            )}
+          </div>
 
-              {/* Column Body */}
-              {!column.isCollapsed && (
-                <div className={kanbanClasses.column.body}>
-                  {column.cards.map((card) =>
-                    renderCard ? renderCard(card, column) : renderDefaultCard(card, column)
-                  )}
+          {/* Column Stats */}
+          <div className="flex items-center gap-2">
+            {showCardCounts && (
+              <span
+                className={kanbanClasses.column.count}
+                data-testid={`${testId}-card-count-${column.id}`}
+              >
+                {column.cards.length}
+                {column.maxCards && `/${column.maxCards}`}
+              </span>
+            )}
 
-                  {/* Add Card Button */}
-                  {!readOnly && onAddCard && (
-                    <button
-                      className={cn(
-                        'w-full p-3 text-center border border-dashed border-gray-300 dark:border-gray-600 rounded hover:border-gray-400 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-150',
-                        kanbanClasses.accessibility.focus
-                      )}
-                      onClick={() => handleAddCard(column)}
-                      aria-label={`Add card to ${column.title}`}
-                      data-testid={`${testId}-add-card-${column.id}`}
-                    >
-                      <span className="text-gray-500 dark:text-gray-400">+ Add Card</span>
-                    </button>
-                  )}
+            {showWipLimits && column.wipLimit && (
+              <span className={wipClass}>
+                {column.cards.length}/{column.wipLimit}
+              </span>
+            )}
 
-                  {/* Drag Drop Placeholder */}
-                  {dragState.type === 'card' && dragState.targetColumn?.id === column.id && (
-                    <div className={kanbanClasses.drag.placeholder} />
-                  )}
-                </div>
-              )}
+            {showColumnActions && !readOnly && (
+              <button
+                className={cn(kanbanClasses.action.base, kanbanClasses.action.delete)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteColumn(column);
+                }}
+                aria-label={`Delete column: ${column.title}`}
+                data-testid={`${testId}-delete-column-${column.id}`}
+              >
+                ×
+              </button>
+            )}
+          </div>
+        </div>
 
-              {/* Column Footer */}
-              {!column.isCollapsed && (renderColumnFooter || showCardValue) && (
-                <div className={kanbanClasses.column.footer}>
-                  {renderColumnFooter
-                    ? renderColumnFooter(column)
-                    : showCardValue &&
-                      columnValue > 0 && (
-                        <div className="text-xs font-medium text-gray-700 dark:text-gray-300">
-                          Value: {column.currency || '$'}
-                          {columnValue.toLocaleString()}
-                          {columnWeightedValue !== columnValue && (
-                            <span className="text-gray-500 dark:text-gray-400 ml-1">
-                              (Weighted: {column.currency || '$'}
-                              {columnWeightedValue.toLocaleString()})
-                            </span>
-                          )}
-                        </div>
-                      )}
-                </div>
-              )}
-            </div>
-          );
-        },
-        [
-          dragState,
-          readOnly,
-          allowColumnReorder,
-          minColumnWidth,
-          onColumnClick,
-          handleColumnDragStart,
-          handleColumnDrop,
-          handleColumnClick,
-          handleDeleteColumn,
-          handleAddCard,
-          showCardCounts,
-          showWipLimits,
-          showCardValue,
-          showColumnActions,
-          renderCard,
-          renderDefaultCard,
-          renderColumnFooter,
-          testId,
-        ]
-      );
+        {/* Column Body */}
+        {!column.isCollapsed && (
+          <div className={kanbanClasses.column.body}>
+            {column.cards.map((card) =>
+              renderCard ? renderCard(card, column) : renderDefaultCard(card, column)
+            )}
+
+            {!readOnly && onAddCard && (
+              <button
+                className={cn(
+                  'w-full p-3 text-center border border-dashed border-gray-300 dark:border-gray-600 rounded hover:border-gray-400 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-150',
+                  kanbanClasses.accessibility.focus
+                )}
+                onClick={() => handleAddCardForColumn(column)}
+                aria-label={`Add card to ${column.title}`}
+                data-testid={`${testId}-add-card-${column.id}`}
+              >
+                <span className="text-gray-500 dark:text-gray-400">+ Add Card</span>
+              </button>
+            )}
+
+            {/* Drag Drop Placeholder */}
+            {dragState.type === 'card' && dragState.targetColumn?.id === column.id && (
+              <div className={kanbanClasses.drag.placeholder} />
+            )}
+          </div>
+        )}
+
+        {/* Column Footer */}
+        {!column.isCollapsed && (renderColumnFooter || showCardValue) && (
+          <div className={kanbanClasses.column.footer}>
+            {renderColumnFooter
+              ? renderColumnFooter(column)
+              : showCardValue &&
+                columnValue > 0 && (
+                  <div className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                    Value: {column.currency || '$'}
+                    {columnValue.toLocaleString()}
+                    {columnWeightedValue !== columnValue && (
+                      <span className="text-gray-500 dark:text-gray-400 ml-1">
+                        (Weighted: {column.currency || '$'}
+                        {columnWeightedValue.toLocaleString()})
+                      </span>
+                    )}
+                  </div>
+                )}
+          </div>
+        )}
+      </div>
+    );
+  },
+  [
+    dragState,
+    readOnly,
+    allowColumnReorder,
+    minColumnWidth,
+    onColumnClick,
+    handleColumnDragStart,
+    handleColumnDrop,
+    handleColumnClick,
+    handleDeleteColumn,
+    showCardCounts,
+    showWipLimits,
+    showCardValue,
+    showColumnActions,
+    renderCard,
+    renderDefaultCard,
+    renderColumnFooter,
+    testId,
+    handleAddCardForColumn,
+    onAddCard, // ✅ Add this missing dependency
+  ]
+);
 
       const calculateEnhancedAnalytics = React.useCallback((): KanbanAnalytics => {
         //   const totalCards = columns.reduce((total, col) => total + col.cards.length, 0);
@@ -828,14 +818,14 @@ export const Kanban = React.memo(
             ? Math.round((wonDeals.length / dealsWithValue.length) * 100)
             : 0;
 
-        return {
-          totalValue,
-          weightedValue,
-          averageDealSize,
-          winRate,
-          averageDaysInPipeline,
-        };
-      }, [columns]);
+       return {
+    totalValue,
+    weightedValue,
+    averageDealSize,
+    winRate,
+    averageDaysInPipeline,
+  };
+}, [columns, calculatePipelineValue, calculateWeightedPipelineValue]);
 
       // Render analytics
       const renderDefaultAnalytics = React.useCallback(() => {
@@ -1103,7 +1093,7 @@ KanbanColumnComponent.displayName = 'Kanban.Column';
  */
 export const KanbanCardComponent = React.memo(
   React.forwardRef<HTMLDivElement, KanbanCardProps>(
-    ({ card, column, index, isDragging, isOver, className, style, ...props }, ref) => {
+    ({ card, column, isDragging, isOver, className, style, ...props }, ref) => {
       const { readOnly, allowCardReorder, handleCardDragStart, handleCardDragEnd } = useKanban();
 
       return (

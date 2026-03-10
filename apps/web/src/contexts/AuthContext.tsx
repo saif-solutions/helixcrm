@@ -1,4 +1,3 @@
-/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useEffect } from 'react';
 import { useAuthStore, User } from '../stores/auth.store';
 import { useToast } from '../components/feedback/ToastProvider';

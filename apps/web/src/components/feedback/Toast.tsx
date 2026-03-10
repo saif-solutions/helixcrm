@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   XMarkIcon,
   CheckCircleIcon,
@@ -50,29 +50,30 @@ const typeConfig = {
 
 export const Toast: React.FC<ToastProps> = ({ id, title, description, type, onDismiss }) => {
   const [isExiting, setIsExiting] = useState(false);
+  const [hasHovered, setHasHovered] = useState(false);
   const config = typeConfig[type];
   const Icon = config.icon;
 
-  const handleDismiss = () => {
+  // Create stable callback references
+  const handleDismiss = useCallback(() => {
     setIsExiting(true);
     // Wait for exit animation to complete
     setTimeout(() => {
       onDismiss();
     }, 150);
-  };
+  }, [onDismiss]);
 
   // Auto-dismiss on mouse leave if user hasn't hovered
-  const [hasHovered, setHasHovered] = useState(false);
-
-useEffect(() => {
-  if (!hasHovered) {
-    const timer = setTimeout(() => {
-      handleDismiss();
-    }, 5000);
-    return () => clearTimeout(timer);
-  }
-  return undefined; // Add this line
-}, [hasHovered]);
+  useEffect(() => {
+    if (!hasHovered) {
+      const timer = setTimeout(() => {
+        handleDismiss();
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+    // Return undefined explicitly when hasHovered is true
+    return undefined;
+  }, [hasHovered, handleDismiss]);
 
   return (
     <div

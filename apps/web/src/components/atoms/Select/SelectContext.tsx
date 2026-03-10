@@ -1,4 +1,3 @@
-/* eslint-disable react-refresh/only-export-components */
 // D:\Projects-In-Hand\helixcrm\apps\web\src\components\atoms\Select\SelectContext.tsx
 import * as React from 'react';
 import { SelectOption, SelectVariant, SelectSize } from './Select.types';

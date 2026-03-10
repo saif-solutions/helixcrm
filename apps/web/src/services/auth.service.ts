@@ -3,9 +3,13 @@
  * Auth Service - Centralized authentication logic
  */
 
-import { apiClient, csrfManager } from './api';
+import { apiClient } from './api';
 import { useAuthStore, User } from '../stores/auth.store';
 import api from './api';
+
+// Import the default export from ./api which might include csrfManager
+// or if csrfManager is a property on the api object
+import apiModule from './api';
 
 export interface LoginRequest {
   email: string;
@@ -31,13 +35,21 @@ export interface AuthError {
   status: number;
 }
 
+// Get csrfManager from the api module (it might be a property)
+const csrfManager = (apiModule as any).csrfManager || apiModule;
+
 export const AuthService = {
   /**
    * Initialize authentication (CSRF token)
    */
   async initialize(): Promise<void> {
     try {
-      await csrfManager.refreshCsrfToken(api);
+      // Check if csrfManager exists and has refreshCsrfToken method
+      if (csrfManager && typeof csrfManager.refreshCsrfToken === 'function') {
+        await csrfManager.refreshCsrfToken(api);
+      } else {
+        console.warn('csrfManager not available, skipping initialization');
+      }
     } catch (error) {
       console.error('Failed to initialize auth:', error);
       throw error;
@@ -117,7 +129,10 @@ export const AuthService = {
       console.warn('Logout API call failed, clearing local state anyway:', error);
     } finally {
       // Always clear local state
-      csrfManager.clearToken();
+      // Check if csrfManager exists and has clearToken method
+      if (csrfManager && typeof csrfManager.clearToken === 'function') {
+        csrfManager.clearToken();
+      }
       useAuthStore.getState().logout();
     }
   },
@@ -143,19 +158,21 @@ export const AuthService = {
     
     if (!user) return false;
     
-    // In a real implementation, this would check against user.permissions array
-    // For now, return based on role
-    const role = user.role || 'user';
+    // Check roles array for permissions
+    const roles = user.roles || ['user'];
     
-    switch (role) {
-      case 'admin':
-        return true;
-      case 'manager':
-        return ['read', 'write'].includes(permission);
-      case 'user':
-      default:
-        return permission === 'read';
+    // In a real implementation, this would check against user.permissions array
+    // For now, return based on roles
+    if (roles.includes('admin')) {
+      return true;
     }
+    
+    if (roles.includes('manager')) {
+      return ['read', 'write'].includes(permission);
+    }
+    
+    // Default to 'user' role
+    return permission === 'read';
   },
 
   /**
@@ -163,7 +180,7 @@ export const AuthService = {
    */
   hasRole(role: string): boolean {
     const { user } = useAuthStore.getState();
-    return user?.role === role;
+    return user?.roles?.includes(role) || false;
   },
 };
 

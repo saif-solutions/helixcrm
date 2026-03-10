@@ -20,6 +20,9 @@ export const Header: React.FC = () => {
     return user?.email || 'User';
   };
 
+  // Check if user has admin role (roles is now an array)
+  const isAdmin = user?.roles?.includes('admin') || false;
+
   return (
     <header className="bg-white border-b border-gray-200 h-16">
       <div className="h-full px-6 flex items-center justify-between">
@@ -56,7 +59,7 @@ export const Header: React.FC = () => {
             <div className="hidden md:block">
               <div className="text-sm font-medium text-gray-900">{getUserDisplayName()}</div>
               <div className="text-xs text-gray-500">
-                {user?.role === 'admin' ? 'Administrator' : 'User'}
+                {isAdmin ? 'Administrator' : 'User'}
               </div>
             </div>
           </div>
