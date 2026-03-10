@@ -20,23 +20,23 @@ export class AppController {
         if (layer.route) {
           const path = layer.route?.path;
           const methods = Object.keys(layer.route?.methods || {})
-            .filter(method => layer.route?.methods[method])
-            .map(method => method.toUpperCase());
+            .filter((method) => layer.route?.methods[method])
+            .map((method) => method.toUpperCase());
           return {
             path,
-            methods
+            methods,
           };
         }
         return null;
       })
-      .filter(route => route !== null);
+      .filter((route) => route !== null);
 
     return {
       message: 'Registered Routes',
       totalRoutes: routes.length,
       routes: routes,
       baseUrl: req.baseUrl,
-      originalUrl: req.originalUrl
+      originalUrl: req.originalUrl,
     };
   }
 
@@ -44,7 +44,7 @@ export class AppController {
   health(): { status: string; timestamp: string } {
     return {
       status: 'ok',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
 }

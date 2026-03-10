@@ -11,7 +11,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
 
   constructor(configService: ConfigService) {
     const secret = configService.get<string>('JWT_ACCESS_SECRET');
-    
+
     if (!secret) {
       throw new Error('JWT_ACCESS_SECRET is not configured');
     }
@@ -32,13 +32,17 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     // ENTERPRISE FIX: Map both possible property names for backward compatibility
     // This ensures tenant context works whether token has 'org' or 'organizationId'
     const organizationId = payload.organizationId || payload.org;
-    
+
     if (!organizationId) {
-      this.logger.error(`Token missing organization context for user ${payload.sub}`);
+      this.logger.error(
+        `Token missing organization context for user ${payload.sub}`,
+      );
       // Don't throw - let tenant guard handle missing context appropriately
     }
 
-    this.logger.debug(`JWT validated for user ${payload.sub} with org: ${organizationId}`);
+    this.logger.debug(
+      `JWT validated for user ${payload.sub} with org: ${organizationId}`,
+    );
 
     return {
       id: payload.sub,

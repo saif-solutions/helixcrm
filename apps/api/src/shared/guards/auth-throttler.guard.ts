@@ -13,12 +13,12 @@ export class AuthThrottlerGuard extends ThrottlerGuard {
     super(options, storageService, reflector);
   }
 
-protected async getTracker(req: Record<string, any>): Promise<string> {
-  // If there's a user, use their ID for tracking
-  if (req.user) {
-    return `user:${req.user.id}`;
+  protected async getTracker(req: Record<string, any>): Promise<string> {
+    // If there's a user, use their ID for tracking
+    if (req.user) {
+      return `user:${req.user.id}`;
+    }
+    // Otherwise use IP address
+    return req.ip || req.connection?.remoteAddress || 'unknown';
   }
-  // Otherwise use IP address
-  return req.ip || req.connection?.remoteAddress || 'unknown';
-}
 }

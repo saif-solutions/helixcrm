@@ -227,30 +227,30 @@ export class UsersService {
   /**
    * Soft delete user (archive)
    */
-async archive(id: string, archivedById?: string) {
-  console.log('Archive method called with id:', id);
-  
-  const currentUserId = this.tenantContext.getUserId();
-  console.log('Current user ID:', currentUserId);
-  
-  if (id === currentUserId) {
-    throw new ForbiddenException('Cannot archive your own account');
+  async archive(id: string, archivedById?: string) {
+    console.log('Archive method called with id:', id);
+
+    const currentUserId = this.tenantContext.getUserId();
+    console.log('Current user ID:', currentUserId);
+
+    if (id === currentUserId) {
+      throw new ForbiddenException('Cannot archive your own account');
+    }
+
+    const user = await this.userRepository.findById(id);
+    console.log('User found:', user ? 'yes' : 'no');
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const archivedUser = await this.userRepository.softDelete(id);
+    console.log('User archived:', archivedUser.id);
+
+    // Remove password hash
+    const { passwordHash: _, ...userWithoutPassword } = archivedUser;
+    return userWithoutPassword;
   }
-
-  const user = await this.userRepository.findById(id);
-  console.log('User found:', user ? 'yes' : 'no');
-  
-  if (!user) {
-    throw new NotFoundException('User not found');
-  }
-
-  const archivedUser = await this.userRepository.softDelete(id);
-  console.log('User archived:', archivedUser.id);
-
-  // Remove password hash
-  const { passwordHash: _, ...userWithoutPassword } = archivedUser;
-  return userWithoutPassword;
-}
 
   /**
    * Search users in current tenant

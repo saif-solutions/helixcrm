@@ -193,7 +193,7 @@ export class DealRepository extends TenantAwareRepository {
     includeDeleted?: boolean;
   }) {
     const { skip, take, where, orderBy, includeDeleted } = params;
-    
+
     // Add tenant filter using parent class method
     const whereWithTenant = this.withTenantFilter({
       ...where,
@@ -208,7 +208,9 @@ export class DealRepository extends TenantAwareRepository {
       include: {
         stage: true,
         pipeline: true,
-        owner: { select: { id: true, email: true, firstName: true, lastName: true } },
+        owner: {
+          select: { id: true, email: true, firstName: true, lastName: true },
+        },
       },
     });
   }

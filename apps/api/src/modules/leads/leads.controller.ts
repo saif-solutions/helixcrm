@@ -66,13 +66,15 @@ export class LeadsController {
 
     const user = (req as any).user;
     const tenantId = user?.organizationId || user?.org;
-    
+
     if (!tenantId) {
-      throw new ForbiddenException('Tenant context missing - cannot process request');
+      throw new ForbiddenException(
+        'Tenant context missing - cannot process request',
+      );
     }
 
     limit = Math.min(limit, 100);
-    
+
     let statusEnum: PrismaLeadStatus | undefined = undefined;
     if (status) {
       const validStatuses = Object.values(PrismaLeadStatus);
@@ -80,7 +82,7 @@ export class LeadsController {
         statusEnum = status as PrismaLeadStatus;
       }
     }
-    
+
     return this.leadsService.findAll({
       page,
       limit,

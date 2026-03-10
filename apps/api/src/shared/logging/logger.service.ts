@@ -42,23 +42,38 @@ export class AppLogger implements LoggerService {
         new winston.transports.Console({
           format: winston.format.combine(
             winston.format.colorize(),
-            winston.format.printf(({ level, message, timestamp, requestId, tenantId, userId, ...meta }) => {
-              // ✅ Safe string operations with type guards
-              const reqStr = requestId && typeof requestId === 'string' 
-                ? ` [Req:${requestId.substring(0,8)}]` 
-                : '';
-              
-              const tenantStr = tenantId && typeof tenantId === 'string' 
-                ? ` [Tenant:${tenantId.substring(0,8)}]` 
-                : '';
-              
-              const userStr = userId && typeof userId === 'string' 
-                ? ` [User:${userId.substring(0,8)}]` 
-                : '';
-              
-              const metaStr = Object.keys(meta).length ? ` ${JSON.stringify(meta)}` : '';
-              return `${timestamp}${reqStr}${tenantStr}${userStr} ${level}: ${message}${metaStr}`;
-            }),
+            winston.format.printf(
+              ({
+                level,
+                message,
+                timestamp,
+                requestId,
+                tenantId,
+                userId,
+                ...meta
+              }) => {
+                // ✅ Safe string operations with type guards
+                const reqStr =
+                  requestId && typeof requestId === 'string'
+                    ? ` [Req:${requestId.substring(0, 8)}]`
+                    : '';
+
+                const tenantStr =
+                  tenantId && typeof tenantId === 'string'
+                    ? ` [Tenant:${tenantId.substring(0, 8)}]`
+                    : '';
+
+                const userStr =
+                  userId && typeof userId === 'string'
+                    ? ` [User:${userId.substring(0, 8)}]`
+                    : '';
+
+                const metaStr = Object.keys(meta).length
+                  ? ` ${JSON.stringify(meta)}`
+                  : '';
+                return `${timestamp}${reqStr}${tenantStr}${userStr} ${level}: ${message}${metaStr}`;
+              },
+            ),
           ),
         }),
         new winston.transports.File({

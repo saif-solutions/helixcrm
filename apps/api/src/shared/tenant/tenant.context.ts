@@ -22,27 +22,35 @@ const DEBUG = process.env.NODE_ENV === 'development';
  */
 export function setTenantContext(context: TenantContext): void {
   const currentContext = TenantContextStorage.getStore();
-  
+
   // CRITICAL: Never replace a valid (non-PENDING) context with PENDING
-  if (currentContext && 
-      currentContext.tenantId !== 'PENDING' && 
-      context.tenantId === 'PENDING') {
+  if (
+    currentContext &&
+    currentContext.tenantId !== 'PENDING' &&
+    context.tenantId === 'PENDING'
+  ) {
     if (DEBUG) {
-      console.log(`[TenantContext] BLOCKED: Attempt to replace valid context ${currentContext.tenantId} with PENDING`);
+      console.log(
+        `[TenantContext] BLOCKED: Attempt to replace valid context ${currentContext.tenantId} with PENDING`,
+      );
     }
     return;
   }
-  
+
   if (DEBUG) {
-    console.log(`[TenantContext] Setting context: ${context.tenantId} (${context.source})`);
+    console.log(
+      `[TenantContext] Setting context: ${context.tenantId} (${context.source})`,
+    );
   }
-  
+
   // Enter with the new context
   TenantContextStorage.enterWith(context);
-  
+
   if (DEBUG) {
     const verify = TenantContextStorage.getStore();
-    console.log(`[TenantContext] Verified context after set: ${verify?.tenantId}`);
+    console.log(
+      `[TenantContext] Verified context after set: ${verify?.tenantId}`,
+    );
   }
 }
 
@@ -52,7 +60,9 @@ export function setTenantContext(context: TenantContext): void {
 export function requireTenantContext(): TenantContext {
   const context = TenantContextStorage.getStore();
   if (DEBUG) {
-    console.log(`[TenantContext] requireTenantContext returning: ${context?.tenantId || 'undefined'}`);
+    console.log(
+      `[TenantContext] requireTenantContext returning: ${context?.tenantId || 'undefined'}`,
+    );
   }
   if (!context) {
     throw new TenantContextMissingError();
@@ -66,7 +76,9 @@ export function requireTenantContext(): TenantContext {
 export function getTenantContext(): TenantContext | undefined {
   const context = TenantContextStorage.getStore();
   if (DEBUG) {
-    console.log(`[TenantContext] getTenantContext returning: ${context?.tenantId || 'undefined'}`);
+    console.log(
+      `[TenantContext] getTenantContext returning: ${context?.tenantId || 'undefined'}`,
+    );
   }
   return context;
 }

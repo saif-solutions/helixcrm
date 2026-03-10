@@ -32,7 +32,7 @@ export class ContactRepository {
       take?: number;
       where?: Prisma.ContactWhereInput;
       orderBy?: Prisma.ContactOrderByWithRelationInput;
-    }
+    },
   ): Promise<Contact[]> {
     const { skip, take, where, orderBy } = params;
 
@@ -47,7 +47,10 @@ export class ContactRepository {
     });
   }
 
-  async count(tenantId: string, where?: Prisma.ContactWhereInput): Promise<number> {
+  async count(
+    tenantId: string,
+    where?: Prisma.ContactWhereInput,
+  ): Promise<number> {
     return this.prisma.contact.count({
       where: {
         ...where,
@@ -56,7 +59,10 @@ export class ContactRepository {
     });
   }
 
-  async create(tenantId: string, data: Prisma.ContactCreateInput): Promise<Contact> {
+  async create(
+    tenantId: string,
+    data: Prisma.ContactCreateInput,
+  ): Promise<Contact> {
     return this.prisma.contact.create({
       data: {
         ...data,
@@ -74,7 +80,7 @@ export class ContactRepository {
     params: {
       where: Prisma.ContactWhereUniqueInput;
       data: Prisma.ContactUpdateInput;
-    }
+    },
   ): Promise<Contact> {
     const { where, data } = params;
 
@@ -92,7 +98,10 @@ export class ContactRepository {
     });
   }
 
-  async delete(tenantId: string, where: Prisma.ContactWhereUniqueInput): Promise<Contact> {
+  async delete(
+    tenantId: string,
+    where: Prisma.ContactWhereUniqueInput,
+  ): Promise<Contact> {
     const existingContact = await this.findById(where.id, tenantId);
     if (!existingContact) {
       throw new Error('Contact not found or does not belong to current tenant');
@@ -121,7 +130,11 @@ export class ContactRepository {
     });
   }
 
-  async search(tenantId: string, searchTerm: string, limit: number = 20): Promise<Contact[]> {
+  async search(
+    tenantId: string,
+    searchTerm: string,
+    limit: number = 20,
+  ): Promise<Contact[]> {
     return this.prisma.contact.findMany({
       where: {
         organizationId: tenantId,

@@ -26,7 +26,8 @@ interface ExportJobData {
 }
 
 @Processor('export-queue', { concurrency: 3 })
-export class ExportQueueProcessor extends WorkerHost { // EXTEND WorkerHost
+export class ExportQueueProcessor extends WorkerHost {
+  // EXTEND WorkerHost
   private readonly logger = new Logger(ExportQueueProcessor.name);
 
   constructor(

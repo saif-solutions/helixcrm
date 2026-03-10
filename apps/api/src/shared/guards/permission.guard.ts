@@ -28,11 +28,11 @@ export class PermissionGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const controllerName = context.getClass().name;
     const handlerName = context.getHandler().name;
-    
+
     this.logger.debug(`=== PERMISSION GUARD DEBUG ===`);
     this.logger.debug(`Route: ${controllerName}.${handlerName}`);
     this.logger.debug(`Method: ${request.method} ${request.url}`);
-    
+
     // Log user from request
     this.logger.debug(`User from request:`, {
       id: request.user?.sub,
@@ -96,12 +96,14 @@ export class PermissionGuard implements CanActivate {
         organizationId,
         error: error.message,
       });
-      throw new ForbiddenException('System configuration error: Tenant context unavailable');
+      throw new ForbiddenException(
+        'System configuration error: Tenant context unavailable',
+      );
     }
 
     try {
       this.logger.debug(`Building permission context for user ${userId}...`);
-      
+
       // Build permission context ONCE per request
       await this.permissionContext.buildContext({
         userId: userId,
@@ -114,16 +116,19 @@ export class PermissionGuard implements CanActivate {
         throw new Error('Failed to initialize permission context');
       }
 
-      this.logger.debug(`Permission context built successfully. Permissions:`, 
-        this.permissionContext.getPermissions());
+      this.logger.debug(
+        `Permission context built successfully. Permissions:`,
+        this.permissionContext.getPermissions(),
+      );
 
       // Check if user has any of the required permissions
-      const hasPermission = this.permissionContext.hasAnyPermission(requiredPermissions);
+      const hasPermission =
+        this.permissionContext.hasAnyPermission(requiredPermissions);
 
       if (!hasPermission) {
         const userPermissions = this.permissionContext.getPermissions();
         const userRoles = this.permissionContext.getRoles();
-        
+
         this.logger.warn(
           `Permission denied for user ${userId}. Required: ${requiredPermissions.join(' OR ')}, Has: ${userPermissions.join(', ')}`,
           {
@@ -132,9 +137,9 @@ export class PermissionGuard implements CanActivate {
             requiredPermissions,
             userPermissions,
             userRoles,
-          }
+          },
         );
-        
+
         throw new ForbiddenException(
           `Insufficient permissions. Required: ${requiredPermissions.join(' OR ')}`,
         );
@@ -143,11 +148,17 @@ export class PermissionGuard implements CanActivate {
       this.logger.debug(`Permission granted for user ${userId}`);
       return true;
     } catch (error) {
-      if (error instanceof UnauthorizedException || error instanceof ForbiddenException) {
+      if (
+        error instanceof UnauthorizedException ||
+        error instanceof ForbiddenException
+      ) {
         throw error;
       }
-      
-      this.logger.error(`Permission check failed: ${error.message}`, error.stack);
+
+      this.logger.error(
+        `Permission check failed: ${error.message}`,
+        error.stack,
+      );
       throw new ForbiddenException('Permission check failed');
     }
   }

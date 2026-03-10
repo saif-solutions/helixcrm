@@ -6,7 +6,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 
 import { AuthController } from './auth.controller';
-import { CsrfController } from './csrf.controller'; // ✅ ADDED - CSRF controller
+import { CsrfController } from './csrf.controller';
 import { AuthService } from './auth.service';
 
 import { PasswordResetController } from './controllers/password-reset.controller';
@@ -17,8 +17,7 @@ import { RefreshTokenService } from './services/refresh-token.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
 
-import { RefreshTokenGuard } from './guards/refresh-token.guard';
-
+import { GuardsModule } from '../../shared/guards/guards.module';
 import { AuditLogsModule } from '../audit-logs/audit-logs.module';
 
 import { AuthCoreAdapter } from './adapters/AuthCoreAdapter';
@@ -31,26 +30,28 @@ export const TOKEN_REPOSITORY = 'TOKEN_REPOSITORY';
 
 @Module({
   imports: [
-    PassportModule, // ✅ REQUIRED for strategies to work correctly
+    PassportModule,
+    GuardsModule, // Add GuardsModule here too
 
-ThrottlerModule.forRoot([{
-  ttl: 60000,
-  limit: 10,
-}]),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000,
+        limit: 10,
+      },
+    ]),
 
     forwardRef(() => AuditLogsModule),
 
     JwtModule.register({
-      secret: process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET || 'dev_secret_do_not_use',
+      secret:
+        process.env.JWT_ACCESS_SECRET ||
+        process.env.JWT_SECRET ||
+        'dev_secret_do_not_use',
       signOptions: { expiresIn: '1h' },
     }),
   ],
 
-  controllers: [
-    AuthController,
-    PasswordResetController,
-    CsrfController, // ✅ ADDED - CSRF controller
-  ],
+  controllers: [AuthController, PasswordResetController, CsrfController],
 
   providers: [
     // ================= CORE SERVICES =================
@@ -60,11 +61,8 @@ ThrottlerModule.forRoot([{
     RefreshTokenService,
 
     // ================= STRATEGIES (CRITICAL) =================
-    JwtStrategy,          // ✅ FIXES "Unknown authentication strategy jwt"
+    JwtStrategy,
     JwtRefreshStrategy,
-
-    // ================= GUARDS =================
-    RefreshTokenGuard,
 
     // ================= ADAPTERS / BRIDGES =================
     AuthCoreAdapter,

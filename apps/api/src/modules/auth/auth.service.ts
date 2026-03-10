@@ -32,19 +32,19 @@ export class AuthService {
 
   // ==================== USER VALIDATION ====================
 
-async validateUser(email: string, password: string, request?: any) {
-  console.log('🔍 validateUser called with email:', email);
-  
-  const normalizedEmail = email.toLowerCase().trim();
-  console.log('🔍 normalizedEmail:', normalizedEmail);
+  async validateUser(email: string, password: string, request?: any) {
+    console.log('🔍 validateUser called with email:', email);
 
-  // Check if account is locked
-  console.log('🔍 Checking account lockout...');
-  const lockStatus = await this.accountLockoutService.isAccountLocked(email);
-  console.log('🔍 lockStatus:', lockStatus);
+    const normalizedEmail = email.toLowerCase().trim();
+    console.log('🔍 normalizedEmail:', normalizedEmail);
 
-  if (lockStatus.isLocked) {
-    console.log('🔍 Account is locked!');
+    // Check if account is locked
+    console.log('🔍 Checking account lockout...');
+    const lockStatus = await this.accountLockoutService.isAccountLocked(email);
+    console.log('🔍 lockStatus:', lockStatus);
+
+    if (lockStatus.isLocked) {
+      console.log('🔍 Account is locked!');
       this.logger.warn(`Login attempt for locked account: ${email}`, {
         lockedUntil: lockStatus.lockedUntil,
         event: 'account_locked_login_attempt',
@@ -69,28 +69,28 @@ async validateUser(email: string, password: string, request?: any) {
       );
     }
 
-  console.log('🔍 Looking up user in database...');
-  const user = await this.prisma.user.findUnique({
-    where: { email: normalizedEmail },
-    include: {
-      organization: {
-        select: {
-          id: true,
-          name: true,
+    console.log('🔍 Looking up user in database...');
+    const user = await this.prisma.user.findUnique({
+      where: { email: normalizedEmail },
+      include: {
+        organization: {
+          select: {
+            id: true,
+            name: true,
+          },
         },
       },
-    },
-  });
-  
-  console.log('🔍 User found:', user ? 'Yes' : 'No');
-  if (user) {
-    console.log('🔍 User fields:', Object.keys(user));
-    console.log('🔍 isActive:', user.isActive);
-    console.log('🔍 passwordHash exists:', !!user.passwordHash);
-  }
+    });
 
-  if (!user || !user.isActive) {
-    console.log('🔍 User not found or inactive');
+    console.log('🔍 User found:', user ? 'Yes' : 'No');
+    if (user) {
+      console.log('🔍 User fields:', Object.keys(user));
+      console.log('🔍 isActive:', user.isActive);
+      console.log('🔍 passwordHash exists:', !!user.passwordHash);
+    }
+
+    if (!user || !user.isActive) {
+      console.log('🔍 User not found or inactive');
       // Record failed attempt even if user doesn't exist (security through obscurity)
       if (user) {
         await this.accountLockoutService.recordFailedAttempt(user.id);
@@ -110,13 +110,13 @@ async validateUser(email: string, password: string, request?: any) {
       return null;
     }
 
-  console.log('🔍 Verifying password...');
-  const isValid = await this.authCoreAdapter.password.verify(
-    password,
-    user.passwordHash,
-  );
-  console.log('🔍 Password valid:', isValid);
-  
+    console.log('🔍 Verifying password...');
+    const isValid = await this.authCoreAdapter.password.verify(
+      password,
+      user.passwordHash,
+    );
+    console.log('🔍 Password valid:', isValid);
+
     if (!isValid) {
       // Record failed attempt
       await this.accountLockoutService.recordFailedAttempt(user.id);
@@ -218,22 +218,22 @@ async validateUser(email: string, password: string, request?: any) {
 
   async login(user: any, res: any, request?: any) {
     try {
-// Get user permissions
-const { permissions, roles } = await this.getUserPermissions(
-  user.id,
-  user.organizationId,
-);
+      // Get user permissions
+      const { permissions, roles } = await this.getUserPermissions(
+        user.id,
+        user.organizationId,
+      );
 
-// Use auth-core token manager service for access token
-const accessToken = await this.authCoreAdapter.authCore.issueAccessToken({
-  sub: user.id,
-  org: user.organizationId,        // Note: uses 'org' not 'organizationId'
-  role: roles.includes('SystemAdmin') ? 'admin' : 'user',
-  version: user.tokenVersion,       // Note: uses 'version' not 'tokenVersion'
-  email: user.email,
-  permissions: permissions,
-  roles: roles,
-});
+      // Use auth-core token manager service for access token
+      const accessToken = await this.authCoreAdapter.authCore.issueAccessToken({
+        sub: user.id,
+        org: user.organizationId, // Note: uses 'org' not 'organizationId'
+        role: roles.includes('SystemAdmin') ? 'admin' : 'user',
+        version: user.tokenVersion, // Note: uses 'version' not 'tokenVersion'
+        email: user.email,
+        permissions: permissions,
+        roles: roles,
+      });
       // IMPORTANT: Let auth-core generate refresh token with its own jti
       // DO NOT pass version parameter - auth-core will create jti automatically
       const refreshToken =

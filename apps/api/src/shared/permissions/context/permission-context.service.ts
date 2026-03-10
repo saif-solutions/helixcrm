@@ -13,9 +13,7 @@ import { getTenantContext } from '../../tenant/tenant.context';
 export class PermissionContextService implements IPermissionContext {
   private readonly logger = new Logger(PermissionContextService.name);
 
-  constructor(
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   /**
    * Build permission context for the current request
@@ -25,16 +23,22 @@ export class PermissionContextService implements IPermissionContext {
     options: PermissionContextOptions,
   ): Promise<RequestPermissionContext> {
     const tenantContext = getTenantContext();
-    
+
     if (!tenantContext) {
-      throw new Error('Tenant context not initialized - RequestContextMiddleware must run first');
+      throw new Error(
+        'Tenant context not initialized - RequestContextMiddleware must run first',
+      );
     }
 
-    this.logger.debug(`Building permission context - Tenant: ${tenantContext.tenantId}, RequestId: ${tenantContext.requestId}`);
+    this.logger.debug(
+      `Building permission context - Tenant: ${tenantContext.tenantId}, RequestId: ${tenantContext.requestId}`,
+    );
 
     // Check if context already exists in ALS
     if (tenantContext.permissionContext) {
-      this.logger.debug(`Reusing existing permission context for request ${tenantContext.requestId}`);
+      this.logger.debug(
+        `Reusing existing permission context for request ${tenantContext.requestId}`,
+      );
       return tenantContext.permissionContext;
     }
 
@@ -45,17 +49,25 @@ export class PermissionContextService implements IPermissionContext {
     let roles: string[] = [];
 
     // Try JWT permissions first (fastest)
-    if (jwtPermissions && Array.isArray(jwtPermissions) && jwtPermissions.length > 0) {
+    if (
+      jwtPermissions &&
+      Array.isArray(jwtPermissions) &&
+      jwtPermissions.length > 0
+    ) {
       permissions = jwtPermissions;
       source = 'jwt';
-      this.logger.debug(`Using JWT permissions for user ${userId} (${permissions.length} permissions)`);
+      this.logger.debug(
+        `Using JWT permissions for user ${userId} (${permissions.length} permissions)`,
+      );
     } else {
       // Fall back to database
       const result = await this.fetchPermissionsFromDatabase(userId, tenantId);
       permissions = result.permissions;
       roles = result.roles;
       source = 'database';
-      this.logger.debug(`Fetched ${permissions.length} permissions from DB for user ${userId}`);
+      this.logger.debug(
+        `Fetched ${permissions.length} permissions from DB for user ${userId}`,
+      );
     }
 
     // Build the context
@@ -72,11 +84,14 @@ export class PermissionContextService implements IPermissionContext {
     // ✅ CRITICAL: Store in AsyncLocalStorage, not in a Map
     tenantContext.permissionContext = context;
 
-    this.logger.debug(`Permission context built for request ${tenantContext.requestId}`, {
-      permissionCount: permissions.length,
-      roleCount: roles.length,
-      source,
-    });
+    this.logger.debug(
+      `Permission context built for request ${tenantContext.requestId}`,
+      {
+        permissionCount: permissions.length,
+        roleCount: roles.length,
+        source,
+      },
+    );
 
     return context;
   }
@@ -127,14 +142,16 @@ export class PermissionContextService implements IPermissionContext {
         roles: Array.from(roles),
       };
     } catch (error) {
-      this.logger.error(`Failed to fetch permissions from DB: ${error.message}`);
+      this.logger.error(
+        `Failed to fetch permissions from DB: ${error.message}`,
+      );
       return { permissions: [], roles: [] };
     }
   }
 
   private getContext(): RequestPermissionContext {
     const tenantContext = getTenantContext();
-    
+
     if (!tenantContext) {
       throw new Error('Tenant context not initialized');
     }

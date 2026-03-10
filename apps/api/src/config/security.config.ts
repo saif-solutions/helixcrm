@@ -15,35 +15,35 @@ export class SecurityConfig {
     audience: process.env.JWT_AUDIENCE || 'helixcrm-client',
   };
 
-// Cookies - LOCALHOST COMPATIBLE with proper cross-origin settings
-static cookies = {
-  accessToken: (): CookieOptions => ({
-    httpOnly: true,
-    secure: false,           // false for localhost HTTP
-    sameSite: 'lax',         // Changed from 'strict' to 'lax'
-    path: '/',
-    maxAge: 15 * 60 * 1000,
-  }),
+  // Cookies - LOCALHOST COMPATIBLE with proper cross-origin settings
+  static cookies = {
+    accessToken: (): CookieOptions => ({
+      httpOnly: true,
+      secure: false, // false for localhost HTTP
+      sameSite: 'lax', // Changed from 'strict' to 'lax'
+      path: '/',
+      maxAge: 15 * 60 * 1000,
+    }),
 
-  refreshToken: (): CookieOptions => ({
-    httpOnly: true,
-    secure: false,
-    sameSite: 'lax',         // Changed from 'strict' to 'lax'
-    path: '/',
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-  }),
+    refreshToken: (): CookieOptions => ({
+      httpOnly: true,
+      secure: false,
+      sameSite: 'lax', // Changed from 'strict' to 'lax'
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    }),
 
-  csrfToken: (): CookieOptions => ({
-    httpOnly: false,          // Must be false for JS to read
-    secure: false,
-    sameSite: 'lax',          // CRITICAL: 'lax' allows cross-origin
-    path: '/',
-  }),
-};
+    csrfToken: (): CookieOptions => ({
+      httpOnly: false, // Must be false for JS to read
+      secure: false,
+      sameSite: 'lax', // CRITICAL: 'lax' allows cross-origin
+      path: '/',
+    }),
+  };
 
   // CSRF
   static csrf = {
-    cookieName: '_csrf',      // This is used by csurf for the cookie name
+    cookieName: '_csrf', // This is used by csurf for the cookie name
     headerName: 'X-CSRF-Token',
     ignoreMethods: ['GET', 'HEAD', 'OPTIONS'],
     safeMethods: ['GET', 'HEAD', 'OPTIONS'],

@@ -1,32 +1,28 @@
 // File: apps/api/src/modules/audit-logs/audit-logs.module.ts
-import { Module, forwardRef } from '@nestjs/common';
-import { JwtModule } from '@nestjs/jwt'; // ADD THIS IMPORT
+import { Module } from '@nestjs/common';
+import { JwtModule } from '@nestjs/jwt';
 import { AuditLogController } from './presentation/controllers/audit-log.controller';
-import { AuditLogQueryService } from './application/services/audit-log-query.service'; // ADD THIS IMPORT
+import { AuditLogQueryService } from './application/services/audit-log-query.service';
 import { AuditLogService } from '../../shared/audit-log/audit-log.service';
 import { AuditLogRepository } from './infrastructure/repositories/audit-log.repository';
 import { SharedModule } from '../../shared/shared.module';
-import { AuthModule } from '../auth/auth.module';
+import { GuardsModule } from '../../shared/guards/guards.module';
 
 @Module({
   imports: [
     SharedModule,
-    forwardRef(() => AuthModule),
-    JwtModule, // ADD THIS to provide JwtService for guards
+    GuardsModule, // Use GuardsModule instead of AuthModule
+    JwtModule,
   ],
   controllers: [AuditLogController],
   providers: [
     AuditLogService,
-    AuditLogQueryService, // ADD THIS PROVIDER
+    AuditLogQueryService,
     {
       provide: 'IAuditLogRepository',
       useClass: AuditLogRepository,
     },
   ],
-  exports: [
-    AuditLogService,
-    AuditLogQueryService, // Export if needed elsewhere
-    'IAuditLogRepository',
-  ],
+  exports: [AuditLogService, AuditLogQueryService, 'IAuditLogRepository'],
 })
 export class AuditLogsModule {}

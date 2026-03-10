@@ -20,7 +20,7 @@ export class LeadRepository extends TenantAwareRepository {
     try {
       // Initialize tenant context at the start of each method
       this.initTenantContext();
-      
+
       const where: any = this.withTenantFilter({ id });
 
       if (!includeDeleted) {
@@ -67,7 +67,7 @@ export class LeadRepository extends TenantAwareRepository {
     try {
       // Initialize tenant context at the start of each method
       this.initTenantContext();
-      
+
       const tenantId = this.tenantId;
 
       // Manually add organization connection
@@ -100,7 +100,7 @@ export class LeadRepository extends TenantAwareRepository {
     try {
       // Initialize tenant context at the start of each method
       this.initTenantContext();
-      
+
       // First verify lead belongs to tenant
       await this.findByIdOrThrow(params.id);
 
@@ -127,7 +127,7 @@ export class LeadRepository extends TenantAwareRepository {
     try {
       // Initialize tenant context at the start of each method
       this.initTenantContext();
-      
+
       // First verify lead belongs to tenant
       await this.findByIdOrThrow(id);
 
@@ -157,7 +157,7 @@ export class LeadRepository extends TenantAwareRepository {
     try {
       // Initialize tenant context at the start of each method
       this.initTenantContext();
-      
+
       // First verify lead belongs to tenant
       await this.findByIdOrThrow(id, true); // Include deleted
 
@@ -188,7 +188,7 @@ export class LeadRepository extends TenantAwareRepository {
     try {
       // Initialize tenant context at the start of each method
       this.initTenantContext();
-      
+
       const { page = 1, limit = 20, status, search } = params;
       const skip = (page - 1) * limit;
 
@@ -236,7 +236,7 @@ export class LeadRepository extends TenantAwareRepository {
     try {
       // Initialize tenant context at the start of each method
       this.initTenantContext();
-      
+
       const stats = await this.prisma.lead.groupBy({
         by: ['status'],
         where: this.withTenantFilter({ deletedAt: null }),
@@ -269,7 +269,7 @@ export class LeadRepository extends TenantAwareRepository {
     try {
       // Initialize tenant context at the start of each method
       this.initTenantContext();
-      
+
       const where: any = this.withTenantFilter({ email });
 
       if (excludeId) {

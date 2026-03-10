@@ -49,7 +49,6 @@ export class RolesService {
   }
 
   async findAll(query: RoleQueryDto) {
-
     const tenantId = this.tenantContext.getTenantId();
     const userId = this.tenantContext.getUserId();
 
@@ -77,7 +76,6 @@ export class RolesService {
   }
 
   async findOne(id: string) {
-
     const tenantId = this.tenantContext.getTenantId();
     const userId = this.tenantContext.getUserId();
 
@@ -113,7 +111,6 @@ export class RolesService {
   }
 
   async create(createRoleDto: CreateRoleDto) {
-
     const tenantId = this.tenantContext.getTenantId();
     const userId = this.tenantContext.getUserId();
     const actorEmail = await this.getUserEmail(userId);
@@ -198,7 +195,6 @@ export class RolesService {
   }
 
   async update(id: string, updateRoleDto: UpdateRoleDto) {
-
     const tenantId = this.tenantContext.getTenantId();
     const userId = this.tenantContext.getUserId();
     const actorEmail = await this.getUserEmail(userId);
@@ -283,7 +279,6 @@ export class RolesService {
   }
 
   async remove(id: string) {
-
     const tenantId = this.tenantContext.getTenantId();
     const userId = this.tenantContext.getUserId();
     const actorEmail = await this.getUserEmail(userId);
@@ -348,7 +343,6 @@ export class RolesService {
   }
 
   async assignRole(assignRoleDto: AssignRoleDto) {
-
     const tenantId = this.tenantContext.getTenantId();
     const userId = this.tenantContext.getUserId();
     const actorEmail = await this.getUserEmail(userId);
@@ -428,7 +422,6 @@ export class RolesService {
   }
 
   async removeRole(removeRoleDto: RemoveRoleDto) {
-
     const tenantId = this.tenantContext.getTenantId();
     const userId = this.tenantContext.getUserId();
     const actorEmail = await this.getUserEmail(userId);
@@ -497,7 +490,6 @@ export class RolesService {
   }
 
   async getUserRoles(targetUserId: string) {
-
     const tenantId = this.tenantContext.getTenantId();
     const userId = this.tenantContext.getUserId();
 

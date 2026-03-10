@@ -12,7 +12,7 @@ export class TenantContextMissingError extends Error {
 
 export abstract class TenantAwareRepository {
   protected prisma: PrismaService;
-  
+
   // Cache the tenant ID for the current request
   private cachedTenantId: string | null = null;
 
@@ -54,9 +54,9 @@ export abstract class TenantAwareRepository {
     if (this.cachedTenantId) {
       return this.cachedTenantId;
     }
-    
+
     this.initTenantContext();
-    return this.cachedTenantId!;
+    return this.cachedTenantId;
   }
 
   /**
@@ -66,7 +66,7 @@ export abstract class TenantAwareRepository {
     if (this.cachedTenantId) {
       return this.cachedTenantId;
     }
-    
+
     this.cachedTenantId = getTenantId();
     return this.cachedTenantId;
   }

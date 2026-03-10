@@ -1,0 +1,7 @@
+- Finding files
+Processed 235 files (8.3s) (1 warning)
+
+✖ Found 1 circular dependency!
+
+1) modules/audit-logs/audit-logs.module.ts > modules/auth/auth.module.ts
+

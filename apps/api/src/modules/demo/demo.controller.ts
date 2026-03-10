@@ -1,11 +1,11 @@
-import { 
-  Controller, 
-  Get, 
-  Post, 
-  Param, 
-  HttpCode, 
+import {
+  Controller,
+  Get,
+  Post,
+  Param,
+  HttpCode,
   HttpStatus,
-  UnauthorizedException 
+  UnauthorizedException,
 } from '@nestjs/common';
 import { Public } from '../../shared/decorators/require-permission.decorator';
 import { Throttle } from '@nestjs/throttler';
@@ -63,9 +63,10 @@ export class DemoController {
       throw new UnauthorizedException('Demo mode is disabled');
     }
 
-    const credentials = role.toLowerCase() === 'admin' 
-      ? { email: config.adminEmail, password: config.adminPassword }
-      : { email: config.userEmail, password: config.userPassword };
+    const credentials =
+      role.toLowerCase() === 'admin'
+        ? { email: config.adminEmail, password: config.adminPassword }
+        : { email: config.userEmail, password: config.userPassword };
 
     // Pass all required parameters
     return this.authService.login(credentials, res, req);

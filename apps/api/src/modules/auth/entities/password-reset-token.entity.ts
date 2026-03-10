@@ -1,6 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-
 export class PasswordResetToken {
   @ApiProperty({
     description: 'Unique identifier for the reset token',

@@ -24,7 +24,7 @@ async function bootstrap() {
     logger: ['error', 'warn', 'log'],
   });
 
-  app.use(cookieParser()); 
+  app.use(cookieParser());
   // ==================== ALS MIDDLEWARE (MUST BE FIRST) ====================
   app.use((req, res, next) => {
     const requestId = (req.headers['x-request-id'] as string) || randomUUID();
@@ -45,7 +45,9 @@ async function bootstrap() {
   // 2. RequestContextMiddleware - Creates AsyncLocalStorage scope for EVERY request
   const requestContextMiddleware = new RequestContextMiddleware();
   app.use(requestContextMiddleware.use.bind(requestContextMiddleware));
-  logger.log('✅ Request Context middleware registered - AsyncLocalStorage scope created for all requests');
+  logger.log(
+    '✅ Request Context middleware registered - AsyncLocalStorage scope created for all requests',
+  );
 
   // 3. CORS MUST be before CSRF (so errors have CORS headers)
   const corsOrigin = process.env.CORS_ORIGIN || 'http://localhost:5173';
@@ -70,7 +72,9 @@ async function bootstrap() {
   // 4. CSRF protection (centralized)
   const csrfMiddleware = new CsrfMiddleware();
   app.use(csrfMiddleware.use.bind(csrfMiddleware));
-  logger.log('✅ CSRF middleware registered with exclusions for auth endpoints');
+  logger.log(
+    '✅ CSRF middleware registered with exclusions for auth endpoints',
+  );
 
   // 5. Security headers (after CSRF)
   app.use(
@@ -91,7 +95,7 @@ async function bootstrap() {
 
   // ==================== SWAGGER DOCUMENTATION ====================
   logger.log('📚 Setting up Swagger documentation...');
-  
+
   const config = new DocumentBuilder()
     .setTitle('HelixCRM API')
     .setDescription('Enterprise CRM API with multi-tenant isolation')
@@ -119,9 +123,9 @@ async function bootstrap() {
     )
     .addServer(`http://localhost:${process.env.PORT || 3001}`, 'Local server')
     .build();
-    
+
   const document = SwaggerModule.createDocument(app, config);
-  
+
   SwaggerModule.setup('api/docs', app, document, {
     swaggerOptions: {
       persistAuthorization: true,
@@ -133,7 +137,7 @@ async function bootstrap() {
     },
     customSiteTitle: 'HelixCRM API Documentation',
   });
-  
+
   logger.log('✅ Swagger documentation available at /api/docs');
 
   // ==================== GLOBAL VALIDATION PIPE ====================
@@ -151,9 +155,7 @@ async function bootstrap() {
   logger.log('✅ Global ValidationPipe registered');
 
   // ==================== GLOBAL INTERCEPTORS ====================
-  app.useGlobalInterceptors(
-    new ClassSerializerInterceptor(app.get(Reflector))
-  );
+  app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
   logger.log('✅ Global ClassSerializerInterceptor registered');
 
   // ==================== API VERSIONING ====================
@@ -166,7 +168,6 @@ async function bootstrap() {
   // ==================== GLOBAL PREFIX ====================
   app.setGlobalPrefix('api');
   logger.log('✅ Global prefix set to /api');
-
 
   // ==================== APPLICATION INITIALIZATION ====================
   await app.init();
@@ -252,7 +253,9 @@ async function bootstrap() {
   logger.log(`🔒 Security: ACTIVE`);
   logger.log(`🌐 CORS: Enabled for ${corsOrigin}`);
   logger.log(`⚙️ Environment: ${process.env.NODE_ENV || 'development'}`);
-  logger.log(`🔄 AsyncLocalStorage: ACTIVE - Single ALS instance for entire app`);
+  logger.log(
+    `🔄 AsyncLocalStorage: ACTIVE - Single ALS instance for entire app`,
+  );
 
   // Log analytics module status
   if (

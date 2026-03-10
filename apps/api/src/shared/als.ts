@@ -35,7 +35,12 @@ export function getRequestId(): string | undefined {
   return als.getStore()?.requestId;
 }
 
-export function setUserInfo(userId: string, email: string, roles: string[], permissions: string[]): void {
+export function setUserInfo(
+  userId: string,
+  email: string,
+  roles: string[],
+  permissions: string[],
+): void {
   const store = als.getStore();
   if (store) {
     store.userId = userId;

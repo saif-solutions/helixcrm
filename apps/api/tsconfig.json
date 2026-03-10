@@ -25,18 +25,16 @@
     "lib": ["ES2022"],
     "baseUrl": "./",
     "typeRoots": ["./node_modules/@types"],
-    "types": ["node"],
+    "types": ["node", "jest"],
     "verbatimModuleSyntax": false
   },
   "include": [
-    "src/**/*.ts"
+    "src/**/*.ts",
+    "test/**/*.ts",
+    "tests/**/*.ts"
   ],
   "exclude": [
     "node_modules",
-    "dist",
-    "test",
-    "tests",
-    "**/*.spec.ts",
-    "**/*.test.ts"
+    "dist"
   ]
 }

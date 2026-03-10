@@ -26,24 +26,27 @@ export class AuditPermissionInterceptor implements NestInterceptor {
         // Check if it's a ForbiddenException (permission denied)
         if (error instanceof ForbiddenException) {
           // Log the permission denied event
-this.auditLogService
-  .logEvent({
-    organizationId,
-    actorUserId,
-    actorEmail: actorEmail || 'unknown@helixcrm',
-    action: AuditAction.PERMISSION_DENIED,
-    entityType: AuditEntityType.AUTH,
-    metadata: {
-      path: request.path,
-      method: request.method,
-      userAgent: request.headers['user-agent'],
-      ipAddress: request.ip,  // Moved ipAddress here
-      error: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
-    },
-    // Remove ipAddress and userAgent from here
-    severity: AuditSeverity.HIGH,
-  })
+          this.auditLogService
+            .logEvent({
+              organizationId,
+              actorUserId,
+              actorEmail: actorEmail || 'unknown@helixcrm',
+              action: AuditAction.PERMISSION_DENIED,
+              entityType: AuditEntityType.AUTH,
+              metadata: {
+                path: request.path,
+                method: request.method,
+                userAgent: request.headers['user-agent'],
+                ipAddress: request.ip, // Moved ipAddress here
+                error: error.message,
+                stack:
+                  process.env.NODE_ENV === 'development'
+                    ? error.stack
+                    : undefined,
+              },
+              // Remove ipAddress and userAgent from here
+              severity: AuditSeverity.HIGH,
+            })
             .catch((logError) => {
               // Don't let audit logging failure break the request
               console.error('Failed to log audit event:', logError);
@@ -56,23 +59,23 @@ this.auditLogService
       tap((response) => {
         // Optional: Log successful permission checks if needed
         if (process.env.NODE_ENV === 'development') {
-this.auditLogService
-  .logEvent({
-    organizationId,
-    actorUserId,
-    actorEmail: actorEmail || 'unknown@helixcrm',
-    action: AuditAction.PERMISSION_DENIED,
-    entityType: AuditEntityType.AUTH,
-    metadata: {
-      path: request.path,
-      method: request.method,
-      userAgent: request.headers['user-agent'],
-      ipAddress: request.ip,  // Moved ipAddress here
-      responseStatus: response?.status || 'unknown',
-    },
-    // Remove ipAddress and userAgent from here
-    severity: AuditSeverity.LOW,
-  })
+          this.auditLogService
+            .logEvent({
+              organizationId,
+              actorUserId,
+              actorEmail: actorEmail || 'unknown@helixcrm',
+              action: AuditAction.PERMISSION_DENIED,
+              entityType: AuditEntityType.AUTH,
+              metadata: {
+                path: request.path,
+                method: request.method,
+                userAgent: request.headers['user-agent'],
+                ipAddress: request.ip, // Moved ipAddress here
+                responseStatus: response?.status || 'unknown',
+              },
+              // Remove ipAddress and userAgent from here
+              severity: AuditSeverity.LOW,
+            })
             .catch((logError) => {
               console.error('Failed to log audit event:', logError);
             });

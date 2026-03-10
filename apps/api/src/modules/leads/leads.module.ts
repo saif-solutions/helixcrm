@@ -10,12 +10,7 @@ import { TenantModule } from '../../shared/tenant/tenant.module';
 import { PermissionContextModule } from '../../shared/permissions/context/permission-context.module';
 
 @Module({
-  imports: [
-    LoggingModule,
-    TenantModule,
-    PermissionContextModule,
-    JwtModule,
-  ],
+  imports: [LoggingModule, TenantModule, PermissionContextModule, JwtModule],
   controllers: [LeadsController],
   providers: [
     LeadsService,

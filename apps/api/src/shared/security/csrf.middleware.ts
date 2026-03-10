@@ -38,11 +38,14 @@ export class CsrfMiddleware implements NestMiddleware {
     this.csrfProtection(req, res, (err: any) => {
       if (err) {
         if (err.code === 'EBADCSRFTOKEN') {
-          this.logger.warn(`CSRF validation failed: ${req.method} ${req.path}`, {
-            ip: req.ip,
-            userAgent: req.get('user-agent'),
-            timestamp: new Date().toISOString(),
-          });
+          this.logger.warn(
+            `CSRF validation failed: ${req.method} ${req.path}`,
+            {
+              ip: req.ip,
+              userAgent: req.get('user-agent'),
+              timestamp: new Date().toISOString(),
+            },
+          );
           return res.status(403).json({
             statusCode: 403,
             error: 'Forbidden',

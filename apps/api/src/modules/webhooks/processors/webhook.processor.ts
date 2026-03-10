@@ -22,7 +22,8 @@ interface WebhookDeliveryJobData {
 }
 
 @Processor('webhook-queue', { concurrency: 5 }) // Process 5 webhooks concurrently
-export class WebhookProcessor extends WorkerHost { // EXTEND WorkerHost
+export class WebhookProcessor extends WorkerHost {
+  // EXTEND WorkerHost
   private readonly logger = new Logger(WebhookProcessor.name);
 
   constructor(

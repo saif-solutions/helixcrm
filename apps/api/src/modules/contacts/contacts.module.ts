@@ -10,17 +10,14 @@ import { PermissionContextModule } from '../../shared/permissions/context/permis
 
 @Module({
   imports: [
-    PrismaModule, 
+    PrismaModule,
     LoggingModule,
     TenantModule,
     PermissionContextModule,
     JwtModule, // ADD THIS TO IMPORTS ARRAY
   ],
   controllers: [ContactsController],
-  providers: [
-    ContactsService,
-    ContactRepository,
-  ],
+  providers: [ContactsService, ContactRepository],
   exports: [ContactsService],
 })
 export class ContactsModule {}

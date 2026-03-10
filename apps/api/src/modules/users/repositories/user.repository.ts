@@ -22,9 +22,11 @@ export class UserRepository extends TenantAwareRepository {
   async findById(id: string): Promise<User | null> {
     // ✅ Force PermissionGuard to initialize
     if (!this.permissionContext.isInitialized()) {
-      this.logger.debug('Permission context not initialized in findById - this should trigger PermissionGuard');
+      this.logger.debug(
+        'Permission context not initialized in findById - this should trigger PermissionGuard',
+      );
     }
-    
+
     return this.prisma.user.findFirst({
       where: this.withTenantFilter({ id }),
     });
@@ -36,9 +38,11 @@ export class UserRepository extends TenantAwareRepository {
   async findByEmail(email: string): Promise<User | null> {
     // ✅ Force PermissionGuard to initialize
     if (!this.permissionContext.isInitialized()) {
-      this.logger.debug('Permission context not initialized in findByEmail - this should trigger PermissionGuard');
+      this.logger.debug(
+        'Permission context not initialized in findByEmail - this should trigger PermissionGuard',
+      );
     }
-    
+
     return this.prisma.user.findFirst({
       where: this.withTenantFilter({ email }),
     });
@@ -57,7 +61,9 @@ export class UserRepository extends TenantAwareRepository {
 
     // ✅ Force PermissionGuard to initialize
     if (!this.permissionContext.isInitialized()) {
-      this.logger.debug('Permission context not initialized in findAll - this should trigger PermissionGuard');
+      this.logger.debug(
+        'Permission context not initialized in findAll - this should trigger PermissionGuard',
+      );
     }
 
     return this.prisma.user.findMany({
@@ -74,9 +80,11 @@ export class UserRepository extends TenantAwareRepository {
   async count(where?: Prisma.UserWhereInput): Promise<number> {
     // ✅ Force PermissionGuard to initialize
     if (!this.permissionContext.isInitialized()) {
-      this.logger.debug('Permission context not initialized in count - this should trigger PermissionGuard');
+      this.logger.debug(
+        'Permission context not initialized in count - this should trigger PermissionGuard',
+      );
     }
-    
+
     return this.prisma.user.count({
       where: this.withTenantFilter(where),
     });
@@ -88,9 +96,11 @@ export class UserRepository extends TenantAwareRepository {
   async create(data: Prisma.UserCreateInput): Promise<User> {
     // ✅ Force PermissionGuard to initialize
     if (!this.permissionContext.isInitialized()) {
-      this.logger.debug('Permission context not initialized in create - this should trigger PermissionGuard');
+      this.logger.debug(
+        'Permission context not initialized in create - this should trigger PermissionGuard',
+      );
     }
-    
+
     // Manually add tenant ID to the data for Prisma's complex types
     const tenantId = this.tenantId;
     const tenantData = {
@@ -116,13 +126,15 @@ export class UserRepository extends TenantAwareRepository {
   }): Promise<User> {
     // ✅ Force PermissionGuard to initialize
     if (!this.permissionContext.isInitialized()) {
-      this.logger.debug('Permission context not initialized in update - this should trigger PermissionGuard');
+      this.logger.debug(
+        'Permission context not initialized in update - this should trigger PermissionGuard',
+      );
     }
-    
+
     const { where, data } = params;
 
     // First verify the user belongs to current tenant
-    const existingUser = await this.findById(where.id as string);
+    const existingUser = await this.findById(where.id);
     if (!existingUser) {
       throw new Error('User not found or does not belong to current tenant');
     }
@@ -145,11 +157,13 @@ export class UserRepository extends TenantAwareRepository {
   async delete(where: Prisma.UserWhereUniqueInput): Promise<User> {
     // ✅ Force PermissionGuard to initialize
     if (!this.permissionContext.isInitialized()) {
-      this.logger.debug('Permission context not initialized in delete - this should trigger PermissionGuard');
+      this.logger.debug(
+        'Permission context not initialized in delete - this should trigger PermissionGuard',
+      );
     }
-    
+
     // First verify the user belongs to current tenant
-    const existingUser = await this.findById(where.id as string);
+    const existingUser = await this.findById(where.id);
     if (!existingUser) {
       throw new Error('User not found or does not belong to current tenant');
     }
@@ -171,9 +185,11 @@ export class UserRepository extends TenantAwareRepository {
   async softDelete(id: string): Promise<User> {
     // ✅ Force PermissionGuard to initialize
     if (!this.permissionContext.isInitialized()) {
-      this.logger.debug('Permission context not initialized in softDelete - this should trigger PermissionGuard');
+      this.logger.debug(
+        'Permission context not initialized in softDelete - this should trigger PermissionGuard',
+      );
     }
-    
+
     const existingUser = await this.findById(id);
     if (!existingUser) {
       throw new Error('User not found or does not belong to current tenant');

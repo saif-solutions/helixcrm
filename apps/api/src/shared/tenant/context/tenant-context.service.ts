@@ -8,10 +8,7 @@ import {
   TenantContextValidationError,
   TenantIsolationViolationError,
 } from '../tenant.types';
-import {
-  getTenantContext,
-  requireTenantContext,
-} from '../tenant.context';
+import { getTenantContext, requireTenantContext } from '../tenant.context';
 
 @Injectable() // ✅ SINGLETON
 export class TenantContextService implements ITenantContextService {
@@ -54,16 +51,21 @@ export class TenantContextService implements ITenantContextService {
     // Check if context already exists
     const existingContext = getTenantContext();
     if (existingContext) {
-      this.logger.debug(`Reusing existing tenant context: ${existingContext.tenantId}`);
+      this.logger.debug(
+        `Reusing existing tenant context: ${existingContext.tenantId}`,
+      );
       return existingContext;
     }
 
     // If no context exists, this is a configuration error
-    this.logger.error('No tenant context found - RequestContextMiddleware not running?', {
-      path: request.path,
-      method: request.method,
-      hasUser: !!request.user,
-    });
+    this.logger.error(
+      'No tenant context found - RequestContextMiddleware not running?',
+      {
+        path: request.path,
+        method: request.method,
+        hasUser: !!request.user,
+      },
+    );
 
     throw new TenantContextValidationError(
       'Tenant context not initialized. RequestContextMiddleware must run before TenantGuard.',

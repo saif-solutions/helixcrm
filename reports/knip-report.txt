@@ -1,0 +1,3 @@
+[31mERROR[39m: Unable to find package.json
+
+Run `knip --help` or visit https://knip.dev for help

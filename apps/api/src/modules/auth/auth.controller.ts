@@ -247,21 +247,21 @@ export class AuthController {
   @Public()
   debugCookie(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     this.logger.log('🔍 Debug cookie endpoint called');
-    
+
     // Set a test cookie
     res.cookie('test_cookie', 'hello123', {
       httpOnly: false,
       secure: false,
       sameSite: 'lax',
-      path: '/'
+      path: '/',
     });
-    
+
     // Return info about existing cookies
     return {
       message: 'Test cookie set',
       cookies: req.cookies,
       hasTestCookie: !!req.cookies?.test_cookie,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
 }

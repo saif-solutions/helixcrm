@@ -7,14 +7,16 @@ import { withTenantContext } from '../tenant/tenant.context';
 export const TenantContextHook = createParamDecorator(
   async (data: unknown, ctx: ExecutionContext) => {
     const request = ctx.switchToHttp().getRequest();
-    const tenantContextService = ctx.switchToHttp().getRequest().tenantContextService;
-    
+    const tenantContextService = ctx
+      .switchToHttp()
+      .getRequest().tenantContextService;
+
     if (!request.user) {
       return null;
     }
 
     const organizationId = request.user.organizationId || request.user.org;
-    
+
     if (!organizationId) {
       return null;
     }

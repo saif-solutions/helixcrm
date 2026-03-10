@@ -58,10 +58,7 @@ import { DebugController } from './modules/debug/debug.controller';
       isGlobal: true,
       cache: true,
       expandVariables: true,
-      envFilePath: [
-        `.env.${process.env.NODE_ENV || 'development'}`,
-        '.env',
-      ],
+      envFilePath: [`.env.${process.env.NODE_ENV || 'development'}`, '.env'],
     }),
 
     // ================= SENTRY =================
@@ -107,11 +104,7 @@ import { DebugController } from './modules/debug/debug.controller';
     AuditLogsModule,
   ],
 
-  controllers: [
-    AppController,
-    HealthController,
-    DebugController,
-  ],
+  controllers: [AppController, HealthController, DebugController],
 
   providers: [
     {
@@ -122,13 +115,9 @@ import { DebugController } from './modules/debug/debug.controller';
     ConfigValidationService,
   ],
 
-  exports: [
-    ConfigModule,
-    ScheduleModule,
-  ],
+  exports: [ConfigModule, ScheduleModule],
 })
 export class AppModule implements NestModule {
-
   constructor() {
     console.log('AppModule initialized with Phase 2A compliance features:');
     console.log('✅ Audit Integrity (Weeks 1-2)');
@@ -139,11 +128,7 @@ export class AppModule implements NestModule {
 
   configure(consumer: MiddlewareConsumer) {
     consumer
-      .apply(
-        CorrelationIdMiddleware,
-        RequestContextMiddleware,
-        CsrfMiddleware,
-      )
+      .apply(CorrelationIdMiddleware, RequestContextMiddleware, CsrfMiddleware)
       .forRoutes('*');
   }
 }

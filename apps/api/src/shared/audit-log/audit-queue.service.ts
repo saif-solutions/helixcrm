@@ -37,10 +37,10 @@ export class AuditQueueService implements OnModuleInit {
     $Enums.AuditAction.SYSTEM_ERROR,
   ]);
 
-constructor(
-  @InjectQueue('audit-queue')
-  private readonly auditQueue: Queue<AuditJobData>,
-) {}
+  constructor(
+    @InjectQueue('audit-queue')
+    private readonly auditQueue: Queue<AuditJobData>,
+  ) {}
 
   async onModuleInit() {
     await this.initializeQueue();

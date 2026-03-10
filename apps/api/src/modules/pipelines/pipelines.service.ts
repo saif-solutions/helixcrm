@@ -39,7 +39,6 @@ export class PipelinesService {
   // ==================== PIPELINE METHODS ====================
 
   async create(data: CreatePipelineDto) {
-
     const startTime = Date.now();
     const tenantId = this.tenantContext.getTenantId();
     const userId = this.tenantContext.getUserId();
@@ -130,7 +129,6 @@ export class PipelinesService {
     sortOrder,
     isDefault,
   }: FindAllOptions) {
-
     const startTime = Date.now();
     const tenantId = this.tenantContext.getTenantId();
     const userId = this.tenantContext.getUserId();
@@ -202,7 +200,6 @@ export class PipelinesService {
   }
 
   async findOne(id: string) {
-
     const startTime = Date.now();
     const tenantId = this.tenantContext.getTenantId();
     const userId = this.tenantContext.getUserId();
@@ -245,7 +242,6 @@ export class PipelinesService {
   }
 
   async update(id: string, updatePipelineDto: UpdatePipelineDto) {
-
     const startTime = Date.now();
     const tenantId = this.tenantContext.getTenantId();
     const userId = this.tenantContext.getUserId();
@@ -326,7 +322,6 @@ export class PipelinesService {
   }
 
   async remove(id: string) {
-
     const startTime = Date.now();
     const tenantId = this.tenantContext.getTenantId();
     const userId = this.tenantContext.getUserId();
@@ -417,7 +412,6 @@ export class PipelinesService {
   }
 
   async getDefaultPipeline() {
-
     const startTime = Date.now();
     const tenantId = this.tenantContext.getTenantId();
     const userId = this.tenantContext.getUserId();
@@ -468,7 +462,6 @@ export class PipelinesService {
   // ==================== PIPELINE STAGE METHODS ====================
 
   async createStage(pipelineId: string, data: CreatePipelineStageDto) {
-
     const startTime = Date.now();
     const tenantId = this.tenantContext.getTenantId();
     const userId = this.tenantContext.getUserId();
@@ -557,8 +550,6 @@ export class PipelinesService {
   }
 
   async updateStage(stageId: string, updateDto: UpdatePipelineStageDto) {
-
-
     const startTime = Date.now();
     const tenantId = this.tenantContext.getTenantId();
     const userId = this.tenantContext.getUserId();
@@ -657,7 +648,6 @@ export class PipelinesService {
   }
 
   async removeStage(stageId: string) {
-
     const startTime = Date.now();
     const tenantId = this.tenantContext.getTenantId();
     const userId = this.tenantContext.getUserId();
@@ -759,7 +749,6 @@ export class PipelinesService {
   }
 
   async reorderStages(pipelineId: string, stageIds: string[]) {
-
     const startTime = Date.now();
     const tenantId = this.tenantContext.getTenantId();
     const userId = this.tenantContext.getUserId();

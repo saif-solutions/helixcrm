@@ -20,10 +20,10 @@ export class RequestContextMiddleware implements NestMiddleware {
     const store = {
       requestId,
       tenantId: undefined, // Will be set by TenantGuard
-      userId: undefined,    // Will be set after authentication
+      userId: undefined, // Will be set after authentication
       userEmail: undefined,
       roles: undefined,
-      permissions: undefined
+      permissions: undefined,
     };
 
     // ✅ Run the entire request within the single ALS context

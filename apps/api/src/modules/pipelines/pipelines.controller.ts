@@ -52,7 +52,7 @@ export class PipelinesController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
-  @RequirePermission(['pipeline:write', 'pipeline:manage']) 
+  @RequirePermission(['pipeline:write', 'pipeline:manage'])
   @ApiOperation({
     summary: 'Create a new pipeline',
     description:
@@ -129,7 +129,7 @@ export class PipelinesController {
   }
 
   @Get('default')
-  @RequirePermission('pipeline:read') 
+  @RequirePermission('pipeline:read')
   @ApiOperation({
     summary: 'Get default pipeline',
     description:
@@ -154,7 +154,7 @@ export class PipelinesController {
   }
 
   @Get(':id')
-  @RequirePermission('pipeline:read') 
+  @RequirePermission('pipeline:read')
   @ApiOperation({
     summary: 'Get pipeline by ID',
     description: 'Returns a specific pipeline with its stages and deal count',
@@ -190,7 +190,7 @@ export class PipelinesController {
       skipMissingProperties: true,
     }),
   )
-  @RequirePermission(['pipeline:write', 'pipeline:manage']) 
+  @RequirePermission(['pipeline:write', 'pipeline:manage'])
   @ApiOperation({
     summary: 'Update pipeline',
     description:
@@ -228,7 +228,7 @@ export class PipelinesController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @RequirePermission(['pipeline:manage']) 
+  @RequirePermission(['pipeline:manage'])
   @ApiOperation({
     summary: 'Delete pipeline',
     description:
@@ -265,7 +265,7 @@ export class PipelinesController {
   @Post(':id/stages')
   @HttpCode(HttpStatus.CREATED)
   @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
-  @RequirePermission(['pipeline:write', 'pipeline:manage']) 
+  @RequirePermission(['pipeline:write', 'pipeline:manage'])
   @ApiOperation({
     summary: 'Create pipeline stage',
     description: 'Creates a new stage within a pipeline',
@@ -311,7 +311,7 @@ export class PipelinesController {
       skipMissingProperties: true,
     }),
   )
-  @RequirePermission(['pipeline:write', 'pipeline:manage']) 
+  @RequirePermission(['pipeline:write', 'pipeline:manage'])
   @ApiOperation({
     summary: 'Update pipeline stage',
     description: 'Updates an existing pipeline stage',
@@ -351,7 +351,7 @@ export class PipelinesController {
 
   @Delete('stages/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @RequirePermission(['pipeline:manage']) 
+  @RequirePermission(['pipeline:manage'])
   @ApiOperation({
     summary: 'Delete pipeline stage',
     description: 'Deletes a pipeline stage',

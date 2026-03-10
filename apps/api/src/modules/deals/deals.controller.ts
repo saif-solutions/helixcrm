@@ -64,16 +64,18 @@ export class DealsController {
 
     const user = (req as any).user;
     const tenantId = user?.organizationId || user?.org;
-    
+
     if (!tenantId) {
-      throw new ForbiddenException('Tenant context missing - cannot process request');
+      throw new ForbiddenException(
+        'Tenant context missing - cannot process request',
+      );
     }
 
     if (query.skip !== undefined && query.take !== undefined) {
       query.page = Math.floor(query.skip / query.take) + 1;
       query.limit = query.take;
     }
-    
+
     return this.dealsService.findAll(query);
   }
 
@@ -134,11 +136,7 @@ export class DealsController {
       throw new ForbiddenException('Permission context not initialized');
     }
     const user = (req as any).user;
-    return this.dealsService.update(
-      id,
-      updateDealDto,
-      user.sub,
-    );
+    return this.dealsService.update(id, updateDealDto, user.sub);
   }
 
   @Delete(':id')
@@ -149,10 +147,7 @@ export class DealsController {
       throw new ForbiddenException('Permission context not initialized');
     }
     const user = (req as any).user;
-    return this.dealsService.remove(
-      id,
-      user.sub,
-    );
+    return this.dealsService.remove(id, user.sub);
   }
 
   @Post('simple')
@@ -192,11 +187,7 @@ export class DealsController {
       throw new ForbiddenException('Permission context not initialized');
     }
     const user = (req as any).user;
-    return this.dealsService.moveStage(
-      id,
-      moveDealStageDto,
-      user.sub,
-    );
+    return this.dealsService.moveStage(id, moveDealStageDto, user.sub);
   }
 
   @Post('bulk/move-stage')
@@ -214,11 +205,7 @@ export class DealsController {
     const { dealIds, stageId } = body;
 
     const movePromises = dealIds.map((dealId) =>
-      this.dealsService.moveStage(
-        dealId,
-        { stageId },
-        user.sub,
-      ),
+      this.dealsService.moveStage(dealId, { stageId }, user.sub),
     );
 
     return Promise.all(movePromises);
@@ -235,10 +222,7 @@ export class DealsController {
     const { dealIds } = body;
 
     const deletePromises = dealIds.map((dealId) =>
-      this.dealsService.remove(
-        dealId,
-        user.sub,
-      ),
+      this.dealsService.remove(dealId, user.sub),
     );
 
     return Promise.all(deletePromises);

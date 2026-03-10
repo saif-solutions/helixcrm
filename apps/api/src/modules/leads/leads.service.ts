@@ -31,7 +31,7 @@ export class LeadsService {
 
   async create(createLeadDto: CreateLeadDto, userId: string) {
     // ✅ REMOVED permission check - handled in controller
-    
+
     const startTime = Date.now();
     try {
       const { source, ...leadData } = createLeadDto;
@@ -86,7 +86,7 @@ export class LeadsService {
 
   async findAll(params: FindAllOptions) {
     const tenantId = this.tenantContext.getTenantId();
-    
+
     const startTime = Date.now();
     try {
       const { data: leads, total } = await this.leadRepository.findAll(params);
@@ -123,7 +123,7 @@ export class LeadsService {
 
   async findOne(id: string) {
     // ✅ REMOVED permission check - handled in controller
-    
+
     const startTime = Date.now();
     try {
       const lead = await this.leadRepository.findByIdOrThrow(id);
@@ -161,7 +161,7 @@ export class LeadsService {
 
   async update(id: string, updateLeadDto: UpdateLeadDto, userId: string) {
     // ✅ REMOVED permission check - handled in controller
-    
+
     const startTime = Date.now();
     try {
       // First verify lead belongs to tenant
@@ -210,7 +210,7 @@ export class LeadsService {
 
   async remove(id: string, userId: string) {
     // ✅ REMOVED permission check - handled in controller
-    
+
     const startTime = Date.now();
     try {
       // First verify lead belongs to tenant
@@ -250,7 +250,7 @@ export class LeadsService {
 
   async getStats() {
     // ✅ REMOVED permission check - handled in controller
-    
+
     const startTime = Date.now();
     try {
       const stats = await this.leadRepository.countByStatus();

@@ -17,10 +17,7 @@ import { AuditLogModule } from '../../shared/audit-log/audit-log.module';
     JwtModule, // ADD THIS TO IMPORTS ARRAY
   ],
   controllers: [DealsController],
-  providers: [
-    DealsService,
-    DealRepository,
-  ],
+  providers: [DealsService, DealRepository],
   exports: [DealsService],
 })
 export class DealsModule {}

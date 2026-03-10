@@ -24,7 +24,9 @@ export class ContactsService {
     try {
       return this.permissionContext.hasPermission(permission);
     } catch (error) {
-      this.logger.debug(`Permission context not ready for ${permission}, relying on guard`);
+      this.logger.debug(
+        `Permission context not ready for ${permission}, relying on guard`,
+      );
       return true;
     }
   }
@@ -32,7 +34,7 @@ export class ContactsService {
   async create(data: any, tenantId: string) {
     this.logger.log('=== CREATE CONTACT START ===');
     this.logger.log(`Using tenant ID: ${tenantId}`);
-    
+
     try {
       await this.checkPermission('contact:write');
       this.logger.log('Permission check passed');
@@ -43,7 +45,9 @@ export class ContactsService {
       const firstName = nameParts[0] || '';
       const lastName = nameParts.slice(1).join(' ') || '';
 
-      this.logger.log(`Creating contact with firstName: ${firstName}, lastName: ${lastName}`);
+      this.logger.log(
+        `Creating contact with firstName: ${firstName}, lastName: ${lastName}`,
+      );
 
       const contact = await this.contactRepository.create(tenantId, {
         ...restData,
@@ -84,7 +88,12 @@ export class ContactsService {
       }
 
       const [contacts, total] = await Promise.all([
-        this.contactRepository.findAll(tenantId, { where, skip, take, orderBy: { createdAt: 'desc' } }),
+        this.contactRepository.findAll(tenantId, {
+          where,
+          skip,
+          take,
+          orderBy: { createdAt: 'desc' },
+        }),
         this.contactRepository.count(tenantId, where),
       ]);
 
@@ -123,7 +132,11 @@ export class ContactsService {
     }
   }
 
-  async update(id: string, updateContactDto: UpdateContactDto, tenantId: string) {
+  async update(
+    id: string,
+    updateContactDto: UpdateContactDto,
+    tenantId: string,
+  ) {
     try {
       await this.checkPermission('contact:write');
 

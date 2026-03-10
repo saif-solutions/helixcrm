@@ -202,17 +202,13 @@ export class DealsService {
 
       return response;
     } catch (error) {
-      this.logger.error(
-        'Failed to create deal via simple API',
-        error.stack,
-        {
-          organizationId,
-          userId,
-          tenantId: this.tenantContext.getTenantId(),
-          dealTitle: dealData.title,
-          stageId: dealData.stageId,
-        },
-      );
+      this.logger.error('Failed to create deal via simple API', error.stack, {
+        organizationId,
+        userId,
+        tenantId: this.tenantContext.getTenantId(),
+        dealTitle: dealData.title,
+        stageId: dealData.stageId,
+      });
       throw error;
     }
   }
@@ -328,99 +324,106 @@ export class DealsService {
     }
   }
 
-// In deals.service.ts - REMOVE the permission check from findAll
-async findAll(query: DealQueryDto) {
-  const organizationId = this.tenantContext.getTenantId();
-  this.logger.debug(`Deals findAll for tenant: ${organizationId}`);
+  // In deals.service.ts - REMOVE the permission check from findAll
+  async findAll(query: DealQueryDto) {
+    const organizationId = this.tenantContext.getTenantId();
+    this.logger.debug(`Deals findAll for tenant: ${organizationId}`);
 
-  // ✅ REMOVED the permission check - it's handled in the controller
+    // ✅ REMOVED the permission check - it's handled in the controller
 
-  const {
-    page = 1,
-    limit = 20,
-    search,
-    pipelineId,
-    stageId,
-    status,
-    ownerUserId,
-    contactId,
-    accountId,
-    expectedCloseDateFrom,
-    expectedCloseDateTo,
-    minAmount,
-    maxAmount,
-    sortBy = 'createdAt',
-    sortOrder = 'desc',
-    includeDeleted = false,
-  } = query;
+    const {
+      page = 1,
+      limit = 20,
+      search,
+      pipelineId,
+      stageId,
+      status,
+      ownerUserId,
+      contactId,
+      accountId,
+      expectedCloseDateFrom,
+      expectedCloseDateTo,
+      minAmount,
+      maxAmount,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+      includeDeleted = false,
+    } = query;
 
-  const skip = (page - 1) * limit;
-  const take = Math.min(limit, 100);
+    const skip = (page - 1) * limit;
+    const take = Math.min(limit, 100);
 
-  const where: any = {};
+    const where: any = {};
 
-  if (search) {
-    where.OR = [
-      { name: { contains: search, mode: 'insensitive' } },
-      { metadata: { path: ['$'], string_contains: search } },
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { metadata: { path: ['$'], string_contains: search } },
+      ];
+    }
+
+    if (pipelineId) where.pipelineId = pipelineId;
+    if (stageId) where.stageId = stageId;
+    if (status) where.status = status;
+    if (ownerUserId) where.ownerUserId = ownerUserId;
+    if (contactId) where.contactId = contactId;
+    if (accountId) where.accountId = accountId;
+
+    if (expectedCloseDateFrom || expectedCloseDateTo) {
+      where.expectedCloseDate = {};
+      if (expectedCloseDateFrom)
+        where.expectedCloseDate.gte = new Date(expectedCloseDateFrom);
+      if (expectedCloseDateTo)
+        where.expectedCloseDate.lte = new Date(expectedCloseDateTo);
+    }
+
+    if (minAmount !== undefined || maxAmount !== undefined) {
+      where.amount = {};
+      if (minAmount !== undefined) where.amount.gte = minAmount;
+      if (maxAmount !== undefined) where.amount.lte = maxAmount;
+    }
+
+    const validSortFields = [
+      'name',
+      'amount',
+      'status',
+      'probability',
+      'expectedCloseDate',
+      'createdAt',
+      'updatedAt',
     ];
+    const sortField = validSortFields.includes(sortBy) ? sortBy : 'createdAt';
+
+    try {
+      const [deals, total] = await Promise.all([
+        this.dealRepository.findAll({
+          skip,
+          take,
+          where,
+          orderBy: { [sortField]: sortOrder },
+          includeDeleted,
+        }),
+        this.dealRepository.count(where, includeDeleted),
+      ]);
+
+      return {
+        data: deals,
+        meta: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit),
+        },
+      };
+    } catch (error) {
+      this.logger.error('Failed to fetch deals', error.stack, {
+        organizationId,
+        tenantId: this.tenantContext.getTenantId(),
+        query,
+      });
+      throw error;
+    }
   }
-
-  if (pipelineId) where.pipelineId = pipelineId;
-  if (stageId) where.stageId = stageId;
-  if (status) where.status = status;
-  if (ownerUserId) where.ownerUserId = ownerUserId;
-  if (contactId) where.contactId = contactId;
-  if (accountId) where.accountId = accountId;
-
-  if (expectedCloseDateFrom || expectedCloseDateTo) {
-    where.expectedCloseDate = {};
-    if (expectedCloseDateFrom) where.expectedCloseDate.gte = new Date(expectedCloseDateFrom);
-    if (expectedCloseDateTo) where.expectedCloseDate.lte = new Date(expectedCloseDateTo);
-  }
-
-  if (minAmount !== undefined || maxAmount !== undefined) {
-    where.amount = {};
-    if (minAmount !== undefined) where.amount.gte = minAmount;
-    if (maxAmount !== undefined) where.amount.lte = maxAmount;
-  }
-
-  const validSortFields = [
-    'name', 'amount', 'status', 'probability',
-    'expectedCloseDate', 'createdAt', 'updatedAt'
-  ];
-  const sortField = validSortFields.includes(sortBy) ? sortBy : 'createdAt';
-
-  try {
-    const [deals, total] = await Promise.all([
-      this.dealRepository.findAll({
-        skip,
-        take,
-        where,
-        orderBy: { [sortField]: sortOrder },
-        includeDeleted,
-      }),
-      this.dealRepository.count(where, includeDeleted),
-    ]);
-
-    return {
-      data: deals,
-      meta: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit),
-      },
-    };
-  } catch (error) {
-    this.logger.error('Failed to fetch deals', error.stack, {
-      organizationId,
-      tenantId: this.tenantContext.getTenantId(),
-      query,
-    });
-    throw error;
-  }
-}
 
   async findOne(id: string, includeDeleted = false) {
     const organizationId = this.tenantContext.getTenantId();

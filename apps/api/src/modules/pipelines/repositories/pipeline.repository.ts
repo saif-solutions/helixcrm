@@ -39,7 +39,10 @@ export class PipelineRepository extends TenantAwareRepository {
 
       return pipeline;
     } catch (error) {
-      this.logger.error(`Failed to find pipeline ${id}: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to find pipeline ${id}: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -50,12 +53,15 @@ export class PipelineRepository extends TenantAwareRepository {
   async findFirst(where: any): Promise<Pipeline | null> {
     try {
       const tenantWhere = this.withTenantFilter(where);
-      
+
       return await this.prisma.pipeline.findFirst({
         where: tenantWhere,
       });
     } catch (error) {
-      this.logger.error(`Failed to find pipeline: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to find pipeline: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -71,22 +77,28 @@ export class PipelineRepository extends TenantAwareRepository {
     includeDealCount?: boolean;
   }): Promise<any[]> {
     try {
-      const { where, skip, take, includeStages = false, includeDealCount = false } = params;
-      
+      const {
+        where,
+        skip,
+        take,
+        includeStages = false,
+        includeDealCount = false,
+      } = params;
+
       const tenantWhere = this.withTenantFilter({
         ...where,
         deletedAt: null,
       });
 
       const include: any = {};
-      
+
       if (includeStages) {
         include.stages = {
           where: { deletedAt: null },
           orderBy: { order: 'asc' },
         };
       }
-      
+
       if (includeDealCount) {
         include._count = {
           select: { deals: true },
@@ -103,7 +115,10 @@ export class PipelineRepository extends TenantAwareRepository {
 
       return pipelines;
     } catch (error) {
-      this.logger.error(`Failed to find pipelines: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to find pipelines: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -122,7 +137,10 @@ export class PipelineRepository extends TenantAwareRepository {
         where: tenantWhere,
       });
     } catch (error) {
-      this.logger.error(`Failed to count pipelines: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to count pipelines: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -150,7 +168,10 @@ export class PipelineRepository extends TenantAwareRepository {
       this.logger.log(`Pipeline created: ${pipeline.id}`);
       return pipeline;
     } catch (error) {
-      this.logger.error(`Failed to create pipeline: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to create pipeline: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -173,7 +194,10 @@ export class PipelineRepository extends TenantAwareRepository {
       this.logger.log(`Pipeline updated: ${id}`);
       return pipeline;
     } catch (error) {
-      this.logger.error(`Failed to update pipeline ${id}: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to update pipeline ${id}: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -190,7 +214,10 @@ export class PipelineRepository extends TenantAwareRepository {
         data,
       });
     } catch (error) {
-      this.logger.error(`Failed to update pipelines: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to update pipelines: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -212,7 +239,10 @@ export class PipelineRepository extends TenantAwareRepository {
 
       this.logger.log(`Pipeline deleted: ${id}`);
     } catch (error) {
-      this.logger.error(`Failed to delete pipeline ${id}: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to delete pipeline ${id}: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -240,7 +270,10 @@ export class PipelineRepository extends TenantAwareRepository {
         },
       });
     } catch (error) {
-      this.logger.error(`Failed to get default pipeline: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to get default pipeline: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -250,7 +283,10 @@ export class PipelineRepository extends TenantAwareRepository {
   /**
    * Find stage by ID
    */
-  async findStageById(id: string, includePipeline = false): Promise<PipelineStage | null> {
+  async findStageById(
+    id: string,
+    includePipeline = false,
+  ): Promise<PipelineStage | null> {
     try {
       const include: any = {};
       if (includePipeline) {
@@ -264,7 +300,10 @@ export class PipelineRepository extends TenantAwareRepository {
 
       return stage;
     } catch (error) {
-      this.logger.error(`Failed to find stage ${id}: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to find stage ${id}: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -272,7 +311,10 @@ export class PipelineRepository extends TenantAwareRepository {
   /**
    * Find stage by order in pipeline
    */
-  async findStageByOrder(pipelineId: string, order: number): Promise<PipelineStage | null> {
+  async findStageByOrder(
+    pipelineId: string,
+    order: number,
+  ): Promise<PipelineStage | null> {
     try {
       return await this.prisma.pipelineStage.findFirst({
         where: {
@@ -282,7 +324,10 @@ export class PipelineRepository extends TenantAwareRepository {
         },
       });
     } catch (error) {
-      this.logger.error(`Failed to find stage by order: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to find stage by order: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -300,7 +345,10 @@ export class PipelineRepository extends TenantAwareRepository {
         orderBy: { order: 'asc' },
       });
     } catch (error) {
-      this.logger.error(`Failed to find stages for pipeline ${pipelineId}: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to find stages for pipeline ${pipelineId}: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -322,7 +370,10 @@ export class PipelineRepository extends TenantAwareRepository {
       this.logger.log(`Stage created: ${stage.id}`);
       return stage;
     } catch (error) {
-      this.logger.error(`Failed to create stage: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to create stage: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -340,7 +391,10 @@ export class PipelineRepository extends TenantAwareRepository {
       this.logger.log(`Stage updated: ${id}`);
       return stage;
     } catch (error) {
-      this.logger.error(`Failed to update stage ${id}: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to update stage ${id}: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -357,7 +411,10 @@ export class PipelineRepository extends TenantAwareRepository {
 
       this.logger.log(`Stage deleted: ${id}`);
     } catch (error) {
-      this.logger.error(`Failed to delete stage ${id}: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to delete stage ${id}: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }

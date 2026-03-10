@@ -20,7 +20,7 @@ import { Response } from 'express';
 import { AuthGuard } from '../../../../shared/guards/auth.guard';
 import { TenantGuard } from '../../../../shared/guards/tenant.guard';
 import { PermissionGuard } from '../../../../shared/guards/permission.guard';
-import { RequirePermission } from '../../../../shared/permissions/decorators/require-permission.decorator';
+import { RequirePermission } from "../../../../shared/decorators/require-permission.decorator';
 
 import {
   AuditAction,
@@ -31,7 +31,6 @@ import {
 } from '../../domain';
 
 import { AuditLogQueryService } from '../../application/services/audit-log-query.service';
-
 
 @ApiTags('Audit')
 @ApiBearerAuth()

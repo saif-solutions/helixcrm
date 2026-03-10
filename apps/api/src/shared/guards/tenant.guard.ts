@@ -27,12 +27,16 @@ export class TenantGuard implements CanActivate {
     );
 
     if (isPublic) {
-      this.logger.debug(`Skipping TenantGuard for public route: ${request.path}`);
+      this.logger.debug(
+        `Skipping TenantGuard for public route: ${request.path}`,
+      );
       return true;
     }
 
     if (!request.user) {
-      this.logger.error('No user found - AuthGuard must run before TenantGuard');
+      this.logger.error(
+        'No user found - AuthGuard must run before TenantGuard',
+      );
       throw new ForbiddenException('Authentication required');
     }
 
@@ -50,7 +54,9 @@ export class TenantGuard implements CanActivate {
     // Set on request for backward compatibility
     request.organizationId = realTenantId;
 
-    this.logger.log(`Tenant context established: ${realTenantId} for user ${user.sub}`);
+    this.logger.log(
+      `Tenant context established: ${realTenantId} for user ${user.sub}`,
+    );
 
     return true;
   }

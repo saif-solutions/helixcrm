@@ -12,7 +12,10 @@ import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
-import { PERMISSION_KEY, IS_PUBLIC_KEY } from '../decorators/require-permission.decorator';
+import {
+  PERMISSION_KEY,
+  IS_PUBLIC_KEY,
+} from '../decorators/require-permission.decorator';
 import { getTenantContext } from '../tenant/tenant.context';
 
 @Injectable()
@@ -138,12 +141,17 @@ export class AuthGuard implements CanActivate {
         roles: roles,
       };
 
-      setUserInfo(userObj.sub, userObj.email, userObj.roles, userObj.permissions);
+      setUserInfo(
+        userObj.sub,
+        userObj.email,
+        userObj.roles,
+        userObj.permissions,
+      );
 
       // ✅ Set user in request
       request.user = userObj;
       request.organizationId = organizationId;
-      
+
       // ✅ Also set it in the tenant context for AsyncLocalStorage
       const tenantContext = getTenantContext();
       if (tenantContext) {
@@ -153,11 +161,14 @@ export class AuthGuard implements CanActivate {
         tenantContext.permissions = userObj.permissions;
       }
 
-      this.logger.log(`Auth successful for user ${payload.sub} in org ${organizationId}`, {
-        permissionsCount: userObj.permissions.length,
-        rolesCount: userObj.roles.length,
-      });
-      
+      this.logger.log(
+        `Auth successful for user ${payload.sub} in org ${organizationId}`,
+        {
+          permissionsCount: userObj.permissions.length,
+          rolesCount: userObj.roles.length,
+        },
+      );
+
       return true;
     } catch (error) {
       this.logger.error(`Auth failed: ${error.message}`);
