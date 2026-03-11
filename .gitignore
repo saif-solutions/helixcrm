@@ -163,3 +163,7 @@ scripts/backups/.env.backup
 scripts/backups/*.sql
 scripts/backups/*.sql.gz
 .env
+
+# Jest cache
+.jest-cache/
+coverage/
