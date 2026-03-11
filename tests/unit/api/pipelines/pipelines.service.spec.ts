@@ -1,11 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { PipelinesService } from '../../../src/modules/pipelines/pipelines.service';
-import { PrismaService } from '../../../src/shared/prisma/prisma.service';
-import { AppLogger } from '../../../src/shared/logging/logger.service';
-import { TenantContextService } from '../../../src/shared/tenant/context/tenant-context.service';
-import { PermissionContextService } from '../../../src/shared/permissions/context/permission-context.service';
-import { AuditLogService } from '../../../src/shared/audit-log/audit-log.service';
-import { PipelineRepository } from '../../../src/modules/pipelines/repositories/pipeline.repository';
+import { PipelinesService } from '@api/modules/pipelines/pipelines.service';
+import { PrismaService } from '@api/shared/prisma/prisma.service';
+import { AppLogger } from '@api/shared/logging/logger.service';
+import { TenantContextService } from '@api/shared/tenant/context/tenant-context.service';
+import { PermissionContextService } from '@api/shared/permissions/context/permission-context.service';
+import { AuditLogService } from '@api/shared/audit-log/audit-log.service';
+import { PipelineRepository } from '@api/modules/pipelines/repositories/pipeline.repository';
 import { NotFoundException, ConflictException, ForbiddenException, BadRequestException } from '@nestjs/common';
 
 // Mock implementations

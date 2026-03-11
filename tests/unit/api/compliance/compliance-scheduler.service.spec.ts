@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ComplianceSchedulerService } from '../../../src/shared/compliance/compliance-scheduler.service';
-import { Soc2EvidenceService } from '../../../src/shared/compliance/soc2/soc2-evidence.service';
+import { ComplianceSchedulerService } from '@api/shared/compliance/compliance-scheduler.service';
+import { Soc2EvidenceService } from '@api/shared/compliance/soc2/soc2-evidence.service';
 
 // Mock the evidence service
 const mockSoc2EvidenceService = {

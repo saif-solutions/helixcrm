@@ -1,4 +1,4 @@
-import { RateLimit } from '../../../src/shared/decorators/rate-limit.decorator';
+import { RateLimit } from '@api/shared/decorators/rate-limit.decorator';
 import { SetMetadata } from '@nestjs/common';
 
 // Mock SetMetadata to capture calls

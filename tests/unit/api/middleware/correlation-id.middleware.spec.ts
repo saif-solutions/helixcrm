@@ -1,4 +1,4 @@
-import { CorrelationIdMiddleware } from '../../../src/shared/middleware/correlation-id.middleware';
+import { CorrelationIdMiddleware } from '@api/shared/middleware/correlation-id.middleware';
 import { Request, Response } from 'express';
 
 // Create a fresh mock for each test

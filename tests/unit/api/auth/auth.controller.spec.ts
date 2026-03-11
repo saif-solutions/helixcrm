@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { AuthController } from '../../../src/modules/auth/auth.controller';
-import { AuthService } from '../../../src/modules/auth/auth.service';
-import { AuditLogService } from '../../../src/shared/audit-log/audit-log.service';
+import { AuthController } from '@api/modules/auth/auth.controller';
+import { AuthService } from '@api/modules/auth/auth.service';
+import { AuditLogService } from '@api/shared/audit-log/audit-log.service';
 import { UnauthorizedException } from '@nestjs/common';
 
 // Mock the guards - this is the key fix

@@ -1,4 +1,4 @@
-import { PERMISSION_KEY, IS_PUBLIC_KEY, RequirePermission, Public, AdminOnly } from '../../../src/shared/decorators/require-permission.decorator';
+import { PERMISSION_KEY, IS_PUBLIC_KEY, RequirePermission, Public, AdminOnly } from '@api/shared/decorators/require-permission.decorator';
 import { SetMetadata } from '@nestjs/common';
 
 // Mock SetMetadata to capture calls

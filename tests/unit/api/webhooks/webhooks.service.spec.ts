@@ -1,10 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { WebhooksService } from '../../../src/modules/webhooks/webhooks.service';
-import { WebhookRepository } from '../../../src/modules/webhooks/repositories/webhook.repository';
-import { TenantContextService } from '../../../src/shared/tenant/context/tenant-context.service';
-import { PermissionContextService } from '../../../src/shared/permissions/context/permission-context.service';
-import { AuditLogService } from '../../../src/shared/audit-log/audit-log.service';
-import { PrismaService } from '../../../src/shared/prisma/prisma.service';
+import { WebhooksService } from '@api/modules/webhooks/webhooks.service';
+import { WebhookRepository } from '@api/modules/webhooks/repositories/webhook.repository';
+import { TenantContextService } from '@api/shared/tenant/context/tenant-context.service';
+import { PermissionContextService } from '@api/shared/permissions/context/permission-context.service';
+import { AuditLogService } from '@api/shared/audit-log/audit-log.service';
+import { PrismaService } from '@api/shared/prisma/prisma.service';
 import { getQueueToken } from '@nestjs/bullmq';
 import { ForbiddenException, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 

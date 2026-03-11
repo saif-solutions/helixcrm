@@ -1,10 +1,10 @@
-import { PermissionGuard } from '../../../src/shared/guards/permission.guard';
+import { PermissionGuard } from '@api/shared/guards/permission.guard';
 import { Reflector } from '@nestjs/core';
-import { PermissionContextService } from '../../../src/shared/permissions/context/permission-context.service';
-import { TenantContextService } from '../../../src/shared/tenant/context/tenant-context.service';
+import { PermissionContextService } from '@api/shared/permissions/context/permission-context.service';
+import { TenantContextService } from '@api/shared/tenant/context/tenant-context.service';
 import { UnauthorizedException, ForbiddenException } from '@nestjs/common';
-import { PERMISSION_KEY } from '../../../src/shared/decorators/require-permission.decorator';
-import { getTenantContext } from '../../../src/shared/tenant/tenant.context';
+import { PERMISSION_KEY } from '@api/shared/decorators/require-permission.decorator';
+import { getTenantContext } from '@api/shared/tenant/tenant.context';
 
 // Mock tenant context
 jest.mock('../../../src/shared/tenant/tenant.context', () => ({

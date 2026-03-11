@@ -26,8 +26,8 @@ jest.mock('../../../src/shared/prisma/prisma.service', () => ({
   })),
 }));
 
-import { Soc2EvidenceService } from '../../../src/shared/compliance/soc2/soc2-evidence.service';
-import { PrismaService } from '../../../src/shared/prisma/prisma.service';
+import { Soc2EvidenceService } from '@api/shared/compliance/soc2/soc2-evidence.service';
+import { PrismaService } from '@api/shared/prisma/prisma.service';
 import * as fs from 'fs';
 import * as path from 'path';
 

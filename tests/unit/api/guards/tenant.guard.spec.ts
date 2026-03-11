@@ -1,8 +1,8 @@
-import { TenantGuard } from '../../../src/shared/guards/tenant.guard';
+import { TenantGuard } from '@api/shared/guards/tenant.guard';
 import { Reflector } from '@nestjs/core';
 import { ForbiddenException } from '@nestjs/common';
-import { setTenantId } from '../../../src/shared/als';
-import { IS_PUBLIC_KEY } from '../../../src/shared/decorators/require-permission.decorator';
+import { setTenantId } from '@api/shared/als';
+import { IS_PUBLIC_KEY } from '@api/shared/decorators/require-permission.decorator';
 
 // Mock the ALS module
 jest.mock('../../../src/shared/als', () => ({

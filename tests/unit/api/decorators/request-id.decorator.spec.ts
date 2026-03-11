@@ -1,4 +1,4 @@
-import { RequestId } from '../../../src/shared/decorators/request-id.decorator';
+import { RequestId } from '@api/shared/decorators/request-id.decorator';
 
 describe('RequestId Decorator', () => {
   it('should be defined', () => {

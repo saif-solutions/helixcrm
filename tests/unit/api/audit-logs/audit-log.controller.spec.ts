@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { AuditLogController } from '../../../src/modules/audit-logs/presentation/controllers/audit-log.controller';
-import { AuditLogQueryService } from '../../../src/modules/audit-logs/application/services/audit-log-query.service';
+import { AuditLogController } from '@api/modules/audit-logs/presentation/controllers/audit-log.controller';
+import { AuditLogQueryService } from '@api/modules/audit-logs/application/services/audit-log-query.service';
 import { BadRequestException } from '@nestjs/common';
 
 // Mock the guards

@@ -1,11 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { DealsService } from '../../../src/modules/deals/deals.service';
-import { PrismaService } from '../../../src/shared/prisma/prisma.service';
-import { AppLogger } from '../../../src/shared/logging/logger.service';
-import { AuditLogService } from '../../../src/shared/audit-log/audit-log.service';
-import { DealRepository } from '../../../src/modules/deals/repositories/deal.repository';
-import { PermissionContextService } from '../../../src/shared/permissions/context/permission-context.service';
-import { TenantContextService } from '../../../src/shared/tenant/context/tenant-context.service';
+import { DealsService } from '@api/modules/deals/deals.service';
+import { PrismaService } from '@api/shared/prisma/prisma.service';
+import { AppLogger } from '@api/shared/logging/logger.service';
+import { AuditLogService } from '@api/shared/audit-log/audit-log.service';
+import { DealRepository } from '@api/modules/deals/repositories/deal.repository';
+import { PermissionContextService } from '@api/shared/permissions/context/permission-context.service';
+import { TenantContextService } from '@api/shared/tenant/context/tenant-context.service';
 import { NotFoundException, ForbiddenException, ConflictException, BadRequestException } from '@nestjs/common';
 import { DealStatus } from '@prisma/client';
 

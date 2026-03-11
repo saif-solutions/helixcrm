@@ -1,5 +1,5 @@
-import { TenantContextHook } from '../../../src/shared/decorators/tenant-context.hook';
-import { withTenantContext } from '../../../src/shared/tenant/tenant.context';
+import { TenantContextHook } from '@api/shared/decorators/tenant-context.hook';
+import { withTenantContext } from '@api/shared/tenant/tenant.context';
 
 // Mock the tenant context functions
 jest.mock('../../../src/shared/tenant/tenant.context', () => ({

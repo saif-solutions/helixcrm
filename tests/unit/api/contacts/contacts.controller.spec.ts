@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ContactsController } from '../../../src/modules/contacts/contacts.controller';
-import { ContactsService } from '../../../src/modules/contacts/contacts.service';
+import { ContactsController } from '@api/modules/contacts/contacts.controller';
+import { ContactsService } from '@api/modules/contacts/contacts.service';
 import { ForbiddenException } from '@nestjs/common';
 
 // Mock the guards

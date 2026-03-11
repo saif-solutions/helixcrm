@@ -1,8 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { LeadsService } from '../../../src/modules/leads/leads.service';
-import { LeadRepository } from '../../../src/modules/leads/repositories/lead.repository';
-import { TenantContextService } from '../../../src/shared/tenant/context/tenant-context.service';
-import { AppLogger } from '../../../src/shared/logging/logger.service';
+import { LeadsService } from '@api/modules/leads/leads.service';
+import { LeadRepository } from '@api/modules/leads/repositories/lead.repository';
+import { TenantContextService } from '@api/shared/tenant/context/tenant-context.service';
+import { AppLogger } from '@api/shared/logging/logger.service';
 import { NotFoundException, ForbiddenException, ConflictException } from '@nestjs/common';
 import { LeadStatus } from '@prisma/client';
 

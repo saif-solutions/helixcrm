@@ -1,4 +1,4 @@
-import { ApiPaginatedResponse } from '../../../src/shared/decorators/api-paginated-response.decorator';
+import { ApiPaginatedResponse } from '@api/shared/decorators/api-paginated-response.decorator';
 import { applyDecorators } from '@nestjs/common';
 import { ApiOkResponse } from '@nestjs/swagger';
 

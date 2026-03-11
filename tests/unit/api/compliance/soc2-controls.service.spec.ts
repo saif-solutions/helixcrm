@@ -1,5 +1,5 @@
-import { Soc2ControlsService } from '../../../src/shared/compliance/soc2/soc2-controls.service';
-import { PrismaService } from '../../../src/shared/prisma/prisma.service';
+import { Soc2ControlsService } from '@api/shared/compliance/soc2/soc2-controls.service';
+import { PrismaService } from '@api/shared/prisma/prisma.service';
 
 describe('Soc2ControlsService', () => {
   let service: Soc2ControlsService;

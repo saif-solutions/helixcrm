@@ -6,7 +6,7 @@
  * - Missing tenant context should fail fast
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from '@jest/globals';
 
 describe('Tenant Context Security Invariants', () => {
   // These are conceptual tests - actual implementation would

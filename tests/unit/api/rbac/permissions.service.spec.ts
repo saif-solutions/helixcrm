@@ -1,8 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { PermissionsService } from '../../../src/modules/rbac/permissions.service';
-import { PermissionRepository } from '../../../src/modules/rbac/repositories/permission.repository';
-import { TenantContextService } from '../../../src/shared/tenant/context/tenant-context.service';
-import { PermissionContextService } from '../../../src/shared/permissions/context/permission-context.service';
+import { PermissionsService } from '@api/modules/rbac/permissions.service';
+import { PermissionRepository } from '@api/modules/rbac/repositories/permission.repository';
+import { TenantContextService } from '@api/shared/tenant/context/tenant-context.service';
+import { PermissionContextService } from '@api/shared/permissions/context/permission-context.service';
 import { ForbiddenException } from '@nestjs/common';
 
 // Mock implementations

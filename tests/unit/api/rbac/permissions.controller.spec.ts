@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { PermissionsController } from '../../../src/modules/rbac/permissions.controller';
-import { PermissionsService } from '../../../src/modules/rbac/permissions.service';
+import { PermissionsController } from '@api/modules/rbac/permissions.controller';
+import { PermissionsService } from '@api/modules/rbac/permissions.service';
 
 // Mock the guards
 jest.mock('../../../src/shared/guards/auth.guard', () => ({

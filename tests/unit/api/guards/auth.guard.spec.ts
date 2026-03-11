@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { AuthGuard } from '../../../src/shared/guards/auth.guard';
+import { AuthGuard } from '@api/shared/guards/auth.guard';
 import { JwtService } from '@nestjs/jwt';
-import { PrismaService } from '../../../src/shared/prisma/prisma.service';
+import { PrismaService } from '@api/shared/prisma/prisma.service';
 import { Reflector } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { UnauthorizedException } from '@nestjs/common';

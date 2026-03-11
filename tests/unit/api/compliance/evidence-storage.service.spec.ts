@@ -1,5 +1,5 @@
-import { EvidenceStorageService } from '../../../src/shared/compliance/evidence-storage/evidence-storage.service';
-import { PrismaService } from '../../../src/shared/prisma/prisma.service';
+import { EvidenceStorageService } from '@api/shared/compliance/evidence-storage/evidence-storage.service';
+import { PrismaService } from '@api/shared/prisma/prisma.service';
 import * as crypto from 'crypto';
 
 // Mock crypto with better debugging

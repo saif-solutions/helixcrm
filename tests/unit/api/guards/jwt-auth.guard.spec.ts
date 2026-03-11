@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { JwtAuthGuard } from '../../../src/shared/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '@api/shared/guards/jwt-auth.guard';
 import { ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 

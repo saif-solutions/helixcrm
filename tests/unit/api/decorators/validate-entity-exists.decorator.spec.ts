@@ -1,4 +1,4 @@
-import { ValidateEntityExists } from '../../../src/shared/decorators/validate-entity-exists.decorator';
+import { ValidateEntityExists } from '@api/shared/decorators/validate-entity-exists.decorator';
 import { SetMetadata } from '@nestjs/common';
 
 // Mock SetMetadata to capture calls

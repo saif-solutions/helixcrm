@@ -5,7 +5,7 @@
  * These tests run against the actual implementation to ensure behavior preservation.
  */
 
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll } from '@jest/globals';
 
 // Note: This test will be updated after auth-core package is created
 // For now, it documents the expected behavior

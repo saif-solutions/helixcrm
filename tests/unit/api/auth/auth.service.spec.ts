@@ -1,9 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { AuthService } from '../../../src/modules/auth/auth.service';
-import { PrismaService } from '../../../src/shared/prisma/prisma.service';
-import { AccountLockoutService } from '../../../src/modules/auth/services/account-lockout.service';
-import { AuditLogService } from '../../../src/shared/audit-log/audit-log.service';
-import { AuthCoreAdapter } from '../../../src/modules/auth/adapters/AuthCoreAdapter';
+import { AuthService } from '@api/modules/auth/auth.service';
+import { PrismaService } from '@api/shared/prisma/prisma.service';
+import { AccountLockoutService } from '@api/modules/auth/services/account-lockout.service';
+import { AuditLogService } from '@api/shared/audit-log/audit-log.service';
+import { AuthCoreAdapter } from '@api/modules/auth/adapters/AuthCoreAdapter';
 import { UnauthorizedException, ForbiddenException, ConflictException } from '@nestjs/common';
 
 // Mock implementations

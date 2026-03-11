@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ContactsService } from '../../../src/modules/contacts/contacts.service';
-import { ContactRepository } from '../../../src/modules/contacts/repositories/contact.repository';
-import { PermissionContextService } from '../../../src/shared/permissions/context/permission-context.service';
+import { ContactsService } from '@api/modules/contacts/contacts.service';
+import { ContactRepository } from '@api/modules/contacts/repositories/contact.repository';
+import { PermissionContextService } from '@api/shared/permissions/context/permission-context.service';
 import { NotFoundException } from '@nestjs/common';
 
 // Mock implementations

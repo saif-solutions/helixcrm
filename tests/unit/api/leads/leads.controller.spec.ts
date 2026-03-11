@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { LeadsController } from '../../../src/modules/leads/leads.controller';
-import { LeadsService } from '../../../src/modules/leads/leads.service';
-import { PermissionContextService } from '../../../src/shared/permissions/context/permission-context.service';
+import { LeadsController } from '@api/modules/leads/leads.controller';
+import { LeadsService } from '@api/modules/leads/leads.service';
+import { PermissionContextService } from '@api/shared/permissions/context/permission-context.service';
 import { ForbiddenException } from '@nestjs/common';
 import { LeadStatus } from '@prisma/client';
 

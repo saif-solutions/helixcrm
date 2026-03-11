@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { RolesController } from '../../../src/modules/rbac/roles.controller';
-import { RolesService } from '../../../src/modules/rbac/roles.service';
-import { PermissionContextService } from '../../../src/shared/permissions/context/permission-context.service';
+import { RolesController } from '@api/modules/rbac/roles.controller';
+import { RolesService } from '@api/modules/rbac/roles.service';
+import { PermissionContextService } from '@api/shared/permissions/context/permission-context.service';
 import { ForbiddenException } from '@nestjs/common';
 
 // Mock the guards

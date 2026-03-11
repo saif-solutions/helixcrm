@@ -1,12 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { RolesService } from '../../../src/modules/rbac/roles.service';
-import { RoleRepository } from '../../../src/modules/rbac/repositories/role.repository';
-import { PermissionRepository } from '../../../src/modules/rbac/repositories/permission.repository';
-import { UserRoleRepository } from '../../../src/modules/rbac/repositories/user-role.repository';
-import { AuditLogService } from '../../../src/shared/audit-log/audit-log.service';
-import { TenantContextService } from '../../../src/shared/tenant/context/tenant-context.service';
-import { PermissionContextService } from '../../../src/shared/permissions/context/permission-context.service';
-import { PrismaService } from '../../../src/shared/prisma/prisma.service';
+import { RolesService } from '@api/modules/rbac/roles.service';
+import { RoleRepository } from '@api/modules/rbac/repositories/role.repository';
+import { PermissionRepository } from '@api/modules/rbac/repositories/permission.repository';
+import { UserRoleRepository } from '@api/modules/rbac/repositories/user-role.repository';
+import { AuditLogService } from '@api/shared/audit-log/audit-log.service';
+import { TenantContextService } from '@api/shared/tenant/context/tenant-context.service';
+import { PermissionContextService } from '@api/shared/permissions/context/permission-context.service';
+import { PrismaService } from '@api/shared/prisma/prisma.service';
 import { NotFoundException, ConflictException, ForbiddenException, BadRequestException } from '@nestjs/common';
 
 // Mock implementations

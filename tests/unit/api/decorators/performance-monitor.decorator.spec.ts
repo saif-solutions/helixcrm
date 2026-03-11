@@ -1,4 +1,4 @@
-import { PerformanceMonitor } from '../../../src/shared/decorators/performance-monitor.decorator';
+import { PerformanceMonitor } from '@api/shared/decorators/performance-monitor.decorator';
 import { SetMetadata } from '@nestjs/common';
 
 // Mock SetMetadata to capture calls

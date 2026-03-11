@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { DealsController } from '../../../src/modules/deals/deals.controller';
-import { DealsService } from '../../../src/modules/deals/deals.service';
-import { PermissionContextService } from '../../../src/shared/permissions/context/permission-context.service';
+import { DealsController } from '@api/modules/deals/deals.controller';
+import { DealsService } from '@api/modules/deals/deals.service';
+import { PermissionContextService } from '@api/shared/permissions/context/permission-context.service';
 import { ForbiddenException } from '@nestjs/common';
 
 // Mock the guards

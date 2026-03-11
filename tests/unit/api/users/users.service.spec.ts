@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { UsersService } from '../../../src/modules/users/users.service';
-import { UserRepository } from '../../../src/modules/users/repositories/user.repository';
-import { TenantContextService } from '../../../src/shared/tenant/context/tenant-context.service';
+import { UsersService } from '@api/modules/users/users.service';
+import { UserRepository } from '@api/modules/users/repositories/user.repository';
+import { TenantContextService } from '@api/shared/tenant/context/tenant-context.service';
 import { NotFoundException, ConflictException, ForbiddenException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 

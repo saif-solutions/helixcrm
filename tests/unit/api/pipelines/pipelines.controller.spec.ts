@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { PipelinesController } from '../../../src/modules/pipelines/pipelines.controller';
-import { PipelinesService } from '../../../src/modules/pipelines/pipelines.service';
+import { PipelinesController } from '@api/modules/pipelines/pipelines.controller';
+import { PipelinesService } from '@api/modules/pipelines/pipelines.service';
 import { ForbiddenException } from '@nestjs/common';
 
 // Mock the guards

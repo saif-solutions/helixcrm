@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { SystemGuard } from '../../../src/shared/guards/system.guard';
-import { TenantContextService } from '../../../src/shared/tenant/context/tenant-context.service';
+import { SystemGuard } from '@api/shared/guards/system.guard';
+import { TenantContextService } from '@api/shared/tenant/context/tenant-context.service';
 import { ForbiddenException } from '@nestjs/common';
 import { ExecutionContext } from '@nestjs/common';
 

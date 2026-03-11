@@ -1,6 +1,6 @@
-import { RequestContextMiddleware } from '../../../src/shared/middleware/request-context.middleware';
+import { RequestContextMiddleware } from '@api/shared/middleware/request-context.middleware';
 import { Request, Response } from 'express';
-import { als } from '../../../src/shared/als';
+import { als } from '@api/shared/als';
 import { randomUUID } from 'crypto';
 
 // Mock dependencies

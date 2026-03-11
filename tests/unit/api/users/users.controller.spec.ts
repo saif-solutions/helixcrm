@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { UsersController } from '../../../src/modules/users/users.controller';
-import { UsersService } from '../../../src/modules/users/users.service';
-import { PermissionContextService } from '../../../src/shared/permissions/context/permission-context.service';
+import { UsersController } from '@api/modules/users/users.controller';
+import { UsersService } from '@api/modules/users/users.service';
+import { PermissionContextService } from '@api/shared/permissions/context/permission-context.service';
 import { ForbiddenException } from '@nestjs/common';
 
 // Mock the guards

@@ -2,13 +2,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
-import { WebhooksModule } from '../webhooks.module';
-import { WebhooksService } from '../webhooks.service';
-import { WebhookRepository } from '../repositories/webhook.repository';
-import { TenantContextService } from '../../../shared/tenant/context/tenant-context.service';
-import { PermissionContextService } from '../../../shared/permissions/context/permission-context.service';
-import { AuditLogService } from '../../../shared/audit-log/audit-log.service';
-import { PrismaService } from '../../../shared/prisma/prisma.service';
+import { WebhooksModule } from '@api/modules/webhooks/webhooks.module';
+import { WebhooksService } from '@api/modules/webhooks/webhooks.service';
+import { WebhookRepository } from '@api/modules/webhooks/repositories/webhook.repository';
+import { TenantContextService } from '@api/shared/tenant/context/tenant-context.service';
+import { PermissionContextService } from '@api/shared/permissions/context/permission-context.service';
+import { AuditLogService } from '@api/shared/audit-log/audit-log.service';
+import { PrismaService } from '@api/shared/prisma/prisma.service';
 import { BullModule } from '@nestjs/bullmq';
 import { JwtService } from '@nestjs/jwt';
 

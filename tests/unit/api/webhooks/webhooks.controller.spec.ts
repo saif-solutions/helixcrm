@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { WebhooksController } from '../../../src/modules/webhooks/webhooks.controller';
-import { WebhooksService } from '../../../src/modules/webhooks/webhooks.service';
+import { WebhooksController } from '@api/modules/webhooks/webhooks.controller';
+import { WebhooksService } from '@api/modules/webhooks/webhooks.service';
 
 // Mock the guards
 jest.mock('../../../src/shared/guards/auth.guard', () => ({

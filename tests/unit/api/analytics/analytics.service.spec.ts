@@ -1,16 +1,16 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { AnalyticsService } from '../../../src/modules/analytics/analytics.service';
-import { PrismaService } from '../../../src/shared/prisma/prisma.service';
-import { AuditLogService } from '../../../src/shared/audit-log/audit-log.service';
-import { AppLogger } from '../../../src/shared/logging/logger.service';
+import { AnalyticsService } from '@api/modules/analytics/analytics.service';
+import { PrismaService } from '@api/shared/prisma/prisma.service';
+import { AuditLogService } from '@api/shared/audit-log/audit-log.service';
+import { AppLogger } from '@api/shared/logging/logger.service';
 import { ConfigService } from '@nestjs/config';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { getQueueToken } from '@nestjs/bullmq';
-import { TenantContextService } from '../../../src/shared/tenant/context/tenant-context.service';
-import { PermissionContextService } from '../../../src/shared/permissions/context/permission-context.service';
-import { AnalyticsRepository } from '../../../src/modules/analytics/repositories/analytics.repository';
-import { AnalyticsSummaryRepository } from '../../../src/modules/analytics/repositories/analytics-summary.repository';
-import { AnalyticsSummaryService } from '../../../src/modules/analytics/services/analytics-summary.service';
+import { TenantContextService } from '@api/shared/tenant/context/tenant-context.service';
+import { PermissionContextService } from '@api/shared/permissions/context/permission-context.service';
+import { AnalyticsRepository } from '@api/modules/analytics/repositories/analytics.repository';
+import { AnalyticsSummaryRepository } from '@api/modules/analytics/repositories/analytics-summary.repository';
+import { AnalyticsSummaryService } from '@api/modules/analytics/services/analytics-summary.service';
 import { ForbiddenException, BadRequestException } from '@nestjs/common';
 import { 
   DealAnalyticsQueryDto, 
@@ -20,7 +20,7 @@ import {
   AnalyticsExportQueryDto,
   ExportFormat,
   AnalyticsGroupBy
-} from '../../../src/modules/analytics/dto/analytics-query.dto';
+} from '@api/modules/analytics/dto/analytics-query.dto';
 
 // Mock implementations
 const mockPrismaService = {

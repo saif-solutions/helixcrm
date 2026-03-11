@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { AuthThrottlerGuard } from '../../../src/shared/guards/auth-throttler.guard';
+import { AuthThrottlerGuard } from '@api/shared/guards/auth-throttler.guard';
 import { ThrottlerStorage, ThrottlerModuleOptions } from '@nestjs/throttler';
 import { Reflector } from '@nestjs/core';
 import { ExecutionContext } from '@nestjs/common';
