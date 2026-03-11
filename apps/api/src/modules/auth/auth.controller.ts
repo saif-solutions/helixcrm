@@ -11,7 +11,6 @@ import {
   Res,
   Req,
   Get,
-  BadRequestException,
   Query,
   Logger,
 } from '@nestjs/common';
@@ -27,6 +26,14 @@ import {
   AuditEntityType,
   AuditSeverity,
 } from '../../shared/audit-log/audit-log.service';
+import {
+  AuthenticatedRequest,
+  RegisterResult,
+  InvalidateSessionsResult,
+  DebugCookieResponse,
+  LoginResponse,
+  UserSessionResponse,
+} from './types/request.types';
 
 @Controller('auth')
 export class AuthController {
@@ -45,10 +52,11 @@ export class AuthController {
     @Body() loginDto: { email: string; password: string },
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
-  ) {
+  ): Promise<LoginResponse> {
     const user = await this.authService.validateUser(
       loginDto.email,
       loginDto.password,
+      req,
     );
 
     if (!user) {
@@ -79,13 +87,17 @@ export class AuthController {
       AuditSeverity.MEDIUM,
     );
 
-    return this.authService.login(user, res, req);
+    const loginResult = await this.authService.login(user, res, req);
+    return loginResult as LoginResponse;
   }
 
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   @UseGuards(AuthGuard)
-  async logout(@Req() req: any, @Res({ passthrough: true }) res: Response) {
+  async logout(
+    @Req() req: AuthenticatedRequest,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<{ message: string }> {
     const userId = req.user.sub;
 
     // Log logout event
@@ -109,19 +121,29 @@ export class AuthController {
   async refreshToken(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
-  ) {
-    const refreshToken = req.cookies?.refresh_token;
+  ): Promise<LoginResponse> {
+    const refreshToken: string | undefined =
+      typeof req.cookies?.refresh_token === 'string'
+        ? req.cookies.refresh_token
+        : undefined;
 
     if (!refreshToken) {
       throw new UnauthorizedException('No refresh token provided');
     }
 
-    return this.authService.refreshToken(refreshToken, res, req);
+    const refreshResult = await this.authService.refreshToken(
+      refreshToken,
+      res,
+      req,
+    );
+    return refreshResult as LoginResponse;
   }
 
   @Get('me')
   @UseGuards(AuthGuard)
-  async getCurrentUser(@Req() req: any) {
+  getCurrentUser(@Req() req: AuthenticatedRequest): {
+    user: { id: string; email: string; organizationId: string };
+  } {
     return {
       user: {
         id: req.user.sub,
@@ -144,13 +166,13 @@ export class AuthController {
       organizationName: string;
     },
     @Req() req: Request,
-  ) {
+  ): Promise<RegisterResult> {
+    // Now this returns the proper type with user and userId fields
     const result = await this.authService.register(registerDto, req);
 
     // Log user registration
     const userEmail = registerDto.email;
-    const userId =
-      (result as any).user?.id || (result as any).userId || 'unknown';
+    const userId = result.userId || result.id;
 
     await this.auditLogService.logWithRequest(
       req,
@@ -173,15 +195,21 @@ export class AuthController {
   @Get('sessions')
   @UseGuards(AuthGuard)
   @HttpCode(HttpStatus.OK)
-  async getSessions(@Req() req: any) {
+  async getSessions(
+    @Req() req: AuthenticatedRequest,
+  ): Promise<UserSessionResponse> {
     const userId = req.user.sub;
-    return this.authService.getUserSessions(userId);
+    const sessionsResult = await this.authService.getUserSessions(userId);
+    return sessionsResult as UserSessionResponse;
   }
 
   @Post('logout/all')
   @UseGuards(AuthGuard)
   @HttpCode(HttpStatus.OK)
-  async logoutAll(@Req() req: any, @Res({ passthrough: true }) res: Response) {
+  async logoutAll(
+    @Req() req: AuthenticatedRequest,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<{ message: string }> {
     const userId = req.user.sub;
 
     // Clear cookies
@@ -189,7 +217,7 @@ export class AuthController {
     res.clearCookie('refresh_token', SecurityConfig.cookies.refreshToken());
 
     // Invalidate all tokens
-    await this.authService.invalidateAllTokens(userId);
+    await this.authService.invalidateAllTokens(userId, req);
 
     // Log logout from all devices
     await this.auditLogService.logWithRequest(
@@ -210,20 +238,20 @@ export class AuthController {
   @UseGuards(AuthGuard)
   @HttpCode(HttpStatus.OK)
   async invalidateOtherSessions(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Query('keepCurrent') keepCurrent: string = 'true',
-  ) {
+  ): Promise<InvalidateSessionsResult> {
     const userId = req.user.sub;
     const shouldKeepCurrent = keepCurrent.toLowerCase() === 'true';
 
     const result = await this.authService.invalidateOtherSessions(
       userId,
       shouldKeepCurrent,
+      req,
     );
 
     // Log session invalidation
-    const invalidatedCount =
-      (result as any).invalidatedCount || (result as any).count || 0;
+    const invalidatedCount = result.invalidatedCount || result.count || 0;
 
     await this.auditLogService.logWithRequest(
       req,
@@ -235,7 +263,7 @@ export class AuthController {
       {
         scope: 'other_sessions',
         keepCurrent: shouldKeepCurrent,
-        invalidatedCount: invalidatedCount,
+        invalidatedCount,
       },
       AuditSeverity.MEDIUM,
     );
@@ -245,7 +273,10 @@ export class AuthController {
 
   @Get('debug-cookie')
   @Public()
-  debugCookie(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+  debugCookie(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): DebugCookieResponse {
     this.logger.log('🔍 Debug cookie endpoint called');
 
     // Set a test cookie
@@ -257,11 +288,12 @@ export class AuthController {
     });
 
     // Return info about existing cookies
-    return {
+    const response: DebugCookieResponse = {
       message: 'Test cookie set',
       cookies: req.cookies,
       hasTestCookie: !!req.cookies?.test_cookie,
       timestamp: new Date().toISOString(),
     };
+    return response;
   }
 }

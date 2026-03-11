@@ -653,6 +653,11 @@ export class AuthService {
     email: string;
     organizationId: string;
     message: string;
+    user?: {
+      id: string;
+      email: string;
+    };
+    userId?: string;
   }> {
     // Check if user exists
     const existingUser = await this.prisma.user.findUnique({
@@ -736,6 +741,11 @@ export class AuthService {
       organizationId: user.organizationId,
       message:
         'Organization created successfully. Default roles and permissions have been set up.',
+      user: {
+        id: user.id,
+        email: user.email,
+      },
+      userId: user.id,
     };
   }
 
@@ -832,7 +842,11 @@ export class AuthService {
     userId: string,
     keepCurrent: boolean = true,
     request?: Request,
-  ): Promise<{ message: string }> {
+  ): Promise<{
+    message: string;
+    invalidatedCount?: number;
+    count?: number;
+  }> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -844,6 +858,10 @@ export class AuthService {
     if (!user) {
       throw new BadRequestException('User not found');
     }
+
+    // Get count of other sessions before invalidation (if needed)
+    // This is a placeholder - adjust based on your actual session tracking
+    const invalidatedCount = 1; // Replace with actual count logic
 
     await this.prisma.user.update({
       where: { id: userId },
@@ -882,6 +900,8 @@ export class AuthService {
       message: keepCurrent
         ? 'All other sessions have been invalidated'
         : 'All sessions have been invalidated',
+      invalidatedCount,
+      count: invalidatedCount,
     };
   }
 

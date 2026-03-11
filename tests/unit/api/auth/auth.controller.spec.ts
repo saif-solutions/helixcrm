@@ -5,7 +5,7 @@ import { AuditLogService } from '@api/shared/audit-log/audit-log.service';
 import { UnauthorizedException } from '@nestjs/common';
 
 // Mock the guards - this is the key fix
-jest.mock('../../../src/shared/guards/auth.guard', () => ({
+jest.mock('@api/shared/guards/auth.guard', () => ({
   AuthGuard: jest.fn().mockImplementation(() => ({
     canActivate: jest.fn().mockReturnValue(true),
   })),
@@ -72,7 +72,7 @@ describe('AuthController', () => {
       const result = await controller.login(loginDto, mockRequest as any, mockResponse as any);
 
       expect(result).toEqual({ access_token: 'token' });
-      expect(authService.validateUser).toHaveBeenCalledWith(loginDto.email, loginDto.password);
+      expect(authService.validateUser).toHaveBeenCalledWith(loginDto.email, loginDto.password, mockRequest);
       expect(mockAuditLogService.logWithRequest).toHaveBeenCalledTimes(1);
       expect(authService.login).toHaveBeenCalledWith(mockUser, mockResponse, mockRequest);
     });
@@ -80,9 +80,9 @@ describe('AuthController', () => {
     it('should throw UnauthorizedException for invalid credentials', async () => {
       authService.validateUser.mockResolvedValue(null);
 
-      await expect(
-        controller.login(loginDto, mockRequest as any, mockResponse as any),
-      ).rejects.toThrow(UnauthorizedException);
+await expect(
+  controller.login(loginDto, mockRequest as any, mockResponse as any),
+).rejects.toThrow('Invalid credentials');
 
       expect(mockAuditLogService.logWithRequest).toHaveBeenCalledTimes(1);
       expect(authService.login).not.toHaveBeenCalled();
@@ -129,9 +129,9 @@ describe('AuthController', () => {
     it('should throw UnauthorizedException if no refresh token', async () => {
       mockRequest.cookies = {};
 
-      await expect(
-        controller.refreshToken(mockRequest as any, mockResponse as any),
-      ).rejects.toThrow(UnauthorizedException);
+await expect(
+  controller.refreshToken(mockRequest as any, mockResponse as any),
+).rejects.toThrow('No refresh token provided');
     });
   });
 
@@ -208,7 +208,7 @@ describe('AuthController', () => {
 
       expect(result).toEqual({ message: 'Logged out from all devices' });
       expect(mockResponse.clearCookie).toHaveBeenCalledTimes(2);
-      expect(authService.invalidateAllTokens).toHaveBeenCalledWith('user-123');
+      expect(authService.invalidateAllTokens).toHaveBeenCalledWith('user-123', mockRequestWithUser);
       expect(mockAuditLogService.logWithRequest).toHaveBeenCalled();
     });
   });
@@ -225,7 +225,7 @@ describe('AuthController', () => {
       const result = await controller.invalidateOtherSessions(mockRequestWithUser as any, 'true');
 
       expect(result).toEqual(mockResult);
-      expect(authService.invalidateOtherSessions).toHaveBeenCalledWith('user-123', true);
+      expect(authService.invalidateOtherSessions).toHaveBeenCalledWith('user-123', true, mockRequestWithUser);
       expect(mockAuditLogService.logWithRequest).toHaveBeenCalled();
     });
 
@@ -236,7 +236,7 @@ describe('AuthController', () => {
       const result = await controller.invalidateOtherSessions(mockRequestWithUser as any, 'false');
 
       expect(result).toEqual(mockResult);
-      expect(authService.invalidateOtherSessions).toHaveBeenCalledWith('user-123', false);
+      expect(authService.invalidateOtherSessions).toHaveBeenCalledWith('user-123', false, mockRequestWithUser);
     });
   });
 
