@@ -66,8 +66,13 @@ const DialogWithComponents = Dialog as typeof Dialog & {
   Footer: React.ComponentType<React.ComponentProps<typeof DialogFooter>>;
 };
 
-
-const DialogHeader = ({ title, description, showCloseButton = true, children, ...props }: DialogHeaderStoryProps) => (
+const DialogHeader = ({
+  title,
+  description,
+  showCloseButton = true,
+  children,
+  ...props
+}: DialogHeaderStoryProps) => (
   <div
     className="flex items-start justify-between p-6 pb-4 border-b border-gray-200 dark:border-gray-700"
     {...props}
@@ -114,23 +119,29 @@ const DialogFooter = ({ children, className = '', ...props }: DialogFooterStoryP
 );
 
 // Attach mock compound components
-(DialogWithComponents as typeof Dialog & {
-  Header: typeof DialogHeader;
-  Body: typeof DialogBody;
-  Footer: typeof DialogFooter;
-}).Header = DialogHeader;
+(
+  DialogWithComponents as typeof Dialog & {
+    Header: typeof DialogHeader;
+    Body: typeof DialogBody;
+    Footer: typeof DialogFooter;
+  }
+).Header = DialogHeader;
 
-(DialogWithComponents as typeof Dialog & {
-  Header: typeof DialogHeader;
-  Body: typeof DialogBody;
-  Footer: typeof DialogFooter;
-}).Body = DialogBody;
+(
+  DialogWithComponents as typeof Dialog & {
+    Header: typeof DialogHeader;
+    Body: typeof DialogBody;
+    Footer: typeof DialogFooter;
+  }
+).Body = DialogBody;
 
-(DialogWithComponents as typeof Dialog & {
-  Header: typeof DialogHeader;
-  Body: typeof DialogBody;
-  Footer: typeof DialogFooter;
-}).Footer = DialogFooter;
+(
+  DialogWithComponents as typeof Dialog & {
+    Header: typeof DialogHeader;
+    Body: typeof DialogBody;
+    Footer: typeof DialogFooter;
+  }
+).Footer = DialogFooter;
 
 // ============================================================================
 // 1. METADATA & CONFIGURATION
@@ -1296,11 +1307,7 @@ const FormValidationExample = (args: Story['args'] = {}) => {
   };
 
   return (
-    <Dialog 
-  {...args} 
-  open={args?.open ?? true} 
-  onClose={args?.onClose ?? fn()}
->
+    <Dialog {...args} open={args?.open ?? true} onClose={args?.onClose ?? fn()}>
       <div className="space-y-6">
         <div>
           <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
@@ -1368,7 +1375,7 @@ const FormValidationExample = (args: Story['args'] = {}) => {
 
 export const FormValidation: Story = {
   name: 'Pattern: Form with Validation',
-  render: (args) => <FormValidationExample {...args || {}} />,
+  render: (args) => <FormValidationExample {...(args || {})} />,
   args: {
     open: true,
     variant: 'form',
@@ -1748,12 +1755,7 @@ const DynamicContentDialog = () => {
   const [showDetails, setShowDetails] = React.useState(false);
 
   return (
-    <Dialog
-      open={true}
-      onClose={fn()}
-      title="Dynamic Content Example"
-      data-testid="dynamic-dialog"
-    >
+    <Dialog open={true} onClose={fn()} title="Dynamic Content Example" data-testid="dynamic-dialog">
       <div className="space-y-4">
         <p className="text-gray-600 dark:text-gray-400">This dialog changes content dynamically.</p>
 

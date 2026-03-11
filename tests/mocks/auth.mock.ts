@@ -19,10 +19,10 @@ export const createMockAuthCoreAdapter = () => ({
     saveRefreshToken: jest.fn().mockResolvedValue(undefined),
   },
   userRepository: {
-    findById: jest.fn().mockResolvedValue({ 
-      id: 'user-id', 
-      email: 'test@example.com', 
-      tokenVersion: 1 
+    findById: jest.fn().mockResolvedValue({
+      id: 'user-id',
+      email: 'test@example.com',
+      tokenVersion: 1,
     }),
   },
 });

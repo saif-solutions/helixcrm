@@ -8,7 +8,6 @@ import {
   TenantInvariants,
 } from '../../../src/contracts/tenant.contract';
 
-
 describe('Tenant Contract', () => {
   describe('CreateTenantInput', () => {
     it('should validate a valid BASIC tenant', async () => {
@@ -19,7 +18,7 @@ describe('Tenant Contract', () => {
 
       const errors = await validate(input);
       expect(errors).toHaveLength(0);
-      
+
       const invariantErrors = input.validateInvariants();
       expect(invariantErrors).toHaveLength(0);
     });
@@ -33,7 +32,7 @@ describe('Tenant Contract', () => {
 
       const errors = await validate(input);
       expect(errors).toHaveLength(0); // Basic validation passes
-      
+
       const invariantErrors = input.validateInvariants();
       expect(invariantErrors).toContain('Enterprise plan requires a custom domain');
     });
@@ -47,7 +46,7 @@ describe('Tenant Contract', () => {
 
       const errors = await validate(input);
       expect(errors).toHaveLength(0);
-      
+
       const invariantErrors = input.validateInvariants();
       expect(invariantErrors).toHaveLength(0);
     });
@@ -60,9 +59,11 @@ describe('Tenant Contract', () => {
 
       const errors = await validate(input);
       expect(errors).toHaveLength(0); // Basic validation passes
-      
+
       const invariantErrors = input.validateInvariants();
-      expect(invariantErrors).toContain('Slug can only contain lowercase letters, numbers, and hyphens');
+      expect(invariantErrors).toContain(
+        'Slug can only contain lowercase letters, numbers, and hyphens',
+      );
     });
 
     it('should accept valid slug format', async () => {
@@ -73,7 +74,7 @@ describe('Tenant Contract', () => {
 
       const errors = await validate(input);
       expect(errors).toHaveLength(0);
-      
+
       const invariantErrors = input.validateInvariants();
       expect(invariantErrors).toHaveLength(0);
     });
@@ -97,7 +98,7 @@ describe('Tenant Contract', () => {
 
       const errors = await validate(input);
       expect(errors).toHaveLength(0);
-      
+
       const invariantErrors = input.validateInvariants();
       expect(invariantErrors).toHaveLength(0);
     });
@@ -109,7 +110,10 @@ describe('Tenant Contract', () => {
       const errors = TenantInvariants.validateEnterprisePlan(input);
       expect(errors).toContain('Enterprise plan requires a custom domain');
 
-      const inputWithDomain = { plan: TenantPlan.ENTERPRISE, customDomain: 'https://example.com' } as CreateTenantInput;
+      const inputWithDomain = {
+        plan: TenantPlan.ENTERPRISE,
+        customDomain: 'https://example.com',
+      } as CreateTenantInput;
       const errorsWithDomain = TenantInvariants.validateEnterprisePlan(inputWithDomain);
       expect(errorsWithDomain).toHaveLength(0);
     });

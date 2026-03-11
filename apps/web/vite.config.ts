@@ -1,28 +1,28 @@
-import { defineConfig, loadEnv } from 'vite'
-import react from '@vitejs/plugin-react'
-import path from 'path'
+import { defineConfig, loadEnv } from 'vite';
+import react from '@vitejs/plugin-react';
+import path from 'path';
 
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), '')
-  
+  const env = loadEnv(mode, process.cwd(), '');
+
   // Get backend URL from env or default to localhost:3001
-  const BACKEND_URL = env.VITE_BACKEND_URL || 'http://localhost:3001'
-  const FRONTEND_PORT = 3000
-  
+  const BACKEND_URL = env.VITE_BACKEND_URL || 'http://localhost:3001';
+  const FRONTEND_PORT = 3000;
+
   console.log(`🚀 Vite Configuration:
     - Mode: ${mode}
     - Frontend: http://localhost:${FRONTEND_PORT}
     - Backend: ${BACKEND_URL}
     - API Path: /api/v1
-  `)
-  
+  `);
+
   return {
     server: {
       port: FRONTEND_PORT,
       host: true,
       open: mode !== 'production',
       cors: true,
-      
+
       // Simple proxy configuration
       proxy: {
         '/api': {
@@ -33,12 +33,12 @@ export default defineConfig(({ mode }) => {
         },
       },
     },
-    
+
     preview: {
       port: FRONTEND_PORT,
       host: true,
     },
-    
+
     build: {
       outDir: 'dist',
       sourcemap: mode === 'production' ? 'hidden' : true,
@@ -48,37 +48,33 @@ export default defineConfig(({ mode }) => {
         output: {
           manualChunks: {
             'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-            'ui-vendor': [
-              '@heroicons/react',
-              'lucide-react',
-              '@radix-ui/react-dropdown-menu'
-            ],
+            'ui-vendor': ['@heroicons/react', 'lucide-react', '@radix-ui/react-dropdown-menu'],
             'state-vendor': ['@tanstack/react-query', 'zustand', 'react-hook-form'],
-            'utils-vendor': ['axios', 'zod', 'uuid']
-          }
-        }
+            'utils-vendor': ['axios', 'zod', 'uuid'],
+          },
+        },
       },
     },
-    
+
     plugins: [
       react({
         include: '**/*.{jsx,tsx,ts,js}',
         jsxImportSource: 'react',
       }),
     ],
-    
+
     resolve: {
       alias: {
         // Base alias
         '@': path.resolve(__dirname, './src'),
-        
+
         // Atomic Design aliases
         '@atoms': path.resolve(__dirname, './src/components/atoms'),
         '@molecules': path.resolve(__dirname, './src/components/molecules'),
         '@organisms': path.resolve(__dirname, './src/components/organisms'),
         '@feedback': path.resolve(__dirname, './src/components/feedback'),
         '@layout': path.resolve(__dirname, './src/components/layout'),
-        
+
         // Feature aliases
         '@pages': path.resolve(__dirname, './src/pages'),
         '@services': path.resolve(__dirname, './src/services'),
@@ -93,14 +89,14 @@ export default defineConfig(({ mode }) => {
       },
       extensions: ['.js', '.jsx', '.ts', '.tsx', '.json', '.css'],
     },
-    
+
     define: {
       __APP_VERSION__: JSON.stringify(env.VITE_APP_VERSION || '0.9.0'),
       __APP_NAME__: JSON.stringify(env.VITE_APP_NAME || 'HelixCRM'),
       __ENVIRONMENT__: JSON.stringify(mode),
       __BUILD_DATE__: JSON.stringify(new Date().toISOString()),
     },
-    
+
     optimizeDeps: {
       include: [
         'react',
@@ -109,14 +105,14 @@ export default defineConfig(({ mode }) => {
         '@heroicons/react',
         'lucide-react',
         '@tanstack/react-query',
-        'zustand'
+        'zustand',
       ],
       exclude: ['@tanstack/react-query-devtools'],
     },
-    
+
     // Performance optimizations
     esbuild: {
       drop: mode === 'production' ? ['console', 'debugger'] : [],
     },
-  }
-})
+  };
+});

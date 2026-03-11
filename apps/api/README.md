@@ -1,9 +1,11 @@
 # HelixCRM API
 
 ## Overview
+
 NestJS backend API for HelixCRM platform.
 
 ## Quick Start
+
 ```bash
 # 1. Install dependencies
 npm install
@@ -93,3 +95,4 @@ Structured logging enabled
 Request/response logging (development)
 
 Error tracking
+```

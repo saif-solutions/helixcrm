@@ -48,7 +48,7 @@ describe('UsersController', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
-    
+
     // Default to true for most tests
     mockPermissionContext.isInitialized.mockReturnValue(true);
 
@@ -82,7 +82,10 @@ describe('UsersController', () => {
       const result = await controller.create(createUserDto, mockRequest);
 
       expect(result).toEqual(mockResult);
-      expect(usersService.create).toHaveBeenCalledWith(createUserDto, 'user-123');
+      expect(usersService.create).toHaveBeenCalledWith(
+        createUserDto,
+        'user-123',
+      );
     });
 
     // Note: create method doesn't check permission context, so we remove the failing test
@@ -104,7 +107,9 @@ describe('UsersController', () => {
     it('should throw ForbiddenException if permission context not initialized', async () => {
       permissionContext.isInitialized.mockReturnValue(false);
 
-      await expect(controller.findAll(query)).rejects.toThrow(ForbiddenException);
+      await expect(controller.findAll(query)).rejects.toThrow(
+        ForbiddenException,
+      );
       expect(usersService.findAll).not.toHaveBeenCalled();
     });
   });
@@ -138,7 +143,9 @@ describe('UsersController', () => {
     it('should throw ForbiddenException if permission context not initialized', async () => {
       permissionContext.isInitialized.mockReturnValue(false);
 
-      await expect(controller.findOne(userId)).rejects.toThrow(ForbiddenException);
+      await expect(controller.findOne(userId)).rejects.toThrow(
+        ForbiddenException,
+      );
       expect(usersService.findOne).not.toHaveBeenCalled();
     });
   });
@@ -151,16 +158,26 @@ describe('UsersController', () => {
     it('should successfully update a user', async () => {
       usersService.update.mockResolvedValue(mockResult);
 
-      const result = await controller.update(userId, updateUserDto, mockRequest);
+      const result = await controller.update(
+        userId,
+        updateUserDto,
+        mockRequest,
+      );
 
       expect(result).toEqual(mockResult);
-      expect(usersService.update).toHaveBeenCalledWith(userId, updateUserDto, 'user-123');
+      expect(usersService.update).toHaveBeenCalledWith(
+        userId,
+        updateUserDto,
+        'user-123',
+      );
     });
 
     it('should throw ForbiddenException if permission context not initialized', async () => {
       permissionContext.isInitialized.mockReturnValue(false);
 
-      await expect(controller.update(userId, updateUserDto, mockRequest)).rejects.toThrow(ForbiddenException);
+      await expect(
+        controller.update(userId, updateUserDto, mockRequest),
+      ).rejects.toThrow(ForbiddenException);
       expect(usersService.update).not.toHaveBeenCalled();
     });
   });
@@ -181,7 +198,9 @@ describe('UsersController', () => {
     it('should throw ForbiddenException if permission context not initialized', async () => {
       permissionContext.isInitialized.mockReturnValue(false);
 
-      await expect(controller.remove(userId, mockRequest)).rejects.toThrow(ForbiddenException);
+      await expect(controller.remove(userId, mockRequest)).rejects.toThrow(
+        ForbiddenException,
+      );
       expect(usersService.remove).not.toHaveBeenCalled();
     });
   });

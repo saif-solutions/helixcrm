@@ -168,17 +168,28 @@ describe('RolesController', () => {
     it('should successfully update a role', async () => {
       mockRolesService.update.mockResolvedValue(mockResult);
 
-      const result = await controller.update(mockRequest as any, roleId, updateRoleDto);
+      const result = await controller.update(
+        mockRequest as any,
+        roleId,
+        updateRoleDto,
+      );
 
       expect(result).toEqual(mockResult);
-      expect(mockRolesService.update).toHaveBeenCalledWith(roleId, updateRoleDto);
+      expect(mockRolesService.update).toHaveBeenCalledWith(
+        roleId,
+        updateRoleDto,
+      );
     });
 
     it('should throw ForbiddenException if permission context not initialized', async () => {
       const uninitializedController = await createController(false);
 
       try {
-        await uninitializedController.update(mockRequest as any, roleId, updateRoleDto);
+        await uninitializedController.update(
+          mockRequest as any,
+          roleId,
+          updateRoleDto,
+        );
         expect(true).toBe(false);
       } catch (error) {
         expect(error).toBeInstanceOf(ForbiddenException);
@@ -225,7 +236,10 @@ describe('RolesController', () => {
     it('should successfully assign role to user', async () => {
       mockRolesService.assignRole.mockResolvedValue(mockResult);
 
-      const result = await controller.assignRole(mockRequest as any, assignRoleDto);
+      const result = await controller.assignRole(
+        mockRequest as any,
+        assignRoleDto,
+      );
 
       expect(result).toEqual(mockResult);
       expect(mockRolesService.assignRole).toHaveBeenCalledWith(assignRoleDto);
@@ -235,7 +249,10 @@ describe('RolesController', () => {
       const uninitializedController = await createController(false);
 
       try {
-        await uninitializedController.assignRole(mockRequest as any, assignRoleDto);
+        await uninitializedController.assignRole(
+          mockRequest as any,
+          assignRoleDto,
+        );
         expect(true).toBe(false);
       } catch (error) {
         expect(error).toBeInstanceOf(ForbiddenException);
@@ -255,7 +272,10 @@ describe('RolesController', () => {
     it('should successfully remove role from user', async () => {
       mockRolesService.removeRole.mockResolvedValue(mockResult);
 
-      const result = await controller.removeRole(mockRequest as any, removeRoleDto);
+      const result = await controller.removeRole(
+        mockRequest as any,
+        removeRoleDto,
+      );
 
       expect(result).toEqual(mockResult);
       expect(mockRolesService.removeRole).toHaveBeenCalledWith(removeRoleDto);
@@ -265,7 +285,10 @@ describe('RolesController', () => {
       const uninitializedController = await createController(false);
 
       try {
-        await uninitializedController.removeRole(mockRequest as any, removeRoleDto);
+        await uninitializedController.removeRole(
+          mockRequest as any,
+          removeRoleDto,
+        );
         expect(true).toBe(false);
       } catch (error) {
         expect(error).toBeInstanceOf(ForbiddenException);

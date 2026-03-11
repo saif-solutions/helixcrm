@@ -4,21 +4,21 @@ const prisma = new PrismaClient();
 
 async function createOrganization() {
   const orgId = '6620ee6e-143c-44a2-a6a3-d8b4d44f65be';
-  
+
   // Check if organization exists
   let org = await prisma.organization.findUnique({
-    where: { id: orgId }
+    where: { id: orgId },
   });
-  
+
   if (!org) {
-    console.log('Ì≥ù Creating organization...');
+    console.log('ÔøΩÔøΩÔøΩ Creating organization...');
     org = await prisma.organization.create({
       data: {
         id: orgId,
         name: 'Test Organization',
         slug: 'test-org',
-        status: 'active'
-      }
+        status: 'active',
+      },
     });
     console.log('‚úÖ Organization created:', org.id);
   } else {

@@ -1,15 +1,18 @@
 # HelixCRM Web Application
 
 ## Overview
+
 React frontend for HelixCRM platform.
 
 ## Development
 
 ### Prerequisites
+
 - Backend API running (see [API README](../api/README.md))
 - Node.js 18+
 
 ### Setup
+
 ```bash
 # Install dependencies
 npm install
@@ -79,3 +82,4 @@ Accessibility compliance (WCAG 2.1 AA)
 Storybook documentation
 
 Example: See Dropdown component
+```

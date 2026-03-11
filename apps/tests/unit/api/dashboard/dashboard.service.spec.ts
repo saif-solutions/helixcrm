@@ -63,9 +63,7 @@ describe('DashboardService', () => {
 
     service = module.get<DashboardService>(DashboardService);
     dashboardRepository = module.get<DashboardRepository>(DashboardRepository);
-    permissionContext = module.get<PermissionContextService>(
-      PermissionContextService,
-    );
+    permissionContext = module.get<PermissionContextService>(PermissionContextService);
     tenantContext = module.get<TenantContextService>(TenantContextService);
 
     // Setup default mocks
@@ -88,9 +86,7 @@ describe('DashboardService', () => {
 
       // Act & Assert
       await expect(service.getStats()).rejects.toThrow(ForbiddenException);
-      expect(mockPermissionContext.hasPermission).toHaveBeenCalledWith(
-        'dashboard.read',
-      );
+      expect(mockPermissionContext.hasPermission).toHaveBeenCalledWith('dashboard.read');
     });
 
     it('should return dashboard stats when permission is granted', async () => {
@@ -121,19 +117,13 @@ describe('DashboardService', () => {
       };
 
       mockDashboardRepository.getLeadCount.mockResolvedValue(mockStats.leads);
-      mockDashboardRepository.getContactCount.mockResolvedValue(
-        mockStats.contacts,
-      );
+      mockDashboardRepository.getContactCount.mockResolvedValue(mockStats.contacts);
       mockDashboardRepository.getDealCount.mockResolvedValue(mockStats.deals);
-      mockDashboardRepository.getDealValueSum.mockResolvedValue(
-        mockStats.dealValue,
-      );
+      mockDashboardRepository.getDealValueSum.mockResolvedValue(mockStats.dealValue);
       mockDashboardRepository.getDefaultPipelineWithStats.mockResolvedValue(
         mockStats.defaultPipeline,
       );
-      mockDashboardRepository.getDealStatusDistribution.mockResolvedValue(
-        mockStats.statusStats,
-      );
+      mockDashboardRepository.getDealStatusDistribution.mockResolvedValue(mockStats.statusStats);
 
       // Act
       const result = await service.getStats();
@@ -152,12 +142,8 @@ describe('DashboardService', () => {
       expect(mockDashboardRepository.getContactCount).toHaveBeenCalled();
       expect(mockDashboardRepository.getDealCount).toHaveBeenCalled();
       expect(mockDashboardRepository.getDealValueSum).toHaveBeenCalled();
-      expect(
-        mockDashboardRepository.getDefaultPipelineWithStats,
-      ).toHaveBeenCalled();
-      expect(
-        mockDashboardRepository.getDealStatusDistribution,
-      ).toHaveBeenCalled();
+      expect(mockDashboardRepository.getDefaultPipelineWithStats).toHaveBeenCalled();
+      expect(mockDashboardRepository.getDealStatusDistribution).toHaveBeenCalled();
     });
 
     it('should handle missing default pipeline gracefully', async () => {
@@ -168,9 +154,7 @@ describe('DashboardService', () => {
       mockDashboardRepository.getDealValueSum.mockResolvedValue({
         _sum: { amount: 5000 },
       });
-      mockDashboardRepository.getDefaultPipelineWithStats.mockResolvedValue(
-        null,
-      );
+      mockDashboardRepository.getDefaultPipelineWithStats.mockResolvedValue(null);
       mockDashboardRepository.getDealStatusDistribution.mockResolvedValue([]);
 
       // Act
@@ -189,9 +173,7 @@ describe('DashboardService', () => {
       mockDashboardRepository.getDealValueSum.mockResolvedValue({
         _sum: { amount: 1000 },
       });
-      mockDashboardRepository.getDefaultPipelineWithStats.mockResolvedValue(
-        null,
-      );
+      mockDashboardRepository.getDefaultPipelineWithStats.mockResolvedValue(null);
       mockDashboardRepository.getDealStatusDistribution.mockResolvedValue([]);
 
       // Act

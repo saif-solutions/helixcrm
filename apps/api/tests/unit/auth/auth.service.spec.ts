@@ -4,7 +4,11 @@ import { PrismaService } from '../../../src/shared/prisma/prisma.service';
 import { AccountLockoutService } from '../../../src/modules/auth/services/account-lockout.service';
 import { AuditLogService } from '../../../src/shared/audit-log/audit-log.service';
 import { AuthCoreAdapter } from '../../../src/modules/auth/adapters/AuthCoreAdapter';
-import { UnauthorizedException, ForbiddenException, ConflictException } from '@nestjs/common';
+import {
+  UnauthorizedException,
+  ForbiddenException,
+  ConflictException,
+} from '@nestjs/common';
 
 // Mock implementations
 const mockPrismaService = {
@@ -117,17 +121,24 @@ describe('AuthService', () => {
         lockedUntil: new Date(),
       });
 
-      await expect(service.validateUser('test@example.com', 'password', {}))
-        .rejects.toThrow(ForbiddenException);
-      
-      expect(lockoutService.isAccountLocked).toHaveBeenCalledWith('test@example.com');
+      await expect(
+        service.validateUser('test@example.com', 'password', {}),
+      ).rejects.toThrow(ForbiddenException);
+
+      expect(lockoutService.isAccountLocked).toHaveBeenCalledWith(
+        'test@example.com',
+      );
     });
 
     it('should return null if user not found', async () => {
       lockoutService.isAccountLocked.mockResolvedValue({ isLocked: false });
       prisma.user.findUnique.mockResolvedValue(null);
 
-      const result = await service.validateUser('test@example.com', 'password', {});
+      const result = await service.validateUser(
+        'test@example.com',
+        'password',
+        {},
+      );
       expect(result).toBeNull();
       expect(lockoutService.recordFailedAttempt).not.toHaveBeenCalled();
     });
@@ -137,9 +148,15 @@ describe('AuthService', () => {
       prisma.user.findUnique.mockResolvedValue(mockUser);
       authCore.password.verify.mockResolvedValue(false);
 
-      const result = await service.validateUser('test@example.com', 'wrong-password', {});
+      const result = await service.validateUser(
+        'test@example.com',
+        'wrong-password',
+        {},
+      );
       expect(result).toBeNull();
-      expect(lockoutService.recordFailedAttempt).toHaveBeenCalledWith(mockUser.id);
+      expect(lockoutService.recordFailedAttempt).toHaveBeenCalledWith(
+        mockUser.id,
+      );
       expect(auditLog.logAuthEvent).toHaveBeenCalled();
     });
 
@@ -148,12 +165,20 @@ describe('AuthService', () => {
       prisma.user.findUnique.mockResolvedValue(mockUser);
       authCore.password.verify.mockResolvedValue(true);
 
-      const result = await service.validateUser('test@example.com', 'correct-password', {});
-      expect(result).toEqual(expect.objectContaining({
-        id: mockUser.id,
-        email: mockUser.email,
-      }));
-      expect(lockoutService.resetFailedAttempts).toHaveBeenCalledWith(mockUser.id);
+      const result = await service.validateUser(
+        'test@example.com',
+        'correct-password',
+        {},
+      );
+      expect(result).toEqual(
+        expect.objectContaining({
+          id: mockUser.id,
+          email: mockUser.email,
+        }),
+      );
+      expect(lockoutService.resetFailedAttempts).toHaveBeenCalledWith(
+        mockUser.id,
+      );
     });
   });
 
@@ -179,7 +204,9 @@ describe('AuthService', () => {
       });
 
       authCore.authCore.issueAccessToken.mockResolvedValue('access-token');
-      authCore.tokenManager.issueRefreshToken.mockResolvedValue('refresh-token');
+      authCore.tokenManager.issueRefreshToken.mockResolvedValue(
+        'refresh-token',
+      );
     });
 
     it('should successfully login user', async () => {
@@ -189,7 +216,10 @@ describe('AuthService', () => {
 
       expect(result).toHaveProperty('access_token', 'access-token');
       expect(result.user).toHaveProperty('id', mockUser.id);
-      expect(result.user).toHaveProperty('permissions', ['lead:read', 'lead:write']);
+      expect(result.user).toHaveProperty('permissions', [
+        'lead:read',
+        'lead:write',
+      ]);
       expect(mockRes.cookie).toHaveBeenCalledTimes(2);
       expect(prisma.user.update).toHaveBeenCalledWith({
         where: { id: mockUser.id },
@@ -199,16 +229,19 @@ describe('AuthService', () => {
     });
 
     it('should handle errors during login', async () => {
-      authCore.authCore.issueAccessToken.mockRejectedValue(new Error('Token generation failed'));
+      authCore.authCore.issueAccessToken.mockRejectedValue(
+        new Error('Token generation failed'),
+      );
 
-      await expect(service.login(mockUser, mockRes, {}))
-        .rejects.toThrow('Token generation failed');
-      
+      await expect(service.login(mockUser, mockRes, {})).rejects.toThrow(
+        'Token generation failed',
+      );
+
       expect(auditLog.logAuthEvent).toHaveBeenCalledWith(
         expect.objectContaining({
           action: 'LOGIN_FAILURE',
           actorEmail: mockUser.email,
-        })
+        }),
       );
     });
   });
@@ -225,14 +258,15 @@ describe('AuthService', () => {
     it('should throw ConflictException if user already exists', async () => {
       prisma.user.findUnique.mockResolvedValue({ id: 'existing-user' });
 
-      await expect(service.register(registerDto, {}))
-        .rejects.toThrow(ConflictException);
+      await expect(service.register(registerDto, {})).rejects.toThrow(
+        ConflictException,
+      );
     });
 
     it('should successfully register new user', async () => {
       prisma.user.findUnique.mockResolvedValue(null);
       authCore.password.hash.mockResolvedValue('hashed-password');
-      
+
       const mockOrg = { id: 'org-123', name: 'New Org' };
       prisma.organization.create.mockResolvedValue(mockOrg);
 
@@ -246,8 +280,12 @@ describe('AuthService', () => {
       prisma.user.create.mockResolvedValue(mockNewUser);
 
       // Mock internal methods
-      jest.spyOn(service as any, 'createDefaultRolesForOrganization').mockResolvedValue(undefined);
-      jest.spyOn(service as any, 'assignSystemAdminRoleToUser').mockResolvedValue(undefined);
+      jest
+        .spyOn(service as any, 'createDefaultRolesForOrganization')
+        .mockResolvedValue(undefined);
+      jest
+        .spyOn(service as any, 'assignSystemAdminRoleToUser')
+        .mockResolvedValue(undefined);
 
       const result = await service.register(registerDto, {});
 
@@ -255,8 +293,13 @@ describe('AuthService', () => {
       expect(result).toHaveProperty('email', registerDto.email);
       expect(prisma.organization.create).toHaveBeenCalled();
       expect(prisma.user.create).toHaveBeenCalled();
-      expect(service['createDefaultRolesForOrganization']).toHaveBeenCalledWith(mockOrg.id);
-      expect(service['assignSystemAdminRoleToUser']).toHaveBeenCalledWith(mockNewUser.id, mockOrg.id);
+      expect(service['createDefaultRolesForOrganization']).toHaveBeenCalledWith(
+        mockOrg.id,
+      );
+      expect(service['assignSystemAdminRoleToUser']).toHaveBeenCalledWith(
+        mockNewUser.id,
+        mockOrg.id,
+      );
       expect(auditLog.logWithRequest).toHaveBeenCalled();
     });
   });
@@ -288,8 +331,9 @@ describe('AuthService', () => {
     it('should throw BadRequestException if user not found', async () => {
       prisma.user.findUnique.mockResolvedValue(null);
 
-      await expect(service.logout('user-123', {}, {}))
-        .rejects.toThrow('User not found');
+      await expect(service.logout('user-123', {}, {})).rejects.toThrow(
+        'User not found',
+      );
     });
   });
 });

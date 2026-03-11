@@ -44,20 +44,13 @@ describe('RequestContextMiddleware', () => {
       (mockRequest.header as jest.Mock).mockReturnValue(providedRequestId);
 
       // Act
-      middleware.use(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext,
-      );
+      middleware.use(mockRequest as Request, mockResponse as Response, mockNext);
 
       // Assert
       expect(mockRequest.header).toHaveBeenCalledWith('X-Request-ID');
-      expect(mockResponse.setHeader).toHaveBeenCalledWith(
-        'X-Request-ID',
-        providedRequestId,
-      );
+      expect(mockResponse.setHeader).toHaveBeenCalledWith('X-Request-ID', providedRequestId);
       expect((mockRequest as any).requestId).toBe(providedRequestId);
-      
+
       // Check ALS run was called with correct store
       expect(als.run).toHaveBeenCalledWith(
         {
@@ -86,21 +79,14 @@ describe('RequestContextMiddleware', () => {
       (randomUUID as jest.Mock).mockReturnValue(generatedRequestId);
 
       // Act
-      middleware.use(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext,
-      );
+      middleware.use(mockRequest as Request, mockResponse as Response, mockNext);
 
       // Assert
       expect(mockRequest.header).toHaveBeenCalledWith('X-Request-ID');
       expect(randomUUID).toHaveBeenCalled();
-      expect(mockResponse.setHeader).toHaveBeenCalledWith(
-        'X-Request-ID',
-        generatedRequestId,
-      );
+      expect(mockResponse.setHeader).toHaveBeenCalledWith('X-Request-ID', generatedRequestId);
       expect((mockRequest as any).requestId).toBe(generatedRequestId);
-      
+
       // Check ALS run was called with correct store
       expect(als.run).toHaveBeenCalledWith(
         {
@@ -128,18 +114,11 @@ describe('RequestContextMiddleware', () => {
       (randomUUID as jest.Mock).mockReturnValue(generatedRequestId);
 
       // Act
-      middleware.use(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext,
-      );
+      middleware.use(mockRequest as Request, mockResponse as Response, mockNext);
 
       // Assert
       expect(randomUUID).toHaveBeenCalled();
-      expect(mockResponse.setHeader).toHaveBeenCalledWith(
-        'X-Request-ID',
-        generatedRequestId,
-      );
+      expect(mockResponse.setHeader).toHaveBeenCalledWith('X-Request-ID', generatedRequestId);
     });
 
     it('should set the requestId on the request object', () => {
@@ -148,11 +127,7 @@ describe('RequestContextMiddleware', () => {
       (mockRequest.header as jest.Mock).mockReturnValue(providedRequestId);
 
       // Act
-      middleware.use(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext,
-      );
+      middleware.use(mockRequest as Request, mockResponse as Response, mockNext);
 
       // Assert
       expect((mockRequest as any).requestId).toBe(providedRequestId);
@@ -164,11 +139,7 @@ describe('RequestContextMiddleware', () => {
       (mockRequest.header as jest.Mock).mockReturnValue(providedRequestId);
 
       // Act
-      middleware.use(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext,
-      );
+      middleware.use(mockRequest as Request, mockResponse as Response, mockNext);
 
       // Call the callback
       const callback = (als.run as jest.Mock).mock.calls[0][1];
@@ -184,11 +155,7 @@ describe('RequestContextMiddleware', () => {
       (mockRequest.header as jest.Mock).mockReturnValue(providedRequestId);
 
       // Act
-      middleware.use(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext,
-      );
+      middleware.use(mockRequest as Request, mockResponse as Response, mockNext);
 
       // Assert
       expect(als.run).toHaveBeenCalledWith(

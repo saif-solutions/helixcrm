@@ -7,9 +7,7 @@ import { createMockAuthCoreAdapter } from '../mocks/auth.mock';
 
 // Use actual Prisma Client types instead of manual mocks
 type PrismaModels = {
-  [K in keyof PrismaClient]: PrismaClient[K] extends (...args: any[]) => any
-    ? never
-    : K;
+  [K in keyof PrismaClient]: PrismaClient[K] extends (...args: any[]) => any ? never : K;
 }[keyof PrismaClient];
 
 type ModelOperations = {

@@ -24,7 +24,9 @@ describe('ComplianceSchedulerService', () => {
       ],
     }).compile();
 
-    service = module.get<ComplianceSchedulerService>(ComplianceSchedulerService);
+    service = module.get<ComplianceSchedulerService>(
+      ComplianceSchedulerService,
+    );
     evidenceService = module.get(Soc2EvidenceService);
   });
 
@@ -39,27 +41,29 @@ describe('ComplianceSchedulerService', () => {
   describe('onModuleInit', () => {
     it('should start scheduled tasks on module init', () => {
       const startSpy = jest.spyOn(service as any, 'startScheduledTasks');
-      
+
       service.onModuleInit();
-      
+
       expect(startSpy).toHaveBeenCalled();
     });
 
     it('should log initialization', () => {
       const loggerSpy = jest.spyOn((service as any).logger, 'log');
-      
+
       service.onModuleInit();
-      
-      expect(loggerSpy).toHaveBeenCalledWith('Compliance scheduler initialized');
+
+      expect(loggerSpy).toHaveBeenCalledWith(
+        'Compliance scheduler initialized',
+      );
     });
   });
 
   describe('onModuleDestroy', () => {
     it('should stop scheduled tasks on module destroy', () => {
       const stopSpy = jest.spyOn(service as any, 'stopScheduledTasks');
-      
+
       service.onModuleDestroy();
-      
+
       expect(stopSpy).toHaveBeenCalled();
     });
   });
@@ -67,17 +71,17 @@ describe('ComplianceSchedulerService', () => {
   describe('startScheduledTasks', () => {
     it('should set up daily and weekly intervals', () => {
       const setIntervalSpy = jest.spyOn(global, 'setInterval');
-      
+
       (service as any).startScheduledTasks();
-      
+
       expect(setIntervalSpy).toHaveBeenCalledTimes(2);
     });
 
     it('should schedule initial collection after 5 seconds', () => {
       const setTimeoutSpy = jest.spyOn(global, 'setTimeout');
-      
+
       (service as any).startScheduledTasks();
-      
+
       expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 5000);
     });
   });
@@ -86,9 +90,9 @@ describe('ComplianceSchedulerService', () => {
     it('should clear daily interval', () => {
       const clearIntervalSpy = jest.spyOn(global, 'clearInterval');
       (service as any).dailyInterval = 123 as any;
-      
+
       (service as any).stopScheduledTasks();
-      
+
       expect(clearIntervalSpy).toHaveBeenCalledWith(123);
       expect((service as any).dailyInterval).toBeNull();
     });
@@ -96,9 +100,9 @@ describe('ComplianceSchedulerService', () => {
     it('should clear weekly interval', () => {
       const clearIntervalSpy = jest.spyOn(global, 'clearInterval');
       (service as any).weeklyInterval = 456 as any;
-      
+
       (service as any).stopScheduledTasks();
-      
+
       expect(clearIntervalSpy).toHaveBeenCalledWith(456);
       expect((service as any).weeklyInterval).toBeNull();
     });
@@ -114,7 +118,7 @@ describe('ComplianceSchedulerService', () => {
 
       expect(evidenceService.collectAllEvidence).toHaveBeenCalled();
       expect(loggerSpy).toHaveBeenCalledWith(
-        `Daily evidence collection completed: ${mockResults.length} controls collected`
+        `Daily evidence collection completed: ${mockResults.length} controls collected`,
       );
     });
 
@@ -127,7 +131,7 @@ describe('ComplianceSchedulerService', () => {
 
       expect(loggerSpy).toHaveBeenCalledWith(
         `Daily evidence collection failed: ${error.message}`,
-        error.stack
+        error.stack,
       );
     });
   });
@@ -148,7 +152,7 @@ describe('ComplianceSchedulerService', () => {
 
       expect(evidenceService.performGapAnalysis).toHaveBeenCalled();
       expect(loggerSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Weekly gap analysis completed')
+        expect.stringContaining('Weekly gap analysis completed'),
       );
     });
 
@@ -165,7 +169,7 @@ describe('ComplianceSchedulerService', () => {
       await (service as any).performWeeklyGapAnalysis();
 
       expect(loggerSpy).toHaveBeenCalledWith(
-        expect.stringContaining('LOW COMPLIANCE COMPLETION')
+        expect.stringContaining('LOW COMPLIANCE COMPLETION'),
       );
     });
 
@@ -178,7 +182,7 @@ describe('ComplianceSchedulerService', () => {
 
       expect(loggerSpy).toHaveBeenCalledWith(
         `Weekly gap analysis failed: ${error.message}`,
-        error.stack
+        error.stack,
       );
     });
   });
@@ -204,7 +208,9 @@ describe('ComplianceSchedulerService', () => {
       const result = await service.triggerManualCollection();
 
       expect(result.success).toBe(false);
-      expect(result.message).toBe(`Evidence collection failed: ${error.message}`);
+      expect(result.message).toBe(
+        `Evidence collection failed: ${error.message}`,
+      );
     });
   });
 

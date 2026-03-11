@@ -3,17 +3,20 @@ const prisma = new PrismaClient();
 
 async function check() {
   const perms = await prisma.permission.findMany({
-    where: { 
+    where: {
       OR: [
         { code: { contains: 'contacts' } },
         { code: { contains: 'deals' } },
         { code: { contains: 'leads' } },
-      ]
+      ],
     },
     select: { code: true },
-    take: 5
+    take: 5,
   });
-  console.log('Other permissions format:', perms.map(p => p.code));
+  console.log(
+    'Other permissions format:',
+    perms.map((p) => p.code),
+  );
 }
 
 check().finally(() => prisma.$disconnect());

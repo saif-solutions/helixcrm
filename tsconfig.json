@@ -22,11 +22,6 @@
       "@shared/*": ["packages/*"]
     }
   },
-  "include": [
-    "tests/**/*",
-    "apps/api/src/**/*",
-    "apps/web/src/**/*",
-    "packages/**/*"
-  ],
+  "include": ["tests/**/*", "apps/api/src/**/*", "apps/web/src/**/*", "packages/**/*"],
   "exclude": ["node_modules", "dist"]
 }

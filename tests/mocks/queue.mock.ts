@@ -12,7 +12,7 @@ export type JobCounts = {
 export class MockJob {
   id: string;
   data: any;
-  progressValue: number = 0;  // Renamed from 'progress' to avoid conflict
+  progressValue: number = 0; // Renamed from 'progress' to avoid conflict
   returnvalue: any = null;
   failedReason: string | null = null;
   timestamp: number = Date.now();
@@ -32,7 +32,7 @@ export class MockJob {
   retry = jest.fn(async (): Promise<void> => {});
   discard = jest.fn(async (): Promise<void> => {});
   promote = jest.fn(async (): Promise<void> => {});
-  
+
   // Renamed method to avoid conflict with property
   updateProgress = jest.fn(async (value?: number): Promise<number> => {
     if (value !== undefined) this.progressValue = value;
@@ -50,18 +50,16 @@ export class QueueMock {
     this.jobs.set(job.id, job);
     return job;
   });
-  
+
   addBulk = jest.fn(async (jobs: Array<{ data: any; opts?: any }>): Promise<MockJob[]> => {
-    const createdJobs = jobs.map(job => new MockJob(job.data));
-    createdJobs.forEach(job => this.jobs.set(job.id, job));
+    const createdJobs = jobs.map((job) => new MockJob(job.data));
+    createdJobs.forEach((job) => this.jobs.set(job.id, job));
     return createdJobs;
   });
 
   // Job retrieval
-  getJob = jest.fn(async (id: string): Promise<MockJob | null> => 
-    this.jobs.get(id) || null
-  );
-  
+  getJob = jest.fn(async (id: string): Promise<MockJob | null> => this.jobs.get(id) || null);
+
   getJobs = jest.fn(async (): Promise<MockJob[]> => Array.from(this.jobs.values()));
   getCompleted = jest.fn(async (): Promise<MockJob[]> => []);
   getFailed = jest.fn(async (): Promise<MockJob[]> => []);
@@ -88,14 +86,16 @@ export class QueueMock {
   process = jest.fn();
 
   // Job counts
-  getJobCounts = jest.fn(async (): Promise<JobCounts> => ({
-    waiting: 0,
-    active: 0,
-    completed: 0,
-    failed: 0,
-    delayed: 0,
-    paused: 0,
-  }));
+  getJobCounts = jest.fn(
+    async (): Promise<JobCounts> => ({
+      waiting: 0,
+      active: 0,
+      completed: 0,
+      failed: 0,
+      delayed: 0,
+      paused: 0,
+    }),
+  );
 }
 
 // Queue names constants
@@ -107,4 +107,4 @@ export const QUEUE_NAMES = {
   CLEANUP: 'cleanup',
 } as const;
 
-export type QueueName = typeof QUEUE_NAMES[keyof typeof QUEUE_NAMES];
+export type QueueName = (typeof QUEUE_NAMES)[keyof typeof QUEUE_NAMES];

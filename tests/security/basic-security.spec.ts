@@ -15,11 +15,11 @@ describe('Basic Security Tests', () => {
     // This test verifies we can implement the CTO's security tests
     const ctoRecommendations = [
       'Tenant Isolation',
-      'Permission Enforcement', 
+      'Permission Enforcement',
       'RLS Verification',
-      'System Context Isolation'
+      'System Context Isolation',
     ];
-    
+
     expect(ctoRecommendations).toHaveLength(4);
     expect(ctoRecommendations).toContain('Tenant Isolation');
   });

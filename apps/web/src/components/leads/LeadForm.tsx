@@ -40,22 +40,22 @@ const LeadForm: React.FC<LeadFormProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Initialize form with initial data if editing
-useEffect(() => {
-  if (initialData && isEdit) {
-    setFormData({
-      name: initialData.name || '',
-      email: initialData.email || '',
-      phone: initialData.phone || '',
-      status: initialData.status || 'new',
-      source: initialData.source || '',
-      company: initialData.company || '',
-      title: initialData.title || '',
-      notes: initialData.notes || '',
-      estimatedValue: initialData.estimatedValue,
-      tags: initialData.tags || [],
-    });
-  }
-}, [initialData, isEdit]);
+  useEffect(() => {
+    if (initialData && isEdit) {
+      setFormData({
+        name: initialData.name || '',
+        email: initialData.email || '',
+        phone: initialData.phone || '',
+        status: initialData.status || 'new',
+        source: initialData.source || '',
+        company: initialData.company || '',
+        title: initialData.title || '',
+        notes: initialData.notes || '',
+        estimatedValue: initialData.estimatedValue,
+        tags: initialData.tags || [],
+      });
+    }
+  }, [initialData, isEdit]);
 
   // Handle input changes
   const handleInputChange = (field: keyof CreateLeadDto, value: any) => {
@@ -88,9 +88,9 @@ useEffect(() => {
     }
 
     // Phone validation (if provided)
-if (formData.phone && !/^[\d\s+()-]{10,}$/.test(formData.phone.replace(/\D/g, ''))) {
-  newErrors.phone = 'Please enter a valid phone number';
-}
+    if (formData.phone && !/^[\d\s+()-]{10,}$/.test(formData.phone.replace(/\D/g, ''))) {
+      newErrors.phone = 'Please enter a valid phone number';
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;

@@ -56,9 +56,7 @@ describe('Webhook Module Verification', () => {
           provide: PrismaService,
           useValue: {
             user: {
-              findUnique: jest
-                .fn()
-                .mockResolvedValue({ email: 'test@example.com' }),
+              findUnique: jest.fn().mockResolvedValue({ email: 'test@example.com' }),
             },
           },
         },

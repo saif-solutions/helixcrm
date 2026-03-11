@@ -80,9 +80,10 @@ describe('AuthController', () => {
     it('should throw UnauthorizedException for invalid credentials', async () => {
       authService.validateUser.mockResolvedValue(null);
 
-      await expect(controller.login(loginDto, mockRequest as any, mockResponse as any))
-        .rejects.toThrow(UnauthorizedException);
-      
+      await expect(
+        controller.login(loginDto, mockRequest as any, mockResponse as any),
+      ).rejects.toThrow(UnauthorizedException);
+
       expect(mockAuditLogService.logWithRequest).toHaveBeenCalledTimes(1);
       expect(authService.login).not.toHaveBeenCalled();
     });
@@ -101,7 +102,11 @@ describe('AuthController', () => {
 
       expect(result).toEqual({ message: 'Logged out successfully' });
       expect(mockAuditLogService.logWithRequest).toHaveBeenCalled();
-      expect(authService.logout).toHaveBeenCalledWith('user-123', mockResponse, mockRequestWithUser);
+      expect(authService.logout).toHaveBeenCalledWith(
+        'user-123',
+        mockResponse,
+        mockRequestWithUser,
+      );
     });
   });
 
@@ -114,14 +119,19 @@ describe('AuthController', () => {
       const result = await controller.refreshToken(mockRequest as any, mockResponse as any);
 
       expect(result).toEqual({ access_token: 'new-token' });
-      expect(authService.refreshToken).toHaveBeenCalledWith(refreshToken, mockResponse, mockRequest);
+      expect(authService.refreshToken).toHaveBeenCalledWith(
+        refreshToken,
+        mockResponse,
+        mockRequest,
+      );
     });
 
     it('should throw UnauthorizedException if no refresh token', async () => {
       mockRequest.cookies = {};
 
-      await expect(controller.refreshToken(mockRequest as any, mockResponse as any))
-        .rejects.toThrow(UnauthorizedException);
+      await expect(
+        controller.refreshToken(mockRequest as any, mockResponse as any),
+      ).rejects.toThrow(UnauthorizedException);
     });
   });
 
@@ -212,10 +222,7 @@ describe('AuthController', () => {
       const mockResult = { invalidatedCount: 2 };
       authService.invalidateOtherSessions.mockResolvedValue(mockResult);
 
-      const result = await controller.invalidateOtherSessions(
-        mockRequestWithUser as any,
-        'true',
-      );
+      const result = await controller.invalidateOtherSessions(mockRequestWithUser as any, 'true');
 
       expect(result).toEqual(mockResult);
       expect(authService.invalidateOtherSessions).toHaveBeenCalledWith('user-123', true);
@@ -226,10 +233,7 @@ describe('AuthController', () => {
       const mockResult = { invalidatedCount: 3 };
       authService.invalidateOtherSessions.mockResolvedValue(mockResult);
 
-      const result = await controller.invalidateOtherSessions(
-        mockRequestWithUser as any,
-        'false',
-      );
+      const result = await controller.invalidateOtherSessions(mockRequestWithUser as any, 'false');
 
       expect(result).toEqual(mockResult);
       expect(authService.invalidateOtherSessions).toHaveBeenCalledWith('user-123', false);

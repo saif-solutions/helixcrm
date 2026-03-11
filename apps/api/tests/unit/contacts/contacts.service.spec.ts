@@ -87,14 +87,14 @@ describe('ContactsService', () => {
       const result = await service.create(createDto, 'org-123');
 
       expect(result).toEqual(mockContact);
-expect(contactRepository.create).toHaveBeenCalledWith('org-123', {
-  email: 'jane@example.com',
-  phone: '+9876543210',
-  company: 'Beta Corp',
-  position: 'Director',  // Change from 'title' to 'position'
-  firstName: 'Jane',
-  lastName: 'Smith',
-});
+      expect(contactRepository.create).toHaveBeenCalledWith('org-123', {
+        email: 'jane@example.com',
+        phone: '+9876543210',
+        company: 'Beta Corp',
+        position: 'Director', // Change from 'title' to 'position'
+        firstName: 'Jane',
+        lastName: 'Smith',
+      });
     });
 
     it('should handle name with multiple parts', async () => {
@@ -111,14 +111,14 @@ expect(contactRepository.create).toHaveBeenCalledWith('org-123', {
 
       await service.create(dtoWithLongName, 'org-123');
 
-expect(contactRepository.create).toHaveBeenCalledWith('org-123', {
-  email: 'jane@example.com',
-  phone: '+9876543210',
-  company: 'Beta Corp',
-  position: 'Director',  // Change from 'title' to 'position'
-  firstName: 'Jane',
-  lastName: 'Marie Smith',
-});
+      expect(contactRepository.create).toHaveBeenCalledWith('org-123', {
+        email: 'jane@example.com',
+        phone: '+9876543210',
+        company: 'Beta Corp',
+        position: 'Director', // Change from 'title' to 'position'
+        firstName: 'Jane',
+        lastName: 'Marie Smith',
+      });
     });
 
     it('should handle name with single part', async () => {
@@ -135,14 +135,14 @@ expect(contactRepository.create).toHaveBeenCalledWith('org-123', {
 
       await service.create(dtoWithSingleName, 'org-123');
 
-expect(contactRepository.create).toHaveBeenCalledWith('org-123', {
-  email: 'jane@example.com',
-  phone: '+9876543210',
-  company: 'Beta Corp',
-  position: 'Director',  // Change from 'title' to 'position'
-  firstName: 'Jane',
-  lastName: '',
-});
+      expect(contactRepository.create).toHaveBeenCalledWith('org-123', {
+        email: 'jane@example.com',
+        phone: '+9876543210',
+        company: 'Beta Corp',
+        position: 'Director', // Change from 'title' to 'position'
+        firstName: 'Jane',
+        lastName: '',
+      });
     });
 
     it('should check permission before creating', async () => {
@@ -150,14 +150,18 @@ expect(contactRepository.create).toHaveBeenCalledWith('org-123', {
 
       await service.create(createDto, 'org-123');
 
-      expect(permissionContext.hasPermission).toHaveBeenCalledWith('contact:write');
+      expect(permissionContext.hasPermission).toHaveBeenCalledWith(
+        'contact:write',
+      );
     });
 
     it('should propagate repository errors', async () => {
       const error = new Error('Database error');
       contactRepository.create.mockRejectedValue(error);
 
-      await expect(service.create(createDto, 'org-123')).rejects.toThrow('Database error');
+      await expect(service.create(createDto, 'org-123')).rejects.toThrow(
+        'Database error',
+      );
     });
   });
 
@@ -213,7 +217,9 @@ expect(contactRepository.create).toHaveBeenCalledWith('org-123', {
 
       await service.findAll({ page: 1, limit: 10 }, 'org-123');
 
-      expect(permissionContext.hasPermission).toHaveBeenCalledWith('contact:read');
+      expect(permissionContext.hasPermission).toHaveBeenCalledWith(
+        'contact:read',
+      );
     });
   });
 
@@ -226,13 +232,18 @@ expect(contactRepository.create).toHaveBeenCalledWith('org-123', {
       const result = await service.findOne('contact-123', 'org-123');
 
       expect(result).toEqual(mockContact);
-      expect(contactRepository.findById).toHaveBeenCalledWith('contact-123', 'org-123');
+      expect(contactRepository.findById).toHaveBeenCalledWith(
+        'contact-123',
+        'org-123',
+      );
     });
 
     it('should throw NotFoundException if contact not found', async () => {
       contactRepository.findById.mockResolvedValue(null);
 
-      await expect(service.findOne('contact-123', 'org-123')).rejects.toThrow(NotFoundException);
+      await expect(service.findOne('contact-123', 'org-123')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should check permission before fetching', async () => {
@@ -240,7 +251,9 @@ expect(contactRepository.create).toHaveBeenCalledWith('org-123', {
 
       await service.findOne('contact-123', 'org-123');
 
-      expect(permissionContext.hasPermission).toHaveBeenCalledWith('contact:read');
+      expect(permissionContext.hasPermission).toHaveBeenCalledWith(
+        'contact:read',
+      );
     });
   });
 
@@ -323,13 +336,17 @@ expect(contactRepository.create).toHaveBeenCalledWith('org-123', {
 
       await service.update('contact-123', updateDto, 'org-123');
 
-      expect(permissionContext.hasPermission).toHaveBeenCalledWith('contact:write');
+      expect(permissionContext.hasPermission).toHaveBeenCalledWith(
+        'contact:write',
+      );
     });
 
     it('should throw NotFoundException if contact not found', async () => {
       jest.spyOn(service, 'findOne').mockRejectedValue(new NotFoundException());
 
-      await expect(service.update('contact-123', updateDto, 'org-123')).rejects.toThrow(NotFoundException);
+      await expect(
+        service.update('contact-123', updateDto, 'org-123'),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -347,7 +364,9 @@ expect(contactRepository.create).toHaveBeenCalledWith('org-123', {
 
       expect(result).toEqual(mockContact);
       expect(service.findOne).toHaveBeenCalledWith('contact-123', 'org-123');
-      expect(contactRepository.delete).toHaveBeenCalledWith('org-123', { id: 'contact-123' });
+      expect(contactRepository.delete).toHaveBeenCalledWith('org-123', {
+        id: 'contact-123',
+      });
     });
 
     it('should check permission before deleting', async () => {
@@ -355,20 +374,26 @@ expect(contactRepository.create).toHaveBeenCalledWith('org-123', {
 
       await service.remove('contact-123', 'org-123');
 
-      expect(permissionContext.hasPermission).toHaveBeenCalledWith('contact:delete');
+      expect(permissionContext.hasPermission).toHaveBeenCalledWith(
+        'contact:delete',
+      );
     });
 
     it('should throw NotFoundException if contact not found', async () => {
       jest.spyOn(service, 'findOne').mockRejectedValue(new NotFoundException());
 
-      await expect(service.remove('contact-123', 'org-123')).rejects.toThrow(NotFoundException);
+      await expect(service.remove('contact-123', 'org-123')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should propagate repository errors', async () => {
       const error = new Error('Database error');
       contactRepository.delete.mockRejectedValue(error);
 
-      await expect(service.remove('contact-123', 'org-123')).rejects.toThrow('Database error');
+      await expect(service.remove('contact-123', 'org-123')).rejects.toThrow(
+        'Database error',
+      );
     });
   });
 });

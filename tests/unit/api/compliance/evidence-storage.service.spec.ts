@@ -6,11 +6,11 @@ import * as crypto from 'crypto';
 jest.mock('crypto', () => ({
   createHash: jest.fn().mockImplementation(() => {
     const hashMock = {
-      update: jest.fn().mockImplementation(function(this: any, data: string) {
+      update: jest.fn().mockImplementation(function (this: any, data: string) {
         (this as any).data = data;
         return this;
       }),
-      digest: jest.fn().mockImplementation(function(this: any) {
+      digest: jest.fn().mockImplementation(function (this: any) {
         const data = (this as any).data || '';
         // Return specific hashes based on the content
         if (data.includes('LOGIN')) return 'hash-1';
@@ -208,7 +208,9 @@ describe('EvidenceStorageService', () => {
       prismaMock.evidenceChain.findFirst.mockRejectedValue(error);
 
       // Act & Assert
-      await expect(service.storeEvidenceWithIntegrity(mockEvidence)).rejects.toThrow('Database error');
+      await expect(service.storeEvidenceWithIntegrity(mockEvidence)).rejects.toThrow(
+        'Database error',
+      );
     });
 
     it('should log success message', async () => {
@@ -223,7 +225,7 @@ describe('EvidenceStorageService', () => {
 
       // Assert
       expect(loggerSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Evidence stored with integrity')
+        expect.stringContaining('Evidence stored with integrity'),
       );
     });
   });
@@ -590,7 +592,7 @@ describe('EvidenceStorageService', () => {
 
       // Assert
       expect(loggerSpy).toHaveBeenCalledWith(
-        `Cleaned up ${mockDeleteResult.count} old evidence collections`
+        `Cleaned up ${mockDeleteResult.count} old evidence collections`,
       );
     });
 
@@ -608,7 +610,7 @@ describe('EvidenceStorageService', () => {
     it('should generate hash using crypto', () => {
       // Act
       const result = (service as any).generateHash('test data');
-      
+
       // Assert
       expect(crypto.createHash).toHaveBeenCalledWith('sha256');
       expect(result).toBe('mocked-hash-123');
@@ -617,7 +619,7 @@ describe('EvidenceStorageService', () => {
     it('should handle empty string', () => {
       // Act
       const result = (service as any).generateHash('');
-      
+
       // Assert
       expect(crypto.createHash).toHaveBeenCalledWith('sha256');
       expect(result).toBe('mocked-hash-123');
@@ -626,7 +628,7 @@ describe('EvidenceStorageService', () => {
     it('should handle special characters', () => {
       // Act
       const result = (service as any).generateHash('!@#$%^&*()');
-      
+
       // Assert
       expect(crypto.createHash).toHaveBeenCalledWith('sha256');
       expect(result).toBe('mocked-hash-123');

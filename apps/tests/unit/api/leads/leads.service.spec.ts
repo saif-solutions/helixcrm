@@ -76,39 +76,37 @@ describe('LeadsService', () => {
 
     const mockLead = createMockLead();
 
-it('should successfully create a lead', async () => {
-  repository.create.mockResolvedValue(mockLead);
+    it('should successfully create a lead', async () => {
+      repository.create.mockResolvedValue(mockLead);
 
-  const result = await service.create(createLeadDto, 'user-123');
+      const result = await service.create(createLeadDto, 'user-123');
 
-  expect(result).toEqual(mockLead);
-  
-  // ✅ FIX: Remove 'source' from the expected call since we're using metadata
-  expect(repository.create).toHaveBeenCalledWith({
-    name: createLeadDto.name,
-    email: createLeadDto.email,
-    phone: createLeadDto.phone,
-    company: createLeadDto.company,
-    status: LeadStatus.new,
-    metadata: { source: 'website' },
-  });
-  expect(mockLogger.log).toHaveBeenCalled();
-});
+      expect(result).toEqual(mockLead);
+
+      // ✅ FIX: Remove 'source' from the expected call since we're using metadata
+      expect(repository.create).toHaveBeenCalledWith({
+        name: createLeadDto.name,
+        email: createLeadDto.email,
+        phone: createLeadDto.phone,
+        company: createLeadDto.company,
+        status: LeadStatus.new,
+        metadata: { source: 'website' },
+      });
+      expect(mockLogger.log).toHaveBeenCalled();
+    });
 
     it('should throw ConflictException on duplicate email/phone', async () => {
       const error = { code: 'P2002' };
       repository.create.mockRejectedValue(error);
 
-      await expect(service.create(createLeadDto, 'user-123'))
-        .rejects.toThrow(ConflictException);
+      await expect(service.create(createLeadDto, 'user-123')).rejects.toThrow(ConflictException);
     });
 
     it('should throw NotFoundException on referenced entity not found', async () => {
       const error = { code: 'P2025' };
       repository.create.mockRejectedValue(error);
 
-      await expect(service.create(createLeadDto, 'user-123'))
-        .rejects.toThrow(NotFoundException);
+      await expect(service.create(createLeadDto, 'user-123')).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -155,15 +153,13 @@ it('should successfully create a lead', async () => {
       const wrongTenantLead = createMockLead({ organizationId: 'different-org' });
       repository.findByIdOrThrow.mockResolvedValue(wrongTenantLead);
 
-      await expect(service.findOne('lead-123'))
-        .rejects.toThrow(ForbiddenException);
+      await expect(service.findOne('lead-123')).rejects.toThrow(ForbiddenException);
     });
 
     it('should throw NotFoundException if lead not found', async () => {
       repository.findByIdOrThrow.mockRejectedValue(new NotFoundException());
 
-      await expect(service.findOne('lead-123'))
-        .rejects.toThrow(NotFoundException);
+      await expect(service.findOne('lead-123')).rejects.toThrow(NotFoundException);
     });
   });
 

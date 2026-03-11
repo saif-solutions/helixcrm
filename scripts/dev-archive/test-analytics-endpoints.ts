@@ -20,32 +20,22 @@ describe('Analytics Endpoints', () => {
   });
 
   it('GET /api/v1/analytics/deals should return 401 without auth', () => {
-    return request(app.getHttpServer())
-      .get('/api/v1/analytics/deals')
-      .expect(401);
+    return request(app.getHttpServer()).get('/api/v1/analytics/deals').expect(401);
   });
 
   it('GET /api/v1/analytics/revenue should return 401 without auth', () => {
-    return request(app.getHttpServer())
-      .get('/api/v1/analytics/revenue')
-      .expect(401);
+    return request(app.getHttpServer()).get('/api/v1/analytics/revenue').expect(401);
   });
 
   it('GET /api/v1/analytics/pipeline should return 401 without auth', () => {
-    return request(app.getHttpServer())
-      .get('/api/v1/analytics/pipeline')
-      .expect(401);
+    return request(app.getHttpServer()).get('/api/v1/analytics/pipeline').expect(401);
   });
 
   it('GET /api/v1/analytics/activity should return 401 without auth', () => {
-    return request(app.getHttpServer())
-      .get('/api/v1/analytics/activity')
-      .expect(401);
+    return request(app.getHttpServer()).get('/api/v1/analytics/activity').expect(401);
   });
 
   it('GET /api/v1/analytics/export should return 401 without auth', () => {
-    return request(app.getHttpServer())
-      .get('/api/v1/analytics/export')
-      .expect(401);
+    return request(app.getHttpServer()).get('/api/v1/analytics/export').expect(401);
   });
 });

@@ -1,6 +1,6 @@
 /**
  * Analytics Service
- * 
+ *
  * Tracks user actions, page views, and feature usage.
  * In production, sends data to backend for aggregation.
  * No PII (Personally Identifiable Information) is tracked.
@@ -8,7 +8,7 @@
 
 import { logger } from '../logging/logger.service';
 
-export type AnalyticsEventType = 
+export type AnalyticsEventType =
   | 'page_view'
   | 'feature_use'
   | 'button_click'
@@ -47,11 +47,11 @@ class AnalyticsService {
 
   private constructor() {
     this.sessionId = this.generateSessionId();
-    
+
     if (!this.isDevelopment) {
       // In production, periodically flush events to backend
       setInterval(() => this.flush(), this.flushInterval);
-      
+
       // Flush on page unload
       window.addEventListener('beforeunload', () => this.flush(true));
     }
@@ -180,7 +180,7 @@ class AnalyticsService {
   trackSearch(query: string, resultCount: number, filters?: Record<string, unknown>) {
     // Hash the query to avoid storing PII
     const hashedQuery = this.hashString(query);
-    
+
     this.track({
       type: 'search',
       timestamp: Date.now(),
@@ -203,7 +203,7 @@ class AnalyticsService {
    */
   trackFilter(filterName: string, value: unknown, context: string) {
     const processedValue = typeof value === 'string' ? this.hashString(value) : value;
-    
+
     this.track({
       type: 'filter',
       timestamp: Date.now(),
@@ -347,7 +347,7 @@ class AnalyticsService {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
       const char = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash; // Convert to 32-bit integer
     }
     return Math.abs(hash).toString(36);

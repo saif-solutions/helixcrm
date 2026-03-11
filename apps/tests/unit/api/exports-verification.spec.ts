@@ -5,10 +5,7 @@ describe('Webhook Module Exports Verification', () => {
   const webhookDir = path.join(__dirname, '..');
 
   it('should verify webhooks.module.ts exports correctly', () => {
-    const moduleContent = fs.readFileSync(
-      path.join(webhookDir, 'webhooks.module.ts'),
-      'utf8',
-    );
+    const moduleContent = fs.readFileSync(path.join(webhookDir, 'webhooks.module.ts'), 'utf8');
 
     // Check it exports the module
     expect(moduleContent).toContain('export class WebhooksModule');
@@ -29,10 +26,7 @@ describe('Webhook Module Exports Verification', () => {
   });
 
   it('should verify webhooks.service.ts has repository pattern', () => {
-    const serviceContent = fs.readFileSync(
-      path.join(webhookDir, 'webhooks.service.ts'),
-      'utf8',
-    );
+    const serviceContent = fs.readFileSync(path.join(webhookDir, 'webhooks.service.ts'), 'utf8');
 
     // Check it imports repository
     expect(serviceContent).toContain('WebhookRepository');

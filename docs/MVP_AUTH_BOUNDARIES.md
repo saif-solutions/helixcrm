@@ -5,12 +5,14 @@
 **Status:** FROZEN for MVP-1
 
 ## Overview
+
 This document defines the exact scope of MVP Authentication for HelixCRM v0.1.  
 It is the authoritative source for what constitutes "MVP Auth" during module extraction.
 
 ## 🎯 MVP Auth Definition (What IS Included)
 
 ### Core Authentication Flow
+
 1. **Email/Password Login**
    - Basic credential validation
    - Account lockout after N failed attempts
@@ -28,6 +30,7 @@ It is the authoritative source for what constitutes "MVP Auth" during module ext
    - Account lockout mechanism
 
 ### Technical Scope (v0.1)
+
 ✅ /auth/login - Email/password login
 ✅ /auth/refresh - Token refresh
 ✅ /auth/logout - Token invalidation
@@ -40,6 +43,7 @@ text
 ## 🚫 Explicitly OUT of MVP Auth (v0.1)
 
 ### Authentication Methods
+
 - OAuth 2.0 providers (Google, GitHub, etc.)
 - SAML/SSO integration
 - Multi-factor authentication (MFA)
@@ -48,6 +52,7 @@ text
 - Biometric authentication
 
 ### Advanced Features
+
 - Token rotation strategies
 - Device tracking
 - Session management UI
@@ -56,6 +61,7 @@ text
 - Geolocation-based restrictions
 
 ### Enterprise IAM
+
 - LDAP/Active Directory integration
 - SCIM provisioning
 - Just-in-time provisioning
@@ -65,22 +71,23 @@ text
 ## 📐 Technical Boundaries
 
 ### In auth-core package (v0.1):
+
 ```typescript
 // ✅ INCLUDED
 interface AuthCoreContract {
   // JWT Operations
   issueAccessToken(payload): string;
   validateAccessToken(token): JwtPayload | null;
-  
-  // Refresh Token Operations  
+
+  // Refresh Token Operations
   issueRefreshToken(userId, orgId): string;
   validateRefreshToken(token): RefreshTokenPayload | null;
   invalidateToken(tokenId): Promise<void>;
-  
+
   // Password Operations
   hashPassword(password): Promise<string>;
   verifyPassword(password, hash): Promise<boolean>;
-  
+
   // Security Operations
   isAccountLocked(userId): Promise<boolean>;
   recordFailedAttempt(userId): Promise<void>;
@@ -94,15 +101,15 @@ interface AuthAdvancedFeatures {
   rotateRefreshToken(oldToken): Promise<string>;
   invalidateAllUserTokens(userId): Promise<void>;
   getActiveSessions(userId): Promise<Session[]>;
-  
+
   // Rate limiting
   checkRateLimit(userId, action): Promise<boolean>;
   getRateLimitStatus(userId): Promise<RateLimitStatus>;
-  
+
   // Device management
   registerDevice(userId, deviceInfo): Promise<string>;
   revokeDevice(deviceId): Promise<void>;
-  
+
   // Advanced security
   requireMFA(userId): Promise<boolean>;
   setupMFA(userId): Promise<MFASetup>;
@@ -198,3 +205,4 @@ DECISIONS.md entry created
 
 This document is authoritative for MVP-1 auth scope.
 Any deviation requires Product Owner approval and SSOT.md update.
+```

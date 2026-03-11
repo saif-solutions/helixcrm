@@ -11,7 +11,7 @@ if (typeof jest !== 'undefined') {
 
   // Mock console methods
   const originalConsole = { ...console };
-  
+
   global.console = {
     ...originalConsole,
     log: jest.fn(),

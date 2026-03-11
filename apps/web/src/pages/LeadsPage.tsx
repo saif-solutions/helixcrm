@@ -95,7 +95,7 @@ const LeadsPage: React.FC = () => {
 
   // Phase 3.4: Create lead mutation
   const createLeadMutation = useApiMutation<Lead, Error, CreateLeadDto>(
-        (data: CreateLeadDto) => LeadsAPI.create(data as unknown as Record<string, unknown>),
+    (data: CreateLeadDto) => LeadsAPI.create(data as unknown as Record<string, unknown>),
     {
       onSuccess: () => {
         success('Lead Created', 'Lead has been created successfully');
@@ -110,7 +110,8 @@ const LeadsPage: React.FC = () => {
 
   // Phase 3.4: Update lead mutation
   const updateLeadMutation = useApiMutation<Lead, Error, { id: string; data: UpdateLeadDto }>(
-        ({ id, data }: { id: string; data: UpdateLeadDto }) => LeadsAPI.update(id, data as unknown as Record<string, unknown>),
+    ({ id, data }: { id: string; data: UpdateLeadDto }) =>
+      LeadsAPI.update(id, data as unknown as Record<string, unknown>),
     {
       onSuccess: () => {
         success('Lead Updated', 'Lead has been updated successfully');
@@ -539,7 +540,7 @@ const LeadsPage: React.FC = () => {
                                 Edit
                               </Button>
                             )}
-                            
+
                             {/* Only show Delete button if user has lead:delete permission */}
                             {hasPermission('lead:delete') && (
                               <Button
@@ -555,7 +556,7 @@ const LeadsPage: React.FC = () => {
                                 Delete
                               </Button>
                             )}
-                            
+
                             {/* Show message if user has no permissions */}
                             {!hasPermission('lead:write') && !hasPermission('lead:delete') && (
                               <span className="text-sm text-gray-400">View only</span>

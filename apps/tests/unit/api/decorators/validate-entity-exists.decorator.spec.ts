@@ -19,10 +19,10 @@ describe('ValidateEntityExists Decorator', () => {
   it('should call SetMetadata with the correct key and value', () => {
     // Arrange
     const entityType = 'User';
-    
+
     // Act
     ValidateEntityExists(entityType);
-    
+
     // Assert
     expect(SetMetadata).toHaveBeenCalledWith('validate-entity-exists', entityType);
   });
@@ -30,7 +30,7 @@ describe('ValidateEntityExists Decorator', () => {
   it('should handle different entity types', () => {
     // Test various entity types
     const entityTypes = ['Contact', 'Deal', 'Lead', 'Pipeline', 'Role', 'Permission'];
-    
+
     entityTypes.forEach((entityType) => {
       ValidateEntityExists(entityType);
       expect(SetMetadata).toHaveBeenCalledWith('validate-entity-exists', entityType);
@@ -40,10 +40,10 @@ describe('ValidateEntityExists Decorator', () => {
   it('should handle entity types with spaces', () => {
     // Arrange
     const entityType = 'Payment Method';
-    
+
     // Act
     ValidateEntityExists(entityType);
-    
+
     // Assert
     expect(SetMetadata).toHaveBeenCalledWith('validate-entity-exists', entityType);
   });
@@ -51,7 +51,7 @@ describe('ValidateEntityExists Decorator', () => {
   it('should handle empty string entity type', () => {
     // Act
     ValidateEntityExists('');
-    
+
     // Assert
     expect(SetMetadata).toHaveBeenCalledWith('validate-entity-exists', '');
   });
@@ -60,10 +60,10 @@ describe('ValidateEntityExists Decorator', () => {
     // Arrange
     const expectedResult = { key: 'validate-entity-exists', value: 'User' };
     (SetMetadata as jest.Mock).mockReturnValue(expectedResult);
-    
+
     // Act
     const result = ValidateEntityExists('User');
-    
+
     // Assert
     expect(result).toBe(expectedResult);
   });

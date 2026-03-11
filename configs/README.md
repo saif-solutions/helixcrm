@@ -1,4 +1,3 @@
-
 HelixCRM Configuration
 Configuration Categories
 Feature Flags (./feature-flags/)

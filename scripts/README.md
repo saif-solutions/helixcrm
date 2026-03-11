@@ -1,4 +1,3 @@
-
 HelixCRM Scripts
 Script Categories
 Setup Scripts (./setup/)

@@ -34,11 +34,9 @@ export interface AuthResponse {
  */
 export async function loginScenario(
   app: INestApplication,
-  credentials: LoginCredentials
+  credentials: LoginCredentials,
 ): Promise<AuthResponse> {
-  const response = await testRequest(app)
-    .post('/auth/login')
-    .send(credentials);
+  const response = await testRequest(app).post('/auth/login').send(credentials);
 
   if (response.status !== 200) {
     throw new Error(`Login failed: ${response.body.message}`);
@@ -52,11 +50,9 @@ export async function loginScenario(
  */
 export async function registerScenario(
   app: INestApplication,
-  userData: RegisterDto
+  userData: RegisterDto,
 ): Promise<AuthResponse> {
-  const response = await testRequest(app)
-    .post('/auth/register')
-    .send(userData);
+  const response = await testRequest(app).post('/auth/register').send(userData);
 
   if (response.status !== 201) {
     throw new Error(`Registration failed: ${response.body.message}`);
@@ -70,7 +66,7 @@ export async function registerScenario(
  */
 export async function getProfileScenario(
   app: INestApplication,
-  accessToken: string
+  accessToken: string,
 ): Promise<any> {
   const response = await testRequest(app)
     .get('/auth/me')
@@ -87,10 +83,9 @@ export async function getProfileScenario(
  * Refresh token scenario - uses cookie
  */
 export async function refreshTokenScenario(
-  app: INestApplication
+  app: INestApplication,
 ): Promise<{ accessToken: string; refreshToken: string }> {
-  const response = await testRequest(app)
-    .post('/auth/refresh');
+  const response = await testRequest(app).post('/auth/refresh');
 
   if (response.status !== 200) {
     throw new Error(`Refresh token failed: ${response.body.message}`);
@@ -102,11 +97,8 @@ export async function refreshTokenScenario(
 /**
  * Logout scenario
  */
-export async function logoutScenario(
-  app: INestApplication
-): Promise<void> {
-  const response = await testRequest(app)
-    .post('/auth/logout');
+export async function logoutScenario(app: INestApplication): Promise<void> {
+  const response = await testRequest(app).post('/auth/logout');
 
   if (response.status !== 200) {
     throw new Error(`Logout failed: ${response.body.message}`);
@@ -144,7 +136,7 @@ export const testUsers = {
 // Helper to setup common auth mocks - simplified to avoid type issues
 export const setupAuthMocks = (mockPrisma: any, mockUser?: any) => {
   const user = mockUser || createMockUser();
-  
+
   // Mock findUnique to return user for specific emails - using simple mockImplementation without type annotation
   mockPrisma.user.findUnique = jest.fn().mockImplementation((args: any) => {
     if (args?.where?.email === testUsers.inactive.email) {
@@ -152,8 +144,8 @@ export const setupAuthMocks = (mockPrisma: any, mockUser?: any) => {
     }
     return Promise.resolve(user);
   });
-  
-   mockPrisma.user.create = jest.fn().mockResolvedValue(user as never);
-  
+
+  mockPrisma.user.create = jest.fn().mockResolvedValue(user as never);
+
   return user;
 };

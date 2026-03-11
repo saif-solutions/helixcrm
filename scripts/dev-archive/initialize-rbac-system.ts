@@ -32,38 +32,103 @@ async function initializeRBACSystem() {
   try {
     // 1. Create core permissions if they don't exist
     console.log('📋 Step 1: Creating core permissions...');
-    
+
     const corePermissions = [
       // Contacts module
-      { code: 'contact:read', name: 'Read Contacts', description: 'View contacts', module: 'contacts' },
-      { code: 'contact:write', name: 'Write Contacts', description: 'Create and update contacts', module: 'contacts' },
-      { code: 'contact:delete', name: 'Delete Contacts', description: 'Delete contacts', module: 'contacts' },
-      
+      {
+        code: 'contact:read',
+        name: 'Read Contacts',
+        description: 'View contacts',
+        module: 'contacts',
+      },
+      {
+        code: 'contact:write',
+        name: 'Write Contacts',
+        description: 'Create and update contacts',
+        module: 'contacts',
+      },
+      {
+        code: 'contact:delete',
+        name: 'Delete Contacts',
+        description: 'Delete contacts',
+        module: 'contacts',
+      },
+
       // Deals module
       { code: 'deal:read', name: 'Read Deals', description: 'View deals', module: 'deals' },
-      { code: 'deal:write', name: 'Write Deals', description: 'Create and update deals', module: 'deals' },
+      {
+        code: 'deal:write',
+        name: 'Write Deals',
+        description: 'Create and update deals',
+        module: 'deals',
+      },
       { code: 'deal:delete', name: 'Delete Deals', description: 'Delete deals', module: 'deals' },
-      
+
       // Leads module
       { code: 'lead:read', name: 'Read Leads', description: 'View leads', module: 'leads' },
-      { code: 'lead:write', name: 'Write Leads', description: 'Create and update leads', module: 'leads' },
+      {
+        code: 'lead:write',
+        name: 'Write Leads',
+        description: 'Create and update leads',
+        module: 'leads',
+      },
       { code: 'lead:delete', name: 'Delete Leads', description: 'Delete leads', module: 'leads' },
-      
+
       // Pipelines module
-      { code: 'pipeline:read', name: 'Read Pipelines', description: 'View pipelines', module: 'pipelines' },
-      { code: 'pipeline:write', name: 'Write Pipelines', description: 'Create and update pipelines', module: 'pipelines' },
-      { code: 'pipeline:manage', name: 'Manage Pipelines', description: 'Manage pipeline stages and settings', module: 'pipelines' },
-      
+      {
+        code: 'pipeline:read',
+        name: 'Read Pipelines',
+        description: 'View pipelines',
+        module: 'pipelines',
+      },
+      {
+        code: 'pipeline:write',
+        name: 'Write Pipelines',
+        description: 'Create and update pipelines',
+        module: 'pipelines',
+      },
+      {
+        code: 'pipeline:manage',
+        name: 'Manage Pipelines',
+        description: 'Manage pipeline stages and settings',
+        module: 'pipelines',
+      },
+
       // Analytics module
-      { code: 'report:read', name: 'Read Reports', description: 'View analytics data', module: 'analytics' },
-      { code: 'report:export', name: 'Export Reports', description: 'Export analytics data', module: 'analytics' },
-      
+      {
+        code: 'report:read',
+        name: 'Read Reports',
+        description: 'View analytics data',
+        module: 'analytics',
+      },
+      {
+        code: 'report:export',
+        name: 'Export Reports',
+        description: 'Export analytics data',
+        module: 'analytics',
+      },
+
       // RBAC module
-      { code: 'rbac:read', name: 'Read RBAC', description: 'View roles and permissions', module: 'rbac' },
-      { code: 'rbac:manage', name: 'Manage RBAC', description: 'Manage roles and permissions', module: 'rbac' },
-      
+      {
+        code: 'rbac:read',
+        name: 'Read RBAC',
+        description: 'View roles and permissions',
+        module: 'rbac',
+      },
+      {
+        code: 'rbac:manage',
+        name: 'Manage RBAC',
+        description: 'Manage roles and permissions',
+        module: 'rbac',
+      },
+
       // Dashboard module
-      { code: 'dashboard:read', name: 'Read Dashboard', description: 'View dashboard', module: 'dashboard' },
+      {
+        code: 'dashboard:read',
+        name: 'Read Dashboard',
+        description: 'View dashboard',
+        module: 'dashboard',
+      },
     ];
 
     for (const perm of corePermissions) {
@@ -85,14 +150,14 @@ async function initializeRBACSystem() {
 
     // 2. Create system roles for each organization
     console.log('👥 Step 2: Creating system roles for organizations...');
-    
+
     const organizations = await prisma.organization.findMany({
       select: { id: true, name: true },
     });
 
     for (const org of organizations) {
       console.log(`\n  Organization: ${org.name} (${org.id.substring(0, 8)}...)`);
-      
+
       // System Admin Role
       const adminRole = await prisma.role.upsert({
         where: {
@@ -157,10 +222,14 @@ async function initializeRBACSystem() {
         where: {
           code: {
             in: [
-              'contact:read', 'contact:write',
-              'deal:read', 'deal:write',
-              'lead:read', 'lead:write',
-              'pipeline:read', 'pipeline:write',
+              'contact:read',
+              'contact:write',
+              'deal:read',
+              'deal:write',
+              'lead:read',
+              'lead:write',
+              'pipeline:read',
+              'pipeline:write',
               'report:read',
               'dashboard:read',
             ],
@@ -209,9 +278,12 @@ async function initializeRBACSystem() {
         where: {
           code: {
             in: [
-              'contact:read', 'contact:write',
-              'deal:read', 'deal:write',
-              'lead:read', 'lead:write',
+              'contact:read',
+              'contact:write',
+              'deal:read',
+              'deal:write',
+              'lead:read',
+              'lead:write',
               'dashboard:read',
             ],
           },
@@ -292,7 +364,7 @@ async function initializeRBACSystem() {
 
     // 3. Assign SystemAdmin role to existing admin users
     console.log('👤 Step 3: Assigning SystemAdmin role to existing admins...');
-    
+
     const adminUsers = await prisma.user.findMany({
       where: { role: 'admin' },
       include: { organization: true },
@@ -335,15 +407,15 @@ async function initializeRBACSystem() {
     // 4. Summary
     console.log('📊 RBAC System Summary:');
     console.log('=======================');
-    
+
     const permissionCount = await prisma.permission.count();
     const roleCount = await prisma.role.count();
     const userRoleCount = await prisma.userRole.count();
-    
+
     console.log(`Total Permissions: ${permissionCount}`);
     console.log(`Total Roles: ${roleCount}`);
     console.log(`Total User-Role Assignments: ${userRoleCount}`);
-    
+
     const orgs = await prisma.organization.findMany({
       include: {
         _count: {
@@ -354,9 +426,9 @@ async function initializeRBACSystem() {
         },
       },
     });
-    
+
     console.log('\nBy Organization:');
-    orgs.forEach(org => {
+    orgs.forEach((org) => {
       console.log(`  ${org.name}:`);
       console.log(`    • Users: ${org._count.User}`);
       console.log(`    • Roles: ${org._count.Role}`);
@@ -367,7 +439,6 @@ async function initializeRBACSystem() {
     console.log('1. Restart the API server');
     console.log('2. Test with different user roles');
     console.log('3. Verify JWT contains permissions array');
-
   } catch (error) {
     console.error('❌ Error initializing RBAC system:', error);
     if (error instanceof Error) {

@@ -7,14 +7,14 @@ export class LoggerMock {
   warn = jest.fn();
   debug = jest.fn();
   verbose = jest.fn();
-  
+
   // NestJS Logger methods
   info = jest.fn();
-  
+
   // For compatibility with different logger interfaces
   fatal = jest.fn();
   emerg = jest.fn();
-  
+
   // Track if any logs were made
   get allCalls() {
     return [
@@ -26,7 +26,7 @@ export class LoggerMock {
       ...this.info.mock.calls,
     ];
   }
-  
+
   // Helper to reset all mocks
   reset() {
     this.log.mockClear();
@@ -38,10 +38,10 @@ export class LoggerMock {
     this.fatal.mockClear();
     this.emerg.mockClear();
   }
-  
+
   // Helper to check if a specific log was made
   containsLog(message: string | RegExp): boolean {
-    return this.allCalls.some(call => {
+    return this.allCalls.some((call) => {
       const logMessage = String(call[0] || '');
       if (message instanceof RegExp) {
         return message.test(logMessage);
@@ -49,7 +49,7 @@ export class LoggerMock {
       return logMessage.includes(message);
     });
   }
-  
+
   // Helper to count logs by level
   getCounts() {
     return {

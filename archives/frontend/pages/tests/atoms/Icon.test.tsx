@@ -89,12 +89,7 @@ describe('Icon Component', () => {
 
   test('renders badge with custom position and color', () => {
     render(
-      <Icon 
-        badge={99} 
-        badgeColor="success" 
-        badgePosition="bottom-left"
-        data-testid="test-icon" 
-      />
+      <Icon badge={99} badgeColor="success" badgePosition="bottom-left" data-testid="test-icon" />,
     );
     const badge = screen.getByText('99');
     expect(badge).toBeInTheDocument();
@@ -113,7 +108,9 @@ describe('Icon Component', () => {
     const icon = screen.getByTestId('test-icon');
     expect(icon.parentElement).toHaveClass('relative');
     // Loading overlay should be present
-    const spinner = screen.getByTestId('test-icon').parentElement?.querySelector('[class*="animate-spin"]');
+    const spinner = screen
+      .getByTestId('test-icon')
+      .parentElement?.querySelector('[class*="animate-spin"]');
     expect(spinner).toBeInTheDocument();
   });
 
@@ -155,7 +152,7 @@ describe('Icon Component', () => {
   test('handles click events when interactive', () => {
     const handleClick = vi.fn();
     render(<Icon interactive onClick={handleClick} data-testid="test-icon" />);
-    
+
     const icon = screen.getByTestId('test-icon');
     fireEvent.click(icon);
     expect(handleClick).toHaveBeenCalledTimes(1);
@@ -164,7 +161,7 @@ describe('Icon Component', () => {
   test('does not handle click events when disabled', () => {
     const handleClick = vi.fn();
     render(<Icon disabled onClick={handleClick} data-testid="test-icon" />);
-    
+
     const icon = screen.getByTestId('test-icon');
     fireEvent.click(icon);
     expect(handleClick).not.toHaveBeenCalled();
@@ -173,27 +170,27 @@ describe('Icon Component', () => {
   test('handles keyboard events for interactive icons', () => {
     const handleClick = vi.fn();
     render(<Icon interactive onClick={handleClick} data-testid="test-icon" />);
-    
+
     const icon = screen.getByTestId('test-icon');
     fireEvent.keyDown(icon, { key: 'Enter' });
     expect(handleClick).toHaveBeenCalledTimes(1);
-    
+
     fireEvent.keyDown(icon, { key: ' ' });
     expect(handleClick).toHaveBeenCalledTimes(2);
   });
 
-test('wraps custom SVG children', () => {
-  render(
-    <Icon>
-      <svg data-testid="custom-icon" />
-    </Icon>
-  );
-  const icon = screen.getByTestId('custom-icon');
-  expect(icon).toBeInTheDocument();
-  // The custom icon should retain its testid
-  expect(icon).toHaveAttribute('data-testid', 'custom-icon');
-  expect(icon).toHaveClass('w-5', 'h-5'); // Default md size
-});
+  test('wraps custom SVG children', () => {
+    render(
+      <Icon>
+        <svg data-testid="custom-icon" />
+      </Icon>,
+    );
+    const icon = screen.getByTestId('custom-icon');
+    expect(icon).toBeInTheDocument();
+    // The custom icon should retain its testid
+    expect(icon).toHaveAttribute('data-testid', 'custom-icon');
+    expect(icon).toHaveClass('w-5', 'h-5'); // Default md size
+  });
 
   test('merges custom className with wrapper classes', () => {
     render(<Icon className="custom-class" data-testid="test-icon" />);
@@ -209,12 +206,12 @@ test('wraps custom SVG children', () => {
 
   test('passes through additional SVG attributes', () => {
     render(
-      <Icon 
-        data-testid="custom-icon" 
+      <Icon
+        data-testid="custom-icon"
         strokeWidth={3}
         viewBox="0 0 32 32"
         aria-label="Custom icon"
-      />
+      />,
     );
     const icon = screen.getByTestId('custom-icon');
     expect(icon).toHaveAttribute('stroke-width', '3');
@@ -222,25 +219,19 @@ test('wraps custom SVG children', () => {
     expect(icon).toHaveAttribute('aria-label', 'Custom icon');
   });
 
-test('applies correct classes when wrapped icon has existing className', () => {
-  render(
-    <Icon size="lg" color="primary">
-      <svg className="existing-class" data-testid="wrapped-icon" />
-    </Icon>
-  );
-  const icon = screen.getByTestId('wrapped-icon');
-  expect(icon).toBeInTheDocument();
-  expect(icon).toHaveClass('existing-class', 'w-6', 'h-6', 'text-primary-600');
-});
+  test('applies correct classes when wrapped icon has existing className', () => {
+    render(
+      <Icon size="lg" color="primary">
+        <svg className="existing-class" data-testid="wrapped-icon" />
+      </Icon>,
+    );
+    const icon = screen.getByTestId('wrapped-icon');
+    expect(icon).toBeInTheDocument();
+    expect(icon).toHaveClass('existing-class', 'w-6', 'h-6', 'text-primary-600');
+  });
 
   test('supports data attributes for testing/analytics', () => {
-    render(
-      <Icon 
-        data-testid="analytics-icon"
-        data-analytics="icon-click"
-        data-cy="submit-icon"
-      />
-    );
+    render(<Icon data-testid="analytics-icon" data-analytics="icon-click" data-cy="submit-icon" />);
     const icon = screen.getByTestId('analytics-icon');
     expect(icon).toHaveAttribute('data-analytics', 'icon-click');
     expect(icon).toHaveAttribute('data-cy', 'submit-icon');
@@ -314,60 +305,59 @@ describe('Predefined Icon Components', () => {
 });
 
 describe('Icon Utility Components', () => {
-test('IconButton renders button wrapper with icon', () => {
-  const handleClick = vi.fn();
-  render(
-    <IconButton onClick={handleClick} aria-label="Close">
-      <Icon data-testid="inner-icon" />
-    </IconButton>
-  );
-  
-  const button = screen.getByRole('button', { name: 'Close' });
-  
-  // The icon's testid should be passed through
-  const icon = screen.getByTestId('inner-icon');
-  
-  expect(button).toBeInTheDocument();
-  expect(icon).toBeInTheDocument();
-  
-  fireEvent.click(button);
-  expect(handleClick).toHaveBeenCalledTimes(1);
-});
+  test('IconButton renders button wrapper with icon', () => {
+    const handleClick = vi.fn();
+    render(
+      <IconButton onClick={handleClick} aria-label="Close">
+        <Icon data-testid="inner-icon" />
+      </IconButton>,
+    );
+
+    const button = screen.getByRole('button', { name: 'Close' });
+
+    // The icon's testid should be passed through
+    const icon = screen.getByTestId('inner-icon');
+
+    expect(button).toBeInTheDocument();
+    expect(icon).toBeInTheDocument();
+
+    fireEvent.click(button);
+    expect(handleClick).toHaveBeenCalledTimes(1);
+  });
 
   test('IconButton is disabled when disabled prop is true', () => {
     const handleClick = vi.fn();
     render(
       <IconButton disabled onClick={handleClick} aria-label="Disabled button">
         <Icon />
-      </IconButton>
+      </IconButton>,
     );
-    
+
     const button = screen.getByRole('button', { name: 'Disabled button' });
     expect(button).toBeDisabled();
     expect(button).toHaveClass('opacity-50', 'cursor-not-allowed');
-    
+
     fireEvent.click(button);
     expect(handleClick).not.toHaveBeenCalled();
   });
 
-test('IconGroup renders icons with consistent spacing', () => {
-  render(
-    <IconGroup spacing="md" data-testid="icon-group">
-      <Icon data-testid="icon-1" />
-      <Icon data-testid="icon-2" />
-      <Icon data-testid="icon-3" />
-    </IconGroup>
-  );
-  
-  const group = screen.getByTestId('icon-group');
-  expect(group).toHaveClass('flex', 'items-center', 'gap-3');
-  
-  expect(screen.getByTestId('icon-1')).toBeInTheDocument();
-  expect(screen.getByTestId('icon-2')).toBeInTheDocument();
-  expect(screen.getByTestId('icon-3')).toBeInTheDocument();
-});
-});
+  test('IconGroup renders icons with consistent spacing', () => {
+    render(
+      <IconGroup spacing="md" data-testid="icon-group">
+        <Icon data-testid="icon-1" />
+        <Icon data-testid="icon-2" />
+        <Icon data-testid="icon-3" />
+      </IconGroup>,
+    );
 
+    const group = screen.getByTestId('icon-group');
+    expect(group).toHaveClass('flex', 'items-center', 'gap-3');
+
+    expect(screen.getByTestId('icon-1')).toBeInTheDocument();
+    expect(screen.getByTestId('icon-2')).toBeInTheDocument();
+    expect(screen.getByTestId('icon-3')).toBeInTheDocument();
+  });
+});
 
 describe('Performance & Edge Cases', () => {
   test('renders correctly with minimal props', () => {
@@ -385,36 +375,35 @@ describe('Performance & Edge Cases', () => {
   test('memoization prevents unnecessary re-renders', () => {
     const { rerender } = render(<Icon size="md" data-testid="memo-icon" />);
     const initialRender = screen.getByTestId('memo-icon');
-    
+
     rerender(<Icon size="md" data-testid="memo-icon" />);
     const secondRender = screen.getByTestId('memo-icon');
-    
+
     // Should be the same element (React.memo prevents re-render)
     expect(secondRender).toBe(initialRender);
   });
 
-test('re-renders when props change', () => {
-  console.log('Starting re-render test...');
-  
-  try {
-    const { container, rerender } = render(<Icon size="md" />);
-    console.log('First render complete');
-    
-    const firstSvg = container.querySelector('svg');
-    expect(firstSvg).toBeInTheDocument();
-    
-    rerender(<Icon size="lg" />);
-    console.log('Second render complete');
-    
-    const secondSvg = container.querySelector('svg');
-    expect(secondSvg).toBeInTheDocument();
-    
-    // Verify size classes changed
-    expect(secondSvg).toHaveClass('w-6', 'h-6');
-    
-  } catch (error) {
-    console.error('Test error:', error);
-    throw error;
-  }
-});
+  test('re-renders when props change', () => {
+    console.log('Starting re-render test...');
+
+    try {
+      const { container, rerender } = render(<Icon size="md" />);
+      console.log('First render complete');
+
+      const firstSvg = container.querySelector('svg');
+      expect(firstSvg).toBeInTheDocument();
+
+      rerender(<Icon size="lg" />);
+      console.log('Second render complete');
+
+      const secondSvg = container.querySelector('svg');
+      expect(secondSvg).toBeInTheDocument();
+
+      // Verify size classes changed
+      expect(secondSvg).toHaveClass('w-6', 'h-6');
+    } catch (error) {
+      console.error('Test error:', error);
+      throw error;
+    }
+  });
 });

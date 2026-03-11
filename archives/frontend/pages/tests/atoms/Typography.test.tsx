@@ -1,24 +1,24 @@
 // D:\Projects-In-Hand\helixcrm\apps\web\src\components\atoms\Typography\Typography.test.tsx
 import { render, screen } from '@testing-library/react';
-import { 
-  Typography, 
-  Display, 
-  H1, 
-  H2, 
-  H3, 
-  H4, 
-  H5, 
-  H6, 
-  Body, 
-  BodySmall, 
-  Caption, 
-  Label, 
+import {
+  Typography,
+  Display,
+  H1,
+  H2,
+  H3,
+  H4,
+  H5,
+  H6,
+  Body,
+  BodySmall,
+  Caption,
+  Label,
   Code,
   TypographyLink,
   InlineCode,
   Highlight,
   TypographyProvider,
-  TypographyWithContext
+  TypographyWithContext,
 } from './Typography';
 
 describe('Typography Component', () => {
@@ -31,7 +31,14 @@ describe('Typography Component', () => {
     render(<Typography variant="h1">Heading 1</Typography>);
     const element = screen.getByText('Heading 1');
     // Updated to match responsive classes
-    expect(element).toHaveClass('text-3xl', 'md:text-4xl', 'lg:text-5xl', 'font-bold', 'tracking-tight', 'leading-tight');
+    expect(element).toHaveClass(
+      'text-3xl',
+      'md:text-4xl',
+      'lg:text-5xl',
+      'font-bold',
+      'tracking-tight',
+      'leading-tight',
+    );
   });
 
   test('renders with custom color', () => {
@@ -44,28 +51,56 @@ describe('Typography Component', () => {
     render(<H1>Test Heading</H1>);
     const element = screen.getByText('Test Heading');
     expect(element.tagName).toBe('H1');
-    expect(element).toHaveClass('text-3xl', 'md:text-4xl', 'lg:text-5xl', 'font-bold', 'tracking-tight', 'leading-tight');
+    expect(element).toHaveClass(
+      'text-3xl',
+      'md:text-4xl',
+      'lg:text-5xl',
+      'font-bold',
+      'tracking-tight',
+      'leading-tight',
+    );
   });
 
   test('renders H2 component', () => {
     render(<H2>Test Subheading</H2>);
     const element = screen.getByText('Test Subheading');
     expect(element.tagName).toBe('H2');
-    expect(element).toHaveClass('text-2xl', 'md:text-3xl', 'lg:text-4xl', 'font-semibold', 'tracking-tight', 'leading-snug');
+    expect(element).toHaveClass(
+      'text-2xl',
+      'md:text-3xl',
+      'lg:text-4xl',
+      'font-semibold',
+      'tracking-tight',
+      'leading-snug',
+    );
   });
 
   test('renders Body component', () => {
     render(<Body>Test paragraph</Body>);
     const element = screen.getByText('Test paragraph');
     expect(element.tagName).toBe('P');
-    expect(element).toHaveClass('text-base', 'md:text-lg', 'lg:text-base', 'font-normal', 'tracking-normal', 'leading-relaxed');
+    expect(element).toHaveClass(
+      'text-base',
+      'md:text-lg',
+      'lg:text-base',
+      'font-normal',
+      'tracking-normal',
+      'leading-relaxed',
+    );
   });
 
   test('renders Caption component', () => {
     render(<Caption>Test caption</Caption>);
     const element = screen.getByText('Test caption');
     expect(element.tagName).toBe('SPAN');
-    expect(element).toHaveClass('text-xs', 'md:text-sm', 'lg:text-xs', 'font-normal', 'tracking-normal', 'leading-normal');
+    expect(element).toHaveClass(
+      'text-xs',
+      'md:text-sm',
+      'lg:text-xs',
+      'font-normal',
+      'tracking-normal',
+      'leading-normal',
+    );
   });
 
   test('applies truncate class when truncate prop is true', () => {
@@ -108,27 +143,55 @@ describe('Typography Component', () => {
     render(<Display>Display Text</Display>);
     const element = screen.getByText('Display Text');
     expect(element.tagName).toBe('H1');
-    expect(element).toHaveClass('text-4xl', 'md:text-5xl', 'lg:text-6xl', 'font-bold', 'tracking-tighter', 'leading-tight');
+    expect(element).toHaveClass(
+      'text-4xl',
+      'md:text-5xl',
+      'lg:text-6xl',
+      'font-bold',
+      'tracking-tighter',
+      'leading-tight',
+    );
   });
 
   test('renders Label component', () => {
     render(<Label>Form Label</Label>);
     const element = screen.getByText('Form Label');
     expect(element.tagName).toBe('LABEL');
-    expect(element).toHaveClass('text-sm', 'md:text-base', 'lg:text-sm', 'font-medium', 'tracking-wide', 'leading-normal', 'uppercase');
+    expect(element).toHaveClass(
+      'text-sm',
+      'md:text-base',
+      'lg:text-sm',
+      'font-medium',
+      'tracking-wide',
+      'leading-normal',
+      'uppercase',
+    );
   });
 
   test('renders Code component', () => {
     render(<Code>const x = 42;</Code>);
     const element = screen.getByText('const x = 42;');
     expect(element.tagName).toBe('CODE');
-    expect(element).toHaveClass('text-sm', 'md:text-base', 'lg:text-sm', 'font-mono', 'font-normal', 'tracking-normal', 'leading-normal', 'bg-gray-100', 'dark:bg-gray-800', 'px-1', 'py-0.5', 'rounded');
+    expect(element).toHaveClass(
+      'text-sm',
+      'md:text-base',
+      'lg:text-sm',
+      'font-mono',
+      'font-normal',
+      'tracking-normal',
+      'leading-normal',
+      'bg-gray-100',
+      'dark:bg-gray-800',
+      'px-1',
+      'py-0.5',
+      'rounded',
+    );
   });
 
   test('applies lineClamp style when lineClamp prop is provided', () => {
     render(<Typography lineClamp={2}>Multi-line text that should be clamped</Typography>);
     const element = screen.getByText('Multi-line text that should be clamped');
-    
+
     // Check that specific styles are applied for line clamping
     expect(element.style.display).toBe('-webkit-box');
     expect(element.style.overflow).toBe('hidden');
@@ -158,35 +221,70 @@ describe('Typography Component', () => {
     render(<BodySmall>Small body text</BodySmall>);
     const element = screen.getByText('Small body text');
     expect(element.tagName).toBe('P');
-    expect(element).toHaveClass('text-sm', 'md:text-base', 'lg:text-sm', 'font-normal', 'tracking-normal', 'leading-normal');
+    expect(element).toHaveClass(
+      'text-sm',
+      'md:text-base',
+      'lg:text-sm',
+      'font-normal',
+      'tracking-normal',
+      'leading-normal',
+    );
   });
 
   test('renders H3 component', () => {
     render(<H3>Heading 3</H3>);
     const element = screen.getByText('Heading 3');
     expect(element.tagName).toBe('H3');
-    expect(element).toHaveClass('text-xl', 'md:text-2xl', 'lg:text-3xl', 'font-semibold', 'tracking-normal', 'leading-snug');
+    expect(element).toHaveClass(
+      'text-xl',
+      'md:text-2xl',
+      'lg:text-3xl',
+      'font-semibold',
+      'tracking-normal',
+      'leading-snug',
+    );
   });
 
   test('renders H4 component', () => {
     render(<H4>Heading 4</H4>);
     const element = screen.getByText('Heading 4');
     expect(element.tagName).toBe('H4');
-    expect(element).toHaveClass('text-lg', 'md:text-xl', 'lg:text-2xl', 'font-semibold', 'tracking-normal', 'leading-normal');
+    expect(element).toHaveClass(
+      'text-lg',
+      'md:text-xl',
+      'lg:text-2xl',
+      'font-semibold',
+      'tracking-normal',
+      'leading-normal',
+    );
   });
 
   test('renders H5 component', () => {
     render(<H5>Heading 5</H5>);
     const element = screen.getByText('Heading 5');
     expect(element.tagName).toBe('H5');
-    expect(element).toHaveClass('text-base', 'md:text-lg', 'lg:text-xl', 'font-medium', 'tracking-normal', 'leading-normal');
+    expect(element).toHaveClass(
+      'text-base',
+      'md:text-lg',
+      'lg:text-xl',
+      'font-medium',
+      'tracking-normal',
+      'leading-normal',
+    );
   });
 
   test('renders H6 component', () => {
     render(<H6>Heading 6</H6>);
     const element = screen.getByText('Heading 6');
     expect(element.tagName).toBe('H6');
-    expect(element).toHaveClass('text-sm', 'md:text-base', 'lg:text-lg', 'font-medium', 'tracking-normal', 'leading-normal');
+    expect(element).toHaveClass(
+      'text-sm',
+      'md:text-base',
+      'lg:text-lg',
+      'font-medium',
+      'tracking-normal',
+      'leading-normal',
+    );
   });
 
   // Edge case tests
@@ -199,30 +297,50 @@ describe('Typography Component', () => {
 
   test('applies multiple style props together', () => {
     render(
-      <Typography 
-        uppercase 
-        italic 
-        underline 
-        align="right"
-        className="custom"
-      >
+      <Typography uppercase italic underline align="right" className="custom">
         Styled text
-      </Typography>
+      </Typography>,
     );
     const element = screen.getByText('Styled text');
-    expect(element).toHaveClass('uppercase', 'italic', 'underline', 'underline-offset-2', 'text-right', 'custom');
+    expect(element).toHaveClass(
+      'uppercase',
+      'italic',
+      'underline',
+      'underline-offset-2',
+      'text-right',
+      'custom',
+    );
   });
 
   test('Typography with variant="lead" applies lead styling', () => {
     render(<Typography variant="lead">Lead paragraph text</Typography>);
     const element = screen.getByText('Lead paragraph text');
-    expect(element).toHaveClass('text-lg', 'md:text-xl', 'lg:text-2xl', 'font-normal', 'tracking-normal', 'leading-relaxed', 'text-gray-600', 'dark:text-gray-400');
+    expect(element).toHaveClass(
+      'text-lg',
+      'md:text-xl',
+      'lg:text-2xl',
+      'font-normal',
+      'tracking-normal',
+      'leading-relaxed',
+      'text-gray-600',
+      'dark:text-gray-400',
+    );
   });
 
   test('Typography with variant="subtitle" applies subtitle styling', () => {
     render(<Typography variant="subtitle">Subtitle text</Typography>);
     const element = screen.getByText('Subtitle text');
-    expect(element).toHaveClass('text-base', 'md:text-lg', 'lg:text-base', 'font-medium', 'tracking-wider', 'leading-normal', 'text-gray-500', 'dark:text-gray-500', 'uppercase');
+    expect(element).toHaveClass(
+      'text-base',
+      'md:text-lg',
+      'lg:text-base',
+      'font-medium',
+      'tracking-wider',
+      'leading-normal',
+      'text-gray-500',
+      'dark:text-gray-500',
+      'uppercase',
+    );
   });
 
   // New component tests
@@ -231,7 +349,14 @@ describe('Typography Component', () => {
     const element = screen.getByText('Test Link');
     expect(element.tagName).toBe('A');
     expect(element).toHaveAttribute('href', '/test');
-    expect(element).toHaveClass('text-blue-600', 'hover:text-blue-800', 'dark:text-blue-400', 'dark:hover:text-blue-300', 'underline', 'underline-offset-2');
+    expect(element).toHaveClass(
+      'text-blue-600',
+      'hover:text-blue-800',
+      'dark:text-blue-400',
+      'dark:hover:text-blue-300',
+      'underline',
+      'underline-offset-2',
+    );
   });
 
   test('InlineCode renders inline code snippet', () => {
@@ -251,10 +376,17 @@ describe('Typography Component', () => {
     render(
       <TypographyProvider defaultVariant="h3" defaultColor="primary">
         <TypographyWithContext>Context text</TypographyWithContext>
-      </TypographyProvider>
+      </TypographyProvider>,
     );
     const element = screen.getByText('Context text');
-    expect(element).toHaveClass('text-xl', 'md:text-2xl', 'lg:text-3xl', 'font-semibold', 'tracking-normal', 'leading-snug');
+    expect(element).toHaveClass(
+      'text-xl',
+      'md:text-2xl',
+      'lg:text-3xl',
+      'font-semibold',
+      'tracking-normal',
+      'leading-snug',
+    );
     expect(element).toHaveClass('text-gray-900', 'dark:text-gray-100');
   });
 });

@@ -7,13 +7,13 @@ async function assignPermissions() {
 
   // Your test user ID from the token
   const userId = '3163357d-dbe8-4e24-932c-ff79ca722866';
-  
+
   // Get user with organization
   const user = await prisma.user.findUnique({
     where: { id: userId },
     include: {
-      organization: true
-    }
+      organization: true,
+    },
   });
 
   if (!user) {
@@ -30,45 +30,49 @@ async function assignPermissions() {
 
   // Create or find Admin role
   let adminRole = await prisma.role.findFirst({
-    where: { 
+    where: {
       name: 'Admin',
-      organizationId: user.organizationId 
+      organizationId: user.organizationId,
     },
     include: {
       permissions: {
         include: {
-          permission: true
-        }
-      }
-    }
+          permission: true,
+        },
+      },
+    },
   });
 
   if (!adminRole) {
     console.log('📝 Creating Admin role...');
-    
+
     adminRole = await prisma.role.create({
       data: {
         name: 'Admin',
         description: 'Full system access',
         organizationId: user.organizationId,
         permissions: {
-          create: allPermissions.map(p => ({
-            permissionId: p.id
-          }))
-        }
+          create: allPermissions.map((p) => ({
+            permissionId: p.id,
+          })),
+        },
       },
       include: {
         permissions: {
           include: {
-            permission: true
-          }
-        }
-      }
+            permission: true,
+          },
+        },
+      },
     });
-    
-    console.log(`✅ Created Admin role with ${adminRole.permissions.length} permissions`);
+
+    console.log(
+      `✅ Created Admin role with ${adminRole.permissions.length} permissions`,
+    );
   } else {
-    console.log(`✅ Admin role already exists with ${adminRole.permissions.length} permissions`);
+    console.log(
+      `✅ Admin role already exists with ${adminRole.permissions.length} permissions`,
+    );
   }
 
   // Assign the Admin role to the user through UserRole
@@ -77,8 +81,8 @@ async function assignPermissions() {
       userId: user.id,
       roleId: adminRole.id,
       organizationId: user.organizationId,
-      deletedAt: null
-    }
+      deletedAt: null,
+    },
   });
 
   if (!existingUserRole) {
@@ -86,8 +90,8 @@ async function assignPermissions() {
       data: {
         userId: user.id,
         roleId: adminRole.id,
-        organizationId: user.organizationId
-      }
+        organizationId: user.organizationId,
+      },
     });
     console.log('✅ Assigned Admin role to user');
   } else {
@@ -100,30 +104,30 @@ async function assignPermissions() {
     include: {
       UserRoles: {
         where: {
-          deletedAt: null
+          deletedAt: null,
         },
         include: {
           role: {
             include: {
               permissions: {
                 include: {
-                  permission: true
-                }
-              }
-            }
-          }
-        }
-      }
-    }
+                  permission: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   });
 
-  const permissions = userWithRoles?.UserRoles.flatMap(ur => 
-    ur.role.permissions.map(rp => rp.permission.code)
+  const permissions = userWithRoles?.UserRoles.flatMap((ur) =>
+    ur.role.permissions.map((rp) => rp.permission.code),
   );
 
   console.log('\n📋 User permissions:');
   const uniquePermissions = [...new Set(permissions || [])];
-  uniquePermissions.sort().forEach(p => console.log(`  - ${p}`));
+  uniquePermissions.sort().forEach((p) => console.log(`  - ${p}`));
 
   // Check if user has contact:read permission (using colon format)
   const hasContactRead = uniquePermissions.includes('contact:read'); // ✅ Fixed: 'contacts.read' → 'contact:read'

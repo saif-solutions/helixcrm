@@ -19,7 +19,7 @@ describe('System E2E Validation - MVP Readiness', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    
+
     // MANDATORY PRODUCTION SETTINGS (matching main.ts)
     app.useGlobalPipes(
       new ValidationPipe({
@@ -32,7 +32,7 @@ describe('System E2E Validation - MVP Readiness', () => {
         stopAtFirstError: true,
       }),
     );
-    
+
     prisma = moduleFixture.get<PrismaService>(PrismaService);
     await app.init();
 
@@ -121,7 +121,7 @@ describe('System E2E Validation - MVP Readiness', () => {
         where: { actorEmail: { in: ['test-a@test.com', 'test-b@test.com'] } },
       });
       expect(auditLogs.length).toBeGreaterThan(0);
-      expect(auditLogs.every(log => log.actorEmail)).toBeTruthy();
+      expect(auditLogs.every((log) => log.actorEmail)).toBeTruthy();
     });
   });
 
@@ -133,7 +133,7 @@ describe('System E2E Validation - MVP Readiness', () => {
         .delete(`/users/${tenantAUserId}`)
         .set('Authorization', `Bearer ${tenantAToken}`)
         .set('x-tenant-id', 'TEST_TENANT_A');
-      
+
       // Should either be 403 (Forbidden) or 404 (Not Found due to RLS)
       expect([403, 404]).toContain(deleteAttempt.status);
 
@@ -153,7 +153,7 @@ describe('System E2E Validation - MVP Readiness', () => {
   describe('Audit Completeness Validation', () => {
     it('should audit full CRUD lifecycle', async () => {
       const testEmail = `audit-test-${Date.now()}@test.com`;
-      
+
       // CREATE
       const createRes = await request(app.getHttpServer())
         .post('/contacts')
@@ -183,7 +183,7 @@ describe('System E2E Validation - MVP Readiness', () => {
       });
 
       expect(audits.length).toBeGreaterThanOrEqual(3);
-      const actions = audits.map(a => a.action);
+      const actions = audits.map((a) => a.action);
       expect(actions).toContain('CONTACT_CREATED');
       expect(actions).toContain('CONTACT_UPDATED');
       expect(actions).toContain('CONTACT_DELETED');
@@ -199,7 +199,7 @@ describe('System E2E Validation - MVP Readiness', () => {
         .set('Authorization', `Bearer ${tenantAToken}`)
         .set('x-tenant-id', 'TEST_TENANT_A')
         .send({ invalidField: 'should not exist' });
-      
+
       expect(invalidRequest.status).toBe(400); // Bad Request due to forbidNonWhitelisted
 
       // Verify no partial data was written
@@ -221,9 +221,9 @@ describe('System E2E Validation - MVP Readiness', () => {
             .send({ email: 'test-a@test.com', password: 'wrongpassword' }),
         );
       }
-      
+
       const responses = await Promise.all(requests);
-      const rateLimited = responses.filter(r => r.status === 429);
+      const rateLimited = responses.filter((r) => r.status === 429);
       expect(rateLimited.length).toBeGreaterThan(0);
     });
   });

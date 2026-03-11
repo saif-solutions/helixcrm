@@ -35,9 +35,7 @@ describe('DashboardController', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [DashboardController],
-      providers: [
-        { provide: DashboardService, useValue: mockDashboardService },
-      ],
+      providers: [{ provide: DashboardService, useValue: mockDashboardService }],
     }).compile();
 
     controller = module.get<DashboardController>(DashboardController);
@@ -125,7 +123,7 @@ describe('DashboardController', () => {
         expect.objectContaining({
           userId: 'user-123',
           event: 'dashboard_stats_request',
-        })
+        }),
       );
     });
 
@@ -142,7 +140,7 @@ describe('DashboardController', () => {
           dealsCount: 25,
           contactsCount: 150,
           leadsCount: 75,
-        })
+        }),
       );
     });
 
@@ -236,7 +234,7 @@ describe('DashboardController', () => {
 
       expect(loggerSpy).toHaveBeenCalledWith(
         expect.stringContaining('Dashboard health check failed'),
-        expect.any(Object)
+        expect.any(Object),
       );
     });
   });

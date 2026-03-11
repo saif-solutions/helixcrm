@@ -1,18 +1,11 @@
-﻿import { PrismaClient } from "@prisma/client";
+﻿import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
 async function setupRLS() {
-  console.log("Setting up Row-Level Security (RLS)...");
+  console.log('Setting up Row-Level Security (RLS)...');
 
-  const tables = [
-    "organizations",
-    "users",
-    "contacts",
-    "accounts",
-    "activities",
-    "audit_logs",
-  ];
+  const tables = ['organizations', 'users', 'contacts', 'accounts', 'activities', 'audit_logs'];
 
   for (const table of tables) {
     console.log(`Enabling RLS on ${table}...`);
@@ -23,7 +16,7 @@ async function setupRLS() {
     `);
 
     // Create policy that users can only see their organization's data
-    if (table !== "organizations") {
+    if (table !== 'organizations') {
       await prisma.$executeRawUnsafe(`
         CREATE POLICY "${table}_tenant_isolation_policy" 
         ON "${table}"
@@ -33,7 +26,7 @@ async function setupRLS() {
     }
 
     // Organizations have special policy
-    if (table === "organizations") {
+    if (table === 'organizations') {
       await prisma.$executeRawUnsafe(`
         CREATE POLICY "organizations_tenant_isolation_policy" 
         ON "organizations"
@@ -45,15 +38,15 @@ async function setupRLS() {
     console.log(`✓ RLS enabled on ${table}`);
   }
 
-  console.log("\n✅ RLS setup complete!");
-  console.log("\nImportant:");
-  console.log("1. Ensure app.current_organization_id is set in database session");
-  console.log("2. Use the RLS middleware in your application");
+  console.log('\n✅ RLS setup complete!');
+  console.log('\nImportant:');
+  console.log('1. Ensure app.current_organization_id is set in database session');
+  console.log('2. Use the RLS middleware in your application');
 }
 
 setupRLS()
   .catch((e) => {
-    console.error("Error setting up RLS:", e);
+    console.error('Error setting up RLS:', e);
     process.exit(1);
   })
   .finally(async () => {

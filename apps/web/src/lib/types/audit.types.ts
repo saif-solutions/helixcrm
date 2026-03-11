@@ -67,16 +67,16 @@ export const getActionLabel = (action: string): string => {
   return action
     .toLowerCase()
     .split('_')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
 };
 
 export const getSeverityColor = (severity: string): string => {
   const colors: Record<string, string> = {
-    'LOW': 'bg-green-100 text-green-800',
-    'MEDIUM': 'bg-yellow-100 text-yellow-800',
-    'HIGH': 'bg-orange-100 text-orange-800',
-    'CRITICAL': 'bg-red-100 text-red-800',
+    LOW: 'bg-green-100 text-green-800',
+    MEDIUM: 'bg-yellow-100 text-yellow-800',
+    HIGH: 'bg-orange-100 text-orange-800',
+    CRITICAL: 'bg-red-100 text-red-800',
   };
   return colors[severity] || 'bg-gray-100 text-gray-800';
 };

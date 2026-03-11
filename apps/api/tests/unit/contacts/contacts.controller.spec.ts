@@ -42,9 +42,7 @@ describe('ContactsController', () => {
   const createController = async () => {
     const module = await Test.createTestingModule({
       controllers: [ContactsController],
-      providers: [
-        { provide: ContactsService, useValue: mockContactsService },
-      ],
+      providers: [{ provide: ContactsService, useValue: mockContactsService }],
     }).compile();
 
     return module.get<ContactsController>(ContactsController);
@@ -64,8 +62,8 @@ describe('ContactsController', () => {
       position: 'Manager',
     };
 
-    const mockResult = { 
-      id: 'contact-123', 
+    const mockResult = {
+      id: 'contact-123',
       firstName: 'John',
       lastName: 'Doe',
       email: 'john@example.com',
@@ -77,10 +75,16 @@ describe('ContactsController', () => {
     it('should successfully create a contact', async () => {
       mockContactsService.create.mockResolvedValue(mockResult);
 
-      const result = await controller.create(createContactDto, mockRequest as any);
+      const result = await controller.create(
+        createContactDto,
+        mockRequest as any,
+      );
 
       expect(result).toEqual(mockResult);
-      expect(mockContactsService.create).toHaveBeenCalledWith(createContactDto, 'org-123');
+      expect(mockContactsService.create).toHaveBeenCalledWith(
+        createContactDto,
+        'org-123',
+      );
     });
   });
 
@@ -101,30 +105,35 @@ describe('ContactsController', () => {
       expect(result).toEqual(mockResult);
       expect(mockContactsService.findAll).toHaveBeenCalledWith(
         { page: 1, limit: 20, search: '' },
-        'org-123'
+        'org-123',
       );
     });
 
     it('should return paginated contacts with all params', async () => {
       mockContactsService.findAll.mockResolvedValue(mockResult);
 
-      const result = await controller.findAll(2, 50, 'john', mockRequest as any);
+      const result = await controller.findAll(
+        2,
+        50,
+        'john',
+        mockRequest as any,
+      );
 
       expect(result).toEqual(mockResult);
       expect(mockContactsService.findAll).toHaveBeenCalledWith(
         { page: 2, limit: 50, search: 'john' },
-        'org-123'
+        'org-123',
       );
     });
   });
 
   describe('findOne', () => {
     const contactId = 'contact-123';
-    const mockContact = { 
-      id: contactId, 
-      firstName: 'John', 
+    const mockContact = {
+      id: contactId,
+      firstName: 'John',
       lastName: 'Doe',
-      email: 'john@example.com' 
+      email: 'john@example.com',
     };
 
     it('should return a contact by id', async () => {
@@ -133,32 +142,43 @@ describe('ContactsController', () => {
       const result = await controller.findOne(contactId, mockRequest as any);
 
       expect(result).toEqual(mockContact);
-      expect(mockContactsService.findOne).toHaveBeenCalledWith(contactId, 'org-123');
+      expect(mockContactsService.findOne).toHaveBeenCalledWith(
+        contactId,
+        'org-123',
+      );
     });
   });
 
   describe('update', () => {
     const contactId = 'contact-123';
-    const updateContactDto = { 
+    const updateContactDto = {
       name: 'John Updated',
       email: 'john.updated@example.com',
-      phone: '9876543210'
+      phone: '9876543210',
     };
-    const mockResult = { 
-      id: contactId, 
+    const mockResult = {
+      id: contactId,
       firstName: 'John',
       lastName: 'Updated',
       email: 'john.updated@example.com',
-      phone: '9876543210'
+      phone: '9876543210',
     };
 
     it('should successfully update a contact', async () => {
       mockContactsService.update.mockResolvedValue(mockResult);
 
-      const result = await controller.update(contactId, updateContactDto, mockRequest as any);
+      const result = await controller.update(
+        contactId,
+        updateContactDto,
+        mockRequest as any,
+      );
 
       expect(result).toEqual(mockResult);
-      expect(mockContactsService.update).toHaveBeenCalledWith(contactId, updateContactDto, 'org-123');
+      expect(mockContactsService.update).toHaveBeenCalledWith(
+        contactId,
+        updateContactDto,
+        'org-123',
+      );
     });
   });
 
@@ -172,7 +192,10 @@ describe('ContactsController', () => {
       const result = await controller.remove(contactId, mockRequest as any);
 
       expect(result).toEqual(mockResult);
-      expect(mockContactsService.remove).toHaveBeenCalledWith(contactId, 'org-123');
+      expect(mockContactsService.remove).toHaveBeenCalledWith(
+        contactId,
+        'org-123',
+      );
     });
   });
 });

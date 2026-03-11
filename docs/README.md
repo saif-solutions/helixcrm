@@ -5,40 +5,45 @@
 This documentation follows the **Single Source of Truth (SSOT)** principle with a clear authority hierarchy.
 
 ### 🏛 Constitutional Documents (Level 1A)
-| Document | Purpose |
-|----------|---------|
-| [`SSOT.md`](SSOT.md) | Constitutional document - always authoritative |
-| [`INVARIANTS.md`](INVARIANTS.md) | System invariants with P0-P3 severity |
-| [`VOCABULARY.md`](VOCABULARY.md) | Canonical terminology definitions |
+
+| Document                         | Purpose                                        |
+| -------------------------------- | ---------------------------------------------- |
+| [`SSOT.md`](SSOT.md)             | Constitutional document - always authoritative |
+| [`INVARIANTS.md`](INVARIANTS.md) | System invariants with P0-P3 severity          |
+| [`VOCABULARY.md`](VOCABULARY.md) | Canonical terminology definitions              |
 
 ### 📋 Controlled Documents (Level 1B)
-| Document | Purpose |
-|----------|---------|
-| [`API_CONTRACTS.md`](API_CONTRACTS.md) | API specifications and versioning |
-| [`ARCHITECTURE.md`](ARCHITECTURE.md) | System architecture overview |
-| [`SECURITY.md`](SECURITY.md) | Security model and controls |
-| [`OPERATIONS.md`](OPERATIONS.md) | Development and deployment procedures |
-| [`FRONTEND_SSOT.md`](FRONTEND_SSOT.md) | Frontend execution blueprint |
-| [`TESTING_STRATEGY.md`](TESTING_STRATEGY.md) | 4-layer test taxonomy |
-| [`INVARIANT_VIOLATIONS.md`](INVARIANT_VIOLATIONS.md) | Violation response playbook |
-| [`MVP_AUTH_BOUNDARIES.md`](MVP_AUTH_BOUNDARIES.md) | MVP scope definition |
-| [`POST-QA-HARDENING.md`](POST-QA-HARDENING.md) | Post-QA hardening roadmap |
+
+| Document                                             | Purpose                               |
+| ---------------------------------------------------- | ------------------------------------- |
+| [`API_CONTRACTS.md`](API_CONTRACTS.md)               | API specifications and versioning     |
+| [`ARCHITECTURE.md`](ARCHITECTURE.md)                 | System architecture overview          |
+| [`SECURITY.md`](SECURITY.md)                         | Security model and controls           |
+| [`OPERATIONS.md`](OPERATIONS.md)                     | Development and deployment procedures |
+| [`FRONTEND_SSOT.md`](FRONTEND_SSOT.md)               | Frontend execution blueprint          |
+| [`TESTING_STRATEGY.md`](TESTING_STRATEGY.md)         | 4-layer test taxonomy                 |
+| [`INVARIANT_VIOLATIONS.md`](INVARIANT_VIOLATIONS.md) | Violation response playbook           |
+| [`MVP_AUTH_BOUNDARIES.md`](MVP_AUTH_BOUNDARIES.md)   | MVP scope definition                  |
+| [`POST-QA-HARDENING.md`](POST-QA-HARDENING.md)       | Post-QA hardening roadmap             |
 
 ### 🏗 Architecture Specifications
-| Location | Purpose |
-|----------|---------|
-| [`architecture/`](architecture/) | Detailed architecture documents |
-| [`architecture/tenant-isolation-architecture.md`](architecture/tenant-isolation-architecture.md) | Tenant isolation SSOT |
+
+| Location                                                                                         | Purpose                         |
+| ------------------------------------------------------------------------------------------------ | ------------------------------- |
+| [`architecture/`](architecture/)                                                                 | Detailed architecture documents |
+| [`architecture/tenant-isolation-architecture.md`](architecture/tenant-isolation-architecture.md) | Tenant isolation SSOT           |
 
 ### 🔐 Compliance & Governance
-| Location | Purpose |
-|----------|---------|
-| [`compliance/`](compliance/) | Compliance and audit evidence |
-| [`invariants/`](invariants/) | Invariant registry and tracking |
-| [`team/`](team/) | Team process and rules |
-| [`VALIDATION_SUMMARY.md`](VALIDATION_SUMMARY.md) | Governance validation snapshot |
+
+| Location                                         | Purpose                         |
+| ------------------------------------------------ | ------------------------------- |
+| [`compliance/`](compliance/)                     | Compliance and audit evidence   |
+| [`invariants/`](invariants/)                     | Invariant registry and tracking |
+| [`team/`](team/)                                 | Team process and rules          |
+| [`VALIDATION_SUMMARY.md`](VALIDATION_SUMMARY.md) | Governance validation snapshot  |
 
 ### 📦 Archive (Historical Only)
+
 - [`_archive/`](_archive/) - Read-only historical documents (phase reports, obsolete guides)
 
 ## 🚀 Quick Start
@@ -95,3 +100,4 @@ Constitutional (Level 1A)	3	✅ Active
 Controlled (Level 1B)	11	✅ Active
 Archived	4	✅ Preserved
 When in doubt, consult SSOT.md - it's the constitutional document of HelixCRM.
+```

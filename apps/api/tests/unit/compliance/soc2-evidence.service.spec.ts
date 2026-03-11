@@ -70,7 +70,7 @@ describe('Soc2EvidenceService', () => {
 
     // Mock fs.existsSync to return true for evidence directory
     (fs.existsSync as jest.Mock).mockReturnValue(true);
-    
+
     // Mock process.cwd
     const mockCwd = '/test/path';
     Object.defineProperty(process, 'cwd', {
@@ -121,17 +121,44 @@ describe('Soc2EvidenceService', () => {
     ];
 
     const mockUserAccounts = [
-      { id: 1, email: 'user1@test.com', emailVerified: true, lastLoginAt: new Date(), failedLoginAttempts: 0 },
-      { id: 2, email: 'user2@test.com', emailVerified: true, lastLoginAt: new Date(), failedLoginAttempts: 2 },
+      {
+        id: 1,
+        email: 'user1@test.com',
+        emailVerified: true,
+        lastLoginAt: new Date(),
+        failedLoginAttempts: 0,
+      },
+      {
+        id: 2,
+        email: 'user2@test.com',
+        emailVerified: true,
+        lastLoginAt: new Date(),
+        failedLoginAttempts: 2,
+      },
     ];
 
     const mockSecurityEvents = [
-      { id: 1, severity: 'HIGH', action: 'CSRF_FAILURE', createdAt: new Date() },
-      { id: 2, severity: 'CRITICAL', action: 'SYSTEM_ERROR', createdAt: new Date() },
+      {
+        id: 1,
+        severity: 'HIGH',
+        action: 'CSRF_FAILURE',
+        createdAt: new Date(),
+      },
+      {
+        id: 2,
+        severity: 'CRITICAL',
+        action: 'SYSTEM_ERROR',
+        createdAt: new Date(),
+      },
     ];
 
     const mockHealthChecks = [
-      { id: 1, entityType: 'SYSTEM', action: 'PERFORMANCE_METRIC', metadata: { endpoint: '/health' } },
+      {
+        id: 1,
+        entityType: 'SYSTEM',
+        action: 'PERFORMANCE_METRIC',
+        metadata: { endpoint: '/health' },
+      },
     ];
 
     const mockIntegrityVerifications = [
@@ -141,25 +168,32 @@ describe('Soc2EvidenceService', () => {
     beforeEach(() => {
       // Mock all the evidence collection methods
       prismaMock.auditLog.findMany
-        .mockResolvedValueOnce(mockAccessLogs)  // CC6.1 access logs
-        .mockResolvedValueOnce(mockSecurityEvents)  // CC6.6 security events
-        .mockResolvedValueOnce(mockHealthChecks);  // A1.2 health checks
+        .mockResolvedValueOnce(mockAccessLogs) // CC6.1 access logs
+        .mockResolvedValueOnce(mockSecurityEvents) // CC6.6 security events
+        .mockResolvedValueOnce(mockHealthChecks); // A1.2 health checks
 
-      prismaMock.user.findMany.mockResolvedValue(mockUserAccounts);  // CC6.2 user accounts
-      prismaMock.organization.count.mockResolvedValue(5);  // C1.1 tenant count
+      prismaMock.user.findMany.mockResolvedValue(mockUserAccounts); // CC6.2 user accounts
+      prismaMock.organization.count.mockResolvedValue(5); // C1.1 tenant count
       prismaMock.user.groupBy.mockResolvedValue([
         { organizationId: 'org1', _count: 5 },
         { organizationId: 'org2', _count: 3 },
       ]);
-      prismaMock.auditIntegrityVerification.findMany.mockResolvedValue(mockIntegrityVerifications);  // PI1.1 integrity verifications
-      
+      prismaMock.auditIntegrityVerification.findMany.mockResolvedValue(
+        mockIntegrityVerifications,
+      ); // PI1.1 integrity verifications
+
       // Mock count methods for privacy evidence
       prismaMock.auditLog.count.mockResolvedValue(500);
       prismaMock.user.count.mockResolvedValue(50);
 
       // Mock file system for A1.1 performance results
-      (fs.readdirSync as jest.Mock).mockReturnValue(['result1.json', 'result2.json']);
-      (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify({ timestamp: '2024-01-15', scenario: 'test' }));
+      (fs.readdirSync as jest.Mock).mockReturnValue([
+        'result1.json',
+        'result2.json',
+      ]);
+      (fs.readFileSync as jest.Mock).mockReturnValue(
+        JSON.stringify({ timestamp: '2024-01-15', scenario: 'test' }),
+      );
       (fs.existsSync as jest.Mock).mockReturnValue(true);
     });
 
@@ -170,25 +204,31 @@ describe('Soc2EvidenceService', () => {
       // Assert
       expect(results).toBeDefined();
       expect(results.length).toBeGreaterThan(0);
-      
+
       // Check security evidence
-      const securityEvidence = results.filter(r => r.criteria === 'Security');
+      const securityEvidence = results.filter((r) => r.criteria === 'Security');
       expect(securityEvidence.length).toBe(3); // CC6.1, CC6.2, CC6.6
-      
+
       // Check availability evidence
-      const availabilityEvidence = results.filter(r => r.criteria === 'Availability');
+      const availabilityEvidence = results.filter(
+        (r) => r.criteria === 'Availability',
+      );
       expect(availabilityEvidence.length).toBe(2); // A1.1, A1.2
-      
+
       // Check confidentiality evidence
-      const confidentialityEvidence = results.filter(r => r.criteria === 'Confidentiality');
+      const confidentialityEvidence = results.filter(
+        (r) => r.criteria === 'Confidentiality',
+      );
       expect(confidentialityEvidence.length).toBe(1); // C1.1
-      
+
       // Check processing integrity evidence
-      const integrityEvidence = results.filter(r => r.criteria === 'ProcessingIntegrity');
+      const integrityEvidence = results.filter(
+        (r) => r.criteria === 'ProcessingIntegrity',
+      );
       expect(integrityEvidence.length).toBe(1); // PI1.1
-      
+
       // Check privacy evidence
-      const privacyEvidence = results.filter(r => r.criteria === 'Privacy');
+      const privacyEvidence = results.filter((r) => r.criteria === 'Privacy');
       expect(privacyEvidence.length).toBe(1); // P1.1
 
       // Verify storeEvidence was called (via file writes)
@@ -198,32 +238,38 @@ describe('Soc2EvidenceService', () => {
     it('should handle errors during collection', async () => {
       // Arrange
       jest.clearAllMocks();
-      
+
       // Reset all prisma mocks
       prismaMock.auditLog.findMany.mockReset();
       prismaMock.user.findMany.mockReset();
       prismaMock.organization.count.mockReset();
       prismaMock.user.groupBy.mockReset();
       prismaMock.auditIntegrityVerification.findMany.mockReset();
-      
+
       // Mock the first call to throw an error
-      prismaMock.auditLog.findMany.mockRejectedValue(new Error('Database error'));
+      prismaMock.auditLog.findMany.mockRejectedValue(
+        new Error('Database error'),
+      );
 
       // Act & Assert
-      await expect(service.collectAllEvidence()).rejects.toThrow('Database error');
+      await expect(service.collectAllEvidence()).rejects.toThrow(
+        'Database error',
+      );
     });
 
     it('should log collection start and completion', async () => {
       // Arrange
       const loggerSpy = jest.spyOn((service as any).logger, 'log');
-      
+
       // Act
       await service.collectAllEvidence();
 
       // Assert
-      expect(loggerSpy).toHaveBeenCalledWith('Starting SOC 2 evidence collection...');
       expect(loggerSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Evidence collection completed')
+        'Starting SOC 2 evidence collection...',
+      );
+      expect(loggerSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Evidence collection completed'),
       );
     });
 
@@ -239,7 +285,9 @@ describe('Soc2EvidenceService', () => {
       await service.collectAllEvidence();
 
       // Assert
-      expect(fs.mkdirSync).toHaveBeenCalledWith(expect.any(String), { recursive: true });
+      expect(fs.mkdirSync).toHaveBeenCalledWith(expect.any(String), {
+        recursive: true,
+      });
     });
   });
 
@@ -270,7 +318,7 @@ describe('Soc2EvidenceService', () => {
       const results = await (service as any).collectSecurityEvidence();
 
       // Assert
-      const cc62Result = results.find(r => r.controlId === 'CC6.2');
+      const cc62Result = results.find((r) => r.controlId === 'CC6.2');
       expect(cc62Result).toBeDefined();
       expect(cc62Result.criteria).toBe('Security');
     });
@@ -286,7 +334,7 @@ describe('Soc2EvidenceService', () => {
       const results = await (service as any).collectSecurityEvidence();
 
       // Assert
-      const cc66Result = results.find(r => r.controlId === 'CC6.6');
+      const cc66Result = results.find((r) => r.controlId === 'CC6.6');
       expect(cc66Result).toBeDefined();
       expect(cc66Result.criteria).toBe('Security');
     });
@@ -296,21 +344,25 @@ describe('Soc2EvidenceService', () => {
     it('should collect A1.1 evidence', async () => {
       // Arrange
       (fs.readdirSync as jest.Mock).mockReturnValue(['result.json']);
-      (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify({ timestamp: '2024-01-15' }));
+      (fs.readFileSync as jest.Mock).mockReturnValue(
+        JSON.stringify({ timestamp: '2024-01-15' }),
+      );
       prismaMock.auditLog.findMany.mockResolvedValue([]);
 
       // Act
       const results = await (service as any).collectAvailabilityEvidence();
 
       // Assert
-      const a11Result = results.find(r => r.controlId === 'A1.1');
+      const a11Result = results.find((r) => r.controlId === 'A1.1');
       expect(a11Result).toBeDefined();
       expect(a11Result.criteria).toBe('Availability');
     });
 
     it('should collect A1.2 evidence', async () => {
       // Arrange
-      const mockHealthChecks = [{ id: 1, entityType: 'SYSTEM', action: 'PERFORMANCE_METRIC' }];
+      const mockHealthChecks = [
+        { id: 1, entityType: 'SYSTEM', action: 'PERFORMANCE_METRIC' },
+      ];
       prismaMock.auditLog.findMany.mockResolvedValue(mockHealthChecks);
       (fs.readdirSync as jest.Mock).mockReturnValue([]);
 
@@ -318,7 +370,7 @@ describe('Soc2EvidenceService', () => {
       const results = await (service as any).collectAvailabilityEvidence();
 
       // Assert
-      const a12Result = results.find(r => r.controlId === 'A1.2');
+      const a12Result = results.find((r) => r.controlId === 'A1.2');
       expect(a12Result).toBeDefined();
       expect(a12Result.criteria).toBe('Availability');
     });
@@ -333,7 +385,7 @@ describe('Soc2EvidenceService', () => {
       const results = await (service as any).collectAvailabilityEvidence();
 
       // Assert
-      const a11Result = results.find(r => r.controlId === 'A1.1');
+      const a11Result = results.find((r) => r.controlId === 'A1.1');
       expect(a11Result.data).toHaveLength(0);
     });
   });
@@ -365,10 +417,14 @@ describe('Soc2EvidenceService', () => {
         { id: 1, status: 'SUCCESS', totalEvents: 100 },
         { id: 2, status: 'SUCCESS', totalEvents: 150 },
       ];
-      prismaMock.auditIntegrityVerification.findMany.mockResolvedValue(mockVerifications);
+      prismaMock.auditIntegrityVerification.findMany.mockResolvedValue(
+        mockVerifications,
+      );
 
       // Act
-      const results = await (service as any).collectProcessingIntegrityEvidence();
+      const results = await (
+        service as any
+      ).collectProcessingIntegrityEvidence();
 
       // Assert
       expect(results).toBeDefined();
@@ -445,7 +501,9 @@ describe('Soc2EvidenceService', () => {
 
     beforeEach(() => {
       (fs.readdirSync as jest.Mock).mockReturnValue(mockMetadataFiles);
-      (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify(mockMetadata));
+      (fs.readFileSync as jest.Mock).mockReturnValue(
+        JSON.stringify(mockMetadata),
+      );
     });
 
     it('should return collection history', async () => {
@@ -475,7 +533,9 @@ describe('Soc2EvidenceService', () => {
     ];
 
     beforeEach(() => {
-      jest.spyOn(service, 'collectAllEvidence').mockResolvedValue(mockEvidence as any);
+      jest
+        .spyOn(service, 'collectAllEvidence')
+        .mockResolvedValue(mockEvidence as any);
       (fs.writeFileSync as jest.Mock).mockImplementation(() => {});
     });
 
@@ -486,12 +546,12 @@ describe('Soc2EvidenceService', () => {
       // Assert
       expect(result).toBeDefined();
       expect(result.length).toBe(8); // All 8 expected controls
-      
-      const cc61Result = result.find(r => r.controlId === 'CC6.1');
+
+      const cc61Result = result.find((r) => r.controlId === 'CC6.1');
       expect(cc61Result.status).toBe('COMPLETE');
       expect(cc61Result.riskLevel).toBe('LOW');
-      
-      const cc62Result = result.find(r => r.controlId === 'CC6.2');
+
+      const cc62Result = result.find((r) => r.controlId === 'CC6.2');
       expect(cc62Result.status).toBe('PARTIAL');
       expect(cc62Result.riskLevel).toBe('MEDIUM');
     });
@@ -504,36 +564,36 @@ describe('Soc2EvidenceService', () => {
       expect(fs.writeFileSync).toHaveBeenCalledWith(
         expect.stringContaining('gap-analysis-'),
         expect.any(String),
-        'utf8'
+        'utf8',
       );
     });
   });
 
   describe('cleanupOldEvidence', () => {
     const currentDate = new Date('2024-01-15T00:00:00.000Z');
-    
+
     // Create dates as ISO strings to ensure consistency
     const oldDate1 = new Date('2022-12-31T00:00:00.000Z'); // ~380 days old
     const oldDate2 = new Date('2022-01-01T00:00:00.000Z'); // ~745 days old
     const recentDate = new Date('2024-01-14T00:00:00.000Z'); // 1 day old
 
     const evidenceDir = '/test/path/compliance/evidence';
-    
+
     const mockFiles = [
-      { 
-        name: 'old1.json', 
-        path: `${evidenceDir}/old1.json`, 
-        stat: { mtime: oldDate1 } 
+      {
+        name: 'old1.json',
+        path: `${evidenceDir}/old1.json`,
+        stat: { mtime: oldDate1 },
       },
-      { 
-        name: 'old2.json', 
-        path: `${evidenceDir}/old2.json`, 
-        stat: { mtime: oldDate2 } 
+      {
+        name: 'old2.json',
+        path: `${evidenceDir}/old2.json`,
+        stat: { mtime: oldDate2 },
       },
-      { 
-        name: 'new.json', 
-        path: `${evidenceDir}/new.json`, 
-        stat: { mtime: recentDate } 
+      {
+        name: 'new.json',
+        path: `${evidenceDir}/new.json`,
+        stat: { mtime: recentDate },
       },
     ];
 
@@ -546,12 +606,16 @@ describe('Soc2EvidenceService', () => {
       (fs.statSync as jest.Mock).mockClear();
       (fs.unlinkSync as jest.Mock).mockClear();
 
-      (fs.readdirSync as jest.Mock).mockReturnValue(['old1.json', 'old2.json', 'new.json']);
-(fs.statSync as jest.Mock).mockImplementation((filePath) => {
-  if (filePath.includes('old1')) return { mtime: oldDate1 };
-  if (filePath.includes('old2')) return { mtime: oldDate2 };
-  return { mtime: recentDate };
-});
+      (fs.readdirSync as jest.Mock).mockReturnValue([
+        'old1.json',
+        'old2.json',
+        'new.json',
+      ]);
+      (fs.statSync as jest.Mock).mockImplementation((filePath) => {
+        if (filePath.includes('old1')) return { mtime: oldDate1 };
+        if (filePath.includes('old2')) return { mtime: oldDate2 };
+        return { mtime: recentDate };
+      });
       (fs.unlinkSync as jest.Mock).mockImplementation(() => {});
     });
 
@@ -565,8 +629,12 @@ describe('Soc2EvidenceService', () => {
 
       // Assert
       expect(fs.unlinkSync).toHaveBeenCalledTimes(2);
-      expect(fs.unlinkSync).toHaveBeenCalledWith('/test/path/compliance/evidence/old1.json');
-      expect(fs.unlinkSync).toHaveBeenCalledWith('/test/path/compliance/evidence/old2.json');
+      expect(fs.unlinkSync).toHaveBeenCalledWith(
+        '/test/path/compliance/evidence/old1.json',
+      );
+      expect(fs.unlinkSync).toHaveBeenCalledWith(
+        '/test/path/compliance/evidence/old2.json',
+      );
     });
 
     it('should log cleanup results', async () => {

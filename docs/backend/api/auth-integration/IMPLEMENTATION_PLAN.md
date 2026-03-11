@@ -1,10 +1,13 @@
 # Option 2 Implementation Plan: Update Adapters First
 
 ## Decision Status
+
 ✅ **PM Decision:** Option 2 approved - Update adapters to implement real auth-core contracts
 
 ## Architecture Overview
+
 We will create a **bridge layer** that:
+
 1. Implements auth-core contracts exactly
 2. Maps to existing Prisma database schema
 3. Preserves all business logic and transaction safety
@@ -13,16 +16,20 @@ We will create a **bridge layer** that:
 ## Phase 1: Update PrismaTokenRepository (CRITICAL CLARIFICATIONS)
 
 ### Token Identity Clarification (Required Before Coding)
+
 **Problem:** Auth-core assumes a separate `refresh_tokens` table with:
+
 - Unique `id` field for each token
 - `findRefreshToken(tokenId)` looks up by this ID
 
 **Current API Schema:** Tokens stored in `user.refreshTokenHash` field
+
 - No separate tokens table
 - No token ID concept
 - Version-based lookup via `refreshTokenVersion`
 
 **Decision:** We need a **schema adapter pattern**:
+
 - Create a mapping between auth-core's token IDs and our user-based storage
 - Use composite key: `userId + refreshTokenVersion` as "tokenId"
 - Token IDs are not database PKs, but lookup keys
@@ -48,16 +55,16 @@ class PrismaTokenRepositoryBridge implements TokenRepository {
   async findRefreshToken(tokenId: string): Promise<RefreshToken | null> {
     // Parse composite key: "userId:version"
     const [userId, version] = this.parseTokenId(tokenId);
-    
+
     const user = await prisma.user.findFirst({
-      where: { 
+      where: {
         id: userId,
-        refreshTokenVersion: version 
+        refreshTokenVersion: version
       },
     });
 
     if (!user || !user.refreshTokenHash) return null;
-    
+
     return this.mapToAuthCoreToken(user, tokenId);
   }
 
@@ -261,3 +268,4 @@ Formal decision entry in DECISIONS.md
 Separate estimation and scheduling
 
 PM approval
+```

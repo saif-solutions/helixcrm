@@ -94,15 +94,16 @@ export class LoadTestUtils {
     // Add some randomness with normal distribution around the mean
     const mean = (min + max) / 2;
     const stdDev = (max - min) / 4;
-    
+
     // Generate normal distribution using Box-Muller transform
-    let u1 = 0, u2 = 0;
+    let u1 = 0,
+      u2 = 0;
     while (u1 === 0) u1 = Math.random();
     while (u2 === 0) u2 = Math.random();
-    
+
     const z0 = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
     const value = mean + stdDev * z0;
-    
+
     // Clamp to min/max
     return Math.max(min, Math.min(max, value));
   }
@@ -196,7 +197,7 @@ export class LoadTestUtils {
    */
   compareWithBaseline(
     currentResult: TestResult,
-    baseline?: TestResult
+    baseline?: TestResult,
   ): TestResult['baselineComparison'] {
     if (!baseline) {
       return undefined;
@@ -245,7 +246,7 @@ export class LoadTestUtils {
    */
   generateReport(result: TestResult): string {
     const duration = this.formatDuration(result.endTime.getTime() - result.startTime.getTime());
-    
+
     const report = `
 === PERFORMANCE TEST REPORT ===
 Scenario: ${result.configuration.scenario}
@@ -267,14 +268,18 @@ p99: ${result.metrics.p99Latency.toFixed(2)}ms
 === SLO COMPLIANCE ===
 Status: ${result.compliant ? '✅ COMPLIANT' : '❌ NON-COMPLIANT'}
 ${result.violations.length > 0 ? 'Violations:' : 'No violations'}
-${result.violations.map(v => `  - ${v}`).join('\n')}
+${result.violations.map((v) => `  - ${v}`).join('\n')}
 
-${result.baselineComparison ? `
+${
+  result.baselineComparison
+    ? `
 === BASELINE COMPARISON ===
 Deviation from baseline: ${result.baselineComparison.deviation.toFixed(2)}%
 Threshold: ±${result.baselineComparison.threshold}%
 Status: ${result.baselineComparison.withinThreshold ? '✅ WITHIN THRESHOLD' : '❌ EXCEEDS THRESHOLD'}
-` : ''}
+`
+    : ''
+}
 
 Test completed at: ${result.endTime.toISOString()}
 === END REPORT ===

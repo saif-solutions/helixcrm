@@ -14,14 +14,16 @@ const mockQueueService = {
   addBulk: jest.fn().mockImplementation(() => Promise.resolve([])),
   getJob: jest.fn().mockImplementation(() => Promise.resolve(null)),
   getJobs: jest.fn().mockImplementation(() => Promise.resolve([])),
-  getJobCounts: jest.fn().mockImplementation(() => Promise.resolve({
-    waiting: 0,
-    active: 0,
-    completed: 0,
-    failed: 0,
-    delayed: 0,
-    paused: 0,
-  })),
+  getJobCounts: jest.fn().mockImplementation(() =>
+    Promise.resolve({
+      waiting: 0,
+      active: 0,
+      completed: 0,
+      failed: 0,
+      delayed: 0,
+      paused: 0,
+    }),
+  ),
   pause: jest.fn().mockImplementation(() => Promise.resolve()),
   resume: jest.fn().mockImplementation(() => Promise.resolve()),
   isPaused: jest.fn().mockImplementation(() => Promise.resolve(false)),
@@ -54,7 +56,9 @@ const mockAuthCoreAdapter = {
     saveRefreshToken: jest.fn().mockImplementation(() => Promise.resolve()),
   },
   userRepository: {
-    findById: jest.fn().mockImplementation(() => Promise.resolve({ id: 'user-id', email: 'test@example.com' })),
+    findById: jest
+      .fn()
+      .mockImplementation(() => Promise.resolve({ id: 'user-id', email: 'test@example.com' })),
   },
 };
 
@@ -72,16 +76,18 @@ const queueTokens = [
     ConfigModule.forRoot({
       isGlobal: true,
       ignoreEnvFile: true,
-      load: [() => ({
-        JWT_SECRET: 'test-secret-key-min-32-chars-long-here-123',
-        JWT_REFRESH_SECRET: 'test-refresh-secret-key-min-32-chars-long-here-123',
-        JWT_EXPIRATION: '15m',
-        JWT_REFRESH_EXPIRATION: '7d',
-        NODE_ENV: 'test',
-        BCRYPT_SALT_ROUNDS: 10,
-        REDIS_HOST: 'localhost',
-        REDIS_PORT: 6379,
-      })],
+      load: [
+        () => ({
+          JWT_SECRET: 'test-secret-key-min-32-chars-long-here-123',
+          JWT_REFRESH_SECRET: 'test-refresh-secret-key-min-32-chars-long-here-123',
+          JWT_EXPIRATION: '15m',
+          JWT_REFRESH_EXPIRATION: '7d',
+          NODE_ENV: 'test',
+          BCRYPT_SALT_ROUNDS: 10,
+          REDIS_HOST: 'localhost',
+          REDIS_PORT: 6379,
+        }),
+      ],
     }),
     AuthModule,
     UsersModule,
@@ -93,7 +99,7 @@ const queueTokens = [
       useValue: mockAuthCoreAdapter,
     },
     // Mock all queue providers
-    ...queueTokens.map(token => ({
+    ...queueTokens.map((token) => ({
       provide: token,
       useValue: mockQueueService,
     })),
@@ -110,18 +116,20 @@ const queueTokens = [
       provide: 'BullQueue_webhook',
       useValue: mockQueueService,
     },
-// Mock AccountLockoutService - using mockImplementation to avoid type issues
-{
-  provide: AccountLockoutService,
-  useValue: {
-    isAccountLocked: jest.fn().mockImplementation(() => Promise.resolve({ 
-      isLocked: false, 
-      lockedUntil: null 
-    })),
-    recordFailedAttempt: jest.fn().mockImplementation(() => Promise.resolve()),
-    resetFailedAttempts: jest.fn().mockImplementation(() => Promise.resolve()),
-  },
-},
+    // Mock AccountLockoutService - using mockImplementation to avoid type issues
+    {
+      provide: AccountLockoutService,
+      useValue: {
+        isAccountLocked: jest.fn().mockImplementation(() =>
+          Promise.resolve({
+            isLocked: false,
+            lockedUntil: null,
+          }),
+        ),
+        recordFailedAttempt: jest.fn().mockImplementation(() => Promise.resolve()),
+        resetFailedAttempts: jest.fn().mockImplementation(() => Promise.resolve()),
+      },
+    },
   ],
 })
 export class AuthTestModule {}

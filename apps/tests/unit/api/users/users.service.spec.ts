@@ -148,11 +148,13 @@ describe('UsersService', () => {
 
       await service.create(minimalDto, 'created-by-123');
 
-      expect(userRepository.create).toHaveBeenCalledWith(expect.objectContaining({
-        isActive: true,
-        role: 'user',
-        tokenVersion: 1,
-      }));
+      expect(userRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          isActive: true,
+          role: 'user',
+          tokenVersion: 1,
+        }),
+      );
     });
   });
 
@@ -186,10 +188,7 @@ describe('UsersService', () => {
 
       const result = await service.findAll({});
 
-      expect(result).toEqual([
-        expectedUserShape(mockUsers[0]),
-        expectedUserShape(mockUsers[1]),
-      ]);
+      expect(result).toEqual([expectedUserShape(mockUsers[0]), expectedUserShape(mockUsers[1])]);
       expect(userRepository.findAll).toHaveBeenCalledWith({
         where: {},
         orderBy: { createdAt: 'desc' },
@@ -341,7 +340,9 @@ describe('UsersService', () => {
     it('should throw NotFoundException if user not found', async () => {
       userRepository.findById.mockResolvedValue(null);
 
-      await expect(service.update('user-123', updateDto, 'updated-by-123')).rejects.toThrow(NotFoundException);
+      await expect(service.update('user-123', updateDto, 'updated-by-123')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -382,7 +383,9 @@ describe('UsersService', () => {
     it('should throw ForbiddenException if trying to delete yourself', async () => {
       tenantContext.getUserId.mockReturnValue('user-123'); // Same as target user
 
-      await expect(service.remove('user-123', 'deleted-by-123')).rejects.toThrow(ForbiddenException);
+      await expect(service.remove('user-123', 'deleted-by-123')).rejects.toThrow(
+        ForbiddenException,
+      );
       expect(userRepository.delete).not.toHaveBeenCalled();
     });
 
@@ -429,81 +432,84 @@ describe('UsersService', () => {
     });
   });
 
-describe('archive', () => {
-  const mockUser = createMockUser();
+  describe('archive', () => {
+    const mockUser = createMockUser();
 
-  beforeEach(() => {
-    jest.clearAllMocks();
-    tenantContext.getUserId.mockReturnValue('different-user-456');
-  });
-
-  it('should successfully archive a user', async () => {
-    userRepository.findById.mockResolvedValue(mockUser);
-    const archivedUser = { ...mockUser, deletedAt: new Date() };
-    userRepository.softDelete.mockResolvedValue(archivedUser);
-
-    const result = await service.archive('user-123', 'archived-by-123');
-
-    expect(result).toEqual({
-      id: archivedUser.id,
-      email: archivedUser.email,
-      firstName: archivedUser.firstName,
-      lastName: archivedUser.lastName,
-      isActive: archivedUser.isActive,
-      role: archivedUser.role,
-      organizationId: archivedUser.organizationId,
-      createdAt: archivedUser.createdAt,
-      updatedAt: archivedUser.updatedAt,
-      deletedAt: archivedUser.deletedAt,
-      lastLoginAt: archivedUser.lastLoginAt,
-      lastPasswordChange: archivedUser.lastPasswordChange,
-      refreshTokenHash: archivedUser.refreshTokenHash,
-      refreshTokenIssuedAt: archivedUser.refreshTokenIssuedAt,
-      refreshTokenVersion: archivedUser.refreshTokenVersion,
-      tokenVersion: archivedUser.tokenVersion,
+    beforeEach(() => {
+      jest.clearAllMocks();
+      tenantContext.getUserId.mockReturnValue('different-user-456');
     });
-    expect(userRepository.softDelete).toHaveBeenCalledWith('user-123');
+
+    it('should successfully archive a user', async () => {
+      userRepository.findById.mockResolvedValue(mockUser);
+      const archivedUser = { ...mockUser, deletedAt: new Date() };
+      userRepository.softDelete.mockResolvedValue(archivedUser);
+
+      const result = await service.archive('user-123', 'archived-by-123');
+
+      expect(result).toEqual({
+        id: archivedUser.id,
+        email: archivedUser.email,
+        firstName: archivedUser.firstName,
+        lastName: archivedUser.lastName,
+        isActive: archivedUser.isActive,
+        role: archivedUser.role,
+        organizationId: archivedUser.organizationId,
+        createdAt: archivedUser.createdAt,
+        updatedAt: archivedUser.updatedAt,
+        deletedAt: archivedUser.deletedAt,
+        lastLoginAt: archivedUser.lastLoginAt,
+        lastPasswordChange: archivedUser.lastPasswordChange,
+        refreshTokenHash: archivedUser.refreshTokenHash,
+        refreshTokenIssuedAt: archivedUser.refreshTokenIssuedAt,
+        refreshTokenVersion: archivedUser.refreshTokenVersion,
+        tokenVersion: archivedUser.tokenVersion,
+      });
+      expect(userRepository.softDelete).toHaveBeenCalledWith('user-123');
+    });
+
+    it('should throw ForbiddenException if trying to archive yourself', async () => {
+      userRepository.findById.mockResolvedValue(mockUser);
+      tenantContext.getUserId.mockReturnValue('user-123'); // Same as target user
+
+      await expect(service.archive('user-123', 'archived-by-123')).rejects.toThrow(
+        ForbiddenException,
+      );
+      expect(userRepository.softDelete).not.toHaveBeenCalled();
+    });
+
+    it('should throw NotFoundException if user not found', async () => {
+      console.log('1. Starting test');
+
+      // First, ensure all previous mocks are cleared
+      jest.clearAllMocks();
+      console.log('2. Mocks cleared');
+
+      // Set the mock to return null
+      userRepository.findById.mockResolvedValue(null);
+      console.log('3. Mock set to return null');
+
+      // Verify the mock is set correctly
+      console.log('4. Checking mock - not called yet');
+      expect(userRepository.findById).not.toHaveBeenCalled();
+
+      // Directly test the mock to confirm it works
+      console.log('5. Directly calling mock');
+      const mockResult = await userRepository.findById('user-123');
+      console.log('6. Mock result:', mockResult);
+      expect(mockResult).toBeNull();
+
+      // Now test the service
+      console.log('7. Testing service');
+      await expect(service.archive('user-123', 'archived-by-123')).rejects.toThrow(
+        NotFoundException,
+      );
+      console.log('8. Service threw expected error');
+
+      expect(userRepository.softDelete).not.toHaveBeenCalled();
+      console.log('9. Test completed');
+    });
   });
-
-  it('should throw ForbiddenException if trying to archive yourself', async () => {
-    userRepository.findById.mockResolvedValue(mockUser);
-    tenantContext.getUserId.mockReturnValue('user-123'); // Same as target user
-
-    await expect(service.archive('user-123', 'archived-by-123')).rejects.toThrow(ForbiddenException);
-    expect(userRepository.softDelete).not.toHaveBeenCalled();
-  });
-
-it('should throw NotFoundException if user not found', async () => {
-  console.log('1. Starting test');
-  
-  // First, ensure all previous mocks are cleared
-  jest.clearAllMocks();
-  console.log('2. Mocks cleared');
-  
-  // Set the mock to return null
-  userRepository.findById.mockResolvedValue(null);
-  console.log('3. Mock set to return null');
-  
-  // Verify the mock is set correctly
-  console.log('4. Checking mock - not called yet');
-  expect(userRepository.findById).not.toHaveBeenCalled();
-  
-  // Directly test the mock to confirm it works
-  console.log('5. Directly calling mock');
-  const mockResult = await userRepository.findById('user-123');
-  console.log('6. Mock result:', mockResult);
-  expect(mockResult).toBeNull();
-  
-  // Now test the service
-  console.log('7. Testing service');
-  await expect(service.archive('user-123', 'archived-by-123')).rejects.toThrow(NotFoundException);
-  console.log('8. Service threw expected error');
-  
-  expect(userRepository.softDelete).not.toHaveBeenCalled();
-  console.log('9. Test completed');
-});
-
-});
 
   describe('search', () => {
     const mockUsers = [
@@ -535,10 +541,7 @@ it('should throw NotFoundException if user not found', async () => {
 
       const result = await service.search('john');
 
-      expect(result).toEqual([
-        expectedUserShape(mockUsers[0]),
-        expectedUserShape(mockUsers[1]),
-      ]);
+      expect(result).toEqual([expectedUserShape(mockUsers[0]), expectedUserShape(mockUsers[1])]);
       expect(userRepository.findAll).toHaveBeenCalledWith({
         where: {
           OR: [

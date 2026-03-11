@@ -62,7 +62,7 @@ const createModelOperations = (store: Map<string, any>): ModelOperations => {
         return Array.from(store.values());
       }
 
-      return Array.from(store.values()).filter(record =>
+      return Array.from(store.values()).filter((record) =>
         Object.entries(where).every(([k, v]) => record[k] === v),
       );
     }),
@@ -130,9 +130,9 @@ const createModelOperations = (store: Map<string, any>): ModelOperations => {
 
     count: jest.fn().mockImplementation(async () => store.size),
 
-aggregate: jest.fn().mockImplementation(async () => ({})),
+    aggregate: jest.fn().mockImplementation(async () => ({})),
 
-groupBy: jest.fn().mockImplementation(async () => ([])),
+    groupBy: jest.fn().mockImplementation(async () => []),
   };
 };
 
@@ -211,7 +211,7 @@ export type MockPrisma = ReturnType<typeof createMockPrisma>;
 
 export const resetMockPrisma = (mockPrisma: MockPrisma): void => {
   const resetOperations = (obj: any): void => {
-    Object.values(obj).forEach(value => {
+    Object.values(obj).forEach((value) => {
       if (value && typeof value === 'object') {
         if (jest.isMockFunction(value)) {
           value.mockClear();

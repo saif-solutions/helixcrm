@@ -32,7 +32,7 @@ interface UseAuditLogsReturn {
   trends: AuditTrendData[];
   actors: ActorActivity[];
   alerts: AuditAlert[];
-  
+
   // Pagination
   pagination: {
     page: number;
@@ -40,10 +40,10 @@ interface UseAuditLogsReturn {
     total: number;
     totalPages: number;
   };
-  
+
   // Current filters
   filters: AuditLogQueryParams;
-  
+
   // Actions
   fetchLogs: (params?: AuditLogQueryParams) => Promise<void>;
   fetchStats: (params?: Partial<AuditLogQueryParams>) => Promise<void>;
@@ -62,21 +62,21 @@ interface UseAuditLogsReturn {
 // Helper function to build query string from filters with validation
 const buildQueryString = (params: AuditLogQueryParams): string => {
   const searchParams = new URLSearchParams();
-  
+
   // Validate and fix date range if needed
   const validatedParams = { ...params };
-  
+
   if (validatedParams.from && validatedParams.to) {
     const fromDate = new Date(validatedParams.from);
     const toDate = new Date(validatedParams.to);
-    
+
     if (fromDate > toDate) {
       // Swap dates if from is after to
       const temp = validatedParams.from;
       validatedParams.from = validatedParams.to;
       validatedParams.to = temp;
     }
-    
+
     // Ensure to date is not in the future
     const now = new Date();
     const toDateObj = new Date(validatedParams.to);
@@ -84,67 +84,70 @@ const buildQueryString = (params: AuditLogQueryParams): string => {
       validatedParams.to = now.toISOString().split('T')[0];
     }
   }
-  
+
   Object.entries(validatedParams).forEach(([key, value]) => {
     if (value === undefined || value === null || value === '') return;
-    
+
     if (Array.isArray(value)) {
       if (value.length > 0) {
         searchParams.set(key, value.join(','));
       }
-    } else if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    } else if (
+      typeof value === 'string' ||
+      typeof value === 'number' ||
+      typeof value === 'boolean'
+    ) {
       searchParams.set(key, value.toString());
     }
   });
-  
+
   return searchParams.toString();
 };
 
 // Fetch with retry logic
 const fetchWithRetry = async (
-  url: string, 
-  options: RequestInit = {}, 
+  url: string,
+  options: RequestInit = {},
   retries = MAX_RETRY_ATTEMPTS
 ): Promise<Response> => {
   for (let attempt = 0; attempt < retries; attempt++) {
     try {
       const response = await fetch(url, options);
-      
+
       if (response.ok) {
         return response;
       }
-      
+
       // If not the last attempt and status is retryable (5xx or 429)
-      if (attempt < retries - 1 && 
-          (response.status >= 500 || response.status === 429)) {
+      if (attempt < retries - 1 && (response.status >= 500 || response.status === 429)) {
         const delay = RETRY_BACKOFF_MS * Math.pow(2, attempt);
-        await new Promise(resolve => setTimeout(resolve, delay));
+        await new Promise((resolve) => setTimeout(resolve, delay));
         continue;
       }
-      
+
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     } catch (err) {
       if (attempt === retries - 1) {
         throw err;
       }
-      
+
       const delay = RETRY_BACKOFF_MS * Math.pow(2, attempt);
-      await new Promise(resolve => setTimeout(resolve, delay));
+      await new Promise((resolve) => setTimeout(resolve, delay));
     }
   }
-  
+
   throw new Error('Max retry attempts reached');
 };
 
 // Load saved filters from localStorage
 const loadSavedFilters = (): AuditLogQueryParams | null => {
   if (typeof window === 'undefined') return null;
-  
+
   try {
     const saved = localStorage.getItem(FILTERS_STORAGE_KEY);
     if (saved) {
       const parsed = JSON.parse(saved);
-      
+
       // Convert date strings back to proper format if needed
       if (parsed.from && parsed.from.includes('T')) {
         parsed.from = parsed.from.split('T')[0];
@@ -152,20 +155,20 @@ const loadSavedFilters = (): AuditLogQueryParams | null => {
       if (parsed.to && parsed.to.includes('T')) {
         parsed.to = parsed.to.split('T')[0];
       }
-      
+
       return parsed;
     }
   } catch (err) {
     console.warn('Failed to load saved filters:', err);
   }
-  
+
   return null;
 };
 
 // Save filters to localStorage
 const saveFilters = (filters: AuditLogQueryParams): void => {
   if (typeof window === 'undefined') return;
-  
+
   try {
     localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(filters));
   } catch (err) {
@@ -182,7 +185,7 @@ export const useAuditLogs = (initialParams?: AuditLogQueryParams): UseAuditLogsR
   const [trends, setTrends] = useState<AuditTrendData[]>([]);
   const [actors, setActors] = useState<ActorActivity[]>([]);
   const [alerts, setAlerts] = useState<AuditAlert[]>([]);
-  
+
   // Pagination state
   const [pagination, setPagination] = useState({
     page: 1,
@@ -190,10 +193,10 @@ export const useAuditLogs = (initialParams?: AuditLogQueryParams): UseAuditLogsR
     total: 0,
     totalPages: 0,
   });
-  
+
   // Abort controller for request cancellation
   const abortControllerRef = useRef<AbortController | null>(null);
-  
+
   // Load saved filters or use defaults
   const savedFilters = loadSavedFilters();
   const [filters, setFiltersState] = useState<AuditLogQueryParams>({
@@ -211,16 +214,17 @@ export const useAuditLogs = (initialParams?: AuditLogQueryParams): UseAuditLogsR
 
   // Set filters with validation and persistence
   const setFilters = useCallback((newFilters: AuditLogQueryParams) => {
-    setFiltersState((prev: AuditLogQueryParams) => { // Added type annotation
+    setFiltersState((prev: AuditLogQueryParams) => {
+      // Added type annotation
       const updated = {
         ...prev,
         ...newFilters,
         page: newFilters.page !== undefined ? newFilters.page : 1,
       };
-      
+
       // Save to localStorage
       saveFilters(updated);
-      
+
       return updated;
     });
   }, []);
@@ -231,7 +235,7 @@ export const useAuditLogs = (initialParams?: AuditLogQueryParams): UseAuditLogsR
       abortControllerRef.current.abort();
       abortControllerRef.current = new AbortController();
     }
-    
+
     // Clear WebSocket reconnect timeout
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
@@ -240,45 +244,48 @@ export const useAuditLogs = (initialParams?: AuditLogQueryParams): UseAuditLogsR
   }, []);
 
   // Fetch audit logs with filters
-  const fetchLogs = useCallback(async (params?: AuditLogQueryParams) => {
-    setLoading(true);
-    setError(null);
-    
-    const queryParams = params || filters;
-    
-    // Cancel previous request
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-    
-    abortControllerRef.current = new AbortController();
-    
-    try {
-      const queryString = buildQueryString(queryParams);
-      const response = await fetchWithRetry(`/api/audit/logs?${queryString}`, {
-        signal: abortControllerRef.current.signal,
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch audit logs: ${response.statusText}`);
+  const fetchLogs = useCallback(
+    async (params?: AuditLogQueryParams) => {
+      setLoading(true);
+      setError(null);
+
+      const queryParams = params || filters;
+
+      // Cancel previous request
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
       }
-      
-      const data: PaginatedAuditLogs = await response.json();
-      setLogs(data.data);
-      setPagination(data.pagination);
-    } catch (err) {
-      // Check if it's an AbortError
-      if (err instanceof Error && err.name === 'AbortError') {
-        console.log('Fetch logs request was aborted');
-        return;
+
+      abortControllerRef.current = new AbortController();
+
+      try {
+        const queryString = buildQueryString(queryParams);
+        const response = await fetchWithRetry(`/api/audit/logs?${queryString}`, {
+          signal: abortControllerRef.current.signal,
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch audit logs: ${response.statusText}`);
+        }
+
+        const data: PaginatedAuditLogs = await response.json();
+        setLogs(data.data);
+        setPagination(data.pagination);
+      } catch (err) {
+        // Check if it's an AbortError
+        if (err instanceof Error && err.name === 'AbortError') {
+          console.log('Fetch logs request was aborted');
+          return;
+        }
+
+        setError(err instanceof Error ? err.message : 'An error occurred');
+        console.error('Error fetching audit logs:', err);
+      } finally {
+        setLoading(false);
       }
-      
-      setError(err instanceof Error ? err.message : 'An error occurred');
-      console.error('Error fetching audit logs:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [filters]);
+    },
+    [filters]
+  );
 
   // Fetch audit statistics
   const fetchStats = useCallback(async (params?: Partial<AuditLogQueryParams>) => {
@@ -289,14 +296,14 @@ export const useAuditLogs = (initialParams?: AuditLogQueryParams): UseAuditLogsR
         page: undefined,
         limit: undefined,
       };
-      
+
       const queryString = buildQueryString(queryParams);
       const response = await fetchWithRetry(`/api/audit/stats?${queryString}`);
-      
+
       if (!response.ok) {
         throw new Error(`Failed to fetch audit stats: ${response.statusText}`);
       }
-      
+
       const data: AuditStats = await response.json();
       setStats(data);
     } catch (err) {
@@ -308,11 +315,11 @@ export const useAuditLogs = (initialParams?: AuditLogQueryParams): UseAuditLogsR
   const fetchTrends = useCallback(async (days: number = 7) => {
     try {
       const response = await fetchWithRetry(`/api/audit/trends?days=${days}`);
-      
+
       if (!response.ok) {
         throw new Error(`Failed to fetch audit trends: ${response.statusText}`);
       }
-      
+
       const data: AuditTrendData[] = await response.json();
       setTrends(data);
     } catch (err) {
@@ -324,11 +331,11 @@ export const useAuditLogs = (initialParams?: AuditLogQueryParams): UseAuditLogsR
   const fetchActors = useCallback(async (limit: number = 10) => {
     try {
       const response = await fetchWithRetry(`/api/audit/actors?limit=${limit}`);
-      
+
       if (!response.ok) {
         throw new Error(`Failed to fetch top actors: ${response.statusText}`);
       }
-      
+
       const data: ActorActivity[] = await response.json();
       setActors(data);
     } catch (err) {
@@ -340,11 +347,11 @@ export const useAuditLogs = (initialParams?: AuditLogQueryParams): UseAuditLogsR
   const fetchAlerts = useCallback(async () => {
     try {
       const response = await fetchWithRetry('/api/audit/alerts');
-      
+
       if (!response.ok) {
         throw new Error(`Failed to fetch alerts: ${response.statusText}`);
       }
-      
+
       const data: AuditAlert[] = await response.json();
       setAlerts(data);
     } catch (err) {
@@ -362,11 +369,11 @@ export const useAuditLogs = (initialParams?: AuditLogQueryParams): UseAuditLogsR
         },
         body: JSON.stringify(request),
       });
-      
+
       if (!response.ok) {
         throw new Error(`Export failed: ${response.statusText}`);
       }
-      
+
       return await response.blob();
     } catch (err) {
       console.error('Error exporting logs:', err);
@@ -382,27 +389,29 @@ export const useAuditLogs = (initialParams?: AuditLogQueryParams): UseAuditLogsR
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           acknowledgedBy: userId,
           acknowledgedAt: new Date().toISOString(),
         }),
       });
-      
+
       if (!response.ok) {
         throw new Error(`Failed to acknowledge alert: ${response.statusText}`);
       }
-      
+
       // Update local state
-      setAlerts(prev => prev.map(alert => 
-        alert.id === alertId 
-          ? { 
-              ...alert, 
-              acknowledged: true, 
-              acknowledgedBy: userId, 
-              acknowledgedAt: new Date().toISOString() 
-            }
-          : alert
-      ));
+      setAlerts((prev) =>
+        prev.map((alert) =>
+          alert.id === alertId
+            ? {
+                ...alert,
+                acknowledged: true,
+                acknowledgedBy: userId,
+                acknowledgedAt: new Date().toISOString(),
+              }
+            : alert
+        )
+      );
     } catch (err) {
       console.error('Error acknowledging alert:', err);
       throw err;
@@ -417,9 +426,9 @@ export const useAuditLogs = (initialParams?: AuditLogQueryParams): UseAuditLogsR
       sort: 'desc',
       sortBy: 'createdAt',
     };
-    
+
     setFiltersState(defaultFilters);
-    
+
     // Clear from localStorage
     if (typeof window !== 'undefined') {
       localStorage.removeItem(FILTERS_STORAGE_KEY);
@@ -428,76 +437,75 @@ export const useAuditLogs = (initialParams?: AuditLogQueryParams): UseAuditLogsR
 
   // Refresh all data
   const refreshAll = useCallback(async () => {
-    await Promise.all([
-      fetchLogs(),
-      fetchStats(),
-      fetchTrends(7),
-      fetchActors(10),
-      fetchAlerts(),
-    ]);
+    await Promise.all([fetchLogs(), fetchStats(), fetchTrends(7), fetchActors(10), fetchAlerts()]);
   }, [fetchLogs, fetchStats, fetchTrends, fetchActors, fetchAlerts]);
 
   // Initialize WebSocket for real-time updates
   const setupWebSocket = useCallback(() => {
     // Only connect in browser environment
     if (typeof window === 'undefined') return () => {}; // Return empty cleanup function
-    
+
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${window.location.host}/ws/audit`;
-    
+
     let reconnectAttempts = 0;
-    
+
     const connect = () => {
       try {
         // Close existing connection
         if (wsRef.current) {
           wsRef.current.close();
         }
-        
+
         wsRef.current = new WebSocket(wsUrl);
-        
+
         wsRef.current.onopen = () => {
           console.log('WebSocket connected for audit logs');
           reconnectAttempts = 0;
         };
-        
+
         wsRef.current.onmessage = (event) => {
           try {
             const realTimeEvent: RealTimeAuditEvent = JSON.parse(event.data);
-            
+
             switch (realTimeEvent.type) {
               case 'NEW_LOG':
                 // Add new log to beginning of list, respecting limit
-                setLogs(prev => [realTimeEvent.payload as AuditLog, ...prev.slice(0, pagination.limit - 1)]);
+                setLogs((prev) => [
+                  realTimeEvent.payload as AuditLog,
+                  ...prev.slice(0, pagination.limit - 1),
+                ]);
                 break;
-                
+
               case 'STATS_UPDATE':
                 setStats(realTimeEvent.payload as AuditStats);
                 break;
-                
+
               case 'ALERT':
-                setAlerts(prev => [realTimeEvent.payload as AuditAlert, ...prev]);
+                setAlerts((prev) => [realTimeEvent.payload as AuditAlert, ...prev]);
                 break;
             }
           } catch (err) {
             console.error('Error processing WebSocket message:', err);
           }
         };
-        
+
         wsRef.current.onerror = (error) => {
           console.error('WebSocket error:', error);
         };
-        
+
         wsRef.current.onclose = (event) => {
           console.log('WebSocket disconnected:', event.code, event.reason);
-          
+
           // Attempt reconnection with exponential backoff
           if (reconnectAttempts < WS_RECONNECT_ATTEMPTS) {
             const delay = WS_RECONNECT_DELAY_MS * Math.pow(2, reconnectAttempts);
             reconnectAttempts++;
-            
+
             reconnectTimeoutRef.current = setTimeout(() => {
-              console.log(`Attempting to reconnect (${reconnectAttempts}/${WS_RECONNECT_ATTEMPTS})...`);
+              console.log(
+                `Attempting to reconnect (${reconnectAttempts}/${WS_RECONNECT_ATTEMPTS})...`
+              );
               connect();
             }, delay);
           } else {
@@ -508,16 +516,16 @@ export const useAuditLogs = (initialParams?: AuditLogQueryParams): UseAuditLogsR
         console.error('Failed to create WebSocket:', err);
       }
     };
-    
+
     connect();
-    
+
     // Return cleanup function
     return () => {
       if (wsRef.current) {
         wsRef.current.close();
         wsRef.current = null;
       }
-      
+
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
         reconnectTimeoutRef.current = null;
@@ -529,7 +537,7 @@ export const useAuditLogs = (initialParams?: AuditLogQueryParams): UseAuditLogsR
   useEffect(() => {
     refreshAll(); // Store the promise if needed
     const cleanupWebSocket = setupWebSocket();
-    
+
     // Cleanup function
     return () => {
       cancelRequests();
@@ -544,17 +552,20 @@ export const useAuditLogs = (initialParams?: AuditLogQueryParams): UseAuditLogsR
     const timer = setTimeout(() => {
       fetchLogs();
     }, DEFAULT_DEBOUNCE_MS);
-    
+
     return () => clearTimeout(timer);
   }, [filters, fetchLogs]);
 
   // Auto-refresh stats and trends every 5 minutes
   useEffect(() => {
-    const interval = setInterval(() => {
-      fetchStats();
-      fetchTrends(7);
-    }, 5 * 60 * 1000); // 5 minutes
-    
+    const interval = setInterval(
+      () => {
+        fetchStats();
+        fetchTrends(7);
+      },
+      5 * 60 * 1000
+    ); // 5 minutes
+
     return () => clearInterval(interval);
   }, [fetchStats, fetchTrends]);
 
@@ -567,13 +578,13 @@ export const useAuditLogs = (initialParams?: AuditLogQueryParams): UseAuditLogsR
     trends,
     actors,
     alerts,
-    
+
     // Pagination
     pagination,
-    
+
     // Filters
     filters,
-    
+
     // Actions
     fetchLogs,
     fetchStats,
@@ -598,26 +609,26 @@ export const useAuditLogDetail = (logId?: string) => {
 
   const fetchLogDetail = useCallback(async (id: string) => {
     if (!id) return;
-    
+
     // Cancel previous request
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
-    
+
     abortControllerRef.current = new AbortController();
-    
+
     setLoading(true);
     setError(null);
-    
+
     try {
       const response = await fetchWithRetry(`/api/audit/logs/${id}`, {
         signal: abortControllerRef.current.signal,
       });
-      
+
       if (!response.ok) {
         throw new Error(`Failed to fetch log detail: ${response.statusText}`);
       }
-      
+
       const data: AuditLog = await response.json();
       setLog(data);
     } catch (err) {
@@ -626,7 +637,7 @@ export const useAuditLogDetail = (logId?: string) => {
         console.log('Fetch log detail request was aborted');
         return;
       }
-      
+
       setError(err instanceof Error ? err.message : 'An error occurred');
       console.error('Error fetching log detail:', err);
     } finally {
@@ -638,7 +649,7 @@ export const useAuditLogDetail = (logId?: string) => {
     if (logId) {
       fetchLogDetail(logId);
     }
-    
+
     // Cleanup function
     return () => {
       if (abortControllerRef.current) {

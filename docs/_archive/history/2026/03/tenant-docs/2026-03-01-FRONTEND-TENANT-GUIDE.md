@@ -1,6 +1,7 @@
 # Frontend Multi-Tenant API Integration Guide
 
 ## Overview
+
 After recent updates, the HelixCRM API requires explicit tenant context for all authenticated requests. This guide explains how to properly integrate with the API from your frontend application.
 
 ## Key Requirements
@@ -26,16 +27,16 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('access_token');
   const organizationId = localStorage.getItem('organization_id');
-  
+
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
-  
+
   // CRITICAL: Add tenant header for all authenticated requests
   if (organizationId && !config.url?.includes('/auth/')) {
     config.headers['x-tenant-id'] = organizationId;
   }
-  
+
   return config;
 });
 
@@ -72,18 +73,18 @@ async function login(email: string, password: string): Promise<void> {
       email,
       password,
     });
-    
+
     const { access_token, user } = response.data;
-    
+
     // Store both token AND organization ID
     localStorage.setItem('access_token', access_token);
     localStorage.setItem('organization_id', user.organizationId);
     localStorage.setItem('user', JSON.stringify(user));
-    
+
     // Configure axios defaults for subsequent requests
     api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
     api.defaults.headers.common['x-tenant-id'] = user.organizationId;
-    
+
   } catch (error) {
     console.error('Login failed:', error);
     throw error;
@@ -98,12 +99,12 @@ export const userService = {
     const response = await api.get('/users/me');
     return response.data;
   },
-  
+
   async getContacts() {
     const response = await api.get('/contacts');
     return response.data;
   },
-  
+
   async createContact(data: any) {
     const response = await api.post('/contacts', data);
     return response.data;
@@ -128,7 +129,7 @@ export function useProfile() {
         setProfile(data.data);
       } catch (err: any) {
         setError(err);
-        
+
         // Handle tenant context errors
         if (err.response?.status === 403) {
           console.error('Tenant context missing - redirecting to login');
@@ -202,3 +203,4 @@ Authorization: Bearer <token>
 x-tenant-id: <organization-id>
 
 This ensures proper multi-tenant isolation and security.
+```

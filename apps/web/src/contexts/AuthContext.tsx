@@ -9,7 +9,13 @@ interface AuthContextType {
   sessionExpired: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  register: (email: string, password: string, firstName: string, lastName: string, organizationName: string) => Promise<void>;
+  register: (
+    email: string,
+    password: string,
+    firstName: string,
+    lastName: string,
+    organizationName: string
+  ) => Promise<void>;
   clearSessionExpired: () => void;
 }
 
@@ -27,7 +33,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     register,
     clearSessionExpired,
   } = useAuthStore();
-  
+
   const { success, error } = useToast();
 
   // Initialize auth on mount
@@ -38,10 +44,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Show session expired toast when session expires
   useEffect(() => {
     if (sessionExpired) {
-      error(
-        'Session Expired',
-        'Your session has expired. Please log in again to continue.'
-      );
+      error('Session Expired', 'Your session has expired. Please log in again to continue.');
       clearSessionExpired();
     }
   }, [sessionExpired, error, clearSessionExpired]);
@@ -58,16 +61,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const handleRegister = async (
-    email: string, 
-    password: string, 
-    firstName: string, 
-    lastName: string, 
+    email: string,
+    password: string,
+    firstName: string,
+    lastName: string,
     organizationName: string
   ) => {
     try {
-      await register({ 
-        email, 
-        password, 
+      await register({
+        email,
+        password,
         confirmPassword: password,
         firstName,
         lastName,
@@ -103,11 +106,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     clearSessionExpired,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = () => {

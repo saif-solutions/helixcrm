@@ -39,35 +39,35 @@ export function isApiError(error: unknown): error is NetworkError {
   }
 
   const potentialError = error as Record<string, unknown>;
-  
+
   // Check if it has response property
   if (!('response' in potentialError)) {
     return false;
   }
 
   const response = potentialError.response;
-  
+
   // Check if response exists and is an object
   if (!response || typeof response !== 'object') {
     return false;
   }
 
   const responseObj = response as Record<string, unknown>;
-  
+
   // Check if response has data property
   if (!('data' in responseObj)) {
     return false;
   }
 
   const data = responseObj.data;
-  
+
   // Check if data exists and is an object with error property
   if (!data || typeof data !== 'object') {
     return false;
   }
 
   const dataObj = data as Record<string, unknown>;
-  
+
   return 'error' in dataObj;
 }
 
@@ -78,11 +78,11 @@ export function getErrorMessage(error: unknown): string {
   if (isApiError(error)) {
     return error.response?.data?.error?.message || 'An unexpected error occurred';
   }
-  
+
   if (error instanceof Error) {
     return error.message;
   }
-  
+
   return 'An unexpected error occurred';
 }
 
@@ -91,7 +91,7 @@ export function getErrorMessage(error: unknown): string {
  */
 export function getFormErrors(error: unknown): Record<string, string> {
   const errors: Record<string, string> = {};
-  
+
   if (isApiError(error)) {
     const details = error.response?.data?.error?.details;
     if (details && Array.isArray(details)) {
@@ -100,6 +100,6 @@ export function getFormErrors(error: unknown): Record<string, string> {
       });
     }
   }
-  
+
   return errors;
 }

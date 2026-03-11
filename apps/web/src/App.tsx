@@ -33,10 +33,10 @@ function App() {
       try {
         // Initialize performance monitoring
         performanceMonitor.initialize();
-        
+
         // Initialize API (CSRF token)
         await initializeApi();
-        
+
         // Initialize auth (check session)
         await initialize();
       } catch (error) {
@@ -99,7 +99,7 @@ function App() {
 
             {/* Global Session Expired Modal */}
             <SessionExpiredModal isOpen={sessionExpired} onClose={handleCloseSessionModal} />
-            
+
             {/* Permission Debug Tool (only shows in development) */}
             <PermissionDebug />
           </div>

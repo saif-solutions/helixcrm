@@ -26,7 +26,7 @@ describe('ErrorBoundary', () => {
         <div>Normal content</div>
       </ErrorBoundary>
     );
-    
+
     expect(screen.getByText('Normal content')).toBeInTheDocument();
     expect(screen.queryByTestId('error-boundary')).not.toBeInTheDocument();
   });
@@ -37,7 +37,7 @@ describe('ErrorBoundary', () => {
         <ErrorComponent />
       </ErrorBoundary>
     );
-    
+
     expect(screen.getByTestId('error-boundary')).toBeInTheDocument();
     expect(screen.getByText('Something went wrong')).toBeInTheDocument();
     expect(screen.getByText('We apologize for the inconvenience.')).toBeInTheDocument();
@@ -45,13 +45,13 @@ describe('ErrorBoundary', () => {
 
   it('should call onError callback when error occurs', () => {
     const onError = jest.fn();
-    
+
     render(
       <ErrorBoundary onError={onError}>
         <ErrorComponent />
       </ErrorBoundary>
     );
-    
+
     expect(onError).toHaveBeenCalledWith(
       expect.any(Error),
       expect.objectContaining({
@@ -62,13 +62,13 @@ describe('ErrorBoundary', () => {
 
   it('should use custom fallback when provided', () => {
     const fallback = <div>Custom fallback UI</div>;
-    
+
     render(
       <ErrorBoundary fallback={fallback}>
         <ErrorComponent />
       </ErrorBoundary>
     );
-    
+
     expect(screen.getByText('Custom fallback UI')).toBeInTheDocument();
     expect(screen.queryByText('Something went wrong')).not.toBeInTheDocument();
   });
@@ -79,23 +79,23 @@ describe('ErrorBoundary', () => {
         <ErrorComponent shouldThrow={true} />
       </ErrorBoundary>
     );
-    
+
     // Error should be shown
     expect(screen.getByTestId('error-boundary')).toBeInTheDocument();
-    
+
     // Click Try Again
     fireEvent.click(screen.getByText('Try Again'));
-    
+
     // Error boundary should be gone
     expect(screen.queryByTestId('error-boundary')).not.toBeInTheDocument();
-    
+
     // Re-render without error
     rerender(
       <ErrorBoundary>
         <ErrorComponent shouldThrow={false} />
       </ErrorBoundary>
     );
-    
+
     // Normal content should be shown
     expect(screen.getByText('Normal content')).toBeInTheDocument();
   });
@@ -106,13 +106,13 @@ describe('ErrorBoundary', () => {
       value: { reload: reloadMock },
       writable: true,
     });
-    
+
     render(
       <ErrorBoundary>
         <ErrorComponent />
       </ErrorBoundary>
     );
-    
+
     fireEvent.click(screen.getByText('Reload Page'));
     expect(reloadMock).toHaveBeenCalled();
   });
@@ -123,13 +123,13 @@ describe('ErrorBoundary', () => {
         <ErrorComponent />
       </ErrorBoundary>
     );
-    
+
     // Details should be collapsed by default
     expect(screen.queryByText('Test error')).not.toBeVisible();
-    
+
     // Expand details
     fireEvent.click(screen.getByText('Error Details'));
-    
+
     // Error message should be visible
     expect(screen.getByText('Test error')).toBeVisible();
   });
@@ -137,34 +137,22 @@ describe('ErrorBoundary', () => {
 
 describe('ErrorDisplay', () => {
   it('should render error message', () => {
-    render(
-      <ErrorDisplay message="Test error message" />
-    );
-    
+    render(<ErrorDisplay message="Test error message" />);
+
     expect(screen.getByTestId('error-display')).toBeInTheDocument();
     expect(screen.getByText('Something went wrong')).toBeInTheDocument();
     expect(screen.getByText('Test error message')).toBeInTheDocument();
   });
 
   it('should render custom title', () => {
-    render(
-      <ErrorDisplay 
-        title="Custom error title" 
-        message="Test error message" 
-      />
-    );
-    
+    render(<ErrorDisplay title="Custom error title" message="Test error message" />);
+
     expect(screen.getByText('Custom error title')).toBeInTheDocument();
   });
 
   it('should render details when provided', () => {
-    render(
-      <ErrorDisplay 
-        message="Test error message"
-        details="Detailed error information"
-      />
-    );
-    
+    render(<ErrorDisplay message="Test error message" details="Detailed error information" />);
+
     expect(screen.getByText('View details')).toBeInTheDocument();
     fireEvent.click(screen.getByText('View details'));
     expect(screen.getByText('Detailed error information')).toBeVisible();
@@ -172,32 +160,23 @@ describe('ErrorDisplay', () => {
 
   it('should render retry button when onRetry provided', () => {
     const onRetry = jest.fn();
-    
-    render(
-      <ErrorDisplay 
-        message="Test error message"
-        onRetry={onRetry}
-      />
-    );
-    
+
+    render(<ErrorDisplay message="Test error message" onRetry={onRetry} />);
+
     const retryButton = screen.getByText('Try again');
     expect(retryButton).toBeInTheDocument();
-    
+
     fireEvent.click(retryButton);
     expect(onRetry).toHaveBeenCalled();
   });
 
   it('should render custom retry label', () => {
     const onRetry = jest.fn();
-    
+
     render(
-      <ErrorDisplay 
-        message="Test error message"
-        onRetry={onRetry}
-        retryLabel="Retry operation"
-      />
+      <ErrorDisplay message="Test error message" onRetry={onRetry} retryLabel="Retry operation" />
     );
-    
+
     expect(screen.getByText('Retry operation')).toBeInTheDocument();
   });
 });

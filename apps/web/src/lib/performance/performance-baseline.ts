@@ -1,6 +1,6 @@
 /**
  * Performance Baseline Measurement
- * 
+ *
  * This file contains utilities to measure Core Web Vitals and other performance metrics.
  * Run this in development to establish baseline measurements.
  */
@@ -26,7 +26,7 @@ export interface PerformanceBaseline {
   TTI: number; // Time to Interactive (ms)
   CLS: number; // Cumulative Layout Shift
   FID?: number; // First Input Delay (ms) - requires user interaction
-  
+
   // Additional metrics
   apiLatency: {
     average: number;
@@ -94,7 +94,6 @@ class PerformanceBaselineService {
           console.log(`📊 CLS: ${clsValue}`);
         });
         clsObserver.observe({ type: 'layout-shift', buffered: true });
-
       } catch (e) {
         console.warn('PerformanceObserver not fully supported:', e);
       }
@@ -107,7 +106,9 @@ class PerformanceBaselineService {
   private observeNavigationTiming() {
     window.addEventListener('load', () => {
       setTimeout(() => {
-        const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
+        const navigation = performance.getEntriesByType(
+          'navigation'
+        )[0] as PerformanceNavigationTiming;
         if (navigation) {
           // Approximate TTI as DOM Interactive
           this.metrics.TTI = navigation.domInteractive;
@@ -150,7 +151,7 @@ class PerformanceBaselineService {
    */
   getBaseline(): PerformanceBaseline {
     const apiLatencies = this.apiLatencies;
-    
+
     return {
       FCP: this.metrics.FCP || 0,
       LCP: this.metrics.LCP || 0,
@@ -181,12 +182,12 @@ class PerformanceBaselineService {
   saveBaseline(): PerformanceBaseline | undefined {
     const baseline = this.getBaseline();
     const baselineJson = JSON.stringify(baseline, null, 2);
-    
+
     if (import.meta.env.DEV) {
       console.log('📊 Performance Baseline:', baselineJson);
       return baseline;
     }
-    
+
     return undefined;
   }
 }

@@ -9,12 +9,14 @@
 `@helixcrm/auth-core` is the extracted authentication module from HelixCRM. It provides pure authentication primitives without framework dependencies.
 
 ### MVP Scope (v0.1)
+
 - JWT token issuance and validation
 - Refresh token management
 - Password hashing and verification
 - Basic account lockout checks
 
 ### What It Is NOT (v0.1)
+
 - HTTP controllers or middleware
 - Database access layer
 - OAuth/SAML/SSO providers
@@ -64,7 +66,7 @@ class PrismaTokenRepository implements TokenRepository {
   async saveRefreshToken(token: RefreshToken) {
     // Save to database using Prisma
   }
-  
+
   async findRefreshToken(tokenId: string) {
     // Lookup from database
   }
@@ -137,3 +139,4 @@ Tests Required: All changes must have corresponding tests
 
 📄 License
 MIT © HelixCRM
+```

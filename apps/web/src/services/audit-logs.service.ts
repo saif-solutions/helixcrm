@@ -1,4 +1,4 @@
-import api from './api';  // Fixed: default import
+import api from './api'; // Fixed: default import
 import {
   AuditLog,
   PaginatedAuditLogs,
@@ -9,7 +9,7 @@ import {
 export const auditLogsService = {
   async getAuditLogs(params: AuditLogQueryParams): Promise<PaginatedAuditLogs> {
     const queryParams = new URLSearchParams();
-    
+
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== '') {
         queryParams.append(key, String(value));
@@ -27,7 +27,7 @@ export const auditLogsService = {
 
   async exportToCSV(params: AuditLogQueryParams): Promise<Blob> {
     const queryParams = new URLSearchParams();
-    
+
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== '') {
         queryParams.append(key, String(value));
@@ -40,7 +40,7 @@ export const auditLogsService = {
         Accept: 'text/csv',
       },
     });
-    
+
     return response.data;
   },
 
@@ -59,7 +59,7 @@ export const auditLogsService = {
       'Metadata',
     ];
 
-    const rows = logs.map(log => [
+    const rows = logs.map((log) => [
       new Date(log.createdAt).toISOString(),
       log.displayAction || log.action,
       log.entityType,
@@ -74,7 +74,7 @@ export const auditLogsService = {
 
     const csvContent = [
       headers.join(','),
-      ...rows.map(row => row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(',')),
+      ...rows.map((row) => row.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(',')),
     ].join('\n');
 
     return csvContent;

@@ -19,7 +19,7 @@ describe('CorrelationIdMiddleware', () => {
     // Reset all mocks before each test
     jest.clearAllMocks();
     mockUuidV4.mockReset();
-    
+
     middleware = new CorrelationIdMiddleware();
     mockRequest = {
       headers: {},
@@ -39,19 +39,15 @@ describe('CorrelationIdMiddleware', () => {
       // Arrange
       const providedCorrelationId = 'test-correlation-123';
       const providedRequestId = 'test-request-456';
-      
+
       mockUuidV4.mockReturnValueOnce(providedRequestId);
-      
+
       mockRequest.headers = {
         'x-correlation-id': providedCorrelationId,
       };
 
       // Act
-      middleware.use(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext,
-      );
+      middleware.use(mockRequest as Request, mockResponse as Response, mockNext);
 
       // Assert
       expect((mockRequest as any).correlationId).toBe(providedCorrelationId);
@@ -60,10 +56,7 @@ describe('CorrelationIdMiddleware', () => {
         'X-Correlation-Id',
         providedCorrelationId,
       );
-      expect(mockResponse.setHeader).toHaveBeenCalledWith(
-        'X-Request-Id',
-        providedRequestId,
-      );
+      expect(mockResponse.setHeader).toHaveBeenCalledWith('X-Request-Id', providedRequestId);
       expect(mockNext).toHaveBeenCalled();
       expect(mockUuidV4).toHaveBeenCalledTimes(1); // Only called for requestId
     });
@@ -74,17 +67,13 @@ describe('CorrelationIdMiddleware', () => {
       // Arrange
       const generatedCorrelationId = 'new-correlation-789';
       const generatedRequestId = 'new-request-012';
-      
+
       mockUuidV4
         .mockReturnValueOnce(generatedCorrelationId)
         .mockReturnValueOnce(generatedRequestId);
 
       // Act
-      middleware.use(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext,
-      );
+      middleware.use(mockRequest as Request, mockResponse as Response, mockNext);
 
       // Assert
       expect((mockRequest as any).correlationId).toBe(generatedCorrelationId);
@@ -93,10 +82,7 @@ describe('CorrelationIdMiddleware', () => {
         'X-Correlation-Id',
         generatedCorrelationId,
       );
-      expect(mockResponse.setHeader).toHaveBeenCalledWith(
-        'X-Request-Id',
-        generatedRequestId,
-      );
+      expect(mockResponse.setHeader).toHaveBeenCalledWith('X-Request-Id', generatedRequestId);
       expect(mockNext).toHaveBeenCalled();
       expect(mockUuidV4).toHaveBeenCalledTimes(2);
     });
@@ -116,56 +102,42 @@ describe('CorrelationIdMiddleware', () => {
       // Arrange
       const providedCorrelationId = 'test-correlation-123';
       const providedRequestId = 'test-request-456';
-      
+
       mockUuidV4.mockReturnValueOnce(providedRequestId);
-      
+
       mockRequest.headers = {
         'x-correlation-id': providedCorrelationId,
       };
 
       // Act
-      middleware.use(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext,
-      );
+      middleware.use(mockRequest as Request, mockResponse as Response, mockNext);
 
       // Assert
       expect(mockResponse.setHeader).toHaveBeenCalledWith(
         'X-Correlation-Id',
         providedCorrelationId,
       );
-      expect(mockResponse.setHeader).toHaveBeenCalledWith(
-        'X-Request-Id',
-        providedRequestId,
-      );
+      expect(mockResponse.setHeader).toHaveBeenCalledWith('X-Request-Id', providedRequestId);
     });
 
     it('should set both headers correctly with generated IDs', () => {
       // Arrange
       const generatedCorrelationId = 'new-correlation-789';
       const generatedRequestId = 'new-request-012';
-      
+
       mockUuidV4
         .mockReturnValueOnce(generatedCorrelationId)
         .mockReturnValueOnce(generatedRequestId);
 
       // Act
-      middleware.use(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext,
-      );
+      middleware.use(mockRequest as Request, mockResponse as Response, mockNext);
 
       // Assert
       expect(mockResponse.setHeader).toHaveBeenCalledWith(
         'X-Correlation-Id',
         generatedCorrelationId,
       );
-      expect(mockResponse.setHeader).toHaveBeenCalledWith(
-        'X-Request-Id',
-        generatedRequestId,
-      );
+      expect(mockResponse.setHeader).toHaveBeenCalledWith('X-Request-Id', generatedRequestId);
     });
 
     it('should call next() exactly once', () => {
@@ -173,11 +145,7 @@ describe('CorrelationIdMiddleware', () => {
       mockUuidV4.mockReturnValue('test-id');
 
       // Act
-      middleware.use(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext,
-      );
+      middleware.use(mockRequest as Request, mockResponse as Response, mockNext);
 
       // Assert
       expect(mockNext).toHaveBeenCalledTimes(1);

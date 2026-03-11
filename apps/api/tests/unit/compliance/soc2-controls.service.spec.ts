@@ -40,10 +40,17 @@ describe('Soc2ControlsService', () => {
       const verifiedBy = 'test-user';
       const notes = 'Test verification';
 
-      prismaMock.controlVerification.create.mockResolvedValue({ id: 'verification-1' });
+      prismaMock.controlVerification.create.mockResolvedValue({
+        id: 'verification-1',
+      });
 
       // Act
-      const result = await service.verifyControl(controlId, mockEvidence, verifiedBy, notes);
+      const result = await service.verifyControl(
+        controlId,
+        mockEvidence,
+        verifiedBy,
+        notes,
+      );
 
       // Assert
       expect(result).toEqual({
@@ -75,7 +82,9 @@ describe('Soc2ControlsService', () => {
         data: { key: 'value' },
       };
 
-      prismaMock.controlVerification.create.mockResolvedValue({ id: 'verification-1' });
+      prismaMock.controlVerification.create.mockResolvedValue({
+        id: 'verification-1',
+      });
 
       // Act
       const result = await service.verifyControl('CC6.2', objectEvidence);
@@ -93,7 +102,9 @@ describe('Soc2ControlsService', () => {
         verified: true,
       };
 
-      prismaMock.controlVerification.create.mockResolvedValue({ id: 'verification-1' });
+      prismaMock.controlVerification.create.mockResolvedValue({
+        id: 'verification-1',
+      });
 
       // Act
       const result = await service.verifyControl('CC6.6', verifiedEvidence);
@@ -110,7 +121,9 @@ describe('Soc2ControlsService', () => {
         data: [],
       };
 
-      prismaMock.controlVerification.create.mockResolvedValue({ id: 'verification-1' });
+      prismaMock.controlVerification.create.mockResolvedValue({
+        id: 'verification-1',
+      });
 
       // Act
       const result = await service.verifyControl('A1.1', emptyEvidence);
@@ -129,7 +142,9 @@ describe('Soc2ControlsService', () => {
         verification: { verified: false },
       };
 
-      prismaMock.controlVerification.create.mockResolvedValue({ id: 'verification-1' });
+      prismaMock.controlVerification.create.mockResolvedValue({
+        id: 'verification-1',
+      });
 
       // Act
       const result = await service.verifyControl('A1.2', failedEvidence);
@@ -142,12 +157,16 @@ describe('Soc2ControlsService', () => {
     it('should verify control with PARTIAL status when evidence is mixed', async () => {
       // This test might need adjustment based on actual implementation
       // For now, we'll just verify it doesn't throw
-      await expect(service.verifyControl('C1.1', { data: [] })).resolves.toBeDefined();
+      await expect(
+        service.verifyControl('C1.1', { data: [] }),
+      ).resolves.toBeDefined();
     });
 
     it('should throw error for unknown control ID', async () => {
       // Act & Assert
-      await expect(service.verifyControl('UNKNOWN', { data: [] })).rejects.toThrow('Unknown control ID: UNKNOWN');
+      await expect(
+        service.verifyControl('UNKNOWN', { data: [] }),
+      ).rejects.toThrow('Unknown control ID: UNKNOWN');
     });
 
     it('should handle missing evidence gracefully', async () => {
@@ -162,14 +181,16 @@ describe('Soc2ControlsService', () => {
     it('should log verification result', async () => {
       // Arrange
       const loggerSpy = jest.spyOn((service as any).logger, 'log');
-      prismaMock.controlVerification.create.mockResolvedValue({ id: 'verification-1' });
+      prismaMock.controlVerification.create.mockResolvedValue({
+        id: 'verification-1',
+      });
 
       // Act
       await service.verifyControl('P1.1', { data: [{ id: 1 }] });
 
       // Assert
       expect(loggerSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Control P1.1 verified: PASS')
+        expect.stringContaining('Control P1.1 verified: PASS'),
       );
     });
 
@@ -179,7 +200,9 @@ describe('Soc2ControlsService', () => {
       prismaMock.controlVerification.create.mockRejectedValue(error);
 
       // Act & Assert
-      await expect(service.verifyControl('CC6.1', { data: [] })).rejects.toThrow('Database error');
+      await expect(
+        service.verifyControl('CC6.1', { data: [] }),
+      ).rejects.toThrow('Database error');
     });
   });
 
@@ -222,7 +245,9 @@ describe('Soc2ControlsService', () => {
 
     it('should return all verifications without filters', async () => {
       // Arrange
-      prismaMock.controlVerification.findMany.mockResolvedValue(mockVerifications);
+      prismaMock.controlVerification.findMany.mockResolvedValue(
+        mockVerifications,
+      );
 
       // Act
       const result = await service.getControlVerificationHistory();
@@ -244,7 +269,7 @@ describe('Soc2ControlsService', () => {
     it('should filter by control ID', async () => {
       // Arrange
       prismaMock.controlVerification.findMany.mockResolvedValue(
-        mockVerifications.filter(v => v.controlId === 'CC6.1')
+        mockVerifications.filter((v) => v.controlId === 'CC6.1'),
       );
 
       // Act
@@ -264,11 +289,14 @@ describe('Soc2ControlsService', () => {
     it('should filter by criteria', async () => {
       // Arrange
       prismaMock.controlVerification.findMany.mockResolvedValue(
-        mockVerifications.filter(v => v.criteria === 'Security')
+        mockVerifications.filter((v) => v.criteria === 'Security'),
       );
 
       // Act
-      const result = await service.getControlVerificationHistory(undefined, 'Security');
+      const result = await service.getControlVerificationHistory(
+        undefined,
+        'Security',
+      );
 
       // Assert
       expect(result).toHaveLength(3);
@@ -284,11 +312,16 @@ describe('Soc2ControlsService', () => {
       const startDate = new Date('2024-01-02');
       const endDate = new Date('2024-01-03');
       prismaMock.controlVerification.findMany.mockResolvedValue(
-        mockVerifications.slice(0, 2)
+        mockVerifications.slice(0, 2),
       );
 
       // Act
-      const result = await service.getControlVerificationHistory(undefined, undefined, startDate, endDate);
+      const result = await service.getControlVerificationHistory(
+        undefined,
+        undefined,
+        startDate,
+        endDate,
+      );
 
       // Assert
       expect(result).toHaveLength(2);
@@ -306,10 +339,18 @@ describe('Soc2ControlsService', () => {
 
     it('should respect custom limit', async () => {
       // Arrange
-      prismaMock.controlVerification.findMany.mockResolvedValue(mockVerifications.slice(0, 1));
+      prismaMock.controlVerification.findMany.mockResolvedValue(
+        mockVerifications.slice(0, 1),
+      );
 
       // Act
-      const result = await service.getControlVerificationHistory(undefined, undefined, undefined, undefined, 1);
+      const result = await service.getControlVerificationHistory(
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        1,
+      );
 
       // Assert
       expect(result).toHaveLength(1);
@@ -326,7 +367,9 @@ describe('Soc2ControlsService', () => {
       prismaMock.controlVerification.findMany.mockRejectedValue(error);
 
       // Act & Assert
-      await expect(service.getControlVerificationHistory()).rejects.toThrow('Database error');
+      await expect(service.getControlVerificationHistory()).rejects.toThrow(
+        'Database error',
+      );
     });
   });
 
@@ -340,9 +383,21 @@ describe('Soc2ControlsService', () => {
     ];
 
     const mockRecentControls = [
-      { controlId: 'CC6.1', status: 'PASS', verificationDate: new Date('2024-01-03') },
-      { controlId: 'CC6.2', status: 'PASS', verificationDate: new Date('2024-01-02') },
-      { controlId: 'CC6.6', status: 'FAIL', verificationDate: new Date('2024-01-01') },
+      {
+        controlId: 'CC6.1',
+        status: 'PASS',
+        verificationDate: new Date('2024-01-03'),
+      },
+      {
+        controlId: 'CC6.2',
+        status: 'PASS',
+        verificationDate: new Date('2024-01-02'),
+      },
+      {
+        controlId: 'CC6.6',
+        status: 'FAIL',
+        verificationDate: new Date('2024-01-01'),
+      },
     ];
 
     beforeEach(() => {
@@ -356,8 +411,12 @@ describe('Soc2ControlsService', () => {
 
     it('should return control status summary', async () => {
       // Arrange
-      prismaMock.controlVerification.groupBy.mockResolvedValue(mockVerifications);
-      prismaMock.controlVerification.findMany.mockResolvedValue(mockRecentControls);
+      prismaMock.controlVerification.groupBy.mockResolvedValue(
+        mockVerifications,
+      );
+      prismaMock.controlVerification.findMany.mockResolvedValue(
+        mockRecentControls,
+      );
 
       // Act
       const result = await service.getControlStatusSummary();
@@ -391,7 +450,9 @@ describe('Soc2ControlsService', () => {
       prismaMock.controlVerification.groupBy.mockResolvedValue([
         { criteria: 'Security', status: 'PASS', _count: 5 },
       ]);
-      prismaMock.controlVerification.findMany.mockResolvedValue(mockRecentControls);
+      prismaMock.controlVerification.findMany.mockResolvedValue(
+        mockRecentControls,
+      );
 
       // Act
       const result = await service.getControlStatusSummary();
@@ -406,7 +467,9 @@ describe('Soc2ControlsService', () => {
         { criteria: 'Security', status: 'PASS', _count: 2 },
         { criteria: 'Security', status: 'PARTIAL', _count: 3 },
       ]);
-      prismaMock.controlVerification.findMany.mockResolvedValue(mockRecentControls);
+      prismaMock.controlVerification.findMany.mockResolvedValue(
+        mockRecentControls,
+      );
 
       // Act
       const result = await service.getControlStatusSummary();
@@ -421,7 +484,9 @@ describe('Soc2ControlsService', () => {
         { criteria: 'Security', status: 'PASS', _count: 4 },
         { criteria: 'Security', status: 'FAIL', _count: 1 },
       ]);
-      prismaMock.controlVerification.findMany.mockResolvedValue(mockRecentControls);
+      prismaMock.controlVerification.findMany.mockResolvedValue(
+        mockRecentControls,
+      );
 
       // Act
       const result = await service.getControlStatusSummary();
@@ -432,8 +497,12 @@ describe('Soc2ControlsService', () => {
 
     it('should handle custom days parameter', async () => {
       // Arrange
-      prismaMock.controlVerification.groupBy.mockResolvedValue(mockVerifications);
-      prismaMock.controlVerification.findMany.mockResolvedValue(mockRecentControls);
+      prismaMock.controlVerification.groupBy.mockResolvedValue(
+        mockVerifications,
+      );
+      prismaMock.controlVerification.findMany.mockResolvedValue(
+        mockRecentControls,
+      );
 
       // Act
       await service.getControlStatusSummary(7);
@@ -441,7 +510,7 @@ describe('Soc2ControlsService', () => {
       // Assert
       const expectedDate = new Date();
       expectedDate.setDate(expectedDate.getDate() - 7);
-      
+
       expect(prismaMock.controlVerification.groupBy).toHaveBeenCalledWith({
         by: ['criteria', 'status'],
         where: {
@@ -457,7 +526,9 @@ describe('Soc2ControlsService', () => {
       prismaMock.controlVerification.groupBy.mockRejectedValue(error);
 
       // Act & Assert
-      await expect(service.getControlStatusSummary()).rejects.toThrow('Database error');
+      await expect(service.getControlStatusSummary()).rejects.toThrow(
+        'Database error',
+      );
     });
   });
 
@@ -467,7 +538,9 @@ describe('Soc2ControlsService', () => {
       const mockHistory = [
         { controlId: 'CC6.1', status: 'PASS', evidenceCount: 5 },
       ];
-      jest.spyOn(service, 'getControlVerificationHistory').mockResolvedValue(mockHistory as any);
+      jest
+        .spyOn(service, 'getControlVerificationHistory')
+        .mockResolvedValue(mockHistory as any);
 
       // Act
       const result = await service.getControlDetails('CC6.1');
@@ -478,28 +551,37 @@ describe('Soc2ControlsService', () => {
       expect(result).toHaveProperty('criteria', 'Security');
       expect(result).toHaveProperty('recentVerifications', mockHistory);
       expect(result).toHaveProperty('evidenceRequirements');
-      expect(result.evidenceRequirements).toContain('Access control configuration');
+      expect(result.evidenceRequirements).toContain(
+        'Access control configuration',
+      );
       expect(result).toHaveProperty('implementationStatus', 'IMPLEMENTED');
       expect(result).toHaveProperty('nextVerificationDue');
     });
 
     it('should return details for A1.1', async () => {
       // Arrange
-      jest.spyOn(service, 'getControlVerificationHistory').mockResolvedValue([]);
+      jest
+        .spyOn(service, 'getControlVerificationHistory')
+        .mockResolvedValue([]);
 
       // Act
       const result = await service.getControlDetails('A1.1');
 
       // Assert - Note: The service returns 'name' not 'controlName'
       expect(result).toHaveProperty('controlId', 'A1.1');
-      expect(result).toHaveProperty('name', 'Performance and Capacity Monitoring');
+      expect(result).toHaveProperty(
+        'name',
+        'Performance and Capacity Monitoring',
+      );
       expect(result).toHaveProperty('criteria', 'Availability');
       expect(result.evidenceRequirements).toContain('Performance test results');
     });
 
     it('should throw error for unknown control ID', async () => {
       // Act & Assert
-      await expect(service.getControlDetails('UNKNOWN')).rejects.toThrow('Unknown control ID: UNKNOWN');
+      await expect(service.getControlDetails('UNKNOWN')).rejects.toThrow(
+        'Unknown control ID: UNKNOWN',
+      );
     });
   });
 });

@@ -49,13 +49,13 @@ describe('PermissionGuard', () => {
       },
     };
 
-mockContext = {
-  switchToHttp: () => ({
-    getRequest: () => mockRequest,
-  }),
-  getHandler: jest.fn().mockReturnValue({ name: 'testHandler' }),
-  getClass: jest.fn().mockReturnValue({ name: 'TestController' }),
-};
+    mockContext = {
+      switchToHttp: () => ({
+        getRequest: () => mockRequest,
+      }),
+      getHandler: jest.fn().mockReturnValue({ name: 'testHandler' }),
+      getClass: jest.fn().mockReturnValue({ name: 'TestController' }),
+    };
 
     (getTenantContext as jest.Mock).mockReturnValue({
       tenantId: 'org-123',
@@ -88,7 +88,9 @@ mockContext = {
     jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(['lead:read']);
     mockRequest.user = null;
 
-    await expect(guard.canActivate(mockContext)).rejects.toThrow(UnauthorizedException);
+    await expect(guard.canActivate(mockContext)).rejects.toThrow(
+      UnauthorizedException,
+    );
   });
 
   it('should throw ForbiddenException if tenant context missing', async () => {
@@ -97,7 +99,9 @@ mockContext = {
       throw new Error('Tenant context missing');
     });
 
-    await expect(guard.canActivate(mockContext)).rejects.toThrow(ForbiddenException);
+    await expect(guard.canActivate(mockContext)).rejects.toThrow(
+      ForbiddenException,
+    );
   });
 
   it('should build permission context and grant access if user has permission', async () => {
@@ -112,7 +116,9 @@ mockContext = {
       tenantId: 'org-123',
       jwtPermissions: ['lead:read'],
     });
-    expect(permissionContext.hasAnyPermission).toHaveBeenCalledWith(['lead:read']);
+    expect(permissionContext.hasAnyPermission).toHaveBeenCalledWith([
+      'lead:read',
+    ]);
   });
 
   it('should deny access if user lacks required permissions', async () => {
@@ -121,24 +127,35 @@ mockContext = {
     permissionContext.getPermissions.mockReturnValue(['lead:read']);
     permissionContext.getRoles.mockReturnValue(['User']);
 
-    await expect(guard.canActivate(mockContext)).rejects.toThrow(ForbiddenException);
-    expect(permissionContext.hasAnyPermission).toHaveBeenCalledWith(['lead:write']);
+    await expect(guard.canActivate(mockContext)).rejects.toThrow(
+      ForbiddenException,
+    );
+    expect(permissionContext.hasAnyPermission).toHaveBeenCalledWith([
+      'lead:write',
+    ]);
   });
 
   it('should handle multiple required permissions (OR logic)', async () => {
-    jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(['lead:write', 'lead:admin']);
+    jest
+      .spyOn(reflector, 'getAllAndOverride')
+      .mockReturnValue(['lead:write', 'lead:admin']);
     permissionContext.hasAnyPermission.mockReturnValue(true);
 
     const result = await guard.canActivate(mockContext);
 
     expect(result).toBe(true);
-    expect(permissionContext.hasAnyPermission).toHaveBeenCalledWith(['lead:write', 'lead:admin']);
+    expect(permissionContext.hasAnyPermission).toHaveBeenCalledWith([
+      'lead:write',
+      'lead:admin',
+    ]);
   });
 
   it('should throw ForbiddenException if permission context fails to initialize', async () => {
     jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(['lead:read']);
     permissionContext.isInitialized.mockReturnValue(false);
 
-    await expect(guard.canActivate(mockContext)).rejects.toThrow(ForbiddenException);
+    await expect(guard.canActivate(mockContext)).rejects.toThrow(
+      ForbiddenException,
+    );
   });
 });

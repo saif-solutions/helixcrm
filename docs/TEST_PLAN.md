@@ -1,31 +1,33 @@
 # Helix CRM - Test Implementation Plan
 
-## í³Š Current Status (as of 2026-03-11)
+## ï¿½ï¿½ï¿½ Current Status (as of 2026-03-11)
 
-| Test Type | Location | Count | Target | Status |
-|-----------|----------|-------|--------|--------|
-| Unit Tests | `tests/unit/api/` | 51 | 150+ | í¿¡ In Progress |
-| Integration Tests | `tests/integration/` | 0 | 50+ | í´´ Not Started |
-| Security Tests | `tests/security/` | 7 | 25+ | í¿¡ In Progress |
-| Contract Tests | `tests/contracts/` | 2 | 15+ | í¿¡ In Progress |
-| E2E Tests | `tests/e2e/` | 1 | 12-15 | í´´ Not Started |
-| Frontend Tests | `tests/unit/web/` | 0 | 100+ | í´´ Not Started |
+| Test Type         | Location             | Count | Target | Status          |
+| ----------------- | -------------------- | ----- | ------ | --------------- |
+| Unit Tests        | `tests/unit/api/`    | 51    | 150+   | ï¿½ï¿½ï¿½ In Progress |
+| Integration Tests | `tests/integration/` | 0     | 50+    | ï¿½ï¿½ï¿½ Not Started |
+| Security Tests    | `tests/security/`    | 7     | 25+    | ï¿½ï¿½ï¿½ In Progress |
+| Contract Tests    | `tests/contracts/`   | 2     | 15+    | ï¿½ï¿½ï¿½ In Progress |
+| E2E Tests         | `tests/e2e/`         | 1     | 12-15  | ï¿½ï¿½ï¿½ Not Started |
+| Frontend Tests    | `tests/unit/web/`    | 0     | 100+   | ï¿½ï¿½ï¿½ Not Started |
 
-## í¾¯ Priority Testing Targets (Next 2 Weeks)
+## ï¿½ï¿½ï¿½ Priority Testing Targets (Next 2 Weeks)
 
 ### Week 1: Critical Path
+
 - [ ] Complete auth module tests (15 tests)
 - [ ] Complete deals module tests (12 tests)
 - [ ] Complete leads module tests (10 tests)
 - [ ] Add 5 critical security invariants
 
 ### Week 2: Core Coverage
+
 - [ ] Add integration tests for auth+audit
 - [ ] Add pipeline stage transition tests
 - [ ] Complete RBAC permission tests
 - [ ] Add first 3 E2E flows
 
-## íº¦ How to Run Tests
+## ï¿½ï¿½ï¿½ How to Run Tests
 
 ```bash
 # Quick test during development
@@ -39,7 +41,7 @@ npm run test:cov
 
 # CI mode (for GitHub Actions)
 npm run test:ci
-í³ Test Writing Guidelines
+ï¿½ï¿½ï¿½ Test Writing Guidelines
 One assertion per test when possible
 
 Use factories from tests/helpers/factories/
@@ -50,7 +52,7 @@ Tag critical tests with @critical
 
 Keep tests fast (<100ms for unit, <1s for integration)
 
-íº« Don't Touch Configuration
+ï¿½ï¿½ï¿½ Don't Touch Configuration
 The test infrastructure is now locked. Do not modify:
 
 jest.config.js
@@ -75,3 +77,4 @@ Security invariants still pass
 All tests pass locally
 
 Coverage maintained or improved
+```

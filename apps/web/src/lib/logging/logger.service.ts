@@ -1,6 +1,6 @@
 /**
  * Structured Logging Service
- * 
+ *
  * Provides consistent logging with levels, correlation IDs, and context enrichment.
  * In production, logs are sent to the backend for aggregation.
  */
@@ -176,19 +176,16 @@ class LoggerService {
   private logToConsole(entry: LogEntry) {
     const styles = {
       debug: 'color: #6b7280', // gray
-      info: 'color: #3b82f6',   // blue
-      warn: 'color: #f59e0b',   // orange
-      error: 'color: #ef4444',  // red
+      info: 'color: #3b82f6', // blue
+      warn: 'color: #f59e0b', // orange
+      error: 'color: #ef4444', // red
     };
 
     const prefix = `[${entry.level.toUpperCase()}]`;
     const correlationInfo = entry.correlationId ? ` [${entry.correlationId.substring(0, 8)}]` : '';
     const userInfo = entry.userId ? ` 👤${entry.userId.substring(0, 4)}` : '';
 
-    console.log(
-      `%c${prefix}${correlationInfo}${userInfo} ${entry.message}`,
-      styles[entry.level]
-    );
+    console.log(`%c${prefix}${correlationInfo}${userInfo} ${entry.message}`, styles[entry.level]);
 
     if (entry.metadata && Object.keys(entry.metadata).length > 0) {
       console.log('  📦 Metadata:', entry.metadata);
@@ -324,7 +321,11 @@ class ChildLogger {
     this.parent.error(message, error, { ...metadata, component: this.component });
   }
 
-  async time<T>(action: string, fn: () => Promise<T>, metadata?: Record<string, unknown>): Promise<T> {
+  async time<T>(
+    action: string,
+    fn: () => Promise<T>,
+    metadata?: Record<string, unknown>
+  ): Promise<T> {
     return this.parent.time(`${this.component}.${action}`, fn, metadata);
   }
 
@@ -338,7 +339,7 @@ export const logger = LoggerService.getInstance();
 
 // Export convenience functions
 export const setCorrelationId = (id: string) => logger.setCorrelationId(id);
-export const setUserContext = (userId: string, organizationId: string) => 
+export const setUserContext = (userId: string, organizationId: string) =>
   logger.setUserContext(userId, organizationId);
 export const clearUserContext = () => logger.clearUserContext();
 export const generateCorrelationId = () => logger.generateCorrelationId();

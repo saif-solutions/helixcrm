@@ -69,20 +69,32 @@ describe('AuthController', () => {
       authService.validateUser.mockResolvedValue(mockUser);
       authService.login.mockResolvedValue({ access_token: 'token' });
 
-      const result = await controller.login(loginDto, mockRequest as any, mockResponse as any);
+      const result = await controller.login(
+        loginDto,
+        mockRequest as any,
+        mockResponse as any,
+      );
 
       expect(result).toEqual({ access_token: 'token' });
-      expect(authService.validateUser).toHaveBeenCalledWith(loginDto.email, loginDto.password);
+      expect(authService.validateUser).toHaveBeenCalledWith(
+        loginDto.email,
+        loginDto.password,
+      );
       expect(mockAuditLogService.logWithRequest).toHaveBeenCalledTimes(1);
-      expect(authService.login).toHaveBeenCalledWith(mockUser, mockResponse, mockRequest);
+      expect(authService.login).toHaveBeenCalledWith(
+        mockUser,
+        mockResponse,
+        mockRequest,
+      );
     });
 
     it('should throw UnauthorizedException for invalid credentials', async () => {
       authService.validateUser.mockResolvedValue(null);
 
-      await expect(controller.login(loginDto, mockRequest as any, mockResponse as any))
-        .rejects.toThrow(UnauthorizedException);
-      
+      await expect(
+        controller.login(loginDto, mockRequest as any, mockResponse as any),
+      ).rejects.toThrow(UnauthorizedException);
+
       expect(mockAuditLogService.logWithRequest).toHaveBeenCalledTimes(1);
       expect(authService.login).not.toHaveBeenCalled();
     });
@@ -95,13 +107,22 @@ describe('AuthController', () => {
     };
 
     it('should successfully logout user', async () => {
-      authService.logout.mockResolvedValue({ message: 'Logged out successfully' });
+      authService.logout.mockResolvedValue({
+        message: 'Logged out successfully',
+      });
 
-      const result = await controller.logout(mockRequestWithUser as any, mockResponse as any);
+      const result = await controller.logout(
+        mockRequestWithUser as any,
+        mockResponse as any,
+      );
 
       expect(result).toEqual({ message: 'Logged out successfully' });
       expect(mockAuditLogService.logWithRequest).toHaveBeenCalled();
-      expect(authService.logout).toHaveBeenCalledWith('user-123', mockResponse, mockRequestWithUser);
+      expect(authService.logout).toHaveBeenCalledWith(
+        'user-123',
+        mockResponse,
+        mockRequestWithUser,
+      );
     });
   });
 
@@ -111,17 +132,25 @@ describe('AuthController', () => {
       mockRequest.cookies = { refresh_token: refreshToken };
       authService.refreshToken.mockResolvedValue({ access_token: 'new-token' });
 
-      const result = await controller.refreshToken(mockRequest as any, mockResponse as any);
+      const result = await controller.refreshToken(
+        mockRequest as any,
+        mockResponse as any,
+      );
 
       expect(result).toEqual({ access_token: 'new-token' });
-      expect(authService.refreshToken).toHaveBeenCalledWith(refreshToken, mockResponse, mockRequest);
+      expect(authService.refreshToken).toHaveBeenCalledWith(
+        refreshToken,
+        mockResponse,
+        mockRequest,
+      );
     });
 
     it('should throw UnauthorizedException if no refresh token', async () => {
       mockRequest.cookies = {};
 
-      await expect(controller.refreshToken(mockRequest as any, mockResponse as any))
-        .rejects.toThrow(UnauthorizedException);
+      await expect(
+        controller.refreshToken(mockRequest as any, mockResponse as any),
+      ).rejects.toThrow(UnauthorizedException);
     });
   });
 
@@ -135,7 +164,9 @@ describe('AuthController', () => {
     };
 
     it('should return current user', async () => {
-      const result = await controller.getCurrentUser(mockRequestWithUser as any);
+      const result = await controller.getCurrentUser(
+        mockRequestWithUser as any,
+      );
 
       expect(result).toEqual({
         user: {
@@ -164,7 +195,10 @@ describe('AuthController', () => {
       const result = await controller.register(registerDto, mockRequest as any);
 
       expect(result).toEqual(mockResult);
-      expect(authService.register).toHaveBeenCalledWith(registerDto, mockRequest);
+      expect(authService.register).toHaveBeenCalledWith(
+        registerDto,
+        mockRequest,
+      );
       expect(mockAuditLogService.logWithRequest).toHaveBeenCalled();
     });
   });
@@ -194,7 +228,10 @@ describe('AuthController', () => {
     it('should logout from all devices', async () => {
       authService.invalidateAllTokens.mockResolvedValue(undefined);
 
-      const result = await controller.logoutAll(mockRequestWithUser as any, mockResponse as any);
+      const result = await controller.logoutAll(
+        mockRequestWithUser as any,
+        mockResponse as any,
+      );
 
       expect(result).toEqual({ message: 'Logged out from all devices' });
       expect(mockResponse.clearCookie).toHaveBeenCalledTimes(2);
@@ -218,7 +255,10 @@ describe('AuthController', () => {
       );
 
       expect(result).toEqual(mockResult);
-      expect(authService.invalidateOtherSessions).toHaveBeenCalledWith('user-123', true);
+      expect(authService.invalidateOtherSessions).toHaveBeenCalledWith(
+        'user-123',
+        true,
+      );
       expect(mockAuditLogService.logWithRequest).toHaveBeenCalled();
     });
 
@@ -232,7 +272,10 @@ describe('AuthController', () => {
       );
 
       expect(result).toEqual(mockResult);
-      expect(authService.invalidateOtherSessions).toHaveBeenCalledWith('user-123', false);
+      expect(authService.invalidateOtherSessions).toHaveBeenCalledWith(
+        'user-123',
+        false,
+      );
     });
   });
 
@@ -242,7 +285,10 @@ describe('AuthController', () => {
         cookies: { existing_cookie: 'value' },
       };
 
-      const result = controller.debugCookie(mockReq as any, mockResponse as any);
+      const result = controller.debugCookie(
+        mockReq as any,
+        mockResponse as any,
+      );
 
       expect(result).toHaveProperty('message', 'Test cookie set');
       expect(result).toHaveProperty('cookies');

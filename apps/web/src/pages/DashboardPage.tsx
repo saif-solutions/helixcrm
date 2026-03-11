@@ -85,7 +85,7 @@ interface Deal {
 }
 
 const DashboardPage: React.FC = () => {
-    const { success, error: showError } = useToast();
+  const { success, error: showError } = useToast();
   const { logout } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'leads' | 'deals'>('overview');
@@ -229,9 +229,9 @@ const DashboardPage: React.FC = () => {
                 >
                   <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
                 </button>
-              <div className="text-sm text-gray-600">
-                {dashboardStats && `Updated ${new Date().toLocaleTimeString()}`}
-              </div>
+                <div className="text-sm text-gray-600">
+                  {dashboardStats && `Updated ${new Date().toLocaleTimeString()}`}
+                </div>
               </div>
               <div className="text-sm text-gray-600">
                 <span className="font-medium">{user?.email?.split('@')[0] || 'User'}</span>
@@ -284,12 +284,14 @@ const DashboardPage: React.FC = () => {
             </Link>
 
             {/* Only show Quick Actions if user has write permissions */}
-            {(hasPermission('lead:write') || hasPermission('contact:write') || hasPermission('deal:write')) && (
+            {(hasPermission('lead:write') ||
+              hasPermission('contact:write') ||
+              hasPermission('deal:write')) && (
               <>
                 <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider mt-6">
                   Quick Actions
                 </div>
-                
+
                 {hasPermission('lead:write') && (
                   <Link
                     to="/leads/new"
@@ -299,7 +301,7 @@ const DashboardPage: React.FC = () => {
                     <span>New Lead</span>
                   </Link>
                 )}
-                
+
                 {/* Add other quick actions as needed */}
               </>
             )}
@@ -384,104 +386,106 @@ const DashboardPage: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
               {/* Leads Card - requires lead:read */}
               {hasPermission('lead:read') && (
-              <Card className="p-6 hover:shadow-lg transition-shadow">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-500">Total Leads</p>
-                    <p className="text-2xl font-bold text-gray-900 mt-1">
-                      {isLoadingStats
-                        ? '...'
-                        : dashboardStats?.summary?.leads?.toLocaleString() || '0'}
-                    </p>
-                    {dashboardStats?.summary && (
-                      <div className="flex items-center mt-2 text-sm text-gray-600">
-                        <TrendingUp className="w-4 h-4 mr-1" />
-                        <span>{dashboardStats.summary.newLeadsThisWeek} new this week</span>
-                      </div>
-                    )}
+                <Card className="p-6 hover:shadow-lg transition-shadow">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-500">Total Leads</p>
+                      <p className="text-2xl font-bold text-gray-900 mt-1">
+                        {isLoadingStats
+                          ? '...'
+                          : dashboardStats?.summary?.leads?.toLocaleString() || '0'}
+                      </p>
+                      {dashboardStats?.summary && (
+                        <div className="flex items-center mt-2 text-sm text-gray-600">
+                          <TrendingUp className="w-4 h-4 mr-1" />
+                          <span>{dashboardStats.summary.newLeadsThisWeek} new this week</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                      <Target className="w-6 h-6 text-blue-600" />
+                    </div>
                   </div>
-                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                    <Target className="w-6 h-6 text-blue-600" />
-                  </div>
-                </div>
-              </Card>
+                </Card>
               )}
 
               {/* Contacts Card - requires contact:read */}
               {hasPermission('contact:read') && (
-              <Card className="p-6 hover:shadow-lg transition-shadow">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-500">Total Contacts</p>
-                    <p className="text-2xl font-bold text-gray-900 mt-1">
-                      {isLoadingStats
-                        ? '...'
-                        : dashboardStats?.summary?.contacts?.toLocaleString() || '0'}
-                    </p>
-                    {dashboardStats?.summary && dashboardStats.summary.conversionRate > 0 && (
-                      <div className="flex items-center mt-2 text-sm text-gray-600">
-                        <Activity className="w-4 h-4 mr-1" />
-                        <span>{dashboardStats.summary.conversionRate.toFixed(1)}% conversion</span>
-                      </div>
-                    )}
+                <Card className="p-6 hover:shadow-lg transition-shadow">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-500">Total Contacts</p>
+                      <p className="text-2xl font-bold text-gray-900 mt-1">
+                        {isLoadingStats
+                          ? '...'
+                          : dashboardStats?.summary?.contacts?.toLocaleString() || '0'}
+                      </p>
+                      {dashboardStats?.summary && dashboardStats.summary.conversionRate > 0 && (
+                        <div className="flex items-center mt-2 text-sm text-gray-600">
+                          <Activity className="w-4 h-4 mr-1" />
+                          <span>
+                            {dashboardStats.summary.conversionRate.toFixed(1)}% conversion
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                      <Users className="w-6 h-6 text-green-600" />
+                    </div>
                   </div>
-                  <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                    <Users className="w-6 h-6 text-green-600" />
-                  </div>
-                </div>
-              </Card>
+                </Card>
               )}
 
               {/* Deals Card - requires deal:read */}
               {hasPermission('deal:read') && (
-              <Card className="p-6 hover:shadow-lg transition-shadow">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-500">Active Deals</p>
-                    <p className="text-2xl font-bold text-gray-900 mt-1">
-                      {isLoadingStats
-                        ? '...'
-                        : dashboardStats?.summary?.deals?.toLocaleString() || '0'}
-                    </p>
-                    {dashboardStats?.summary && (
-                      <div className="flex items-center mt-2 text-sm text-gray-600">
-                        <Briefcase className="w-4 h-4 mr-1" />
-                        <span>
-                          ${dashboardStats.summary.totalWonValue?.toLocaleString() || '0'} won
-                        </span>
-                      </div>
-                    )}
+                <Card className="p-6 hover:shadow-lg transition-shadow">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-500">Active Deals</p>
+                      <p className="text-2xl font-bold text-gray-900 mt-1">
+                        {isLoadingStats
+                          ? '...'
+                          : dashboardStats?.summary?.deals?.toLocaleString() || '0'}
+                      </p>
+                      {dashboardStats?.summary && (
+                        <div className="flex items-center mt-2 text-sm text-gray-600">
+                          <Briefcase className="w-4 h-4 mr-1" />
+                          <span>
+                            ${dashboardStats.summary.totalWonValue?.toLocaleString() || '0'} won
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                      <Briefcase className="w-6 h-6 text-purple-600" />
+                    </div>
                   </div>
-                  <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                    <Briefcase className="w-6 h-6 text-purple-600" />
-                  </div>
-                </div>
-              </Card>
+                </Card>
               )}
 
               {/* Revenue Card - requires deal:read */}
               {hasPermission('deal:read') && (
-              <Card className="p-6 hover:shadow-lg transition-shadow">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-500">Avg Deal Value</p>
-                    <p className="text-2xl font-bold text-gray-900 mt-1">
-                      {isLoadingStats
-                        ? '...'
-                        : formatCurrency(dashboardStats?.summary?.averageDealValue || 0)}
-                    </p>
-                    {dashboardStats?.summary && (
-                      <div className="flex items-center mt-2 text-sm text-gray-600">
-                        <DollarSign className="w-4 h-4 mr-1" />
-                        <span>{dashboardStats.summary.winRate?.toFixed(1) || '0'}% win rate</span>
-                      </div>
-                    )}
+                <Card className="p-6 hover:shadow-lg transition-shadow">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-500">Avg Deal Value</p>
+                      <p className="text-2xl font-bold text-gray-900 mt-1">
+                        {isLoadingStats
+                          ? '...'
+                          : formatCurrency(dashboardStats?.summary?.averageDealValue || 0)}
+                      </p>
+                      {dashboardStats?.summary && (
+                        <div className="flex items-center mt-2 text-sm text-gray-600">
+                          <DollarSign className="w-4 h-4 mr-1" />
+                          <span>{dashboardStats.summary.winRate?.toFixed(1) || '0'}% win rate</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+                      <DollarSign className="w-6 h-6 text-orange-600" />
+                    </div>
                   </div>
-                  <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
-                    <DollarSign className="w-6 h-6 text-orange-600" />
-                  </div>
-                </div>
-              </Card>
+                </Card>
               )}
             </div>
 
@@ -538,221 +542,219 @@ const DashboardPage: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Recent Leads - requires lead:read */}
               {hasPermission('lead:read') && (
-              <Card className="lg:col-span-2">
+                <Card className="lg:col-span-2">
+                  <div className="p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 className="text-lg font-semibold text-gray-900">Recent Leads</h2>
+                      <Link
+                        to="/leads"
+                        className="text-sm text-primary-600 hover:text-primary-700 flex items-center"
+                      >
+                        View all <ChevronRight className="w-4 h-4 ml-1" />
+                      </Link>
+                    </div>
+
+                    {isLoadingLeads ? (
+                      <div className="flex justify-center py-8">
+                        <LoadingSpinner size="md" />
+                      </div>
+                    ) : recentLeads?.data && recentLeads.data.length > 0 ? (
+                      <div className="space-y-4">
+                        {recentLeads.data.map((lead: Lead) => (
+                          <div
+                            key={lead.id}
+                            className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                          >
+                            <div className="flex items-center space-x-3">
+                              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                <span className="font-medium text-blue-600">
+                                  {lead.name.charAt(0).toUpperCase()}
+                                </span>
+                              </div>
+                              <div>
+                                <p className="font-medium text-gray-900">{lead.name}</p>
+                                <p className="text-sm text-gray-500">
+                                  {lead.company || 'No company'} • {lead.email || 'No email'}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <span
+                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                  lead.status === 'new'
+                                    ? 'bg-blue-100 text-blue-800'
+                                    : lead.status === 'contacted'
+                                      ? 'bg-yellow-100 text-yellow-800'
+                                      : lead.status === 'qualified'
+                                        ? 'bg-green-100 text-green-800'
+                                        : 'bg-gray-100 text-gray-800'
+                                }`}
+                              >
+                                {lead.status}
+                              </span>
+                              <p className="text-xs text-gray-500 mt-1">
+                                {formatDate(lead.createdAt)}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-gray-500">No recent leads found</div>
+                    )}
+                  </div>
+                </Card>
+              )}
+
+              {/* Quick Stats - requires deal:read */}
+              {hasPermission('deal:read') && (
+                <Card>
+                  <div className="p-6">
+                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Stats</h2>
+
+                    {isLoadingStats ? (
+                      <div className="flex justify-center py-8">
+                        <LoadingSpinner size="md" />
+                      </div>
+                    ) : dashboardStats ? (
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                          <div>
+                            <p className="text-sm text-gray-600">Win Rate</p>
+                            <p className="text-2xl font-bold text-gray-900">
+                              {dashboardStats.summary?.winRate?.toFixed(1) || '0'}%
+                            </p>
+                          </div>
+                          <TrendingUp className="w-8 h-8 text-blue-600" />
+                        </div>
+
+                        <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                          <div>
+                            <p className="text-sm text-gray-600">Deals This Month</p>
+                            <p className="text-2xl font-bold text-gray-900">
+                              {dashboardStats.summary?.dealsThisMonth || '0'}
+                            </p>
+                          </div>
+                          <Calendar className="w-8 h-8 text-green-600" />
+                        </div>
+
+                        <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
+                          <div>
+                            <p className="text-sm text-gray-600">Overdue Deals</p>
+                            <p className="text-2xl font-bold text-gray-900">
+                              {dashboardStats.summary?.overdueDeals || '0'}
+                            </p>
+                          </div>
+                          <Clock className="w-8 h-8 text-purple-600" />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-gray-500">No stats available</div>
+                    )}
+                  </div>
+                </Card>
+              )}
+            </div>
+
+            {/* Recent Deals - requires deal:read */}
+            {hasPermission('deal:read') && (
+              <Card className="mt-6">
                 <div className="p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-semibold text-gray-900">Recent Leads</h2>
+                    <h2 className="text-lg font-semibold text-gray-900">Recent Deals</h2>
                     <Link
-                      to="/leads"
+                      to="/deals"
                       className="text-sm text-primary-600 hover:text-primary-700 flex items-center"
                     >
                       View all <ChevronRight className="w-4 h-4 ml-1" />
                     </Link>
                   </div>
 
-                  {isLoadingLeads ? (
+                  {isLoadingDeals ? (
                     <div className="flex justify-center py-8">
                       <LoadingSpinner size="md" />
                     </div>
-                  ) : recentLeads?.data && recentLeads.data.length > 0 ? (
-                    <div className="space-y-4">
-                      {recentLeads.data.map((lead: Lead) => (
-                        <div
-                          key={lead.id}
-                          className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-                        >
-                          <div className="flex items-center space-x-3">
-                            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                              <span className="font-medium text-blue-600">
-                                {lead.name.charAt(0).toUpperCase()}
-                              </span>
-                            </div>
-                            <div>
-                              <p className="font-medium text-gray-900">{lead.name}</p>
-                              <p className="text-sm text-gray-500">
-                                {lead.company || 'No company'} • {lead.email || 'No email'}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <span
-                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                lead.status === 'new'
-                                  ? 'bg-blue-100 text-blue-800'
-                                  : lead.status === 'contacted'
-                                    ? 'bg-yellow-100 text-yellow-800'
-                                    : lead.status === 'qualified'
-                                      ? 'bg-green-100 text-green-800'
-                                      : 'bg-gray-100 text-gray-800'
-                              }`}
-                            >
-                              {lead.status}
-                            </span>
-                            <p className="text-xs text-gray-500 mt-1">
-                              {formatDate(lead.createdAt)}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8 text-gray-500">No recent leads found</div>
-                  )}
-                </div>
-              </Card>
-              )}
-
-              {/* Quick Stats - requires deal:read */}
-              {hasPermission('deal:read') && (
-              <Card>
-                <div className="p-6">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Stats</h2>
-
-                  {isLoadingStats ? (
-                    <div className="flex justify-center py-8">
-                      <LoadingSpinner size="md" />
-                    </div>
-                  ) : dashboardStats ? (
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                        <div>
-                          <p className="text-sm text-gray-600">Win Rate</p>
-                          <p className="text-2xl font-bold text-gray-900">
-                            {dashboardStats.summary?.winRate?.toFixed(1) || '0'}%
-                          </p>
-                        </div>
-                        <TrendingUp className="w-8 h-8 text-blue-600" />
-                      </div>
-
-                      <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                        <div>
-                          <p className="text-sm text-gray-600">Deals This Month</p>
-                          <p className="text-2xl font-bold text-gray-900">
-                            {dashboardStats.summary?.dealsThisMonth || '0'}
-                          </p>
-                        </div>
-                        <Calendar className="w-8 h-8 text-green-600" />
-                      </div>
-
-                      <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
-                        <div>
-                          <p className="text-sm text-gray-600">Overdue Deals</p>
-                          <p className="text-2xl font-bold text-gray-900">
-                            {dashboardStats.summary?.overdueDeals || '0'}
-                          </p>
-                        </div>
-                        <Clock className="w-8 h-8 text-purple-600" />
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-center py-8 text-gray-500">No stats available</div>
-                  )}
-                </div>
-              </Card>
-              )}
-
-            </div>
-
-            {/* Recent Deals - requires deal:read */}
-            {hasPermission('deal:read') && (
-            <Card className="mt-6">
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-semibold text-gray-900">Recent Deals</h2>
-                  <Link
-                    to="/deals"
-                    className="text-sm text-primary-600 hover:text-primary-700 flex items-center"
-                  >
-                    View all <ChevronRight className="w-4 h-4 ml-1" />
-                  </Link>
-                </div>
-
-                {isLoadingDeals ? (
-                  <div className="flex justify-center py-8">
-                    <LoadingSpinner size="md" />
-                  </div>
-                ) : recentDeals?.data && recentDeals.data.length > 0 ? (
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b border-gray-200">
-                          <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900">
-                            Deal Name
-                          </th>
-                          <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900">
-                            Stage
-                          </th>
-                          <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900">
-                            Value
-                          </th>
-                          <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900">
-                            Probability
-                          </th>
-                          <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900">
-                            Expected Close
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {recentDeals.data.map((deal: Deal) => (
-                          <tr
-                            key={deal.id}
-                            className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
-                          >
-                            <td className="py-3 px-4">
-                              <div className="font-medium text-gray-900">{deal.name}</div>
-                              <div className="text-sm text-gray-500">
-                                {deal.pipelineName || 'No pipeline'}
-                              </div>
-                            </td>
-                            <td className="py-3 px-4">
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                {deal.stageName || deal.stageId}
-                              </span>
-                            </td>
-                            <td className="py-3 px-4 font-medium text-gray-900">
-                              {formatCurrency(deal.amount)}
-                            </td>
-                            <td className="py-3 px-4">
-                              <div className="flex items-center">
-                                <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                                  <div
-                                    className="bg-green-500 h-2 rounded-full"
-                                    style={{ width: `${deal.probability}%` }}
-                                  ></div>
-                                </div>
-                                <span className="text-sm text-gray-700">{deal.probability}%</span>
-                              </div>
-                            </td>
-                            <td className="py-3 px-4 text-sm text-gray-600">
-                              {deal.expectedCloseDate
-                                ? formatDate(deal.expectedCloseDate)
-                                : 'Not set'}
-                            </td>
+                  ) : recentDeals?.data && recentDeals.data.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b border-gray-200">
+                            <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900">
+                              Deal Name
+                            </th>
+                            <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900">
+                              Stage
+                            </th>
+                            <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900">
+                              Value
+                            </th>
+                            <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900">
+                              Probability
+                            </th>
+                            <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900">
+                              Expected Close
+                            </th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-gray-500">No recent deals found</div>
-                )}
-              </div>
-            </Card>
+                        </thead>
+                        <tbody>
+                          {recentDeals.data.map((deal: Deal) => (
+                            <tr
+                              key={deal.id}
+                              className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                            >
+                              <td className="py-3 px-4">
+                                <div className="font-medium text-gray-900">{deal.name}</div>
+                                <div className="text-sm text-gray-500">
+                                  {deal.pipelineName || 'No pipeline'}
+                                </div>
+                              </td>
+                              <td className="py-3 px-4">
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                  {deal.stageName || deal.stageId}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4 font-medium text-gray-900">
+                                {formatCurrency(deal.amount)}
+                              </td>
+                              <td className="py-3 px-4">
+                                <div className="flex items-center">
+                                  <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                    <div
+                                      className="bg-green-500 h-2 rounded-full"
+                                      style={{ width: `${deal.probability}%` }}
+                                    ></div>
+                                  </div>
+                                  <span className="text-sm text-gray-700">{deal.probability}%</span>
+                                </div>
+                              </td>
+                              <td className="py-3 px-4 text-sm text-gray-600">
+                                {deal.expectedCloseDate
+                                  ? formatDate(deal.expectedCloseDate)
+                                  : 'Not set'}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">No recent deals found</div>
+                  )}
+                </div>
+              </Card>
             )}
 
             {/* No permissions message */}
-            {!hasPermission('lead:read') && 
-             !hasPermission('contact:read') && 
-             !hasPermission('deal:read') && (
-              <Card className="p-8 text-center">
-                <p className="text-gray-500">You don't have permission to view dashboard data.</p>
-                <p className="text-sm text-gray-400 mt-2">
-                  Please contact your administrator for access.
-                </p>
-              </Card>
-            )}
-
+            {!hasPermission('lead:read') &&
+              !hasPermission('contact:read') &&
+              !hasPermission('deal:read') && (
+                <Card className="p-8 text-center">
+                  <p className="text-gray-500">You don't have permission to view dashboard data.</p>
+                  <p className="text-sm text-gray-400 mt-2">
+                    Please contact your administrator for access.
+                  </p>
+                </Card>
+              )}
           </div>
         </main>
       </div>

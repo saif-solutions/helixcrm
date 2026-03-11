@@ -47,7 +47,7 @@ export class SecurityTestHelpers {
   ): Promise<TestUser> {
     // Create a dummy password hash for test users
     const dummyPasswordHash = await bcrypt.hash('testpassword123', 10);
-    
+
     // Use Prisma's type-safe create with proper structure
     const user = await this.prisma.user.create({
       data: {
@@ -88,7 +88,7 @@ export class SecurityTestHelpers {
         where: { id: { in: userIds } },
       });
     }
-    
+
     if (organizationIds.length > 0) {
       await this.prisma.organization.deleteMany({
         where: { id: { in: organizationIds } },

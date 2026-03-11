@@ -227,13 +227,17 @@ export const OptimizedDialogProvider: React.FC<OptimizedDialogProviderProps> = R
       [accessibility.dialogId, accessibility.headerId, accessibility.bodyId]
     );
 
-    const memoizedRefs = React.useMemo(() => refs, 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    []);
+    const memoizedRefs = React.useMemo(
+      () => refs,
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      []
+    );
 
-    const memoizedUtils = React.useMemo(() => utils,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [utils.getTestId, utils.portalContainer]);
+    const memoizedUtils = React.useMemo(
+      () => utils,
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      [utils.getTestId, utils.portalContainer]
+    );
 
     return (
       <DialogStateContext.Provider value={memoizedState}>

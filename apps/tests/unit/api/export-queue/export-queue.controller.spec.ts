@@ -40,9 +40,7 @@ describe('ExportQueueController', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [ExportQueueController],
-      providers: [
-        { provide: ExportQueueService, useValue: mockExportQueueService },
-      ],
+      providers: [{ provide: ExportQueueService, useValue: mockExportQueueService }],
     }).compile();
 
     controller = module.get<ExportQueueController>(ExportQueueController);
@@ -89,13 +87,13 @@ describe('ExportQueueController', () => {
 
     it('should handle different export types', async () => {
       const types = ['contacts', 'deals', 'leads', 'all'] as const;
-      
+
       for (const exportType of types) {
         const dto = { ...requestDto, exportType };
         exportQueueService.requestExport.mockResolvedValue({ ...mockResult, exportType });
-        
+
         await controller.requestExport(dto);
-        
+
         expect(exportQueueService.requestExport).toHaveBeenCalledWith(
           exportType,
           requestDto.format,
@@ -107,13 +105,13 @@ describe('ExportQueueController', () => {
 
     it('should handle different formats', async () => {
       const formats = ['csv', 'excel', 'pdf'] as const;
-      
+
       for (const format of formats) {
         const dto = { ...requestDto, format };
         exportQueueService.requestExport.mockResolvedValue({ ...mockResult, format });
-        
+
         await controller.requestExport(dto);
-        
+
         expect(exportQueueService.requestExport).toHaveBeenCalledWith(
           requestDto.exportType,
           format,

@@ -40,9 +40,7 @@ export default function ForgotPasswordPage() {
       // Clear form
       setEmail('');
     } catch (err: unknown) {
-      const message = err instanceof Error 
-        ? err.message 
-        : 'Failed to send reset email';
+      const message = err instanceof Error ? err.message : 'Failed to send reset email';
       setError(message);
       showError('Reset failed', message);
     } finally {

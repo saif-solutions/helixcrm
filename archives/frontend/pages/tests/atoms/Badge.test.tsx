@@ -1,13 +1,7 @@
 // D:\Projects-In-Hand\helixcrm\apps\web\src\components\atoms\Badge\Badge.test.tsx
 import { render, screen, fireEvent } from '@testing-library/react';
 import { vi } from 'vitest';
-import {
-  Badge,
-  PrimaryBadge,
-  SuccessBadge,
-  ErrorBadge,
-  WarningBadge,
-} from './Badge';
+import { Badge, PrimaryBadge, SuccessBadge, ErrorBadge, WarningBadge } from './Badge';
 
 const getBadge = () => screen.getByTestId('badge');
 
@@ -79,22 +73,14 @@ describe('Badge Component', () => {
   });
 
   test('renders with left icon', () => {
-    render(
-      <Badge leftIcon={<span data-testid="left-icon">✓</span>}>
-        With Icon
-      </Badge>
-    );
+    render(<Badge leftIcon={<span data-testid="left-icon">✓</span>}>With Icon</Badge>);
     const icon = screen.getByTestId('left-icon');
     expect(icon).toBeInTheDocument();
     expect(icon.parentElement).toHaveClass('mr-1.5');
   });
 
   test('renders with right icon', () => {
-    render(
-      <Badge rightIcon={<span data-testid="right-icon">×</span>}>
-        With Icon
-      </Badge>
-    );
+    render(<Badge rightIcon={<span data-testid="right-icon">×</span>}>With Icon</Badge>);
     const icon = screen.getByTestId('right-icon');
     expect(icon).toBeInTheDocument();
     expect(icon.parentElement).toHaveClass('ml-1.5');
@@ -115,7 +101,7 @@ describe('Badge Component', () => {
     render(
       <Badge clickable onClick={handleClick}>
         Click Me
-      </Badge>
+      </Badge>,
     );
 
     const badge = getBadge();
@@ -130,7 +116,7 @@ describe('Badge Component', () => {
     render(
       <Badge clickable onClick={handleClick}>
         Press Me
-      </Badge>
+      </Badge>,
     );
 
     const badge = getBadge();
@@ -188,7 +174,7 @@ describe('Badge Component', () => {
         title="Badge title"
       >
         Test
-      </Badge>
+      </Badge>,
     );
 
     const badge = getBadge();
@@ -201,13 +187,9 @@ describe('Badge Component', () => {
 
   test('supports data attributes for testing/analytics', () => {
     render(
-      <Badge
-        data-testid="badge"
-        data-analytics="badge-event"
-        data-cy="badge-element"
-      >
+      <Badge data-testid="badge" data-analytics="badge-event" data-cy="badge-element">
         Analytics
-      </Badge>
+      </Badge>,
     );
 
     const badge = getBadge();

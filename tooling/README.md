@@ -1,4 +1,3 @@
-
 HelixCRM Tooling
 Tool Categories
 Lint (./lint/)

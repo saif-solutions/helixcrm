@@ -111,7 +111,9 @@ describe('DashboardController', () => {
       const error = new Error('Database error');
       dashboardService.getStats.mockRejectedValue(error);
 
-      await expect(controller.getStats(mockRequest as any)).rejects.toThrow('Database error');
+      await expect(controller.getStats(mockRequest as any)).rejects.toThrow(
+        'Database error',
+      );
     });
 
     it('should log the request', async () => {
@@ -125,7 +127,7 @@ describe('DashboardController', () => {
         expect.objectContaining({
           userId: 'user-123',
           event: 'dashboard_stats_request',
-        })
+        }),
       );
     });
 
@@ -142,7 +144,7 @@ describe('DashboardController', () => {
           dealsCount: 25,
           contactsCount: 150,
           leadsCount: 75,
-        })
+        }),
       );
     });
 
@@ -236,7 +238,7 @@ describe('DashboardController', () => {
 
       expect(loggerSpy).toHaveBeenCalledWith(
         expect.stringContaining('Dashboard health check failed'),
-        expect.any(Object)
+        expect.any(Object),
       );
     });
   });

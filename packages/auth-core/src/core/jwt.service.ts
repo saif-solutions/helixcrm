@@ -19,7 +19,7 @@ export class JwtService {
    */
   issueToken(payload: Omit<JwtPayload, 'iat' | 'exp'>): string {
     const { secret, expiresIn } = this.options;
-    
+
     return jwt.sign(payload, secret, {
       expiresIn,
       issuer: 'helixcrm',
@@ -38,7 +38,7 @@ export class JwtService {
         issuer: 'helixcrm',
         audience: 'helixcrm-api',
       }) as JwtPayload;
-      
+
       return decoded;
     } catch (error) {
       // Invalid token, expired, or verification failed

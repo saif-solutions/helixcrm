@@ -6,10 +6,10 @@ import { Dropdown, createDefaultDropdownItems } from './index';
 
 const ControlledDropdownExample = (props: Story['args'] = {}) => {
   const [open, setOpen] = React.useState(false);
-  
+
   // Destructure props outside useCallback
   const { onOpenChange } = props;
-  
+
   const handleOpenChange = React.useCallback(
     (newOpen: boolean) => {
       setOpen(newOpen);
@@ -64,9 +64,8 @@ export const ControlledDropdown: Story = {
     closeOnEscape: true,
     closeOnOutsideClick: true,
   },
-    render: (args) => <ControlledDropdownExample {...args} />,
+  render: (args) => <ControlledDropdownExample {...args} />,
 };
-
 
 export const WithGroupsProp: Story = {
   args: {
@@ -103,7 +102,6 @@ export const WithGroupsProp: Story = {
     );
   },
 };
-
 
 // ============================================================================
 // STORY UTILITIES & CONSTANTS
@@ -144,8 +142,6 @@ const DuplicateIcon = (props: React.SVGProps<SVGSVGElement> & { size?: number })
 const SettingsIcon = (props: React.SVGProps<SVGSVGElement> & { size?: number }) => (
   <IconPlaceholder color="#8B5CF6" {...props} />
 );
-
-
 
 // Storybook button with forwardRef support
 const StoryButton = React.forwardRef<
@@ -564,8 +560,6 @@ export const AnimationVariants: Story = {
 // BEHAVIOR STORIES (Explicit args to prevent control leakage)
 // ============================================================================
 
-
-
 export const PersistentDropdown: Story = {
   args: {
     persistent: true,
@@ -650,8 +644,6 @@ export const WithItemsProp: Story = {
     );
   },
 };
-
-
 
 // ============================================================================
 // REAL-WORLD EXAMPLES

@@ -57,7 +57,7 @@ describe('RequestContextMiddleware', () => {
         providedRequestId,
       );
       expect((mockRequest as any).requestId).toBe(providedRequestId);
-      
+
       // Check ALS run was called with correct store
       expect(als.run).toHaveBeenCalledWith(
         {
@@ -100,7 +100,7 @@ describe('RequestContextMiddleware', () => {
         generatedRequestId,
       );
       expect((mockRequest as any).requestId).toBe(generatedRequestId);
-      
+
       // Check ALS run was called with correct store
       expect(als.run).toHaveBeenCalledWith(
         {

@@ -1,26 +1,29 @@
 # Phase 3B - QA Execution Checklist
 
 ## âœ… Pre-QA Validation Results
+
 **Status: ALL CRITICAL TESTS PASSED** - Ready for QA Testing
 
 ### Verification Summary:
+
 - âœ… Transaction rollback safety verified
-- âœ… Token ID vs Hash mapping integrity confirmed  
+- âœ… Token ID vs Hash mapping integrity confirmed
 - âœ… All 9 bridge methods implemented
 - âœ… Database schema ready (RefreshToken table exists)
 - âœ… Phase 3C readiness complete
 - âœ… 14/14 validation tests passed
 
-## í¾¯ QA Testing Focus Areas
+## ï¿½ï¿½ï¿½ QA Testing Focus Areas
 
 ### CRITICAL PATH (Start Here):
+
 1. **Login Flow** (`POST /auth/login`)
    - Basic credentials validation
    - Token issuance (access + refresh)
    - Cookie setting
    - Last login timestamp update
 
-2. **Token Refresh Flow** (`POST /auth/refresh`)  
+2. **Token Refresh Flow** (`POST /auth/refresh`)
    - Old token invalidation
    - New token issuance
    - Version increment check
@@ -32,6 +35,7 @@
    - Audit log entry
 
 ### SECURITY TESTS:
+
 4. **Account Lockout** (6 failed attempts)
    - HTTP 423 response on lockout
    - `lockedUntil` field set
@@ -43,6 +47,7 @@
    - Old token invalidation on password change
 
 ### BUSINESS LOGIC:
+
 6. **Permission & Role Loading**
    - User permissions load correctly
    - Role-based access control works
@@ -53,13 +58,14 @@
    - Error messages remain user-friendly
    - Response formats unchanged
 
-## í´§ Test Data Setup
+## ï¿½ï¿½ï¿½ Test Data Setup
 
 ### Test Users:
-```bash
+
+````bash
 # Recommended test accounts:
 1. admin@test.com / password123 (Admin role)
-2. user@test.com / password123 (User role)  
+2. user@test.com / password123 (User role)
 3. locked@test.com / password123 (For lockout tests)
 Environment Variables:
 bash
@@ -67,7 +73,7 @@ JWT_SECRET=test-secret-change-in-production
 JWT_REFRESH_SECRET=test-refresh-secret-change
 DATABASE_URL=postgresql://user:pass@localhost:5432/helixcrm_test
 NODE_ENV=test
-í³Š Success Criteria
+ï¿½ï¿½ï¿½ Success Criteria
 Quantitative:
 0 TypeScript compilation errors
 
@@ -86,7 +92,7 @@ Error messages remain helpful
 
 Audit trails complete
 
-íº¨ Risk Mitigation
+ï¿½ï¿½ï¿½ Risk Mitigation
 If Tests Fail:
 Minor issues: Patch bridge implementations
 
@@ -99,12 +105,12 @@ bash
 # 1. Revert to git tag
 git checkout phase-2-auth-core-integration-complete
 
-# 2. Remove auth-core package  
+# 2. Remove auth-core package
 npm uninstall @helixcrm/auth-core
 
 # 3. Verify restoration
 npm run start:dev
-í³ž Escalation Paths
+ï¿½ï¿½ï¿½ Escalation Paths
 Technical Issues:
 Check docs/auth-core-integration.md
 
@@ -146,7 +152,7 @@ Confidence: High (All PM recommendations validated)
 
 Next Phase: 3C - Package Publication
 
-## í´’ Final Safety Gate (PM Recommendation)
+## ï¿½ï¿½ï¿½ Final Safety Gate (PM Recommendation)
 
 Before executing full QA checklist, run the **15-minute entry gate**:
 
@@ -175,3 +181,4 @@ Ensure no port conflicts (3000, 5432)
 
 If Gate Passes:
 Proceed immediately to full QA checklist execution.
+````

@@ -17,20 +17,20 @@ export const prisma = {
   },
 };
 
-export async function withTestTransaction<T>(
-  testFn: (tx: any) => Promise<T>
-): Promise<T> {
+export async function withTestTransaction<T>(testFn: (tx: any) => Promise<T>): Promise<T> {
   let result: T;
-  
-  await prisma.$transaction(async (tx) => {
-    result = await testFn(tx);
-    throw new Error('__TEST_ROLLBACK__');
-  }).catch((err) => {
-    if (err.message !== '__TEST_ROLLBACK__') {
-      throw err;
-    }
-  });
-  
+
+  await prisma
+    .$transaction(async (tx) => {
+      result = await testFn(tx);
+      throw new Error('__TEST_ROLLBACK__');
+    })
+    .catch((err) => {
+      if (err.message !== '__TEST_ROLLBACK__') {
+        throw err;
+      }
+    });
+
   return result!;
 }
 

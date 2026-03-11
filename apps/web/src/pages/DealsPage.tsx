@@ -117,7 +117,7 @@ const DealsPage: React.FC = () => {
 
   // Phase 3.4: Create simplified deal mutation
   const createDealMutation = useApiMutation<Deal, Error, CreateDealSimpleDto>(
-        (data: CreateDealSimpleDto) => {
+    (data: CreateDealSimpleDto) => {
       // Convert to Record for API call
       const apiData: Record<string, unknown> = {
         name: data.name,
@@ -132,7 +132,7 @@ const DealsPage: React.FC = () => {
         expectedCloseDate: data.expectedCloseDate,
         description: data.description,
       };
-        return DealsAPI.createSimple(apiData as unknown as CreateDealSimpleDto);
+      return DealsAPI.createSimple(apiData as unknown as CreateDealSimpleDto);
     },
     {
       onSuccess: () => {
@@ -152,7 +152,8 @@ const DealsPage: React.FC = () => {
 
   // Update deal mutation
   const updateDealMutation = useApiMutation<Deal, Error, { id: string; data: UpdateDealDto }>(
-    ({ id, data }: { id: string; data: UpdateDealDto }) => DealsAPI.update(id, data as unknown as Record<string, unknown>),
+    ({ id, data }: { id: string; data: UpdateDealDto }) =>
+      DealsAPI.update(id, data as unknown as Record<string, unknown>),
     {
       onSuccess: () => {
         success('Deal Updated', 'Deal has been updated successfully');
@@ -190,7 +191,7 @@ const DealsPage: React.FC = () => {
     }
   }, [error, showError]);
 
-    // Memoize deals data to prevent unnecessary recalculations
+  // Memoize deals data to prevent unnecessary recalculations
   const dealsData = useMemo(() => {
     const data = dealsResponse?.data || [];
     const meta = dealsResponse?.meta;
@@ -254,7 +255,10 @@ const DealsPage: React.FC = () => {
     });
   };
 
-    const handleFormChange = (field: keyof CreateDealSimpleDto, value: string | number | boolean | undefined) => {
+  const handleFormChange = (
+    field: keyof CreateDealSimpleDto,
+    value: string | number | boolean | undefined
+  ) => {
     // Handle different field types appropriately
     setFormData((prev) => {
       const newData = { ...prev, [field]: value };
@@ -272,7 +276,7 @@ const DealsPage: React.FC = () => {
       if (field === 'amount' && typeof value === 'number') {
         newData.amount = value;
       }
-      
+
       if (field === 'name' && typeof value === 'string') {
         newData.name = value;
       }
@@ -505,10 +509,10 @@ const DealsPage: React.FC = () => {
             title="No deals yet"
             message={
               hasPermission('deal:write')
-                ? "Get started by creating your first deal using the Phase 3.4 simplified API"
-                : "No deals available"
+                ? 'Get started by creating your first deal using the Phase 3.4 simplified API'
+                : 'No deals available'
             }
-            actionLabel={hasPermission('deal:write') ? "Create First Deal" : undefined}
+            actionLabel={hasPermission('deal:write') ? 'Create First Deal' : undefined}
             onAction={hasPermission('deal:write') ? () => setShowCreateDialog(true) : undefined}
           />
         ) : (
@@ -609,7 +613,7 @@ const DealsPage: React.FC = () => {
                                 Edit
                               </Button>
                             )}
-                            
+
                             {hasPermission('deal:delete') && (
                               <Button
                                 variant="ghost"
@@ -624,7 +628,7 @@ const DealsPage: React.FC = () => {
                                 Delete
                               </Button>
                             )}
-                            
+
                             {!hasPermission('deal:write') && !hasPermission('deal:delete') && (
                               <span className="text-sm text-gray-400">View only</span>
                             )}

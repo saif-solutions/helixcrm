@@ -4,7 +4,7 @@ const prisma = new PrismaClient();
 
 async function main() {
   console.log('Starting AuditLog schema enhancements...');
-  
+
   // Check current structure
   const tableInfo = await prisma.$queryRaw`
     SELECT column_name, data_type 
@@ -13,10 +13,10 @@ async function main() {
     AND table_schema = 'public'
     ORDER BY ordinal_position;
   `;
-  
+
   console.log('Current AuditLog columns:');
   console.table(tableInfo);
-  
+
   // Add new columns if they don't exist
   try {
     await prisma.$executeRaw`
@@ -32,12 +32,12 @@ async function main() {
       ALTER TABLE "AuditLog" 
       ADD COLUMN IF NOT EXISTS "requestId" VARCHAR(255);
     `;
-    
+
     console.log('✅ Added new columns to AuditLog table');
   } catch (error) {
     console.error('❌ Error adding columns:', error);
   }
-  
+
   // Create indexes if they don't exist
   try {
     await prisma.$executeRaw`
@@ -50,12 +50,12 @@ async function main() {
       -- Index for requestId
       CREATE INDEX IF NOT EXISTS "AuditLog_requestId_idx" ON "AuditLog"("requestId");
     `;
-    
+
     console.log('✅ Created indexes for AuditLog table');
   } catch (error) {
     console.error('❌ Error creating indexes:', error);
   }
-  
+
   // Update existing records with default values
   try {
     await prisma.$executeRaw`
@@ -69,12 +69,12 @@ async function main() {
       SET "severity" = 'LOW' 
       WHERE "severity" IS NULL;
     `;
-    
+
     console.log('✅ Updated existing records with default values');
   } catch (error) {
     console.error('❌ Error updating records:', error);
   }
-  
+
   console.log('✅ AuditLog schema enhancements completed!');
 }
 

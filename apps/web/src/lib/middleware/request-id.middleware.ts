@@ -15,7 +15,7 @@ export interface RequestIdConfig {
 const defaultConfig: Required<RequestIdConfig> = {
   enabled: true,
   headerName: 'X-Request-ID',
-  logToConsole: process.env.NODE_ENV === 'development'
+  logToConsole: process.env.NODE_ENV === 'development',
 };
 
 /**
@@ -46,11 +46,11 @@ export function setRequestId(id: string): void {
  * Axios interceptor to add request ID to all outgoing requests
  */
 export function requestIdInterceptor(
-  axiosInstance: AxiosInstance, 
+  axiosInstance: AxiosInstance,
   config: RequestIdConfig = {}
 ): AxiosInstance {
   const finalConfig = { ...defaultConfig, ...config };
-  
+
   if (!finalConfig.enabled) {
     return axiosInstance;
   }
@@ -59,17 +59,17 @@ export function requestIdInterceptor(
   axiosInstance.interceptors.request.use(
     (requestConfig: InternalAxiosRequestConfig): InternalAxiosRequestConfig => {
       const requestId = getRequestId();
-      
+
       // Add request ID to headers
       requestConfig.headers[finalConfig.headerName] = requestId;
-      
+
       // Log to console in development
       if (finalConfig.logToConsole) {
         const method = requestConfig.method?.toUpperCase() || 'UNKNOWN';
         const url = requestConfig.url || '';
-        console.log(`🔷 [Req:${requestId.substring(0,8)}] ${method} ${url}`);
+        console.log(`🔷 [Req:${requestId.substring(0, 8)}] ${method} ${url}`);
       }
-      
+
       return requestConfig;
     },
     (error: unknown) => {
@@ -86,7 +86,7 @@ export function requestIdInterceptor(
       if (serverRequestId && typeof serverRequestId === 'string') {
         setRequestId(serverRequestId);
       }
-      
+
       // Reset for next request
       resetRequestId();
       return response;
@@ -106,6 +106,6 @@ export function requestIdInterceptor(
 export function useRequestId(): { requestId: string | null; generateNew: () => void } {
   return {
     requestId: currentRequestId,
-    generateNew: resetRequestId
+    generateNew: resetRequestId,
   };
 }

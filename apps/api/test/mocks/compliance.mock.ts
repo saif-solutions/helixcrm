@@ -17,9 +17,13 @@ export const mockComplianceSchedulerService = {
 
 // Mock the entire compliance module
 jest.mock('../../src/shared/compliance/soc2/soc2-evidence.service', () => ({
-  Soc2EvidenceService: jest.fn().mockImplementation(() => mockSoc2EvidenceService),
+  Soc2EvidenceService: jest
+    .fn()
+    .mockImplementation(() => mockSoc2EvidenceService),
 }));
 
 jest.mock('../../src/shared/compliance/compliance-scheduler.service', () => ({
-  ComplianceSchedulerService: jest.fn().mockImplementation(() => mockComplianceSchedulerService),
+  ComplianceSchedulerService: jest
+    .fn()
+    .mockImplementation(() => mockComplianceSchedulerService),
 }));

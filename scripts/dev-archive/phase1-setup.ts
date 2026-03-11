@@ -5,15 +5,15 @@ import { execSync } from 'child_process';
 import { existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
 
-console.log('Ì∫Ä Setting up Phase 1 Development Environment');
+console.log('ÔøΩÔøΩÔøΩ Setting up Phase 1 Development Environment');
 
 // 1. Install Phase 1 specific dependencies
-console.log('Ì≥¶ Installing security and monitoring dependencies...');
+console.log('ÔøΩÔøΩÔøΩ Installing security and monitoring dependencies...');
 execSync('npm install helmet cors csurf winston', { stdio: 'inherit' });
 execSync('npm install -D @types/helmet @types/cors @types/csurf', { stdio: 'inherit' });
 
 // 2. Setup structured logging directories
-console.log('Ì≥ù Configuring structured logging...');
+console.log('ÔøΩÔøΩÔøΩ Configuring structured logging...');
 const logsDir = join(__dirname, '../../logs/phase1');
 if (!existsSync(logsDir)) {
   mkdirSync(logsDir, { recursive: true });

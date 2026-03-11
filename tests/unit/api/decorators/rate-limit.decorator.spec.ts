@@ -22,10 +22,10 @@ describe('RateLimit Decorator', () => {
       points: 10,
       duration: 60,
     };
-    
+
     // Act
     const result = RateLimit(options);
-    
+
     // Assert
     expect(SetMetadata).toHaveBeenCalledWith('rate-limit', options);
     expect(result).toEqual({ key: 'rate-limit', value: options });
@@ -37,10 +37,10 @@ describe('RateLimit Decorator', () => {
       points: 100,
       duration: 3600,
     };
-    
+
     // Act
     const result = RateLimit(options);
-    
+
     // Assert
     expect(SetMetadata).toHaveBeenCalledWith('rate-limit', options);
     expect(result).toEqual({ key: 'rate-limit', value: options });
@@ -52,10 +52,10 @@ describe('RateLimit Decorator', () => {
       points: 0,
       duration: 60,
     };
-    
+
     // Act
     const result = RateLimit(options);
-    
+
     // Assert
     expect(SetMetadata).toHaveBeenCalledWith('rate-limit', options);
     expect(result).toEqual({ key: 'rate-limit', value: options });
@@ -67,10 +67,10 @@ describe('RateLimit Decorator', () => {
       points: 10,
       duration: 0,
     };
-    
+
     // Act
     const result = RateLimit(options);
-    
+
     // Assert
     expect(SetMetadata).toHaveBeenCalledWith('rate-limit', options);
     expect(result).toEqual({ key: 'rate-limit', value: options });
@@ -82,10 +82,10 @@ describe('RateLimit Decorator', () => {
       points: 10000,
       duration: 86400, // 24 hours in seconds
     };
-    
+
     // Act
     const result = RateLimit(options);
-    
+
     // Assert
     expect(SetMetadata).toHaveBeenCalledWith('rate-limit', options);
     expect(result).toEqual({ key: 'rate-limit', value: options });

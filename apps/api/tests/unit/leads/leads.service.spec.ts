@@ -3,7 +3,11 @@ import { LeadsService } from '../../../src/modules/leads/leads.service';
 import { LeadRepository } from '../../../src/modules/leads/repositories/lead.repository';
 import { TenantContextService } from '../../../src/shared/tenant/context/tenant-context.service';
 import { AppLogger } from '../../../src/shared/logging/logger.service';
-import { NotFoundException, ForbiddenException, ConflictException } from '@nestjs/common';
+import {
+  NotFoundException,
+  ForbiddenException,
+  ConflictException,
+} from '@nestjs/common';
 import { LeadStatus } from '@prisma/client';
 
 // Mock implementations
@@ -76,39 +80,41 @@ describe('LeadsService', () => {
 
     const mockLead = createMockLead();
 
-it('should successfully create a lead', async () => {
-  repository.create.mockResolvedValue(mockLead);
+    it('should successfully create a lead', async () => {
+      repository.create.mockResolvedValue(mockLead);
 
-  const result = await service.create(createLeadDto, 'user-123');
+      const result = await service.create(createLeadDto, 'user-123');
 
-  expect(result).toEqual(mockLead);
-  
-  // ✅ FIX: Remove 'source' from the expected call since we're using metadata
-  expect(repository.create).toHaveBeenCalledWith({
-    name: createLeadDto.name,
-    email: createLeadDto.email,
-    phone: createLeadDto.phone,
-    company: createLeadDto.company,
-    status: LeadStatus.new,
-    metadata: { source: 'website' },
-  });
-  expect(mockLogger.log).toHaveBeenCalled();
-});
+      expect(result).toEqual(mockLead);
+
+      // ✅ FIX: Remove 'source' from the expected call since we're using metadata
+      expect(repository.create).toHaveBeenCalledWith({
+        name: createLeadDto.name,
+        email: createLeadDto.email,
+        phone: createLeadDto.phone,
+        company: createLeadDto.company,
+        status: LeadStatus.new,
+        metadata: { source: 'website' },
+      });
+      expect(mockLogger.log).toHaveBeenCalled();
+    });
 
     it('should throw ConflictException on duplicate email/phone', async () => {
       const error = { code: 'P2002' };
       repository.create.mockRejectedValue(error);
 
-      await expect(service.create(createLeadDto, 'user-123'))
-        .rejects.toThrow(ConflictException);
+      await expect(service.create(createLeadDto, 'user-123')).rejects.toThrow(
+        ConflictException,
+      );
     });
 
     it('should throw NotFoundException on referenced entity not found', async () => {
       const error = { code: 'P2025' };
       repository.create.mockRejectedValue(error);
 
-      await expect(service.create(createLeadDto, 'user-123'))
-        .rejects.toThrow(NotFoundException);
+      await expect(service.create(createLeadDto, 'user-123')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -152,18 +158,22 @@ it('should successfully create a lead', async () => {
     });
 
     it('should throw ForbiddenException if lead belongs to different tenant', async () => {
-      const wrongTenantLead = createMockLead({ organizationId: 'different-org' });
+      const wrongTenantLead = createMockLead({
+        organizationId: 'different-org',
+      });
       repository.findByIdOrThrow.mockResolvedValue(wrongTenantLead);
 
-      await expect(service.findOne('lead-123'))
-        .rejects.toThrow(ForbiddenException);
+      await expect(service.findOne('lead-123')).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should throw NotFoundException if lead not found', async () => {
       repository.findByIdOrThrow.mockRejectedValue(new NotFoundException());
 
-      await expect(service.findOne('lead-123'))
-        .rejects.toThrow(NotFoundException);
+      await expect(service.findOne('lead-123')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -183,7 +193,11 @@ it('should successfully create a lead', async () => {
     it('should successfully update a lead', async () => {
       repository.update.mockResolvedValue(updatedLead);
 
-      const result = await service.update('lead-123', updateLeadDto, 'user-123');
+      const result = await service.update(
+        'lead-123',
+        updateLeadDto,
+        'user-123',
+      );
 
       expect(result).toEqual(updatedLead);
       expect(service.findOne).toHaveBeenCalledWith('lead-123');
@@ -203,14 +217,20 @@ it('should successfully create a lead', async () => {
     });
 
     it('should successfully soft delete a lead', async () => {
-      const deletedLead = createMockLead({ deletedAt: new Date(), deletedBy: 'user-123' });
+      const deletedLead = createMockLead({
+        deletedAt: new Date(),
+        deletedBy: 'user-123',
+      });
       repository.softDelete.mockResolvedValue(deletedLead);
 
       const result = await service.remove('lead-123', 'user-123');
 
       expect(result).toEqual(deletedLead);
       expect(service.findOne).toHaveBeenCalledWith('lead-123');
-      expect(repository.softDelete).toHaveBeenCalledWith('lead-123', 'user-123');
+      expect(repository.softDelete).toHaveBeenCalledWith(
+        'lead-123',
+        'user-123',
+      );
       expect(mockLogger.log).toHaveBeenCalled();
     });
   });

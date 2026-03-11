@@ -117,9 +117,10 @@ describe('AuthService', () => {
         lockedUntil: new Date(),
       });
 
-      await expect(service.validateUser('test@example.com', 'password', {}))
-        .rejects.toThrow(ForbiddenException);
-      
+      await expect(service.validateUser('test@example.com', 'password', {})).rejects.toThrow(
+        ForbiddenException,
+      );
+
       expect(lockoutService.isAccountLocked).toHaveBeenCalledWith('test@example.com');
     });
 
@@ -149,10 +150,12 @@ describe('AuthService', () => {
       authCore.password.verify.mockResolvedValue(true);
 
       const result = await service.validateUser('test@example.com', 'correct-password', {});
-      expect(result).toEqual(expect.objectContaining({
-        id: mockUser.id,
-        email: mockUser.email,
-      }));
+      expect(result).toEqual(
+        expect.objectContaining({
+          id: mockUser.id,
+          email: mockUser.email,
+        }),
+      );
       expect(lockoutService.resetFailedAttempts).toHaveBeenCalledWith(mockUser.id);
     });
   });
@@ -201,14 +204,13 @@ describe('AuthService', () => {
     it('should handle errors during login', async () => {
       authCore.authCore.issueAccessToken.mockRejectedValue(new Error('Token generation failed'));
 
-      await expect(service.login(mockUser, mockRes, {}))
-        .rejects.toThrow('Token generation failed');
-      
+      await expect(service.login(mockUser, mockRes, {})).rejects.toThrow('Token generation failed');
+
       expect(auditLog.logAuthEvent).toHaveBeenCalledWith(
         expect.objectContaining({
           action: 'LOGIN_FAILURE',
           actorEmail: mockUser.email,
-        })
+        }),
       );
     });
   });
@@ -225,14 +227,13 @@ describe('AuthService', () => {
     it('should throw ConflictException if user already exists', async () => {
       prisma.user.findUnique.mockResolvedValue({ id: 'existing-user' });
 
-      await expect(service.register(registerDto, {}))
-        .rejects.toThrow(ConflictException);
+      await expect(service.register(registerDto, {})).rejects.toThrow(ConflictException);
     });
 
     it('should successfully register new user', async () => {
       prisma.user.findUnique.mockResolvedValue(null);
       authCore.password.hash.mockResolvedValue('hashed-password');
-      
+
       const mockOrg = { id: 'org-123', name: 'New Org' };
       prisma.organization.create.mockResolvedValue(mockOrg);
 
@@ -256,7 +257,10 @@ describe('AuthService', () => {
       expect(prisma.organization.create).toHaveBeenCalled();
       expect(prisma.user.create).toHaveBeenCalled();
       expect(service['createDefaultRolesForOrganization']).toHaveBeenCalledWith(mockOrg.id);
-      expect(service['assignSystemAdminRoleToUser']).toHaveBeenCalledWith(mockNewUser.id, mockOrg.id);
+      expect(service['assignSystemAdminRoleToUser']).toHaveBeenCalledWith(
+        mockNewUser.id,
+        mockOrg.id,
+      );
       expect(auditLog.logWithRequest).toHaveBeenCalled();
     });
   });
@@ -288,8 +292,7 @@ describe('AuthService', () => {
     it('should throw BadRequestException if user not found', async () => {
       prisma.user.findUnique.mockResolvedValue(null);
 
-      await expect(service.logout('user-123', {}, {}))
-        .rejects.toThrow('User not found');
+      await expect(service.logout('user-123', {}, {})).rejects.toThrow('User not found');
     });
   });
 });

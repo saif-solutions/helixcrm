@@ -6,7 +6,12 @@ import { PermissionContextService } from '../../../src/shared/permissions/contex
 import { AuditLogService } from '../../../src/shared/audit-log/audit-log.service';
 import { PrismaService } from '../../../src/shared/prisma/prisma.service';
 import { getQueueToken } from '@nestjs/bullmq';
-import { ForbiddenException, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  NotFoundException,
+  ConflictException,
+  BadRequestException,
+} from '@nestjs/common';
 
 // Mock implementations
 const mockPrismaService = {
@@ -95,10 +100,10 @@ describe('WebhooksService', () => {
   beforeEach(async () => {
     // Reset all mocks
     jest.clearAllMocks();
-    
+
     // Set default permissions to true
     mockPermissionContext.hasPermission.mockReturnValue(true);
-    
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         WebhooksService,
@@ -181,9 +186,11 @@ describe('WebhooksService', () => {
 
       await service.createWebhook(dtoWithoutSecret);
 
-      expect(webhookRepository.create).toHaveBeenCalledWith(expect.objectContaining({
-        secret: expect.any(String),
-      }));
+      expect(webhookRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          secret: expect.any(String),
+        }),
+      );
     });
 
     it('should use default values for optional fields', async () => {
@@ -198,12 +205,14 @@ describe('WebhooksService', () => {
 
       await service.createWebhook(minimalDto);
 
-      expect(webhookRepository.create).toHaveBeenCalledWith(expect.objectContaining({
-        isActive: true,
-        retryCount: 3,
-        timeoutMs: 10000,
-        headers: {},
-      }));
+      expect(webhookRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          isActive: true,
+          retryCount: 3,
+          timeoutMs: 10000,
+          headers: {},
+        }),
+      );
     });
 
     it('should throw ConflictException if webhook name already exists', async () => {
@@ -282,13 +291,20 @@ describe('WebhooksService', () => {
     it('should throw NotFoundException if webhook not found', async () => {
       webhookRepository.findById.mockResolvedValue(null);
 
-      await expect(service.updateWebhook('webhook-123', updateDto)).rejects.toThrow(NotFoundException);
+      await expect(service.updateWebhook('webhook-123', updateDto)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw ConflictException if new name already exists', async () => {
-      webhookRepository.findByName.mockResolvedValue({ id: 'another-webhook', name: 'Updated Webhook' });
+      webhookRepository.findByName.mockResolvedValue({
+        id: 'another-webhook',
+        name: 'Updated Webhook',
+      });
 
-      await expect(service.updateWebhook('webhook-123', { name: 'Updated Webhook' })).rejects.toThrow(ConflictException);
+      await expect(
+        service.updateWebhook('webhook-123', { name: 'Updated Webhook' }),
+      ).rejects.toThrow(ConflictException);
     });
 
     it('should validate URL if provided', async () => {
@@ -301,7 +317,9 @@ describe('WebhooksService', () => {
     });
 
     it('should throw BadRequestException if URL is invalid', async () => {
-      await expect(service.updateWebhook('webhook-123', { url: 'invalid' })).rejects.toThrow(BadRequestException);
+      await expect(service.updateWebhook('webhook-123', { url: 'invalid' })).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -452,19 +470,25 @@ describe('WebhooksService', () => {
     it('should throw NotFoundException if webhook not found', async () => {
       webhookRepository.findById.mockResolvedValue(null);
 
-      await expect(service.triggerWebhook('webhook-123', payload)).rejects.toThrow(NotFoundException);
+      await expect(service.triggerWebhook('webhook-123', payload)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw ConflictException if webhook is inactive', async () => {
       webhookRepository.findById.mockResolvedValue({ ...mockWebhook, isActive: false });
 
-      await expect(service.triggerWebhook('webhook-123', payload)).rejects.toThrow(ConflictException);
+      await expect(service.triggerWebhook('webhook-123', payload)).rejects.toThrow(
+        ConflictException,
+      );
     });
 
     it('should throw BadRequestException if event not subscribed', async () => {
       webhookRepository.findById.mockResolvedValue({ ...mockWebhook, events: ['different.event'] });
 
-      await expect(service.triggerWebhook('webhook-123', payload)).rejects.toThrow(BadRequestException);
+      await expect(service.triggerWebhook('webhook-123', payload)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should check permission before triggering', async () => {
@@ -506,7 +530,9 @@ describe('WebhooksService', () => {
     it('should throw NotFoundException if webhook not found', async () => {
       webhookRepository.findById.mockResolvedValue(null);
 
-      await expect(service.getDeliveryHistory('webhook-123', 1, 10)).rejects.toThrow(NotFoundException);
+      await expect(service.getDeliveryHistory('webhook-123', 1, 10)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should check permission before fetching', async () => {
@@ -549,7 +575,11 @@ describe('WebhooksService', () => {
     });
 
     it('should successfully retry a failed delivery', async () => {
-      webhookRepository.updateDelivery.mockResolvedValue({ ...mockDelivery, status: 'pending', retryCount: 3 });
+      webhookRepository.updateDelivery.mockResolvedValue({
+        ...mockDelivery,
+        status: 'pending',
+        retryCount: 3,
+      });
 
       const result = await service.retryDelivery('delivery-123');
 

@@ -4,7 +4,12 @@ import { jest } from '@jest/globals';
 // Simple mock queue object with proper type assertions
 export const mockQueue = {
   add: jest.fn().mockResolvedValue({ id: 'mock-job-id' } as never),
-  addBulk: jest.fn().mockResolvedValue([{ id: 'mock-job-id-1' }, { id: 'mock-job-id-2' }] as never),
+  addBulk: jest
+    .fn()
+    .mockResolvedValue([
+      { id: 'mock-job-id-1' },
+      { id: 'mock-job-id-2' },
+    ] as never),
   getJob: jest.fn().mockResolvedValue(null as never),
   getJobs: jest.fn().mockResolvedValue([] as never),
   getCompleted: jest.fn().mockResolvedValue([] as never),

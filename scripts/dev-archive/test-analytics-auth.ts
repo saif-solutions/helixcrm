@@ -35,7 +35,7 @@ async function testAnalyticsWithAuth() {
 
   for (const endpoint of endpoints) {
     console.log(`Testing: ${endpoint.name}...`);
-    
+
     try {
       const res = await request(API_URL)
         .get(endpoint.path)
@@ -43,12 +43,14 @@ async function testAnalyticsWithAuth() {
         .set('Accept', 'application/json');
 
       console.log(`  Status: ${res.status}`);
-      
+
       if (res.status === 200) {
         console.log(`  ✅ ${endpoint.name} - SUCCESS`);
         console.log(`  Response keys: ${Object.keys(res.body).join(', ')}\n`);
       } else if (res.status === 403) {
-        console.log(`  ⚠️  ${endpoint.name} - Permission denied (missing analytics.read permission)\n`);
+        console.log(
+          `  ⚠️  ${endpoint.name} - Permission denied (missing analytics.read permission)\n`,
+        );
       } else {
         console.log(`  ❌ ${endpoint.name} - Unexpected status: ${res.status}`);
         console.log(`  Response: ${JSON.stringify(res.body, null, 2)}\n`);

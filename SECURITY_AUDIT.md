@@ -1,4 +1,5 @@
 # Security Audit Results
+
 Date: March 5, 2026
 
 This document summarizes results from `npm audit` for the HelixCRM project.
@@ -8,6 +9,7 @@ This document summarizes results from `npm audit` for the HelixCRM project.
 # Backend (apps/api)
 
 ## Runtime Dependencies
+
 No critical runtime vulnerabilities affecting production execution were identified.
 
 ## Development Dependencies

@@ -351,14 +351,8 @@ describe('WebhooksService', () => {
 
       const result = await service.getDeliveryHistory('webhook-id', 1, 10);
 
-      expect(webhookRepository.findDeliveries).toHaveBeenCalledWith(
-        'webhook-id',
-        1,
-        10,
-      );
-      expect(webhookRepository.countDeliveries).toHaveBeenCalledWith(
-        'webhook-id',
-      );
+      expect(webhookRepository.findDeliveries).toHaveBeenCalledWith('webhook-id', 1, 10);
+      expect(webhookRepository.countDeliveries).toHaveBeenCalledWith('webhook-id');
       expect(result.data).toHaveLength(2);
       expect(result.meta.total).toBe(2);
     });
@@ -406,9 +400,7 @@ describe('WebhooksService', () => {
 
       const result = await service.getDeliveryStatus('delivery-id');
 
-      expect(webhookRepository.findDeliveryById).toHaveBeenCalledWith(
-        'delivery-id',
-      );
+      expect(webhookRepository.findDeliveryById).toHaveBeenCalledWith('delivery-id');
       expect(result?.id).toBe('delivery-id');
       expect(result?.webhook).toBeDefined();
       expect(result?.webhook).not.toHaveProperty('secret');

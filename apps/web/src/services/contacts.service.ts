@@ -22,7 +22,11 @@ export type UpdateContactDto = components['schemas']['UpdateContactDto'];
 
 export const contactsService = {
   // Get all contacts with pagination
-  getAll: async (params?: { page?: number; limit?: number; search?: string }): Promise<Contact[]> => {
+  getAll: async (params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+  }): Promise<Contact[]> => {
     const response = await apiClient.get<{ data: Contact[] }>('/contacts', { params });
     return response.data;
   },

@@ -65,27 +65,27 @@ export const AuthService = {
       return response;
     } catch (error: unknown) {
       console.error('Login failed:', error);
-      
+
       // Check if it's an API error with status
       const apiError = error as { status?: number; message?: string };
-      
+
       // Specific error mapping
       if (apiError.status === 401) {
-        throw { 
-          message: 'Invalid email or password', 
+        throw {
+          message: 'Invalid email or password',
           code: 'INVALID_CREDENTIALS',
-          status: 401 
+          status: 401,
         };
       }
-      
+
       if (apiError.status === 0) {
-        throw { 
+        throw {
           message: 'Cannot connect to server. Please check your connection.',
           code: 'NETWORK_ERROR',
-          status: 0 
+          status: 0,
         };
       }
-      
+
       throw error;
     }
   },
@@ -155,22 +155,22 @@ export const AuthService = {
    */
   hasPermission(permission: string): boolean {
     const { user } = useAuthStore.getState();
-    
+
     if (!user) return false;
-    
+
     // Check roles array for permissions
     const roles = user.roles || ['user'];
-    
+
     // In a real implementation, this would check against user.permissions array
     // For now, return based on roles
     if (roles.includes('admin')) {
       return true;
     }
-    
+
     if (roles.includes('manager')) {
       return ['read', 'write'].includes(permission);
     }
-    
+
     // Default to 'user' role
     return permission === 'read';
   },

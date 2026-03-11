@@ -71,17 +71,16 @@ export const SelectMenu: React.FC<SelectMenuProps> = ({
     if (!isOpen || !searchable || !searchInputRef.current) {
       return;
     }
-    
+
     const timer = setTimeout(() => {
       searchInputRef.current?.focus();
     }, 10);
-    
+
     return () => clearTimeout(timer);
   }, [isOpen, searchable, searchInputRef]);
 
-    // _options is intentionally unused - we use filteredOptions instead
+  // _options is intentionally unused - we use filteredOptions instead
   void _options;
-
 
   // ✅ FIXED: Handle virtualization with proper memoization
   const visibleOptions = React.useMemo(() => {
@@ -364,7 +363,7 @@ export const SelectMenu: React.FC<SelectMenuProps> = ({
                               onClick={(e) => {
                                 e.stopPropagation();
                                 if (!isOptionDisabled) {
-                                  handleOptionClick(option, e as unknown as React.MouseEvent)
+                                  handleOptionClick(option, e as unknown as React.MouseEvent);
                                 }
                               }}
                               readOnly

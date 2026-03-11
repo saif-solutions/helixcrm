@@ -61,14 +61,18 @@ describe('TenantGuard', () => {
     it('should throw ForbiddenException if no user found', async () => {
       mockRequest.user = null;
 
-      await expect(guard.canActivate(mockContext)).rejects.toThrow(ForbiddenException);
+      await expect(guard.canActivate(mockContext)).rejects.toThrow(
+        ForbiddenException,
+      );
       expect(setTenantId).not.toHaveBeenCalled();
     });
 
     it('should throw ForbiddenException if user missing organization ID', async () => {
       mockRequest.user = { sub: 'user-123' }; // No org or organizationId
 
-      await expect(guard.canActivate(mockContext)).rejects.toThrow(ForbiddenException);
+      await expect(guard.canActivate(mockContext)).rejects.toThrow(
+        ForbiddenException,
+      );
       expect(setTenantId).not.toHaveBeenCalled();
     });
 
@@ -109,7 +113,7 @@ describe('TenantGuard', () => {
       await guard.canActivate(mockContext);
 
       expect(debugSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Skipping TenantGuard for public route')
+        expect.stringContaining('Skipping TenantGuard for public route'),
       );
     });
 
@@ -120,10 +124,9 @@ describe('TenantGuard', () => {
       try {
         await guard.canActivate(mockContext);
       } catch (error) {
-        expect(errorSpy).toHaveBeenCalledWith(
-          'User missing organization ID',
-          { userId: 'user-123' }
-        );
+        expect(errorSpy).toHaveBeenCalledWith('User missing organization ID', {
+          userId: 'user-123',
+        });
       }
     });
   });

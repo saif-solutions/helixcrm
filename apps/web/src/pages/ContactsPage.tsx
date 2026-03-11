@@ -46,7 +46,7 @@ export const ContactsPage: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalContacts, setTotalContacts] = useState(0);
   const itemsPerPage = 20;
- const { hasPermission } = usePermission();
+  const { hasPermission } = usePermission();
   // Form state
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<FormMode>('create');
@@ -75,44 +75,46 @@ export const ContactsPage: React.FC = () => {
   );
 
   // Phase 3.4: Update contact mutation
-  const updateContactMutation = useApiMutation<Contact, Error, { id: string; data: UpdateContactDto }>(
-    ({ id, data }: { id: string; data: UpdateContactDto }) => ContactsAPI.update(id, data),
-    {
-      onSuccess: (updatedContact: Contact) => {
-        success(
-          'Contact Updated',
-          `${updatedContact.firstName} ${updatedContact.lastName} has been updated`
-        );
-        setIsFormOpen(false);
-        setEditingContact(null);
-        fetchContacts();
-      },
-      onError: (error: Error) => {
-        showError('Update Failed', error.message || 'Failed to update contact');
-      },
-    }
-  );
+  const updateContactMutation = useApiMutation<
+    Contact,
+    Error,
+    { id: string; data: UpdateContactDto }
+  >(({ id, data }: { id: string; data: UpdateContactDto }) => ContactsAPI.update(id, data), {
+    onSuccess: (updatedContact: Contact) => {
+      success(
+        'Contact Updated',
+        `${updatedContact.firstName} ${updatedContact.lastName} has been updated`
+      );
+      setIsFormOpen(false);
+      setEditingContact(null);
+      fetchContacts();
+    },
+    onError: (error: Error) => {
+      showError('Update Failed', error.message || 'Failed to update contact');
+    },
+  });
 
   // Phase 3.4: Delete contact mutation
-  const deleteContactMutation = useApiMutation<{ success: boolean; message: string }, Error, string>(
-    (id: string) => ContactsAPI.delete(id),
-    {
-      onSuccess: () => {
-        if (contactToDelete) {
-          success(
-            'Contact Deleted',
-            `${contactToDelete.firstName} ${contactToDelete.lastName} has been removed from your contacts`
-          );
-        }
-        setIsDeleteDialogOpen(false);
-        setContactToDelete(null);
-        fetchContacts();
-      },
-      onError: (error: Error) => {
-        showError('Delete Failed', error.message || 'Failed to delete contact');
-      },
-    }
-  );
+  const deleteContactMutation = useApiMutation<
+    { success: boolean; message: string },
+    Error,
+    string
+  >((id: string) => ContactsAPI.delete(id), {
+    onSuccess: () => {
+      if (contactToDelete) {
+        success(
+          'Contact Deleted',
+          `${contactToDelete.firstName} ${contactToDelete.lastName} has been removed from your contacts`
+        );
+      }
+      setIsDeleteDialogOpen(false);
+      setContactToDelete(null);
+      fetchContacts();
+    },
+    onError: (error: Error) => {
+      showError('Delete Failed', error.message || 'Failed to delete contact');
+    },
+  });
 
   // Fetch contacts from Phase 3.4 API
   const fetchContacts = useCallback(async () => {
@@ -135,9 +137,10 @@ export const ContactsPage: React.FC = () => {
       if (response.data.length === 0) {
         info('No contacts found', 'Create your first contact to get started');
       }
-        } catch (err: unknown) {
+    } catch (err: unknown) {
       console.error('❌ Error in fetchContacts:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Please check your connection and try again';
+      const errorMessage =
+        err instanceof Error ? err.message : 'Please check your connection and try again';
       showError('Failed to load contacts', errorMessage);
     } finally {
       console.log('✅ Setting loading to false');
@@ -332,7 +335,7 @@ export const ContactsPage: React.FC = () => {
             Add Contact
           </Button>
         )}
-        </div>
+      </div>
 
       {/* Search Bar */}
       <Card className="mb-6">
@@ -408,7 +411,7 @@ export const ContactsPage: React.FC = () => {
                             Edit
                           </Button>
                         )}
-                        
+
                         {/* Only show Delete button if user has contact:delete permission */}
                         {hasPermission('contact:delete') && (
                           <Button
@@ -423,7 +426,7 @@ export const ContactsPage: React.FC = () => {
                             Delete
                           </Button>
                         )}
-                        
+
                         {/* Show message if user has no permissions */}
                         {!hasPermission('contact:write') && !hasPermission('contact:delete') && (
                           <span className="text-sm text-gray-400">View only</span>

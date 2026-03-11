@@ -24,11 +24,11 @@ describe('Avatar Component', () => {
 
   test('shows fallback when image fails to load', () => {
     render(<Avatar src="invalid.jpg" fallback="Fallback" />);
-    
+
     // Initially shows image
     const image = screen.getByTestId('avatar-image');
     expect(image).toBeInTheDocument();
-    
+
     // When image errors, shows fallback
     fireEvent.error(image);
     expect(getFallback()).toBeInTheDocument();
@@ -168,14 +168,14 @@ describe('Avatar Component', () => {
 
   test('passes through data attributes', () => {
     render(
-      <Avatar 
+      <Avatar
         data-testid="custom-avatar"
         data-analytics="avatar-click"
         data-cy="user-avatar"
         fallback="Test"
-      />
+      />,
     );
-    
+
     const avatar = screen.getByTestId('custom-avatar');
     expect(avatar).toHaveAttribute('data-analytics', 'avatar-click');
     expect(avatar).toHaveAttribute('data-cy', 'user-avatar');
@@ -183,7 +183,7 @@ describe('Avatar Component', () => {
 
   test('renders with status in different positions', () => {
     const { rerender } = render(
-      <Avatar status="online" statusPosition="top-left" fallback="Test" />
+      <Avatar status="online" statusPosition="top-left" fallback="Test" />,
     );
     expect(getStatus()).toHaveClass('top-0', 'left-0');
 

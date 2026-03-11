@@ -190,12 +190,12 @@ const DropdownRoot = React.forwardRef<DropdownRef, DropdownProps>((props, ref) =
     ariaLabelledby,
     ariaDescribedby,
 
-      // Other HTML props - ADD THIS LINE
-    ...restProps  
+    // Other HTML props - ADD THIS LINE
+    ...restProps
   } = props;
 
   // Filter out dir prop to avoid type conflicts with Radix
-  const restPropsWithoutDir = restProps as Omit<typeof restProps, 'dir'> & 
+  const restPropsWithoutDir = restProps as Omit<typeof restProps, 'dir'> &
     Partial<Record<string, unknown>>;
 
   // ========================================================================
@@ -357,7 +357,6 @@ const DropdownRoot = React.forwardRef<DropdownRef, DropdownProps>((props, ref) =
         }
       },
     });
-
   } else if (triggerAsChild && !React.isValidElement(trigger)) {
     // Fallback: wrap non-element trigger in a button
     triggerNode = (
@@ -433,8 +432,8 @@ const DropdownRoot = React.forwardRef<DropdownRef, DropdownProps>((props, ref) =
           const handleItemSelect = (event?: Event, meta?: NormalizedDropdownEvent) => {
             if (item.onClick) {
               // Maintain backward compatibility by passing both event and meta
-          // @ts-expect-error - Temporary for backward compatibility until types are updated
-          item.onClick(event, meta);
+              // @ts-expect-error - Temporary for backward compatibility until types are updated
+              item.onClick(event, meta);
             }
           };
 

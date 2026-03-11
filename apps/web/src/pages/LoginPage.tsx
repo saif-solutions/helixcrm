@@ -115,7 +115,6 @@ const LoginPage: React.FC = () => {
         showErrorToast('Login Failed', formErrors.formError);
       }
     }
-      
   };
 
   const isSubmittingForm = isSubmitting || isLoading || demoLoading;

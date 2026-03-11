@@ -109,7 +109,7 @@ describe('TenantGuard', () => {
       await guard.canActivate(mockContext);
 
       expect(debugSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Skipping TenantGuard for public route')
+        expect.stringContaining('Skipping TenantGuard for public route'),
       );
     });
 
@@ -120,10 +120,9 @@ describe('TenantGuard', () => {
       try {
         await guard.canActivate(mockContext);
       } catch (error) {
-        expect(errorSpy).toHaveBeenCalledWith(
-          'User missing organization ID',
-          { userId: 'user-123' }
-        );
+        expect(errorSpy).toHaveBeenCalledWith('User missing organization ID', {
+          userId: 'user-123',
+        });
       }
     });
   });

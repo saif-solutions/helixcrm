@@ -63,7 +63,16 @@ const MOCK_USERS: User[] = [
     emailVerified: true,
     lastLoginAt: '2026-02-28T14:20:00Z',
     createdAt: '2026-01-15T10:30:00Z',
-    permissions: ['user:read', 'contact:read', 'contact:write', 'lead:read', 'lead:write', 'deal:read', 'deal:write', 'report:read'],
+    permissions: [
+      'user:read',
+      'contact:read',
+      'contact:write',
+      'lead:read',
+      'lead:write',
+      'deal:read',
+      'deal:write',
+      'report:read',
+    ],
   },
   {
     id: '3',
@@ -110,7 +119,7 @@ const UserManagementPage: React.FC = () => {
   const { success } = useToast();
 
   // State
-    const users = MOCK_USERS;
+  const users = MOCK_USERS;
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRole, setSelectedRole] = useState<string>('all');
@@ -127,7 +136,7 @@ const UserManagementPage: React.FC = () => {
 
   // Filter users
   const filteredUsers = useMemo(() => {
-    return users.filter(user => {
+    return users.filter((user) => {
       // Filter by active status
       if (!showInactive && !user.isActive) return false;
 
@@ -252,9 +261,7 @@ const UserManagementPage: React.FC = () => {
         <Card className="p-12 text-center">
           <Shield className="w-16 h-16 text-gray-300 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Access Denied</h2>
-          <p className="text-gray-500">
-            You don't have permission to view user management.
-          </p>
+          <p className="text-gray-500">You don't have permission to view user management.</p>
         </Card>
       </div>
     );
@@ -266,9 +273,7 @@ const UserManagementPage: React.FC = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
-          <p className="text-gray-600">
-            Manage users, roles, and permissions
-          </p>
+          <p className="text-gray-600">Manage users, roles, and permissions</p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -468,16 +473,20 @@ const UserManagementPage: React.FC = () => {
                         </div>
                       </td>
                       <td className="py-3 px-4">
-                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(user.role)}`}>
+                        <span
+                          className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(user.role)}`}
+                        >
                           {user.role}
                         </span>
                       </td>
                       <td className="py-3 px-4">
-                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
-                          user.isActive
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-gray-100 text-gray-800'
-                        }`}>
+                        <span
+                          className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+                            user.isActive
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-gray-100 text-gray-800'
+                          }`}
+                        >
                           {user.isActive ? 'Active' : 'Inactive'}
                         </span>
                       </td>
@@ -522,7 +531,11 @@ const UserManagementPage: React.FC = () => {
                               }`}
                               title={user.isActive ? 'Deactivate User' : 'Activate User'}
                             >
-                              {user.isActive ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
+                              {user.isActive ? (
+                                <Lock className="w-4 h-4" />
+                              ) : (
+                                <Unlock className="w-4 h-4" />
+                              )}
                             </button>
                           )}
 
@@ -567,7 +580,7 @@ const UserManagementPage: React.FC = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
                   >
                     <ChevronLeft className="w-4 h-4" />
@@ -578,7 +591,7 @@ const UserManagementPage: React.FC = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
                   >
                     <ChevronRight className="w-4 h-4" />
@@ -604,28 +617,20 @@ const UserManagementPage: React.FC = () => {
           {/* Form fields would go here */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                First Name *
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
               <Input type="text" placeholder="John" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Last Name *
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
               <Input type="text" placeholder="Doe" />
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email Address *
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email Address *</label>
             <Input type="email" placeholder="john.doe@example.com" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Role *
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Role *</label>
             <select className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent">
               <option value="user">User</option>
               <option value="manager">Manager</option>
@@ -660,28 +665,20 @@ const UserManagementPage: React.FC = () => {
             </p>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  First Name
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
                 <Input type="text" defaultValue={selectedUser.firstName} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Last Name
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
                 <Input type="text" defaultValue={selectedUser.lastName} />
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
               <Input type="email" defaultValue={selectedUser.email} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Role
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
               <select
                 defaultValue={selectedUser.role}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
@@ -723,7 +720,7 @@ const UserManagementPage: React.FC = () => {
           <div className="space-y-4">
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <p className="text-sm text-blue-800">
-                {selectedUser.role === 'admin' 
+                {selectedUser.role === 'admin'
                   ? 'Admin users have all permissions automatically.'
                   : 'Select permissions for this user.'}
               </p>
@@ -736,15 +733,24 @@ const UserManagementPage: React.FC = () => {
                   <h4 className="font-medium text-gray-900 mb-2">Contacts</h4>
                   <div className="space-y-2 pl-2">
                     <label className="flex items-center">
-                      <input type="checkbox" className="rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
+                      <input
+                        type="checkbox"
+                        className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                      />
                       <span className="ml-2 text-sm text-gray-700">View contacts</span>
                     </label>
                     <label className="flex items-center">
-                      <input type="checkbox" className="rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
+                      <input
+                        type="checkbox"
+                        className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                      />
                       <span className="ml-2 text-sm text-gray-700">Create/Edit contacts</span>
                     </label>
                     <label className="flex items-center">
-                      <input type="checkbox" className="rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
+                      <input
+                        type="checkbox"
+                        className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                      />
                       <span className="ml-2 text-sm text-gray-700">Delete contacts</span>
                     </label>
                   </div>
@@ -754,15 +760,24 @@ const UserManagementPage: React.FC = () => {
                   <h4 className="font-medium text-gray-900 mb-2">Leads</h4>
                   <div className="space-y-2 pl-2">
                     <label className="flex items-center">
-                      <input type="checkbox" className="rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
+                      <input
+                        type="checkbox"
+                        className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                      />
                       <span className="ml-2 text-sm text-gray-700">View leads</span>
                     </label>
                     <label className="flex items-center">
-                      <input type="checkbox" className="rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
+                      <input
+                        type="checkbox"
+                        className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                      />
                       <span className="ml-2 text-sm text-gray-700">Create/Edit leads</span>
                     </label>
                     <label className="flex items-center">
-                      <input type="checkbox" className="rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
+                      <input
+                        type="checkbox"
+                        className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                      />
                       <span className="ml-2 text-sm text-gray-700">Delete leads</span>
                     </label>
                   </div>
@@ -780,9 +795,7 @@ const UserManagementPage: React.FC = () => {
               >
                 Cancel
               </Button>
-              <Button variant="primary">
-                Save Permissions
-              </Button>
+              <Button variant="primary">Save Permissions</Button>
             </div>
           </div>
         </Modal>

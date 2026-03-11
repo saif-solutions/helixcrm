@@ -29,10 +29,7 @@ describe('SystemGuard', () => {
     } as any;
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        SystemGuard,
-        { provide: TenantContextService, useValue: tenantContextService },
-      ],
+      providers: [SystemGuard, { provide: TenantContextService, useValue: tenantContextService }],
     }).compile();
 
     guard = module.get<SystemGuard>(SystemGuard);
@@ -54,13 +51,10 @@ describe('SystemGuard', () => {
 
       // Assert
       expect(result).toBe(true);
-      expect(tenantContextService.resolveContext).toHaveBeenCalledWith(
-        mockRequest,
-        {
-          requireTenantContext: false,
-          allowSystemContext: true,
-        },
-      );
+      expect(tenantContextService.resolveContext).toHaveBeenCalledWith(mockRequest, {
+        requireTenantContext: false,
+        allowSystemContext: true,
+      });
     });
   });
 
@@ -77,9 +71,7 @@ describe('SystemGuard', () => {
 
       // Act & Assert
       expect(() => guard.canActivate(mockContext)).toThrow(ForbiddenException);
-      expect(() => guard.canActivate(mockContext)).toThrow(
-        'System context required',
-      );
+      expect(() => guard.canActivate(mockContext)).toThrow('System context required');
     });
 
     it('should throw ForbiddenException when resolveContext throws error', () => {

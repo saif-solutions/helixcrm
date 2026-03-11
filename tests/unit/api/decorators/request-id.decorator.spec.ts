@@ -24,12 +24,12 @@ describe('RequestId Decorator', () => {
 
   it('should create a decorator that accepts target, propertyKey, and parameterIndex', () => {
     const decorator = RequestId();
-    
+
     // Create mock arguments
     const mockTarget = {};
     const mockPropertyKey = 'testMethod';
     const mockParameterIndex = 0;
-    
+
     // The decorator should not throw when called with these arguments
     expect(() => {
       decorator(mockTarget, mockPropertyKey, mockParameterIndex);
@@ -53,10 +53,10 @@ describe('RequestId Decorator', () => {
     it('should extract request ID from headers', () => {
       const mockRequest = {
         headers: {
-          'x-request-id': 'test-request-123'
-        }
+          'x-request-id': 'test-request-123',
+        },
       };
-      
+
       const result = simulateRequestIdExtraction(mockRequest);
       expect(result).toBe('test-request-123');
     });
@@ -64,9 +64,9 @@ describe('RequestId Decorator', () => {
     it('should extract request ID from request.id', () => {
       const mockRequest = {
         id: 'request-456',
-        headers: {}
+        headers: {},
       };
-      
+
       const result = simulateRequestIdExtraction(mockRequest);
       expect(result).toBe('request-456');
     });
@@ -74,43 +74,43 @@ describe('RequestId Decorator', () => {
     it('should prioritize x-request-id header over request.id', () => {
       const mockRequest = {
         headers: {
-          'x-request-id': 'header-789'
+          'x-request-id': 'header-789',
         },
-        id: 'object-456'
+        id: 'object-456',
       };
-      
+
       const result = simulateRequestIdExtraction(mockRequest);
       expect(result).toBe('header-789');
     });
 
     it('should generate fallback ID when no ID available', () => {
       const mockRequest = {
-        headers: {}
+        headers: {},
       };
-      
+
       // Mock Date.now
       const mockDateNow = 1614556800000;
       const originalDateNow = Date.now;
       Date.now = jest.fn().mockReturnValue(mockDateNow);
-      
+
       const result = simulateRequestIdExtraction(mockRequest);
       expect(result).toBe(`req_${mockDateNow}`);
-      
+
       // Restore Date.now
       Date.now = originalDateNow;
     });
 
     it('should handle missing headers object', () => {
       const mockRequest = {};
-      
+
       // Mock Date.now
       const mockDateNow = 1614556800000;
       const originalDateNow = Date.now;
       Date.now = jest.fn().mockReturnValue(mockDateNow);
-      
+
       const result = simulateRequestIdExtraction(mockRequest);
       expect(result).toBe(`req_${mockDateNow}`);
-      
+
       // Restore Date.now
       Date.now = originalDateNow;
     });
@@ -120,10 +120,10 @@ describe('RequestId Decorator', () => {
       const mockDateNow = 1614556800000;
       const originalDateNow = Date.now;
       Date.now = jest.fn().mockReturnValue(mockDateNow);
-      
+
       const result = simulateRequestIdExtraction(null);
       expect(result).toBe(`req_${mockDateNow}`);
-      
+
       // Restore Date.now
       Date.now = originalDateNow;
     });

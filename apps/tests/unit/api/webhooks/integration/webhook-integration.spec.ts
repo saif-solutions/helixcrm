@@ -248,23 +248,15 @@ describe('Webhook Module Integration', () => {
         isActive: false,
       };
 
-      jest
-        .spyOn(webhookRepository, 'findById')
-        .mockResolvedValue(existingWebhook);
+      jest.spyOn(webhookRepository, 'findById').mockResolvedValue(existingWebhook);
       jest.spyOn(webhookRepository, 'findByName').mockResolvedValue(null);
       jest.spyOn(webhookRepository, 'update').mockResolvedValue(updatedWebhook);
 
-      const result = await webhooksService.updateWebhook(
-        'webhook-id-1',
-        updateDto,
-      );
+      const result = await webhooksService.updateWebhook('webhook-id-1', updateDto);
 
       // Verify repository methods were called
       expect(webhookRepository.findById).toHaveBeenCalledWith('webhook-id-1');
-      expect(webhookRepository.update).toHaveBeenCalledWith(
-        'webhook-id-1',
-        updateDto,
-      );
+      expect(webhookRepository.update).toHaveBeenCalledWith('webhook-id-1', updateDto);
 
       // Verify secret is not returned
       expect(result).not.toHaveProperty('secret');
@@ -294,12 +286,8 @@ describe('Webhook Module Integration', () => {
         deletedBy: null,
       };
 
-      jest
-        .spyOn(webhookRepository, 'findById')
-        .mockResolvedValue(existingWebhook);
-      jest
-        .spyOn(webhookRepository, 'delete')
-        .mockResolvedValue(existingWebhook);
+      jest.spyOn(webhookRepository, 'findById').mockResolvedValue(existingWebhook);
+      jest.spyOn(webhookRepository, 'delete').mockResolvedValue(existingWebhook);
 
       const result = await webhooksService.deleteWebhook('webhook-id-1');
 
@@ -359,17 +347,10 @@ describe('Webhook Module Integration', () => {
       };
 
       jest.spyOn(webhookRepository, 'findById').mockResolvedValue(webhook);
-      jest
-        .spyOn(webhookRepository, 'createDelivery')
-        .mockResolvedValue(mockDelivery);
-      jest
-        .spyOn(app.get('BullQueue_webhook-queue'), 'add')
-        .mockResolvedValue({} as any);
+      jest.spyOn(webhookRepository, 'createDelivery').mockResolvedValue(mockDelivery);
+      jest.spyOn(app.get('BullQueue_webhook-queue'), 'add').mockResolvedValue({} as any);
 
-      const result = await webhooksService.triggerWebhook(
-        'webhook-id-1',
-        payload,
-      );
+      const result = await webhooksService.triggerWebhook('webhook-id-1', payload);
 
       // Verify repository and queue calls
       expect(webhookRepository.findById).toHaveBeenCalledWith('webhook-id-1');
@@ -430,26 +411,14 @@ describe('Webhook Module Integration', () => {
         name: 'test-webhook',
         organizationId: 'test-tenant-id',
       } as any);
-      jest
-        .spyOn(webhookRepository, 'findDeliveries')
-        .mockResolvedValue(mockDeliveries);
+      jest.spyOn(webhookRepository, 'findDeliveries').mockResolvedValue(mockDeliveries);
       jest.spyOn(webhookRepository, 'countDeliveries').mockResolvedValue(2);
 
-      const result = await webhooksService.getDeliveryHistory(
-        'webhook-id-1',
-        1,
-        20,
-      );
+      const result = await webhooksService.getDeliveryHistory('webhook-id-1', 1, 20);
 
       // Verify repository calls
-      expect(webhookRepository.findDeliveries).toHaveBeenCalledWith(
-        'webhook-id-1',
-        1,
-        20,
-      );
-      expect(webhookRepository.countDeliveries).toHaveBeenCalledWith(
-        'webhook-id-1',
-      );
+      expect(webhookRepository.findDeliveries).toHaveBeenCalledWith('webhook-id-1', 1, 20);
+      expect(webhookRepository.countDeliveries).toHaveBeenCalledWith('webhook-id-1');
 
       // Verify pagination response
       expect(result).toMatchObject({
@@ -480,17 +449,11 @@ describe('Webhook Module Integration', () => {
       expect(() =>
         (service as any).validateWebhookUrl('https://example.com/webhook'),
       ).not.toThrow();
-      expect(() =>
-        (service as any).validateWebhookUrl('http://example.com/webhook'),
-      ).not.toThrow();
+      expect(() => (service as any).validateWebhookUrl('http://example.com/webhook')).not.toThrow();
 
       // Invalid URLs should throw
-      expect(() =>
-        (service as any).validateWebhookUrl('invalid-url'),
-      ).toThrow();
-      expect(() =>
-        (service as any).validateWebhookUrl('ftp://example.com/webhook'),
-      ).toThrow();
+      expect(() => (service as any).validateWebhookUrl('invalid-url')).toThrow();
+      expect(() => (service as any).validateWebhookUrl('ftp://example.com/webhook')).toThrow();
     });
 
     it('should generate secure secrets', () => {

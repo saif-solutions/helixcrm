@@ -18,13 +18,13 @@ program
   .description('Test if compliance module works')
   .action(async () => {
     console.log('Testing compliance module...\n');
-    
+
     try {
       // Create app with ONLY ComplianceModule
       const app = await NestFactory.createApplicationContext(ComplianceModule);
-      
+
       console.log('✅ Application context created!');
-      
+
       // Try to get each service
       try {
         const evidenceService = app.get(Soc2EvidenceService);
@@ -32,24 +32,23 @@ program
       } catch (error: any) {
         console.log('❌ Soc2EvidenceService:', error.message);
       }
-      
+
       try {
         const storageService = app.get(EvidenceStorageService);
         console.log('✅ EvidenceStorageService: OK');
       } catch (error: any) {
         console.log('❌ EvidenceStorageService:', error.message);
       }
-      
+
       try {
         const controlsService = app.get(Soc2ControlsService);
         console.log('✅ Soc2ControlsService: OK');
       } catch (error: any) {
         console.log('❌ Soc2ControlsService:', error.message);
       }
-      
+
       await app.close();
       console.log('\n✅ Test completed!');
-      
     } catch (error: any) {
       console.log('\n❌ Overall error:', error.message);
       console.log('Stack:', error.stack?.split('\n').slice(0, 5).join('\n'));

@@ -12,14 +12,14 @@ import { AnalyticsRepository } from '@api/modules/analytics/repositories/analyti
 import { AnalyticsSummaryRepository } from '@api/modules/analytics/repositories/analytics-summary.repository';
 import { AnalyticsSummaryService } from '@api/modules/analytics/services/analytics-summary.service';
 import { ForbiddenException, BadRequestException } from '@nestjs/common';
-import { 
-  DealAnalyticsQueryDto, 
-  RevenueAnalyticsQueryDto, 
-  PipelineAnalyticsQueryDto, 
+import {
+  DealAnalyticsQueryDto,
+  RevenueAnalyticsQueryDto,
+  PipelineAnalyticsQueryDto,
   ActivityAnalyticsQueryDto,
   AnalyticsExportQueryDto,
   ExportFormat,
-  AnalyticsGroupBy
+  AnalyticsGroupBy,
 } from '@api/modules/analytics/dto/analytics-query.dto';
 
 // Mock implementations
@@ -117,9 +117,7 @@ const createMockRevenueAnalytics = () => ({
     { month: '2024-02', amount: 350000 },
     { month: '2024-03', amount: 350000 },
   ],
-  byQuarter: [
-    { quarter: 'Q1-2024', amount: 1000000 },
-  ],
+  byQuarter: [{ quarter: 'Q1-2024', amount: 1000000 }],
   byProduct: [
     { product: 'Product A', amount: 500000 },
     { product: 'Product B', amount: 300000 },
@@ -177,10 +175,10 @@ describe('AnalyticsService', () => {
   beforeEach(async () => {
     // Reset all mocks
     jest.clearAllMocks();
-    
+
     // Set default permission to true for most tests
     mockPermissionContext.hasPermission.mockReturnValue(true);
-    
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AnalyticsService,
@@ -213,136 +211,140 @@ describe('AnalyticsService', () => {
     prisma.user.findUnique.mockResolvedValue({ email: 'test@example.com' });
   });
 
-describe('getDealAnalytics', () => {
-  const query: DealAnalyticsQueryDto = {
-    startDate: '2024-01-01',
-    endDate: '2024-12-31',
-    groupBy: AnalyticsGroupBy.MONTH,
-    pipelineId: 'pipeline-123',
-    stageId: 'stage-123',
-  };
+  describe('getDealAnalytics', () => {
+    const query: DealAnalyticsQueryDto = {
+      startDate: '2024-01-01',
+      endDate: '2024-12-31',
+      groupBy: AnalyticsGroupBy.MONTH,
+      pipelineId: 'pipeline-123',
+      stageId: 'stage-123',
+    };
 
-  const dealMockResult = createMockDealAnalytics();
+    const dealMockResult = createMockDealAnalytics();
 
-  it('should return deal analytics from summary tables', async () => {
-    // Create a fresh service with summary tables enabled
-    configService.get.mockReturnValue('true');
-    
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        AnalyticsService,
-        { provide: PrismaService, useValue: mockPrismaService },
-        { provide: AuditLogService, useValue: mockAuditLogService },
-        { provide: AppLogger, useValue: mockAppLogger },
-        { provide: ConfigService, useValue: configService },
-        { provide: CACHE_MANAGER, useValue: mockCacheManager },
-        { provide: getQueueToken('analytics-export'), useValue: mockExportQueue },
-        { provide: TenantContextService, useValue: mockTenantContext },
-        { provide: PermissionContextService, useValue: mockPermissionContext },
-        { provide: AnalyticsRepository, useValue: mockAnalyticsRepository },
-        { provide: AnalyticsSummaryRepository, useValue: mockAnalyticsSummaryRepository },
-        { provide: AnalyticsSummaryService, useValue: mockAnalyticsSummaryService },
-      ],
-    }).compile();
+    it('should return deal analytics from summary tables', async () => {
+      // Create a fresh service with summary tables enabled
+      configService.get.mockReturnValue('true');
 
-    const freshService = module.get<AnalyticsService>(AnalyticsService);
-    
-    analyticsSummaryRepository.getDealAnalyticsFromSummary.mockResolvedValue(dealMockResult);
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          AnalyticsService,
+          { provide: PrismaService, useValue: mockPrismaService },
+          { provide: AuditLogService, useValue: mockAuditLogService },
+          { provide: AppLogger, useValue: mockAppLogger },
+          { provide: ConfigService, useValue: configService },
+          { provide: CACHE_MANAGER, useValue: mockCacheManager },
+          { provide: getQueueToken('analytics-export'), useValue: mockExportQueue },
+          { provide: TenantContextService, useValue: mockTenantContext },
+          { provide: PermissionContextService, useValue: mockPermissionContext },
+          { provide: AnalyticsRepository, useValue: mockAnalyticsRepository },
+          { provide: AnalyticsSummaryRepository, useValue: mockAnalyticsSummaryRepository },
+          { provide: AnalyticsSummaryService, useValue: mockAnalyticsSummaryService },
+        ],
+      }).compile();
 
-    const result = await freshService.getDealAnalytics(query);
+      const freshService = module.get<AnalyticsService>(AnalyticsService);
 
-    expect(result).toEqual({
-      ...dealMockResult,
-      source: 'summary-tables',
+      analyticsSummaryRepository.getDealAnalyticsFromSummary.mockResolvedValue(dealMockResult);
+
+      const result = await freshService.getDealAnalytics(query);
+
+      expect(result).toEqual({
+        ...dealMockResult,
+        source: 'summary-tables',
+      });
+      expect(analyticsSummaryRepository.getDealAnalyticsFromSummary).toHaveBeenCalledWith(query);
+      expect(analyticsRepository.getDealAnalyticsFromOperational).not.toHaveBeenCalled();
     });
-    expect(analyticsSummaryRepository.getDealAnalyticsFromSummary).toHaveBeenCalledWith(query);
-    expect(analyticsRepository.getDealAnalyticsFromOperational).not.toHaveBeenCalled();
-  });
 
-  it('should fall back to operational tables if summary fails', async () => {
-    configService.get.mockReturnValue('true');
-    
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        AnalyticsService,
-        { provide: PrismaService, useValue: mockPrismaService },
-        { provide: AuditLogService, useValue: mockAuditLogService },
-        { provide: AppLogger, useValue: mockAppLogger },
-        { provide: ConfigService, useValue: configService },
-        { provide: CACHE_MANAGER, useValue: mockCacheManager },
-        { provide: getQueueToken('analytics-export'), useValue: mockExportQueue },
-        { provide: TenantContextService, useValue: mockTenantContext },
-        { provide: PermissionContextService, useValue: mockPermissionContext },
-        { provide: AnalyticsRepository, useValue: mockAnalyticsRepository },
-        { provide: AnalyticsSummaryRepository, useValue: mockAnalyticsSummaryRepository },
-        { provide: AnalyticsSummaryService, useValue: mockAnalyticsSummaryService },
-      ],
-    }).compile();
+    it('should fall back to operational tables if summary fails', async () => {
+      configService.get.mockReturnValue('true');
 
-    const freshService = module.get<AnalyticsService>(AnalyticsService);
-    
-    analyticsSummaryRepository.getDealAnalyticsFromSummary.mockRejectedValue(new Error('Summary error'));
-    analyticsRepository.getDealAnalyticsFromOperational.mockResolvedValue(dealMockResult);
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          AnalyticsService,
+          { provide: PrismaService, useValue: mockPrismaService },
+          { provide: AuditLogService, useValue: mockAuditLogService },
+          { provide: AppLogger, useValue: mockAppLogger },
+          { provide: ConfigService, useValue: configService },
+          { provide: CACHE_MANAGER, useValue: mockCacheManager },
+          { provide: getQueueToken('analytics-export'), useValue: mockExportQueue },
+          { provide: TenantContextService, useValue: mockTenantContext },
+          { provide: PermissionContextService, useValue: mockPermissionContext },
+          { provide: AnalyticsRepository, useValue: mockAnalyticsRepository },
+          { provide: AnalyticsSummaryRepository, useValue: mockAnalyticsSummaryRepository },
+          { provide: AnalyticsSummaryService, useValue: mockAnalyticsSummaryService },
+        ],
+      }).compile();
 
-    const result = await freshService.getDealAnalytics(query);
+      const freshService = module.get<AnalyticsService>(AnalyticsService);
 
-    expect(result).toEqual({
-      ...dealMockResult,
-      source: 'operational-tables',
+      analyticsSummaryRepository.getDealAnalyticsFromSummary.mockRejectedValue(
+        new Error('Summary error'),
+      );
+      analyticsRepository.getDealAnalyticsFromOperational.mockResolvedValue(dealMockResult);
+
+      const result = await freshService.getDealAnalytics(query);
+
+      expect(result).toEqual({
+        ...dealMockResult,
+        source: 'operational-tables',
+      });
+      expect(analyticsSummaryRepository.getDealAnalyticsFromSummary).toHaveBeenCalled();
+      expect(analyticsRepository.getDealAnalyticsFromOperational).toHaveBeenCalledWith(query);
     });
-    expect(analyticsSummaryRepository.getDealAnalyticsFromSummary).toHaveBeenCalled();
-    expect(analyticsRepository.getDealAnalyticsFromOperational).toHaveBeenCalledWith(query);
-  });
 
-  it('should use operational tables directly when summary tables disabled', async () => {
-    configService.get.mockReturnValue('false');
-    
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        AnalyticsService,
-        { provide: PrismaService, useValue: mockPrismaService },
-        { provide: AuditLogService, useValue: mockAuditLogService },
-        { provide: AppLogger, useValue: mockAppLogger },
-        { provide: ConfigService, useValue: configService },
-        { provide: CACHE_MANAGER, useValue: mockCacheManager },
-        { provide: getQueueToken('analytics-export'), useValue: mockExportQueue },
-        { provide: TenantContextService, useValue: mockTenantContext },
-        { provide: PermissionContextService, useValue: mockPermissionContext },
-        { provide: AnalyticsRepository, useValue: mockAnalyticsRepository },
-        { provide: AnalyticsSummaryRepository, useValue: mockAnalyticsSummaryRepository },
-        { provide: AnalyticsSummaryService, useValue: mockAnalyticsSummaryService },
-      ],
-    }).compile();
+    it('should use operational tables directly when summary tables disabled', async () => {
+      configService.get.mockReturnValue('false');
 
-    const freshService = module.get<AnalyticsService>(AnalyticsService);
-    
-    analyticsRepository.getDealAnalyticsFromOperational.mockResolvedValue(dealMockResult);
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          AnalyticsService,
+          { provide: PrismaService, useValue: mockPrismaService },
+          { provide: AuditLogService, useValue: mockAuditLogService },
+          { provide: AppLogger, useValue: mockAppLogger },
+          { provide: ConfigService, useValue: configService },
+          { provide: CACHE_MANAGER, useValue: mockCacheManager },
+          { provide: getQueueToken('analytics-export'), useValue: mockExportQueue },
+          { provide: TenantContextService, useValue: mockTenantContext },
+          { provide: PermissionContextService, useValue: mockPermissionContext },
+          { provide: AnalyticsRepository, useValue: mockAnalyticsRepository },
+          { provide: AnalyticsSummaryRepository, useValue: mockAnalyticsSummaryRepository },
+          { provide: AnalyticsSummaryService, useValue: mockAnalyticsSummaryService },
+        ],
+      }).compile();
 
-    const result = await freshService.getDealAnalytics(query);
+      const freshService = module.get<AnalyticsService>(AnalyticsService);
 
-    expect(result).toEqual({
-      ...dealMockResult,
-      source: 'operational-tables',
+      analyticsRepository.getDealAnalyticsFromOperational.mockResolvedValue(dealMockResult);
+
+      const result = await freshService.getDealAnalytics(query);
+
+      expect(result).toEqual({
+        ...dealMockResult,
+        source: 'operational-tables',
+      });
+      expect(analyticsRepository.getDealAnalyticsFromOperational).toHaveBeenCalledWith(query);
+      expect(analyticsSummaryRepository.getDealAnalyticsFromSummary).not.toHaveBeenCalled();
     });
-    expect(analyticsRepository.getDealAnalyticsFromOperational).toHaveBeenCalledWith(query);
-    expect(analyticsSummaryRepository.getDealAnalyticsFromSummary).not.toHaveBeenCalled();
+
+    it('should throw ForbiddenException if user lacks permission', async () => {
+      permissionContext.hasPermission.mockReturnValue(false);
+
+      await expect(service.getDealAnalytics(query)).rejects.toThrow(ForbiddenException);
+      expect(analyticsRepository.getDealAnalyticsFromOperational).not.toHaveBeenCalled();
+    });
+
+    it('should throw BadRequestException on repository error', async () => {
+      // Make sure permission check passes
+      permissionContext.hasPermission.mockReturnValue(true);
+      analyticsRepository.getDealAnalyticsFromOperational.mockRejectedValue(
+        new Error('Database error'),
+      );
+
+      await expect(service.getDealAnalytics(query)).rejects.toThrow(BadRequestException);
+    });
   });
-
-  it('should throw ForbiddenException if user lacks permission', async () => {
-    permissionContext.hasPermission.mockReturnValue(false);
-
-    await expect(service.getDealAnalytics(query)).rejects.toThrow(ForbiddenException);
-    expect(analyticsRepository.getDealAnalyticsFromOperational).not.toHaveBeenCalled();
-  });
-
-  it('should throw BadRequestException on repository error', async () => {
-    // Make sure permission check passes
-    permissionContext.hasPermission.mockReturnValue(true);
-    analyticsRepository.getDealAnalyticsFromOperational.mockRejectedValue(new Error('Database error'));
-
-    await expect(service.getDealAnalytics(query)).rejects.toThrow(BadRequestException);
-  });
-});
 
   describe('getRevenueAnalytics', () => {
     const query: RevenueAnalyticsQueryDto = {
@@ -353,11 +355,11 @@ describe('getDealAnalytics', () => {
 
     const mockResult = createMockRevenueAnalytics();
 
-
-
     it('should fall back to operational tables if summary fails', async () => {
       configService.get.mockReturnValue('true');
-      analyticsSummaryRepository.getRevenueAnalyticsFromSummary.mockRejectedValue(new Error('Summary error'));
+      analyticsSummaryRepository.getRevenueAnalyticsFromSummary.mockRejectedValue(
+        new Error('Summary error'),
+      );
       analyticsRepository.getRevenueAnalyticsFromOperational.mockResolvedValue(mockResult);
 
       const result = await service.getRevenueAnalytics(query);
@@ -450,7 +452,7 @@ describe('getDealAnalytics', () => {
         if (perm === 'report:export') return true;
         return true;
       });
-      
+
       analyticsRepository.getAvailableExports.mockResolvedValue(mockAvailableExports);
 
       const result = await service.createAnalyticsExport(query);
@@ -489,18 +491,20 @@ describe('getDealAnalytics', () => {
       }).compile();
 
       const serviceWithoutQueue = moduleWithoutQueue.get<AnalyticsService>(AnalyticsService);
-      
+
       // Set permission to true
       mockPermissionContext.hasPermission.mockReturnValue(true);
 
-      await expect(serviceWithoutQueue.createAnalyticsExport(query)).rejects.toThrow(BadRequestException);
+      await expect(serviceWithoutQueue.createAnalyticsExport(query)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
   describe('getExportStatus', () => {
     it('should return export status', async () => {
       permissionContext.hasPermission.mockReturnValue(true);
-      
+
       const result = await service.getExportStatus('export-123');
 
       expect(result).toHaveProperty('jobId', 'export-123');
@@ -536,7 +540,9 @@ describe('getDealAnalytics', () => {
         return true;
       });
 
-      await expect(service.downloadExport('export-123', 'token-export-123')).rejects.toThrow(ForbiddenException);
+      await expect(service.downloadExport('export-123', 'token-export-123')).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should throw ForbiddenException if token invalid', async () => {
@@ -545,7 +551,9 @@ describe('getDealAnalytics', () => {
         return true;
       });
 
-      await expect(service.downloadExport('export-123', 'invalid-token')).rejects.toThrow(ForbiddenException);
+      await expect(service.downloadExport('export-123', 'invalid-token')).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 
@@ -569,7 +577,11 @@ describe('getDealAnalytics', () => {
       const result = await service.getAvailableExports(query);
 
       expect(result).toEqual(mockExports);
-      expect(analyticsRepository.getAvailableExports).toHaveBeenCalledWith(query, 'org-123', 'user-123');
+      expect(analyticsRepository.getAvailableExports).toHaveBeenCalledWith(
+        query,
+        'org-123',
+        'user-123',
+      );
     });
 
     it('should throw ForbiddenException if user lacks permission', async () => {

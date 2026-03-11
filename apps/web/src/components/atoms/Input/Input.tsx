@@ -275,6 +275,6 @@ export const FormInput = React.forwardRef<
 >(({ fieldError, error: propError, ...props }, ref) => {
   const error = fieldError || propError;
 
-    return <Input ref={ref} error={error} aria-invalid={error ? 'true' : 'false'} {...props} />;
+  return <Input ref={ref} error={error} aria-invalid={error ? 'true' : 'false'} {...props} />;
 });
 FormInput.displayName = 'FormInput';

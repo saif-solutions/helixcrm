@@ -41,9 +41,7 @@ describe('EmailTemplatesController', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [EmailTemplatesController],
-      providers: [
-        { provide: EmailTemplatesService, useValue: mockEmailTemplatesService },
-      ],
+      providers: [{ provide: EmailTemplatesService, useValue: mockEmailTemplatesService }],
     }).compile();
 
     controller = module.get<EmailTemplatesController>(EmailTemplatesController);
@@ -259,8 +257,8 @@ describe('EmailTemplatesController', () => {
 
       expect(result).toHaveProperty('variables');
       expect(result.variables.length).toBeGreaterThan(0);
-      
-      const contactFirstName = result.variables.find(v => v.name === 'contact.firstName');
+
+      const contactFirstName = result.variables.find((v) => v.name === 'contact.firstName');
       expect(contactFirstName).toBeDefined();
       expect(contactFirstName.required).toBe(true);
     });

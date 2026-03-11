@@ -10,9 +10,7 @@ export class PerformanceTestSuite {
   private readonly utils = new LoadTestUtils();
   private readonly resultsDir = path.join(process.cwd(), 'tests/performance/results');
 
-  constructor(
-    private readonly salesMorningPeakScenario: SalesMorningPeakScenario,
-  ) {
+  constructor(private readonly salesMorningPeakScenario: SalesMorningPeakScenario) {
     // Create results directory if it doesn't exist
     if (!fs.existsSync(this.resultsDir)) {
       fs.mkdirSync(this.resultsDir, { recursive: true });
@@ -59,7 +57,7 @@ export class PerformanceTestSuite {
     if (config.warmUpTime <= 0) return;
 
     this.logger.log(`Starting ${config.warmUpTime}s warm-up phase...`);
-    
+
     // Run a light load during warm-up
     const warmUpConfig = {
       ...config,
@@ -67,10 +65,7 @@ export class PerformanceTestSuite {
       duration: `${config.warmUpTime}s`,
     };
 
-    await this.salesMorningPeakScenario.smokeTest(
-      warmUpConfig.concurrentUsers,
-      config.warmUpTime
-    );
+    await this.salesMorningPeakScenario.smokeTest(warmUpConfig.concurrentUsers, config.warmUpTime);
 
     this.logger.log(`Warm-up completed`);
   }
@@ -80,7 +75,7 @@ export class PerformanceTestSuite {
    */
   private async runCoolDown(): Promise<void> {
     this.logger.log('Cooling down system...');
-    await new Promise(resolve => setTimeout(resolve, 5000)); // 5 seconds
+    await new Promise((resolve) => setTimeout(resolve, 5000)); // 5 seconds
     this.logger.log('Cool-down completed');
   }
 
@@ -112,19 +107,19 @@ export class PerformanceTestSuite {
 
       // 2. Main test phase
       this.logger.log(`Starting main test phase for ${config.duration}...`);
-      
+
       let loadTestResult;
       if (scenarioName === 'salesMorningPeak') {
         const durationMinutes = this.utils.parseDuration(config.duration) / (60 * 1000);
         loadTestResult = await this.salesMorningPeakScenario.run(
           config.concurrentUsers,
-          durationMinutes
+          durationMinutes,
         );
       } else if (scenarioName === 'smokeTest') {
         const durationSeconds = this.utils.parseDuration(config.duration) / 1000;
         loadTestResult = await this.salesMorningPeakScenario.smokeTest(
           config.concurrentUsers,
-          durationSeconds
+          durationSeconds,
         );
       } else {
         throw new Error(`Scenario ${scenarioName} not implemented`);
@@ -171,11 +166,10 @@ export class PerformanceTestSuite {
       this.logger.log(`Status: ${result.compliant ? '✅ PASS' : '❌ FAIL'}`);
 
       return result;
-
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       this.logger.error(`Scenario ${scenarioName} failed: ${errorMessage}`);
-      
+
       throw error;
     }
   }
@@ -209,7 +203,7 @@ export class PerformanceTestSuite {
     try {
       this.logger.log('=== STARTING SMOKE TEST ===');
       results.smokeTest = await this.runScenario('smokeTest');
-      
+
       if (!results.smokeTest.compliant) {
         this.logger.warn('Smoke test failed! Stopping further tests.');
         return results;
@@ -221,8 +215,8 @@ export class PerformanceTestSuite {
     }
 
     // Run main scenarios
-    const mainScenarios = Object.keys(configs).filter(name => name !== 'smokeTest');
-    
+    const mainScenarios = Object.keys(configs).filter((name) => name !== 'smokeTest');
+
     for (const scenarioName of mainScenarios) {
       try {
         results[scenarioName] = await this.runScenario(scenarioName);
@@ -275,7 +269,7 @@ export class PerformanceTestSuite {
 
       if (result.violations.length > 0) {
         report += `### Violations\n\n`;
-        result.violations.forEach(violation => {
+        result.violations.forEach((violation) => {
           report += `- ${violation}\n`;
         });
         report += `\n`;
@@ -297,7 +291,7 @@ export class PerformanceTestSuite {
     }
 
     // Calculate overall status
-    const allPassed = Object.values(results).every(r => r.compliant);
+    const allPassed = Object.values(results).every((r) => r.compliant);
     report += `## Overall Status: ${allPassed ? '✅ ALL TESTS PASSED' : '❌ SOME TESTS FAILED'}\n`;
 
     await fs.promises.writeFile(filepath, report, 'utf8');
@@ -309,7 +303,7 @@ export class PerformanceTestSuite {
    */
   async getLatestResults(): Promise<Record<string, TestResult>> {
     const files = await fs.promises.readdir(this.resultsDir);
-    const resultFiles = files.filter(f => f.endsWith('.json'));
+    const resultFiles = files.filter((f) => f.endsWith('.json'));
 
     if (resultFiles.length === 0) {
       return {};
@@ -325,11 +319,12 @@ export class PerformanceTestSuite {
     const latestResults: Record<string, TestResult> = {};
 
     // Read the most recent result for each scenario
-    for (const file of resultFiles.slice(0, 5)) { // Last 5 test runs
+    for (const file of resultFiles.slice(0, 5)) {
+      // Last 5 test runs
       try {
         const content = await fs.promises.readFile(path.join(this.resultsDir, file), 'utf8');
         const data = JSON.parse(content);
-        
+
         if (data.scenario && data.result) {
           latestResults[data.scenario] = data.result;
         }

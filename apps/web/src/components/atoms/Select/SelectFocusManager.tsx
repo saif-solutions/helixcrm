@@ -8,35 +8,35 @@ export function useFocusWithin(
   ref: React.RefObject<HTMLElement>,
   onFocusWithinChange?: (isFocusWithin: boolean) => void
 ) {
-React.useEffect(() => {
-  const element = ref.current;
-  if (!element) return;
+  React.useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
 
-  const handleFocusIn = () => {
-    // Event parameter removed because it's unused
-    if (element.contains(document.activeElement)) {
-      onFocusWithinChange?.(true);
-    }
-  };
-
-  const handleFocusOut = () => {
-    // Event parameter removed because it's unused
-    // Use setTimeout to check after focus has moved
-    setTimeout(() => {
-      if (!element.contains(document.activeElement)) {
-        onFocusWithinChange?.(false);
+    const handleFocusIn = () => {
+      // Event parameter removed because it's unused
+      if (element.contains(document.activeElement)) {
+        onFocusWithinChange?.(true);
       }
-    }, 0);
-  };
+    };
 
-  element.addEventListener('focusin', handleFocusIn);
-  element.addEventListener('focusout', handleFocusOut);
+    const handleFocusOut = () => {
+      // Event parameter removed because it's unused
+      // Use setTimeout to check after focus has moved
+      setTimeout(() => {
+        if (!element.contains(document.activeElement)) {
+          onFocusWithinChange?.(false);
+        }
+      }, 0);
+    };
 
-  return () => {
-    element.removeEventListener('focusin', handleFocusIn);
-    element.removeEventListener('focusout', handleFocusOut);
-  };
-}, [ref, onFocusWithinChange]);
+    element.addEventListener('focusin', handleFocusIn);
+    element.addEventListener('focusout', handleFocusOut);
+
+    return () => {
+      element.removeEventListener('focusin', handleFocusIn);
+      element.removeEventListener('focusout', handleFocusOut);
+    };
+  }, [ref, onFocusWithinChange]);
 }
 
 /**

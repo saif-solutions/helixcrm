@@ -38,11 +38,11 @@ export class SalesMorningPeakScenario {
 
     try {
       // 1. Login (simulated)
-      await new Promise(resolve => setTimeout(resolve, 100 + Math.random() * 200));
-      
+      await new Promise((resolve) => setTimeout(resolve, 100 + Math.random() * 200));
+
       // 2. View dashboard
-      await new Promise(resolve => setTimeout(resolve, 200 + Math.random() * 300));
-      
+      await new Promise((resolve) => setTimeout(resolve, 200 + Math.random() * 300));
+
       // 3. Search for contacts
       const searchStart = Date.now();
       await this.prisma.contact.findMany({
@@ -53,11 +53,11 @@ export class SalesMorningPeakScenario {
         take: 20,
       });
       const searchDuration = Date.now() - searchStart;
-      
+
       if (searchDuration > 1000) {
         errors.push(`Contact search slow: ${searchDuration}ms`);
       }
-      
+
       // 4. View deals
       const dealsStart = Date.now();
       await this.prisma.deal.findMany({
@@ -73,16 +73,16 @@ export class SalesMorningPeakScenario {
         },
       });
       const dealsDuration = Date.now() - dealsStart;
-      
+
       if (dealsDuration > 1500) {
         errors.push(`Deals query slow: ${dealsDuration}ms`);
       }
-      
+
       // 5. Create activity (simulated)
-      await new Promise(resolve => setTimeout(resolve, 300 + Math.random() * 400));
-      
+      await new Promise((resolve) => setTimeout(resolve, 300 + Math.random() * 400));
+
       const totalDuration = Date.now() - startTime;
-      
+
       // Record performance metric
       await this.performanceMetrics.recordMetric({
         endpoint: '/simulate/sales-rep-journey',
@@ -111,15 +111,14 @@ export class SalesMorningPeakScenario {
         errors,
       };
 
-// In tests/performance/scenarios/sales-morning-peak.scenario.ts, update the catch block:
-
+      // In tests/performance/scenarios/sales-morning-peak.scenario.ts, update the catch block:
     } catch (error) {
       const duration = Date.now() - startTime;
       const errorMessage = error instanceof Error ? error.message : String(error);
       const errorStack = error instanceof Error ? error.stack : undefined;
-      
+
       this.logger.error(`Sales rep journey failed: ${errorMessage}`);
-      
+
       await this.performanceMetrics.recordMetric({
         endpoint: '/simulate/sales-rep-journey',
         duration,
@@ -146,20 +145,19 @@ export class SalesMorningPeakScenario {
   /**
    * Run the sales morning peak scenario
    */
-  async run(
-    concurrentUsers: number = 500,
-    durationMinutes: number = 15
-  ): Promise<LoadTestResult> {
-    this.logger.log(`Starting ${this.SCENARIO_NAME} scenario with ${concurrentUsers} concurrent users for ${durationMinutes} minutes`);
-    
+  async run(concurrentUsers: number = 500, durationMinutes: number = 15): Promise<LoadTestResult> {
+    this.logger.log(
+      `Starting ${this.SCENARIO_NAME} scenario with ${concurrentUsers} concurrent users for ${durationMinutes} minutes`,
+    );
+
     const startTime = Date.now();
-    const endTime = startTime + (durationMinutes * 60 * 1000);
+    const endTime = startTime + durationMinutes * 60 * 1000;
     const results: Array<{
       success: boolean;
       duration: number;
       errors: string[];
     }> = [];
-    
+
     let completedRequests = 0;
     let successfulRequests = 0;
     let failedRequests = 0;
@@ -167,66 +165,65 @@ export class SalesMorningPeakScenario {
 
     // Create user simulation promises
     const userPromises: Promise<void>[] = [];
-    
+
     for (let i = 0; i < concurrentUsers; i++) {
       userPromises.push(
         (async () => {
           while (Date.now() < endTime) {
             // Simulate user think time between actions
             const thinkTime = 5000 + Math.random() * 10000; // 5-15 seconds
-            await new Promise(resolve => setTimeout(resolve, thinkTime));
-            
+            await new Promise((resolve) => setTimeout(resolve, thinkTime));
+
             // Execute user journey
             const result = await this.simulateSalesRepJourney(i);
-            
+
             results.push(result);
             latencies.push(result.duration);
-            
+
             completedRequests++;
             if (result.success) {
               successfulRequests++;
             } else {
               failedRequests++;
             }
-            
+
             // Record progress every 100 requests
             if (completedRequests % 100 === 0) {
               this.logger.log(`Progress: ${completedRequests} requests completed`);
             }
           }
-        })()
+        })(),
       );
     }
 
     // Wait for all user simulations to complete or timeout
-    await Promise.allSettled(userPromises.map(p => 
-      Promise.race([
-        p,
-        new Promise(resolve => setTimeout(resolve, (durationMinutes + 1) * 60 * 1000))
-      ])
-    ));
+    await Promise.allSettled(
+      userPromises.map((p) =>
+        Promise.race([
+          p,
+          new Promise((resolve) => setTimeout(resolve, (durationMinutes + 1) * 60 * 1000)),
+        ]),
+      ),
+    );
 
     const totalDuration = Date.now() - startTime;
-    
+
     // Calculate metrics
     const sortedLatencies = [...latencies].sort((a, b) => a - b);
     const p95Latency = sortedLatencies[Math.floor(sortedLatencies.length * 0.95)] || 0;
     const errorRate = (failedRequests / completedRequests) * 100;
     const throughput = completedRequests / (totalDuration / 1000);
-    
+
     // Check SLO compliance
-    const sloCheck = await this.performanceMetrics.checkSLOCompliance(
-      this.SCENARIO_NAME,
-      {
-        p95Latency,
-        errorRate,
-        throughput,
-      }
-    );
+    const sloCheck = await this.performanceMetrics.checkSLOCompliance(this.SCENARIO_NAME, {
+      p95Latency,
+      errorRate,
+      throughput,
+    });
 
     // Store baseline
     const baseline = await this.performanceMetrics.getPerformanceBaseline(this.SCENARIO_NAME);
-    
+
     this.logger.log(`Scenario ${this.SCENARIO_NAME} completed:`);
     this.logger.log(`  Duration: ${(totalDuration / 1000).toFixed(2)}s`);
     this.logger.log(`  Total Requests: ${completedRequests}`);
@@ -236,9 +233,9 @@ export class SalesMorningPeakScenario {
     this.logger.log(`  Error Rate: ${errorRate.toFixed(2)}%`);
     this.logger.log(`  Throughput: ${throughput.toFixed(2)} req/sec`);
     this.logger.log(`  SLO Compliant: ${sloCheck.compliant ? '✅' : '❌'}`);
-    
+
     if (!sloCheck.compliant && sloCheck.violations.length > 0) {
-      sloCheck.violations.forEach(violation => {
+      sloCheck.violations.forEach((violation) => {
         this.logger.warn(`  Violation: ${violation}`);
       });
     }
@@ -262,18 +259,18 @@ export class SalesMorningPeakScenario {
    */
   async smokeTest(users: number = 10, durationSeconds: number = 30): Promise<LoadTestResult> {
     this.logger.log(`Running smoke test with ${users} users for ${durationSeconds} seconds`);
-    
+
     // Override duration for smoke test
     const originalRun = this.run;
     this.run = async (concurrentUsers, durationMinutes) => {
       return originalRun.call(this, concurrentUsers, durationSeconds / 60);
     };
-    
+
     const result = await this.run(users, durationSeconds / 60);
-    
+
     // Restore original method
     this.run = originalRun;
-    
+
     return result;
   }
 }

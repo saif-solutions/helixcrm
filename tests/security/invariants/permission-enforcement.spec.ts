@@ -84,10 +84,7 @@ describe('Permission Enforcement Security Tests', () => {
       where: { code: { contains: 'TEST_PERMISSION' } },
     });
 
-    await testHelpers.cleanupTestData(
-      [adminUser.id, regularUser.id],
-      [testOrganization.id],
-    );
+    await testHelpers.cleanupTestData([adminUser.id, regularUser.id], [testOrganization.id]);
 
     await prisma.$disconnect();
   });
@@ -102,10 +99,10 @@ describe('Permission Enforcement Security Tests', () => {
       expect(adminRole).toBeDefined();
       // Admin role should have at least our test permission
       expect(adminRole?.permissions.length).toBeGreaterThan(0);
-      
+
       // Check if our test permission is in the list
       const hasTestPermission = adminRole?.permissions.some(
-        rp => rp.permission.code === 'TEST_PERMISSION_CREATE'
+        (rp) => rp.permission.code === 'TEST_PERMISSION_CREATE',
       );
       expect(hasTestPermission).toBe(true);
     });
@@ -124,9 +121,7 @@ describe('Permission Enforcement Security Tests', () => {
           where: { name: 'admin', organizationId: testOrganization.id },
           include: { permissions: true },
         });
-        expect(userRole.permissions.length).toBeLessThanOrEqual(
-          adminRole?.permissions.length || 0
-        );
+        expect(userRole.permissions.length).toBeLessThanOrEqual(adminRole?.permissions.length || 0);
       }
     });
   });

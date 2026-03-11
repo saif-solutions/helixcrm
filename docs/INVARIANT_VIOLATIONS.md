@@ -8,16 +8,17 @@
 
 ### 1.1 Severity Levels (from INVARIANTS.md)
 
-| Severity | Impact | Examples | Response SLA |
-|----------|--------|----------|--------------|
-| **P0** | Catastrophic / Legal / Data Integrity | Cross-tenant data leak, Secret exposure | Immediate (within 1 hour) |
-| **P1** | Security / Isolation / Auth Compromise | Token revocation failure, Missing audit logs | Urgent (within 24 hours) |
-| **P2** | Architectural Integrity / Drift Risk | Domain layer framework import, Module boundary violation | Scheduled (next sprint) |
-| **P3** | Operational / Performance / Process | Build non-reproducibility, Archive mutation | Backlog |
+| Severity | Impact                                 | Examples                                                 | Response SLA              |
+| -------- | -------------------------------------- | -------------------------------------------------------- | ------------------------- |
+| **P0**   | Catastrophic / Legal / Data Integrity  | Cross-tenant data leak, Secret exposure                  | Immediate (within 1 hour) |
+| **P1**   | Security / Isolation / Auth Compromise | Token revocation failure, Missing audit logs             | Urgent (within 24 hours)  |
+| **P2**   | Architectural Integrity / Drift Risk   | Domain layer framework import, Module boundary violation | Scheduled (next sprint)   |
+| **P3**   | Operational / Performance / Process    | Build non-reproducibility, Archive mutation              | Backlog                   |
 
 ### 1.2 Detection Sources
 
 Violations can be detected through:
+
 - **Automated:** CI pipeline, runtime validation, monitoring alerts
 - **Manual:** Code review, security audit, incident investigation
 - **External:** Customer report, penetration test, compliance audit
@@ -34,11 +35,11 @@ graph TD
     B -->|P0/P1| C[Immediate Triage]
     B -->|P2| D[Schedule Review]
     B -->|P3| E[Log for Backlog]
-    
+
     C --> F[Create Violation Record]
     D --> F
     E --> G[Track in Issue Tracker]
-    
+
     F --> H[Impact Assessment]
     H --> I[Remediation Planning]
 
@@ -150,7 +151,7 @@ granted_by: "Architecture Lead Name"
 risk_assessment: "Low risk because..."
 mitigation: "Manual review required for all X operations"
 approval_chain: ["Tech Lead", "Security Lead"]
-conditions: 
+conditions:
   - "Must be reviewed weekly"
   - "Automated alert if violation count exceeds 5"
 4.3 Waiver Expiration
@@ -246,3 +247,4 @@ Weekly report of all violations
 Last Updated: 2026-02-14
 Next Review: 2026-03-14
 Owner: Architecture Team
+```

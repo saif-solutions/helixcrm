@@ -7,7 +7,12 @@ import { AuditLogService } from '../../../src/shared/audit-log/audit-log.service
 import { TenantContextService } from '../../../src/shared/tenant/context/tenant-context.service';
 import { PermissionContextService } from '../../../src/shared/permissions/context/permission-context.service';
 import { PrismaService } from '../../../src/shared/prisma/prisma.service';
-import { NotFoundException, ConflictException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import {
+  NotFoundException,
+  ConflictException,
+  ForbiddenException,
+  BadRequestException,
+} from '@nestjs/common';
 
 // Mock implementations
 const mockPrismaService = {
@@ -128,7 +133,7 @@ describe('RolesService', () => {
     prisma = module.get(PrismaService);
 
     jest.clearAllMocks();
-    
+
     // Default mock for getUserEmail
     mockRoleRepository.getUserEmail.mockResolvedValue('admin@example.com');
     prisma.user.findUnique.mockResolvedValue({ email: 'admin@example.com' });
@@ -141,35 +146,37 @@ describe('RolesService', () => {
     ];
 
     it('should return all roles with transformed permissions', async () => {
-      const query = { 
-  page: 1, 
-  limit: 10,
-  search: undefined,
-  sortBy: undefined,
-  sortOrder: undefined,
-  includeInactive: undefined,
-  isSystem: undefined
-};
+      const query = {
+        page: 1,
+        limit: 10,
+        search: undefined,
+        sortBy: undefined,
+        sortOrder: undefined,
+        includeInactive: undefined,
+        isSystem: undefined,
+      };
       roleRepository.findAll.mockResolvedValue(mockRoles);
 
       const result = await service.findAll(query);
 
-      expect(result).toEqual(mockRoles.map(role => ({
-        ...role,
-        permissions: role.permissions.map(rp => rp.permission),
-      })));
+      expect(result).toEqual(
+        mockRoles.map((role) => ({
+          ...role,
+          permissions: role.permissions.map((rp) => rp.permission),
+        })),
+      );
       expect(roleRepository.findAll).toHaveBeenCalledWith(query);
     });
 
-it('should throw BadRequestException on repository error', async () => {
-  const query: any = { 
-    page: 1, 
-    limit: 10 
-  };
-  roleRepository.findAll.mockRejectedValue(new Error('Database error'));
+    it('should throw BadRequestException on repository error', async () => {
+      const query: any = {
+        page: 1,
+        limit: 10,
+      };
+      roleRepository.findAll.mockRejectedValue(new Error('Database error'));
 
-  await expect(service.findAll(query)).rejects.toThrow(BadRequestException);
-});
+      await expect(service.findAll(query)).rejects.toThrow(BadRequestException);
+    });
   });
 
   describe('findOne', () => {
@@ -182,7 +189,7 @@ it('should throw BadRequestException on repository error', async () => {
 
       expect(result).toEqual({
         ...mockRole,
-        permissions: mockRole.permissions.map(rp => rp.permission),
+        permissions: mockRole.permissions.map((rp) => rp.permission),
       });
       expect(roleRepository.findById).toHaveBeenCalledWith('role-123');
     });
@@ -224,10 +231,18 @@ it('should throw BadRequestException on repository error', async () => {
       expect(roleRepository.findByName).toHaveBeenCalledWith('New Role');
       expect(permissionRepository.findByCodes).toHaveBeenCalledWith(['user:read', 'user:write']);
       expect(roleRepository.create).toHaveBeenCalledWith(
-        { name: 'New Role', description: 'New role description', isSystem: false, permissions: ['user:read', 'user:write'] },
-        'org-123'
+        {
+          name: 'New Role',
+          description: 'New role description',
+          isSystem: false,
+          permissions: ['user:read', 'user:write'],
+        },
+        'org-123',
       );
-      expect(roleRepository.assignPermissions).toHaveBeenCalledWith(mockRole.id, ['perm-1', 'perm-2']);
+      expect(roleRepository.assignPermissions).toHaveBeenCalledWith(mockRole.id, [
+        'perm-1',
+        'perm-2',
+      ]);
       expect(auditLog.logEvent).toHaveBeenCalled();
     });
 
@@ -265,7 +280,10 @@ it('should throw BadRequestException on repository error', async () => {
     };
 
     const existingRole = createMockRole({ name: 'Old Role' });
-    const updatedRole = createMockRole({ name: 'Updated Role', description: 'Updated description' });
+    const updatedRole = createMockRole({
+      name: 'Updated Role',
+      description: 'Updated description',
+    });
     const permissionRecords = [
       { id: 'perm-1', code: 'user:read' },
       { id: 'perm-3', code: 'contact:read' },
@@ -287,7 +305,10 @@ it('should throw BadRequestException on repository error', async () => {
         name: 'Updated Role',
         description: 'Updated description',
       });
-      expect(roleRepository.assignPermissions).toHaveBeenCalledWith('role-123', ['perm-1', 'perm-3']);
+      expect(roleRepository.assignPermissions).toHaveBeenCalledWith('role-123', [
+        'perm-1',
+        'perm-3',
+      ]);
       expect(auditLog.logEvent).toHaveBeenCalled();
     });
 
@@ -301,24 +322,33 @@ it('should throw BadRequestException on repository error', async () => {
       const systemRole = createMockRole({ isSystem: true });
       roleRepository.findById.mockResolvedValue(systemRole);
 
-      await expect(service.update('role-123', { isSystem: false })).rejects.toThrow(ForbiddenException);
+      await expect(service.update('role-123', { isSystem: false })).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should throw ConflictException if new name already exists', async () => {
       roleRepository.findByName.mockResolvedValue({ id: 'another-role', name: 'Updated Role' });
 
-      await expect(service.update('role-123', { name: 'Updated Role' })).rejects.toThrow(ConflictException);
+      await expect(service.update('role-123', { name: 'Updated Role' })).rejects.toThrow(
+        ConflictException,
+      );
     });
 
     it('should handle partial updates', async () => {
       const partialUpdate = { description: 'New description only' };
-      roleRepository.update.mockResolvedValue({ ...existingRole, description: 'New description only' });
+      roleRepository.update.mockResolvedValue({
+        ...existingRole,
+        description: 'New description only',
+      });
       permissionRepository.findByCodes.mockResolvedValue([]);
 
       const result = await service.update('role-123', partialUpdate);
 
       expect(result).toBeDefined();
-      expect(roleRepository.update).toHaveBeenCalledWith('role-123', { description: 'New description only' });
+      expect(roleRepository.update).toHaveBeenCalledWith('role-123', {
+        description: 'New description only',
+      });
       expect(roleRepository.assignPermissions).not.toHaveBeenCalled();
     });
   });
@@ -383,7 +413,11 @@ it('should throw BadRequestException on repository error', async () => {
       expect(roleRepository.findUserInTenant).toHaveBeenCalledWith('target-user-123', 'org-123');
       expect(roleRepository.findById).toHaveBeenCalledWith('role-123');
       expect(userRoleRepository.findAssignment).toHaveBeenCalledWith('target-user-123', 'role-123');
-      expect(userRoleRepository.assignRole).toHaveBeenCalledWith('target-user-123', 'role-123', 'org-123');
+      expect(userRoleRepository.assignRole).toHaveBeenCalledWith(
+        'target-user-123',
+        'role-123',
+        'org-123',
+      );
       expect(auditLog.logEvent).toHaveBeenCalled();
     });
 
@@ -432,7 +466,10 @@ it('should throw BadRequestException on repository error', async () => {
       expect(result).toEqual({ message: 'Role removed successfully' });
       expect(userRoleRepository.findAssignment).toHaveBeenCalledWith('target-user-123', 'role-123');
       expect(userRoleRepository.countAdminRoles).toHaveBeenCalledWith('org-123');
-      expect(userRoleRepository.removeAssignment).toHaveBeenCalledWith('target-user-123', 'role-123');
+      expect(userRoleRepository.removeAssignment).toHaveBeenCalledWith(
+        'target-user-123',
+        'role-123',
+      );
       expect(auditLog.logEvent).toHaveBeenCalled();
     });
 
@@ -450,26 +487,26 @@ it('should throw BadRequestException on repository error', async () => {
   });
 
   describe('getUserRoles', () => {
-const mockUserRoles = [
-  {
-    id: 'ur-1',
-    createdAt: new Date('2024-01-01'),
-    role: createMockRole({ 
-      id: 'role-1', 
-      name: 'Admin', 
-      permissions: [{ permission: { id: 'p1', code: 'user:read' } }] 
-    }),
-  },
-  {
-    id: 'ur-2',
-    createdAt: new Date('2024-01-02'),
-    role: createMockRole({ 
-      id: 'role-2', 
-      name: 'Manager', 
-      permissions: [{ permission: { id: 'p2', code: 'contact:read' } }] 
-    }),
-  },
-];
+    const mockUserRoles = [
+      {
+        id: 'ur-1',
+        createdAt: new Date('2024-01-01'),
+        role: createMockRole({
+          id: 'role-1',
+          name: 'Admin',
+          permissions: [{ permission: { id: 'p1', code: 'user:read' } }],
+        }),
+      },
+      {
+        id: 'ur-2',
+        createdAt: new Date('2024-01-02'),
+        role: createMockRole({
+          id: 'role-2',
+          name: 'Manager',
+          permissions: [{ permission: { id: 'p2', code: 'contact:read' } }],
+        }),
+      },
+    ];
 
     it('should return user roles with transformed permissions', async () => {
       userRoleRepository.getUserRoles.mockResolvedValue(mockUserRoles);
@@ -492,19 +529,19 @@ const mockUserRoles = [
       ]);
     });
 
-it('should throw BadRequestException on repository error', async () => {
-  const query = { 
-    page: 1, 
-    limit: 10,
-    search: undefined,
-    sortBy: undefined,
-    sortOrder: undefined,
-    includeInactive: undefined,
-    isSystem: undefined
-  };
-  roleRepository.findAll.mockRejectedValue(new Error('Database error'));
+    it('should throw BadRequestException on repository error', async () => {
+      const query = {
+        page: 1,
+        limit: 10,
+        search: undefined,
+        sortBy: undefined,
+        sortOrder: undefined,
+        includeInactive: undefined,
+        isSystem: undefined,
+      };
+      roleRepository.findAll.mockRejectedValue(new Error('Database error'));
 
-  await expect(service.findAll(query)).rejects.toThrow(BadRequestException);
-});
+      await expect(service.findAll(query)).rejects.toThrow(BadRequestException);
+    });
   });
 });

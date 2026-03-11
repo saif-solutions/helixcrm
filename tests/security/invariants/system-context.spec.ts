@@ -27,26 +27,23 @@ describe('System Context Isolation Security Tests', () => {
   });
 
   afterAll(async () => {
-    await testHelpers.cleanupTestData(
-      [regularUser.id],
-      [testOrganization.id],
-    );
+    await testHelpers.cleanupTestData([regularUser.id], [testOrganization.id]);
     await prisma.$disconnect();
   });
 
   describe('System vs User Context', () => {
     test('System-level operations are identifiable', async () => {
       // Check for system user indicators in the schema
-      const hasSystemUserField = await prisma.$queryRaw`
+      const hasSystemUserField = (await prisma.$queryRaw`
         SELECT column_name, data_type
         FROM information_schema.columns
         WHERE table_schema = 'public'
         AND table_name = 'users'
         AND column_name IN ('is_system', 'system_user', 'is_system_user');
-      ` as any[];
+      `) as any[];
 
       expect(Array.isArray(hasSystemUserField)).toBe(true);
-      
+
       // Some systems mark system users differently
       // This test documents what we find
       console.log('System user indicators in schema:', hasSystemUserField.length);
@@ -54,14 +51,14 @@ describe('System Context Isolation Security Tests', () => {
 
     test('Database has RLS bypass capabilities documented', async () => {
       // Check for RLS bypass scripts or functions
-      const rlsBypassFunctions = await prisma.$queryRaw`
+      const rlsBypassFunctions = (await prisma.$queryRaw`
         SELECT proname, proargtypes, prosrc
         FROM pg_proc
         WHERE proname LIKE '%rls%' 
         OR proname LIKE '%bypass%'
         OR prosrc LIKE '%SECURITY%'
         OR prosrc LIKE '%POLICY%';
-      ` as any[];
+      `) as any[];
 
       expect(Array.isArray(rlsBypassFunctions)).toBe(true);
       console.log('RLS-related functions:', rlsBypassFunctions.length);
@@ -72,14 +69,14 @@ describe('System Context Isolation Security Tests', () => {
     test('Regular users cannot perform system operations', async () => {
       // This would require testing actual API endpoints
       // For now, we verify the data model supports separation
-      
+
       const user = await prisma.user.findUnique({
         where: { id: regularUser.id },
       });
 
       expect(user).toBeDefined();
       expect(user?.organizationId).toBe(testOrganization.id);
-      
+
       // Regular users should have organization context
       expect(user?.organizationId).toBeTruthy();
     });

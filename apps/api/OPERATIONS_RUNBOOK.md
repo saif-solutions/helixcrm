@@ -3,6 +3,7 @@
 ## ��� DEPLOYMENT PROCEDURE
 
 ### PRE-DEPLOYMENT CHECKLIST
+
 ```bash
 # 1. Environment Verification
 echo "NODE_ENV=$NODE_ENV"
@@ -21,7 +22,7 @@ npm run build
 # 3. Database Verification
 npx prisma migrate status
 npx prisma db execute --stdin << 'EOF'
-SELECT COUNT(*) as rls_tables FROM pg_tables 
+SELECT COUNT(*) as rls_tables FROM pg_tables
 WHERE schemaname = 'public' AND rowsecurity = true;
 DEPLOYMENT COMMANDS (PRODUCTION)
 bash
@@ -207,3 +208,4 @@ Emergency: Anytime with executive approval
 LAST UPDATED: $(date +"%Y-%m-%d")
 NEXT REVIEW: $(date -d "+30 days" +"%Y-%m-%d")
 OWNER: DevOps Team
+```

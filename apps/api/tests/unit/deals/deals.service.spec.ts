@@ -6,7 +6,12 @@ import { AuditLogService } from '../../../src/shared/audit-log/audit-log.service
 import { DealRepository } from '../../../src/modules/deals/repositories/deal.repository';
 import { PermissionContextService } from '../../../src/shared/permissions/context/permission-context.service';
 import { TenantContextService } from '../../../src/shared/tenant/context/tenant-context.service';
-import { NotFoundException, ForbiddenException, ConflictException, BadRequestException } from '@nestjs/common';
+import {
+  NotFoundException,
+  ForbiddenException,
+  ConflictException,
+  BadRequestException,
+} from '@nestjs/common';
 import { DealStatus } from '@prisma/client';
 
 // Mock implementations
@@ -137,9 +142,9 @@ describe('DealsService', () => {
     };
 
     const mockDeal = createMockDeal({
-  name: 'Simple Deal',  // This will be transformed to title
-  amount: 5000,         // This will be transformed to value
-});
+      name: 'Simple Deal', // This will be transformed to title
+      amount: 5000, // This will be transformed to value
+    });
 
     beforeEach(() => {
       prisma.pipeline.findFirst.mockResolvedValue({
@@ -154,7 +159,10 @@ describe('DealsService', () => {
     it('should successfully create a deal', async () => {
       dealRepository.create.mockResolvedValue(mockDeal);
 
-      const result = await service.create({ userId: 'user-123', ...createDealDto });
+      const result = await service.create({
+        userId: 'user-123',
+        ...createDealDto,
+      });
 
       expect(result).toEqual(mockDeal);
       expect(dealRepository.create).toHaveBeenCalled();
@@ -165,8 +173,9 @@ describe('DealsService', () => {
     it('should throw NotFoundException if pipeline not found', async () => {
       prisma.pipeline.findFirst.mockResolvedValue(null);
 
-      await expect(service.create({ userId: 'user-123', ...createDealDto }))
-        .rejects.toThrow(NotFoundException);
+      await expect(
+        service.create({ userId: 'user-123', ...createDealDto }),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should throw BadRequestException if stage does not belong to pipeline', async () => {
@@ -175,22 +184,25 @@ describe('DealsService', () => {
         stages: [{ id: 'wrong-stage', probability: 50 }],
       });
 
-      await expect(service.create({ userId: 'user-123', ...createDealDto }))
-        .rejects.toThrow(BadRequestException);
+      await expect(
+        service.create({ userId: 'user-123', ...createDealDto }),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should throw BadRequestException if contact not found', async () => {
       prisma.contact.findFirst.mockResolvedValue(null);
 
-      await expect(service.create({ userId: 'user-123', ...createDealDto }))
-        .rejects.toThrow(BadRequestException);
+      await expect(
+        service.create({ userId: 'user-123', ...createDealDto }),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should throw ConflictException if deal with same name exists', async () => {
       prisma.deal.findFirst.mockResolvedValue({ id: 'existing-deal' });
 
-      await expect(service.create({ userId: 'user-123', ...createDealDto }))
-        .rejects.toThrow(ConflictException);
+      await expect(
+        service.create({ userId: 'user-123', ...createDealDto }),
+      ).rejects.toThrow(ConflictException);
     });
   });
 
@@ -209,13 +221,19 @@ describe('DealsService', () => {
     beforeEach(() => {
       // Mock getOrCreateDefaultPipeline to return a pipeline with stages
       prisma.pipeline.findFirst
-        .mockResolvedValueOnce(null)  // First call: no pipeline exists
-        .mockResolvedValueOnce({      // Second call: after creation
+        .mockResolvedValueOnce(null) // First call: no pipeline exists
+        .mockResolvedValueOnce({
+          // Second call: after creation
           id: 'pipeline-123',
           name: 'Default Sales Pipeline',
           stages: [
-            { id: 'stage-123', name: 'Qualification', order: 1, probability: 10 }
-          ]
+            {
+              id: 'stage-123',
+              name: 'Qualification',
+              order: 1,
+              probability: 10,
+            },
+          ],
         });
 
       // Mock pipelineStage.findFirst to return the stage
@@ -224,7 +242,7 @@ describe('DealsService', () => {
         name: 'Qualification',
         order: 1,
         probability: 10,
-        pipelineId: 'pipeline-123'
+        pipelineId: 'pipeline-123',
       });
 
       // Mock transaction for pipeline creation
@@ -235,9 +253,16 @@ describe('DealsService', () => {
             create: jest.fn().mockResolvedValue({
               id: 'pipeline-123',
               name: 'Default Sales Pipeline',
-              stages: [{ id: 'stage-123', name: 'Qualification', order: 1, probability: 10 }]
-            })
-          }
+              stages: [
+                {
+                  id: 'stage-123',
+                  name: 'Qualification',
+                  order: 1,
+                  probability: 10,
+                },
+              ],
+            }),
+          },
         };
         return callback(tx);
       });
@@ -247,38 +272,43 @@ describe('DealsService', () => {
       dealRepository.create.mockResolvedValue(mockDeal);
     });
 
-it('should successfully create a simple deal', async () => {
-  // Mock the repository to return a deal that will be transformed
-  const repositoryDeal = createMockDeal({
-    name: 'Simple Deal',  // This will become 'title'
-    amount: 5000,         // This will become 'value'
-  });
-  dealRepository.create.mockResolvedValue(repositoryDeal);
+    it('should successfully create a simple deal', async () => {
+      // Mock the repository to return a deal that will be transformed
+      const repositoryDeal = createMockDeal({
+        name: 'Simple Deal', // This will become 'title'
+        amount: 5000, // This will become 'value'
+      });
+      dealRepository.create.mockResolvedValue(repositoryDeal);
 
-  const result = await service.createSimple({ userId: 'user-123', ...createSimpleDto });
+      const result = await service.createSimple({
+        userId: 'user-123',
+        ...createSimpleDto,
+      });
 
-  // The service transforms the response, so we need to check the transformed properties
-  expect(result).toHaveProperty('id', repositoryDeal.id);
-  expect(result).toHaveProperty('title', 'Simple Deal');
-  expect(result).toHaveProperty('value', 5000);
-  expect(result).not.toHaveProperty('name');  // Original property should be removed
-  expect(result).not.toHaveProperty('amount'); // Original property should be removed
-  expect(dealRepository.create).toHaveBeenCalled();
-  expect(auditLog.logEvent).toHaveBeenCalled();
-});
+      // The service transforms the response, so we need to check the transformed properties
+      expect(result).toHaveProperty('id', repositoryDeal.id);
+      expect(result).toHaveProperty('title', 'Simple Deal');
+      expect(result).toHaveProperty('value', 5000);
+      expect(result).not.toHaveProperty('name'); // Original property should be removed
+      expect(result).not.toHaveProperty('amount'); // Original property should be removed
+      expect(dealRepository.create).toHaveBeenCalled();
+      expect(auditLog.logEvent).toHaveBeenCalled();
+    });
 
     it('should throw BadRequestException if stage not found', async () => {
       prisma.pipelineStage.findFirst.mockResolvedValue(null);
 
-      await expect(service.createSimple({ userId: 'user-123', ...createSimpleDto }))
-        .rejects.toThrow(BadRequestException);
+      await expect(
+        service.createSimple({ userId: 'user-123', ...createSimpleDto }),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should throw ConflictException if deal with same title exists', async () => {
       prisma.deal.findFirst.mockResolvedValue({ id: 'existing-deal' });
 
-      await expect(service.createSimple({ userId: 'user-123', ...createSimpleDto }))
-        .rejects.toThrow(ConflictException);
+      await expect(
+        service.createSimple({ userId: 'user-123', ...createSimpleDto }),
+      ).rejects.toThrow(ConflictException);
     });
   });
 
@@ -338,14 +368,20 @@ it('should successfully create a simple deal', async () => {
     it('should throw NotFoundException if deal not found', async () => {
       dealRepository.findById.mockResolvedValue(null);
 
-      await expect(service.findOne('deal-123')).rejects.toThrow(NotFoundException);
+      await expect(service.findOne('deal-123')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw ForbiddenException if deal belongs to different tenant', async () => {
-      const wrongTenantDeal = createMockDeal({ organizationId: 'different-org' });
+      const wrongTenantDeal = createMockDeal({
+        organizationId: 'different-org',
+      });
       dealRepository.findById.mockResolvedValue(wrongTenantDeal);
 
-      await expect(service.findOne('deal-123')).rejects.toThrow(ForbiddenException);
+      await expect(service.findOne('deal-123')).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 
@@ -384,15 +420,17 @@ it('should successfully create a simple deal', async () => {
     it('should throw NotFoundException if deal not found', async () => {
       dealRepository.findById.mockResolvedValue(null);
 
-      await expect(service.update('deal-123', updateDto, 'user-123'))
-        .rejects.toThrow(NotFoundException);
+      await expect(
+        service.update('deal-123', updateDto, 'user-123'),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should throw ConflictException if name already exists', async () => {
       prisma.deal.findFirst.mockResolvedValue({ id: 'another-deal' });
 
-      await expect(service.update('deal-123', { name: 'Existing Name' }, 'user-123'))
-        .rejects.toThrow(ConflictException);
+      await expect(
+        service.update('deal-123', { name: 'Existing Name' }, 'user-123'),
+      ).rejects.toThrow(ConflictException);
     });
   });
 
@@ -405,7 +443,10 @@ it('should successfully create a simple deal', async () => {
     });
 
     it('should successfully soft delete a deal', async () => {
-      dealRepository.softDelete.mockResolvedValue({ ...mockDeal, deletedAt: new Date() });
+      dealRepository.softDelete.mockResolvedValue({
+        ...mockDeal,
+        deletedAt: new Date(),
+      });
 
       const result = await service.remove('deal-123', 'user-123');
 
@@ -417,8 +458,9 @@ it('should successfully create a simple deal', async () => {
     it('should throw NotFoundException if deal not found', async () => {
       dealRepository.findById.mockResolvedValue(null);
 
-      await expect(service.remove('deal-123', 'user-123'))
-        .rejects.toThrow(NotFoundException);
+      await expect(service.remove('deal-123', 'user-123')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -443,7 +485,9 @@ it('should successfully create a simple deal', async () => {
         const tx = {
           deal: {
             findFirst: jest.fn().mockResolvedValue(mockDeal),
-            update: jest.fn().mockResolvedValue({ ...mockDeal, stageId: 'stage-456' }),
+            update: jest
+              .fn()
+              .mockResolvedValue({ ...mockDeal, stageId: 'stage-456' }),
           },
           dealStageHistory: {
             create: jest.fn().mockResolvedValue({}),
@@ -464,14 +508,19 @@ it('should successfully create a simple deal', async () => {
     it('should throw BadRequestException if moving to same stage', async () => {
       const sameStageData = { stageId: 'stage-123' };
 
-      await expect(service.moveStage('deal-123', sameStageData, 'user-123'))
-        .rejects.toThrow(BadRequestException);
+      await expect(
+        service.moveStage('deal-123', sameStageData, 'user-123'),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 
   describe('getStageHistory', () => {
     const mockHistory = [
-      { id: 'history-1', fromStage: { name: 'Qualification' }, toStage: { name: 'Proposal' } },
+      {
+        id: 'history-1',
+        fromStage: { name: 'Qualification' },
+        toStage: { name: 'Proposal' },
+      },
     ];
 
     it('should return stage history', async () => {
@@ -486,7 +535,9 @@ it('should successfully create a simple deal', async () => {
     it('should throw NotFoundException if deal not found', async () => {
       dealRepository.findById.mockResolvedValue(null);
 
-      await expect(service.getStageHistory('deal-123')).rejects.toThrow(NotFoundException);
+      await expect(service.getStageHistory('deal-123')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 

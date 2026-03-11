@@ -73,7 +73,9 @@ describe('EmailTemplatesController', () => {
       const result = await controller.createEmailTemplate(createDto);
 
       expect(result).toEqual(mockResult);
-      expect(emailTemplatesService.createEmailTemplate).toHaveBeenCalledWith(createDto);
+      expect(emailTemplatesService.createEmailTemplate).toHaveBeenCalledWith(
+        createDto,
+      );
     });
   });
 
@@ -87,9 +89,16 @@ describe('EmailTemplatesController', () => {
     };
 
     it('should return all templates with default params', async () => {
-      emailTemplatesService.getAllEmailTemplates.mockResolvedValue(mockTemplates);
+      emailTemplatesService.getAllEmailTemplates.mockResolvedValue(
+        mockTemplates,
+      );
 
-      const result = await controller.getAllEmailTemplates(undefined, undefined, 1, 20);
+      const result = await controller.getAllEmailTemplates(
+        undefined,
+        undefined,
+        1,
+        20,
+      );
 
       expect(result).toEqual(mockTemplates);
       expect(emailTemplatesService.getAllEmailTemplates).toHaveBeenCalledWith({
@@ -101,7 +110,9 @@ describe('EmailTemplatesController', () => {
     });
 
     it('should filter by category', async () => {
-      emailTemplatesService.getAllEmailTemplates.mockResolvedValue(mockTemplates);
+      emailTemplatesService.getAllEmailTemplates.mockResolvedValue(
+        mockTemplates,
+      );
 
       await controller.getAllEmailTemplates('welcome', undefined, 1, 20);
 
@@ -114,7 +125,9 @@ describe('EmailTemplatesController', () => {
     });
 
     it('should filter by active status', async () => {
-      emailTemplatesService.getAllEmailTemplates.mockResolvedValue(mockTemplates);
+      emailTemplatesService.getAllEmailTemplates.mockResolvedValue(
+        mockTemplates,
+      );
 
       await controller.getAllEmailTemplates(undefined, true, 1, 20);
 
@@ -127,7 +140,9 @@ describe('EmailTemplatesController', () => {
     });
 
     it('should clamp limit to max 100', async () => {
-      emailTemplatesService.getAllEmailTemplates.mockResolvedValue(mockTemplates);
+      emailTemplatesService.getAllEmailTemplates.mockResolvedValue(
+        mockTemplates,
+      );
 
       await controller.getAllEmailTemplates(undefined, undefined, 1, 200);
 
@@ -140,7 +155,9 @@ describe('EmailTemplatesController', () => {
     });
 
     it('should ensure page is at least 1', async () => {
-      emailTemplatesService.getAllEmailTemplates.mockResolvedValue(mockTemplates);
+      emailTemplatesService.getAllEmailTemplates.mockResolvedValue(
+        mockTemplates,
+      );
 
       await controller.getAllEmailTemplates(undefined, undefined, 0, 20);
 
@@ -158,12 +175,16 @@ describe('EmailTemplatesController', () => {
     const mockTemplate = { id: templateId, name: 'Welcome Email' };
 
     it('should return template by id', async () => {
-      emailTemplatesService.getEmailTemplateById.mockResolvedValue(mockTemplate);
+      emailTemplatesService.getEmailTemplateById.mockResolvedValue(
+        mockTemplate,
+      );
 
       const result = await controller.getEmailTemplateById(templateId);
 
       expect(result).toEqual(mockTemplate);
-      expect(emailTemplatesService.getEmailTemplateById).toHaveBeenCalledWith(templateId);
+      expect(emailTemplatesService.getEmailTemplateById).toHaveBeenCalledWith(
+        templateId,
+      );
     });
   });
 
@@ -175,10 +196,16 @@ describe('EmailTemplatesController', () => {
     it('should successfully update a template', async () => {
       emailTemplatesService.updateEmailTemplate.mockResolvedValue(mockResult);
 
-      const result = await controller.updateEmailTemplate(templateId, updateDto);
+      const result = await controller.updateEmailTemplate(
+        templateId,
+        updateDto,
+      );
 
       expect(result).toEqual(mockResult);
-      expect(emailTemplatesService.updateEmailTemplate).toHaveBeenCalledWith(templateId, updateDto);
+      expect(emailTemplatesService.updateEmailTemplate).toHaveBeenCalledWith(
+        templateId,
+        updateDto,
+      );
     });
   });
 
@@ -192,7 +219,9 @@ describe('EmailTemplatesController', () => {
       const result = await controller.deleteEmailTemplate(templateId);
 
       expect(result).toEqual(mockResult);
-      expect(emailTemplatesService.deleteEmailTemplate).toHaveBeenCalledWith(templateId);
+      expect(emailTemplatesService.deleteEmailTemplate).toHaveBeenCalledWith(
+        templateId,
+      );
     });
   });
 
@@ -214,7 +243,9 @@ describe('EmailTemplatesController', () => {
       const result = await controller.renderTemplate(templateId, renderDto);
 
       expect(result).toEqual(mockResult);
-      expect(emailTemplatesService.renderTemplate).toHaveBeenCalledWith(renderDto);
+      expect(emailTemplatesService.renderTemplate).toHaveBeenCalledWith(
+        renderDto,
+      );
     });
   });
 
@@ -259,8 +290,10 @@ describe('EmailTemplatesController', () => {
 
       expect(result).toHaveProperty('variables');
       expect(result.variables.length).toBeGreaterThan(0);
-      
-      const contactFirstName = result.variables.find(v => v.name === 'contact.firstName');
+
+      const contactFirstName = result.variables.find(
+        (v) => v.name === 'contact.firstName',
+      );
       expect(contactFirstName).toBeDefined();
       expect(contactFirstName.required).toBe(true);
     });

@@ -1,14 +1,14 @@
 // D:\Projects-In-Hand\helixcrm\apps\web\src\components\molecules\Card\Card.test.tsx
 import { render, screen, fireEvent } from '@testing-library/react';
 import { vi } from 'vitest';
-import { 
-  Card, 
-  CardHeader, 
-  CardTitle, 
-  CardSubtitle, 
-  CardContent, 
-  CardFooter, 
-  CardActions 
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardSubtitle,
+  CardContent,
+  CardFooter,
+  CardActions,
 } from './Card';
 import { Button } from '../../atoms/Button';
 
@@ -60,7 +60,11 @@ describe('Card Component', () => {
   });
 
   test('renders clickable card with role and tabindex', () => {
-    render(<Card clickable hoverable>Click me</Card>);
+    render(
+      <Card clickable hoverable>
+        Click me
+      </Card>,
+    );
     const card = screen.getByText('Click me').parentElement;
     expect(card).toHaveAttribute('role', 'button');
     expect(card).toHaveAttribute('tabindex', '0');
@@ -73,7 +77,7 @@ describe('Card Component', () => {
     render(
       <Card clickable onClick={handleClick}>
         Click me
-      </Card>
+      </Card>,
     );
     const card = screen.getByText('Click me').parentElement;
     fireEvent.click(card!);
@@ -95,18 +99,14 @@ describe('Card Component', () => {
     render(
       <Card title="Title" subtitle="Subtitle">
         Content
-      </Card>
+      </Card>,
     );
     expect(screen.getByText('Title')).toBeInTheDocument();
     expect(screen.getByText('Subtitle')).toBeInTheDocument();
   });
 
   test('renders with custom header', () => {
-    render(
-      <Card header={<div data-testid="custom-header">Custom Header</div>}>
-        Content
-      </Card>
-    );
+    render(<Card header={<div data-testid="custom-header">Custom Header</div>}>Content</Card>);
     expect(screen.getByTestId('custom-header')).toBeInTheDocument();
   });
 
@@ -119,7 +119,7 @@ describe('Card Component', () => {
         }}
       >
         Content
-      </Card>
+      </Card>,
     );
     const image = screen.getByAltText('Test image');
     expect(image).toBeInTheDocument();
@@ -132,11 +132,7 @@ describe('Card Component', () => {
   });
 
   test('renders with actions prop', () => {
-    render(
-      <Card actions={<Button>Action</Button>}>
-        Content
-      </Card>
-    );
+    render(<Card actions={<Button>Action</Button>}>Content</Card>);
     expect(screen.getByText('Action')).toBeInTheDocument();
   });
 
@@ -145,7 +141,7 @@ describe('Card Component', () => {
       <Card>
         <CardHeader>Header</CardHeader>
         <CardContent>Content</CardContent>
-      </Card>
+      </Card>,
     );
     expect(screen.getByText('Header')).toBeInTheDocument();
     expect(screen.getByText('Header')).toHaveClass('mb-4');
@@ -156,7 +152,7 @@ describe('Card Component', () => {
       <Card>
         <CardTitle>Title</CardTitle>
         <CardContent>Content</CardContent>
-      </Card>
+      </Card>,
     );
     const title = screen.getByText('Title');
     expect(title).toBeInTheDocument();
@@ -169,7 +165,7 @@ describe('Card Component', () => {
       <Card>
         <CardSubtitle>Subtitle</CardSubtitle>
         <CardContent>Content</CardContent>
-      </Card>
+      </Card>,
     );
     const subtitle = screen.getByText('Subtitle');
     expect(subtitle).toBeInTheDocument();
@@ -181,7 +177,7 @@ describe('Card Component', () => {
     render(
       <Card>
         <CardContent>Content</CardContent>
-      </Card>
+      </Card>,
     );
     const content = screen.getByText('Content');
     expect(content).toBeInTheDocument();
@@ -193,7 +189,7 @@ describe('Card Component', () => {
       <Card>
         <CardContent>Content</CardContent>
         <CardFooter>Footer</CardFooter>
-      </Card>
+      </Card>,
     );
     const footer = screen.getByText('Footer');
     expect(footer).toBeInTheDocument();
@@ -207,7 +203,7 @@ describe('Card Component', () => {
         <CardFooter>
           <CardActions>Actions</CardActions>
         </CardFooter>
-      </Card>
+      </Card>,
     );
     const actions = screen.getByText('Actions');
     expect(actions).toBeInTheDocument();
@@ -227,19 +223,19 @@ describe('Card Component', () => {
   });
 
   test('applies contentClassName to content area', () => {
-    const { container } = render(
-      <Card contentClassName="content-class">
-        Test
-      </Card>
-    );
-    
+    const { container } = render(<Card contentClassName="content-class">Test</Card>);
+
     // Find the content wrapper div (has flex-1 class)
     const contentWrapper = container.querySelector('.flex-1');
     expect(contentWrapper).toHaveClass('content-class');
   });
 
   test('sets data attributes for debugging', () => {
-    render(<Card variant="elevated" size="lg" hoverable clickable>Test</Card>);
+    render(
+      <Card variant="elevated" size="lg" hoverable clickable>
+        Test
+      </Card>,
+    );
     const card = screen.getByText('Test').parentElement;
     expect(card).toHaveAttribute('data-variant', 'elevated');
     expect(card).toHaveAttribute('data-size', 'lg');

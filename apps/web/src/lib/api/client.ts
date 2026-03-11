@@ -32,7 +32,7 @@ class ApiClient {
       timeout: 30000,
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json',
+        Accept: 'application/json',
       },
     });
 
@@ -40,23 +40,26 @@ class ApiClient {
     this.client.interceptors.request.use(
       (config) => {
         // Add CSRF token for mutating requests
-        if (config.method && ['post', 'put', 'patch', 'delete'].includes(config.method.toLowerCase())) {
+        if (
+          config.method &&
+          ['post', 'put', 'patch', 'delete'].includes(config.method.toLowerCase())
+        ) {
           const csrfToken = document.cookie
             .split('; ')
-            .find(row => row.startsWith('X-CSRF-Token='))
+            .find((row) => row.startsWith('X-CSRF-Token='))
             ?.split('=')[1];
-          
+
           if (csrfToken) {
             config.headers['X-CSRF-Token'] = csrfToken;
           }
         }
-        
+
         // Add correlation ID if available
         const correlationId = localStorage.getItem('correlationId');
         if (correlationId) {
           config.headers['X-Request-ID'] = correlationId;
         }
-        
+
         return config;
       },
       (error: AxiosError) => Promise.reject(error)
@@ -66,9 +69,9 @@ class ApiClient {
     this.client.interceptors.response.use(
       (response) => response,
       async (error: AxiosError<ApiErrorResponse>) => {
-       const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean };
+        const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean };
         const isAuthRequest = originalRequest?.url?.includes('/auth/');
-        
+
         // Handle 401 Unauthorized - try to refresh token (except for auth requests)
         if (error.response?.status === 401 && !originalRequest?._retry && !isAuthRequest) {
           originalRequest._retry = true;
@@ -83,7 +86,7 @@ class ApiClient {
             return Promise.reject(refreshError);
           }
         }
-        
+
         return Promise.reject(error);
       }
     );
@@ -121,10 +124,7 @@ class ApiClient {
   }
 
   // Type-safe GET request
-  async get<T = unknown>(
-    url: string,
-    config?: AxiosRequestConfig
-  ): Promise<ApiResponse<T>> {
+  async get<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
     const response = await this.client.get<ApiResponse<T>>(url, config);
     return response.data;
   }
@@ -160,10 +160,7 @@ class ApiClient {
   }
 
   // Type-safe DELETE request
-  async delete<T = unknown>(
-    url: string,
-    config?: AxiosRequestConfig
-  ): Promise<ApiResponse<T>> {
+  async delete<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
     const response = await this.client.delete<ApiResponse<T>>(url, config);
     return response.data;
   }

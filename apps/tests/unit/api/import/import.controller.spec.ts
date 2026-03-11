@@ -1,7 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ImportController } from '../../../src/modules/import/import.controller';
 import { ImportService } from '../../../src/modules/import/import.service';
-import { CreateImportJobDto, ImportType, ImportSource } from '../../../src/modules/import/dto/create-import-job.dto';
+import {
+  CreateImportJobDto,
+  ImportType,
+  ImportSource,
+} from '../../../src/modules/import/dto/create-import-job.dto';
 
 // Mock the guards
 jest.mock('../../../src/shared/guards/auth.guard', () => ({
@@ -31,9 +35,7 @@ describe('ImportController', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [ImportController],
-      providers: [
-        { provide: ImportService, useValue: mockImportService },
-      ],
+      providers: [{ provide: ImportService, useValue: mockImportService }],
     }).compile();
 
     controller = module.get<ImportController>(ImportController);
@@ -99,13 +101,13 @@ describe('ImportController', () => {
         ImportType.PRODUCTS,
         ImportType.USERS,
       ];
-      
+
       for (const type of types) {
         const dto = { ...createDto, type };
         importService.createImportJob.mockResolvedValue({ ...mockResult, type });
-        
+
         await controller.createImportJob(dto, mockRequest as any);
-        
+
         expect(importService.createImportJob).toHaveBeenCalledWith(dto, 'user-123');
       }
     });
@@ -119,13 +121,13 @@ describe('ImportController', () => {
         ImportSource.MANUAL,
         ImportSource.MIGRATION,
       ];
-      
+
       for (const source of sources) {
         const dto = { ...createDto, source };
         importService.createImportJob.mockResolvedValue({ ...mockResult, source });
-        
+
         await controller.createImportJob(dto, mockRequest as any);
-        
+
         expect(importService.createImportJob).toHaveBeenCalledWith(dto, 'user-123');
       }
     });

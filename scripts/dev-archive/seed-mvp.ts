@@ -5,21 +5,21 @@ import * as bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 
 async function seedMVP() {
-  console.log('Ì∫Ä HELIXCRM MVP SEED SCRIPT');
+  console.log('ÔøΩÔøΩÔøΩ HELIXCRM MVP SEED SCRIPT');
   console.log('==============================\n');
 
   try {
     // Clean up existing test data (optional)
-    console.log('Ì∑π Cleaning up existing test data...');
+    console.log('ÔøΩÔøΩÔøΩ Cleaning up existing test data...');
     await prisma.deal.deleteMany({ where: { name: { contains: 'Test' } } });
     await prisma.contact.deleteMany({ where: { email: { contains: 'test' } } });
     await prisma.user.deleteMany({ where: { email: { contains: 'test' } } });
     await prisma.organization.deleteMany({ where: { name: { contains: 'Test' } } });
 
     // ==================== ORGANIZATION 1 ====================
-    console.log('\nÌø¢ ORGANIZATION 1: Tech Solutions Inc.');
+    console.log('\nÔøΩÔøΩÔøΩ ORGANIZATION 1: Tech Solutions Inc.');
     console.log('----------------------------------------');
-    
+
     const org1 = await prisma.organization.create({
       data: {
         name: 'Tech Solutions Inc.',
@@ -149,7 +149,7 @@ async function seedMVP() {
       prisma.deal.create({
         data: {
           name: 'Enterprise CRM License',
-          amount: 75000.00,
+          amount: 75000.0,
           currency: 'USD',
           status: DealStatus.open,
           probability: 50,
@@ -164,7 +164,7 @@ async function seedMVP() {
       prisma.deal.create({
         data: {
           name: 'Custom Integration',
-          amount: 45000.00,
+          amount: 45000.0,
           currency: 'USD',
           status: DealStatus.open,
           probability: 25,
@@ -180,9 +180,9 @@ async function seedMVP() {
     console.log(`‚úÖ Created ${contacts1.length} contacts and ${deals1.length} deals`);
 
     // ==================== ORGANIZATION 2 ====================
-    console.log('\nÌø¢ ORGANIZATION 2: Marketing Pros LLC');
+    console.log('\nÔøΩÔøΩÔøΩ ORGANIZATION 2: Marketing Pros LLC');
     console.log('----------------------------------------');
-    
+
     const org2 = await prisma.organization.create({
       data: {
         name: 'Marketing Pros LLC',
@@ -311,7 +311,7 @@ async function seedMVP() {
       prisma.deal.create({
         data: {
           name: 'Social Media Campaign',
-          amount: 25000.00,
+          amount: 25000.0,
           currency: 'USD',
           status: DealStatus.open,
           probability: 40,
@@ -326,7 +326,7 @@ async function seedMVP() {
       prisma.deal.create({
         data: {
           name: 'SEO Optimization',
-          amount: 18000.00,
+          amount: 18000.0,
           currency: 'USD',
           status: DealStatus.won,
           probability: 100,
@@ -343,32 +343,31 @@ async function seedMVP() {
     console.log(`‚úÖ Created ${contacts2.length} contacts and ${deals2.length} deals`);
 
     // ==================== SUMMARY ====================
-    console.log('\nÌæâ MVP SEED COMPLETE!');
+    console.log('\nÔøΩÔøΩÔøΩ MVP SEED COMPLETE!');
     console.log('=====================');
-    console.log(`Ìø¢ Organizations: 2`);
-    console.log(`Ì±• Users: 2 (SystemAdmin each)`);
-    console.log(`Ì≥á Contacts: 4 (2 per org)`);
-    console.log(`Ì≥ä Pipelines: 2 (with 4 stages each)`);
-    console.log(`Ì≤∞ Deals: 4 (2 per org, including 1 won deal)`);
-    console.log(`Ì¥ê Permissions: ${allPermissions.length} total`);
-    
-    console.log('\nÌ¥ë TEST CREDENTIALS:');
+    console.log(`ÔøΩÔøΩÔøΩ Organizations: 2`);
+    console.log(`ÔøΩÔøΩÔøΩ Users: 2 (SystemAdmin each)`);
+    console.log(`ÔøΩÔøΩÔøΩ Contacts: 4 (2 per org)`);
+    console.log(`ÔøΩÔøΩÔøΩ Pipelines: 2 (with 4 stages each)`);
+    console.log(`ÔøΩÔøΩÔøΩ Deals: 4 (2 per org, including 1 won deal)`);
+    console.log(`ÔøΩÔøΩÔøΩ Permissions: ${allPermissions.length} total`);
+
+    console.log('\nÔøΩÔøΩÔøΩ TEST CREDENTIALS:');
     console.log('Organization 1:');
     console.log(`   Email: admin@techsolutions.com`);
     console.log(`   Password: Admin123!`);
     console.log(`   Org ID: ${org1.id}`);
-    
+
     console.log('\nOrganization 2:');
     console.log(`   Email: admin@marketingpros.com`);
     console.log(`   Password: Admin123!`);
     console.log(`   Org ID: ${org2.id}`);
 
-    console.log('\nÌ∫Ä NEXT STEPS:');
+    console.log('\nÔøΩÔøΩÔøΩ NEXT STEPS:');
     console.log('1. Login with either admin account');
     console.log('2. Test endpoints with the JWT token');
     console.log('3. Verify data isolation between organizations');
     console.log('4. Run validation tests');
-
   } catch (error) {
     console.error('‚ùå Seed script error:', error);
     if (error instanceof Error) {

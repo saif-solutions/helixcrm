@@ -33,7 +33,7 @@ describe('JwtAuthGuard', () => {
     }).compile();
 
     guard = module.get<JwtAuthGuard>(JwtAuthGuard);
-    
+
     mockContext = {
       switchToHttp: () => ({
         getRequest: () => ({}),

@@ -9,7 +9,7 @@ jest.setTimeout(30000);
 
 // Global beforeAll hook
 beforeAll(async () => {
-  console.log('íº€ Starting security invariant tests...');
+  console.log('ï¿½ï¿½ï¿½ Starting security invariant tests...');
 });
 
 // Global afterAll hook

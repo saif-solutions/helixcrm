@@ -26,19 +26,19 @@ describe('Auth Flow Tests', () => {
   beforeAll(async () => {
     console.log('🚀 Starting test setup...');
     const startTime = Date.now();
-    
+
     try {
       console.log('📱 Creating test app with AuthTestModule...');
       app = await createTestApp({
         imports: [AuthTestModule],
       });
-      
+
       console.log('✅ Test app created, getting mockPrisma...');
       mockPrisma = (app as any).mockPrisma;
-      
+
       console.log('✅ Got mockPrisma, creating agent...');
       agent = request.agent(app.getHttpServer());
-      
+
       console.log(`✅ Test setup completed in ${Date.now() - startTime}ms`);
       console.log('🚦 Test setup complete, ready to run tests!');
     } catch (error) {
@@ -84,7 +84,7 @@ describe('Auth Flow Tests', () => {
   // New test: Verify login endpoint exists and works
   it('should verify login endpoint exists and returns proper response', async () => {
     console.log('🔍 Testing login endpoint...');
-    
+
     const mockUser = createMockUser({
       email: 'login-test@example.com',
       passwordHash: 'hashed-password',
@@ -97,19 +97,17 @@ describe('Auth Flow Tests', () => {
     (bcrypt.compare as jest.Mock).mockImplementation(() => Promise.resolve(true));
 
     console.log('📤 Sending test login request...');
-    const response = await agent
-      .post('/auth/login')
-      .send({
-        email: 'login-test@example.com',
-        password: 'correct-password',
-      });
+    const response = await agent.post('/auth/login').send({
+      email: 'login-test@example.com',
+      password: 'correct-password',
+    });
 
     console.log('📊 Login endpoint response:', {
       status: response.status,
       body: response.body,
       hasAccessToken: !!response.body?.access_token,
       hasUser: !!response.body?.user,
-      cookies: response.headers['set-cookie']
+      cookies: response.headers['set-cookie'],
     });
 
     expect(response.status).toBe(200);
@@ -121,15 +119,18 @@ describe('Auth Flow Tests', () => {
   describe('Complete Auth Lifecycle', () => {
     it('should handle complete user journey: register → login → me → refresh → logout', async () => {
       console.log('📝 Starting complete auth lifecycle test...');
-      
+
       // 1. Setup mocks for registration
-      const mockOrg = { 
-        id: 'org-' + Date.now(), 
+      const mockOrg = {
+        id: 'org-' + Date.now(),
         name: testUser.organizationName,
-        slug: testUser.email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '-'),
+        slug: testUser.email
+          .split('@')[0]
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, '-'),
         status: 'active',
       };
-      
+
       const mockUser = createMockUser({
         id: 'user-' + Date.now() + '-test',
         email: testUser.email,
@@ -143,10 +144,10 @@ describe('Auth Flow Tests', () => {
 
       console.log('🔧 Setting up mocks...');
       console.log('📊 Mock user created:', { id: mockUser.id, email: mockUser.email });
-      
+
       // Clear all mocks first
       jest.clearAllMocks();
-      
+
       // Mock registration flow - findUnique returns null for registration check
       mockPrisma.user.findUnique
         .mockResolvedValueOnce(null) // No existing user for registration check
@@ -154,7 +155,7 @@ describe('Auth Flow Tests', () => {
 
       mockPrisma.organization.create.mockResolvedValue(mockOrg);
       mockPrisma.user.create.mockResolvedValue(mockUser);
-      
+
       // Mock permission lookups - return empty arrays for simplicity
       mockPrisma.permission.findMany.mockResolvedValue([]);
       mockPrisma.role.upsert.mockResolvedValue({ id: 'role-123' });
@@ -170,13 +171,11 @@ describe('Auth Flow Tests', () => {
       (bcrypt.compare as jest.Mock).mockImplementation(() => Promise.resolve(true));
 
       console.log('📤 Sending register request...');
-      const registerResponse = await agent
-        .post('/auth/register')
-        .send(testUser);
+      const registerResponse = await agent.post('/auth/register').send(testUser);
 
       console.log('📊 Register response:', {
         status: registerResponse.status,
-        body: registerResponse.body
+        body: registerResponse.body,
       });
       expect(registerResponse.status).toBe(201);
 
@@ -195,18 +194,16 @@ describe('Auth Flow Tests', () => {
 
       // Ensure findUnique returns the user for login
       mockPrisma.user.findUnique.mockResolvedValue(mockUser);
-      
-      const loginResponse = await agent
-        .post('/auth/login')
-        .send({
-          email: testUser.email,
-          password: testUser.password,
-        });
+
+      const loginResponse = await agent.post('/auth/login').send({
+        email: testUser.email,
+        password: testUser.password,
+      });
 
       console.log('📊 Login response:', {
         status: loginResponse.status,
         body: loginResponse.body,
-        headers: loginResponse.headers
+        headers: loginResponse.headers,
       });
 
       // Log mock state after login
@@ -219,7 +216,7 @@ describe('Auth Flow Tests', () => {
 
       expect(loginResponse.body).toHaveProperty('access_token');
       expect(loginResponse.body.user).toHaveProperty('email', testUser.email);
-      
+
       // Verify cookies were set
       const cookies = loginResponse.headers['set-cookie'] as string[];
       console.log('🍪 Cookies set:', cookies ? 'Yes' : 'No');
@@ -231,55 +228,45 @@ describe('Auth Flow Tests', () => {
       }
 
       console.log('📤 Sending get profile request...');
-      const meResponse = await agent
-        .get('/auth/me')
-        .expect(200);
+      const meResponse = await agent.get('/auth/me').expect(200);
 
       expect(meResponse.body.user).toHaveProperty('id', mockUser.id);
       expect(meResponse.body.user).toHaveProperty('email', testUser.email);
       console.log('✅ Profile retrieved successfully');
 
       console.log('📤 Sending get sessions request...');
-      const sessionsResponse = await agent
-        .get('/auth/sessions')
-        .expect(200);
+      const sessionsResponse = await agent.get('/auth/sessions').expect(200);
 
       expect(sessionsResponse.body).toHaveProperty('activeSessions');
       expect(sessionsResponse.body.userId).toBe(mockUser.id);
       console.log('✅ Sessions retrieved successfully');
 
       console.log('📤 Sending refresh token request...');
-      const refreshResponse = await agent
-        .post('/auth/refresh')
-        .expect(200);
+      const refreshResponse = await agent.post('/auth/refresh').expect(200);
 
       expect(refreshResponse.body).toHaveProperty('access_token');
       console.log('✅ Token refreshed successfully');
-      
+
       const newCookies = refreshResponse.headers['set-cookie'] as string[];
       console.log('🍪 New cookies set:', newCookies ? 'Yes' : 'No');
       expect(newCookies).toBeDefined();
       expect(Array.isArray(newCookies)).toBe(true);
 
       console.log('📤 Sending logout request...');
-      const logoutResponse = await agent
-        .post('/auth/logout')
-        .expect(200);
+      const logoutResponse = await agent.post('/auth/logout').expect(200);
 
       expect(logoutResponse.body).toHaveProperty('message', 'Logged out successfully');
       console.log('✅ Logout successful');
 
       console.log('📤 Verifying protected route access after logout...');
-      await agent
-        .get('/auth/me')
-        .expect(401);
-      
+      await agent.get('/auth/me').expect(401);
+
       console.log('✅ Complete auth lifecycle test passed');
     }, 60000);
 
     it('should handle account lockout after multiple failed attempts', async () => {
       console.log('🔒 Starting account lockout test...');
-      
+
       const user = createMockUser({
         email: 'lockout-test@example.com',
         failedLoginAttempts: 0,
@@ -289,7 +276,7 @@ describe('Auth Flow Tests', () => {
 
       // Mock user lookup
       mockPrisma.user.findUnique.mockResolvedValue(user);
-      
+
       // Mock failed password verification
       (bcrypt.compare as jest.Mock).mockImplementation(() => Promise.resolve(false));
 
@@ -313,39 +300,35 @@ describe('Auth Flow Tests', () => {
 
       // 1. Attempt login 5 times with wrong password
       for (let i = 0; i < 5; i++) {
-        const response = await agent
-          .post('/auth/login')
-          .send({
-            email: user.email,
-            password: 'wrong-password',
-          });
+        const response = await agent.post('/auth/login').send({
+          email: user.email,
+          password: 'wrong-password',
+        });
         console.log(`Attempt ${i + 1} status:`, response.status);
         expect(response.status).toBe(401);
       }
 
       // 2. 6th attempt should be locked - should return 401 with appropriate message
-      const lockResponse = await agent
-        .post('/auth/login')
-        .send({
-          email: user.email,
-          password: 'correct-password',
-        });
-      
+      const lockResponse = await agent.post('/auth/login').send({
+        email: user.email,
+        password: 'correct-password',
+      });
+
       console.log('Lock response status:', lockResponse.status);
       console.log('Lock response body:', lockResponse.body);
       expect(lockResponse.status).toBe(401);
-      
+
       console.log('✅ Account lockout test passed');
     }, 60000);
 
     it('should handle session management: logout all and invalidate others', async () => {
       console.log('🔄 Starting session management test...');
-      
+
       const user = createMockUser({
         passwordHash: 'hashed-password',
         tokenVersion: 1,
       });
-      
+
       // Setup mocks
       mockPrisma.user.findUnique.mockResolvedValue(user);
       mockPrisma.user.update.mockResolvedValue(user);
@@ -353,52 +336,40 @@ describe('Auth Flow Tests', () => {
 
       // 1. Login first
       console.log('📤 Logging in...');
-      const loginResponse = await agent
-        .post('/auth/login')
-        .send({
-          email: user.email,
-          password: 'correct-password',
-        });
-      
+      const loginResponse = await agent.post('/auth/login').send({
+        email: user.email,
+        password: 'correct-password',
+      });
+
       console.log('Login response status:', loginResponse.status);
       expect(loginResponse.status).toBe(200);
 
       // 2. Get sessions - should have at least current session
       console.log('📤 Getting sessions...');
-      const sessions1 = await agent
-        .get('/auth/sessions')
-        .expect(200);
+      const sessions1 = await agent.get('/auth/sessions').expect(200);
 
       expect(sessions1.body.activeSessions.length).toBeGreaterThanOrEqual(1);
       console.log(`Found ${sessions1.body.activeSessions.length} active sessions`);
 
       // 3. Invalidate other sessions (but keep current)
       console.log('📤 Invalidating other sessions...');
-      await agent
-        .post('/auth/sessions/invalidate-others?keepCurrent=true')
-        .expect(200);
+      await agent.post('/auth/sessions/invalidate-others?keepCurrent=true').expect(200);
       console.log('✅ Other sessions invalidated');
 
       // 4. Should still be able to access protected route
       console.log('📤 Verifying access to protected route...');
-      await agent
-        .get('/auth/me')
-        .expect(200);
+      await agent.get('/auth/me').expect(200);
       console.log('✅ Access verified');
 
       // 5. Logout from all devices
       console.log('📤 Logging out from all devices...');
-      await agent
-        .post('/auth/logout/all')
-        .expect(200);
+      await agent.post('/auth/logout/all').expect(200);
       console.log('✅ Logged out from all devices');
 
       // 6. Verify cannot access protected route
       console.log('📤 Verifying protected route access after logout...');
-      await agent
-        .get('/auth/me')
-        .expect(401);
-      
+      await agent.get('/auth/me').expect(401);
+
       console.log('✅ Session management test passed');
     }, 60000);
   });
@@ -406,20 +377,18 @@ describe('Auth Flow Tests', () => {
   describe('Registration Edge Cases', () => {
     it('should reject registration with existing email', async () => {
       console.log('📝 Starting registration edge case test (existing email)...');
-      
+
       const existingUser = createMockUser({ email: 'existing@example.com' });
       mockPrisma.user.findUnique.mockResolvedValue(existingUser);
 
-      const response = await agent
-        .post('/auth/register')
-        .send({
-          email: 'existing@example.com',
-          password: 'Password123!',
-          firstName: 'Test',
-          lastName: 'User',
-          organizationName: 'Test Org',
-        });
-      
+      const response = await agent.post('/auth/register').send({
+        email: 'existing@example.com',
+        password: 'Password123!',
+        firstName: 'Test',
+        lastName: 'User',
+        organizationName: 'Test Org',
+      });
+
       console.log('Registration with existing email status:', response.status);
       console.log('Registration with existing email body:', response.body);
       expect(response.status).toBe(409);
@@ -428,26 +397,24 @@ describe('Auth Flow Tests', () => {
 
     it('should create default roles for new organization', async () => {
       console.log('📝 Starting registration edge case test (default roles)...');
-      
+
       const mockOrg = { id: 'org-' + Date.now(), name: 'New Org' };
-      
+
       mockPrisma.user.findUnique.mockResolvedValue(null);
       mockPrisma.organization.create.mockResolvedValue(mockOrg);
       mockPrisma.user.create.mockResolvedValue(createMockUser({ organizationId: mockOrg.id }));
-      
+
       const roleUpsertSpy = jest.fn();
       mockPrisma.role.upsert = roleUpsertSpy;
 
-      const response = await agent
-        .post('/auth/register')
-        .send({
-          email: 'new@example.com',
-          password: 'Password123!',
-          firstName: 'New',
-          lastName: 'User',
-          organizationName: 'New Org',
-        });
-      
+      const response = await agent.post('/auth/register').send({
+        email: 'new@example.com',
+        password: 'Password123!',
+        firstName: 'New',
+        lastName: 'User',
+        organizationName: 'New Org',
+      });
+
       console.log('Registration with new org status:', response.status);
       expect(response.status).toBe(201);
       expect(roleUpsertSpy).toHaveBeenCalled();
@@ -458,23 +425,21 @@ describe('Auth Flow Tests', () => {
   describe('Token Version Invalidation', () => {
     it('should reject tokens after password change', async () => {
       console.log('🔄 Starting token version invalidation test...');
-      
+
       const user = createMockUser() as any;
       user.tokenVersion = 1;
       user.passwordHash = 'hashed-password';
-      
+
       mockPrisma.user.findUnique.mockResolvedValue(user);
       mockPrisma.user.update.mockResolvedValue({ ...user, tokenVersion: user.tokenVersion + 1 });
       (bcrypt.compare as jest.Mock).mockImplementation(() => Promise.resolve(true));
 
       console.log('📤 Logging in...');
-      const loginResponse = await agent
-        .post('/auth/login')
-        .send({
-          email: user.email,
-          password: 'correct-password',
-        });
-      
+      const loginResponse = await agent.post('/auth/login').send({
+        email: user.email,
+        password: 'correct-password',
+      });
+
       console.log('Login response status:', loginResponse.status);
       expect(loginResponse.status).toBe(200);
 
@@ -482,9 +447,8 @@ describe('Auth Flow Tests', () => {
       user.tokenVersion++;
 
       console.log('📤 Verifying protected route access with old token...');
-      const meResponse = await agent
-        .get('/auth/me');
-      
+      const meResponse = await agent.get('/auth/me');
+
       console.log('After password change - me response status:', meResponse.status);
       expect(meResponse.status).toBe(401);
       console.log('✅ Token version invalidation test passed');

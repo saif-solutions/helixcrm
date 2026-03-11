@@ -1,7 +1,7 @@
 // test/setup.ts
 import { jest, beforeEach, expect } from '@jest/globals';
 import './mocks/bullmq.mock';
-import './mocks/csrf.mock'; 
+import './mocks/csrf.mock';
 
 import './mocks/compliance.mock'; // Add this line
 

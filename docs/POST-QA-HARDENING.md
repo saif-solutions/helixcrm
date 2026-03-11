@@ -1,13 +1,13 @@
 # Phase 4 – Post‑QA Hardening & Architecture To‑Do (Authoritative)
 
 > **Purpose**
-> This document is the *single source of truth* for post‑QA architectural hardening work.
+> This document is the _single source of truth_ for post‑QA architectural hardening work.
 > It is intentionally **not** part of Phase 3B QA.
 > Any future session, engineer, or AI assistant should use this document to:
 >
-> * Check **what has already been completed**
-> * Know **what must NOT be changed yet**
-> * Know **exactly what to do next** when Phase 4 begins
+> - Check **what has already been completed**
+> - Know **what must NOT be changed yet**
+> - Know **exactly what to do next** when Phase 4 begins
 
 ---
 
@@ -18,26 +18,26 @@
 
 ### ✅ CONFIRMED WORKING (DO NOT TOUCH)
 
-* Auth login flow (HTTP 200)
-* Access & refresh token issuance
-* JWT secret loading & validation
-* CSRF protection (cookie + header)
-* Audit logging (3‑lane architecture)
-* AuthCoreAdapter + canonical contract
-* TypeScript: **0 errors**
+- Auth login flow (HTTP 200)
+- Access & refresh token issuance
+- JWT secret loading & validation
+- CSRF protection (cookie + header)
+- Audit logging (3‑lane architecture)
+- AuthCoreAdapter + canonical contract
+- TypeScript: **0 errors**
 
 ### 🔴 ALLOWED CHANGES (QA ONLY)
 
-* Bug fixes with **zero architectural impact**
-* Repository call corrections (parameter mismatch, etc.)
-* Test‑only adjustments
+- Bug fixes with **zero architectural impact**
+- Repository call corrections (parameter mismatch, etc.)
+- Test‑only adjustments
 
 ### ❌ FORBIDDEN UNTIL PHASE 4
 
-* Repository unification
-* Interface reshaping beyond bug fixes
-* Transaction boundary refactors
-* Domain model rewrites
+- Repository unification
+- Interface reshaping beyond bug fixes
+- Transaction boundary refactors
+- Domain model rewrites
 
 ---
 
@@ -49,16 +49,16 @@
 
 Phase 4 is about:
 
-* Maintainability
-* Contract clarity
-* Repository correctness
-* Future scalability
+- Maintainability
+- Contract clarity
+- Repository correctness
+- Future scalability
 
 **Phase 4 is NOT about:**
 
-* Adding features
-* Changing auth behavior
-* Performance tuning (unless regression found)
+- Adding features
+- Changing auth behavior
+- Performance tuning (unless regression found)
 
 ---
 
@@ -68,14 +68,14 @@ Phase 4 is about:
 
 **Current State:**
 
-* PrismaUserRepository (business/full)
-* PrismaUserRepositoryBridge (auth‑core/minimal)
+- PrismaUserRepository (business/full)
+- PrismaUserRepositoryBridge (auth‑core/minimal)
 
 **Problems:**
 
-* Method signature drift
-* Confusing responsibilities
-* Easy to misuse (as seen in refresh token bug)
+- Method signature drift
+- Confusing responsibilities
+- Easy to misuse (as seen in refresh token bug)
 
 **Status:** ❌ Not fixed (by design)
 
@@ -85,14 +85,14 @@ Phase 4 is about:
 
 **Current State:**
 
-* auth‑core expects minimal contracts
-* business logic needs richer models
-* Boundaries are implicit, not enforced
+- auth‑core expects minimal contracts
+- business logic needs richer models
+- Boundaries are implicit, not enforced
 
 **Risk:**
 
-* Accidental contract misuse
-* Hidden coupling
+- Accidental contract misuse
+- Hidden coupling
 
 **Status:** ❌ Deferred
 
@@ -102,13 +102,13 @@ Phase 4 is about:
 
 **Current State:**
 
-* Mixed use of global PrismaService
-* Transaction‑scoped repositories passed ad‑hoc
+- Mixed use of global PrismaService
+- Transaction‑scoped repositories passed ad‑hoc
 
 **Risk:**
 
-* Hard‑to‑debug partial commits
-* Future race conditions
+- Hard‑to‑debug partial commits
+- Future race conditions
 
 **Status:** ❌ Deferred
 
@@ -140,29 +140,29 @@ export interface ITokenRepository {
     userId: string,
     oldVersion: string,
     newVersion: string,
-    newTokenHash: string
+    newTokenHash: string,
   ): Promise<void>;
 }
 ```
 
 **Rules:**
 
-* ❌ No Prisma changes
-* ❌ No logic changes
-* ✅ Interfaces only
+- ❌ No Prisma changes
+- ❌ No logic changes
+- ✅ Interfaces only
 
 ---
 
 #### 4A‑2: Adapt Existing Repositories (NO REWRITE)
 
-* PrismaUserRepository implements `IUserRepository`
-* PrismaUserRepositoryBridge implements **subset only**
-* Explicitly document unsupported methods
+- PrismaUserRepository implements `IUserRepository`
+- PrismaUserRepositoryBridge implements **subset only**
+- Explicitly document unsupported methods
 
 **Acceptance Criteria:**
 
-* TypeScript enforces correct usage
-* No runtime behavior change
+- TypeScript enforces correct usage
+- No runtime behavior change
 
 ---
 
@@ -180,14 +180,14 @@ Replace dual repositories with **single, explicit implementations**.
 
 **Files:**
 
-* `UnifiedUserRepository`
-* `UnifiedTokenRepository`
+- `UnifiedUserRepository`
+- `UnifiedTokenRepository`
 
 **Rules:**
 
-* One repository per aggregate
-* One Prisma client per instance
-* Clear separation of auth‑core vs business methods
+- One repository per aggregate
+- One Prisma client per instance
+- Clear separation of auth‑core vs business methods
 
 ---
 
@@ -195,7 +195,7 @@ Replace dual repositories with **single, explicit implementations**.
 
 **Change:**
 
-* AuthCoreAdapter becomes the **only** transaction orchestrator
+- AuthCoreAdapter becomes the **only** transaction orchestrator
 
 ```ts
 withTransaction(async ({ userRepository, tokenRepository }) => {
@@ -205,8 +205,8 @@ withTransaction(async ({ userRepository, tokenRepository }) => {
 
 **Rules:**
 
-* ❌ No `$transaction` calls outside adapter
-* ✅ Repositories always transaction‑scoped when required
+- ❌ No `$transaction` calls outside adapter
+- ✅ Repositories always transaction‑scoped when required
 
 ---
 
@@ -214,26 +214,26 @@ withTransaction(async ({ userRepository, tokenRepository }) => {
 
 ### REQUIRED TESTS
 
-* Refresh token replay protection
-* Concurrent refresh attempts
-* Logout invalidation
-* Account lockout
+- Refresh token replay protection
+- Concurrent refresh attempts
+- Logout invalidation
+- Account lockout
 
 ### NON‑NEGOTIABLE
 
-* 0 TypeScript errors
-* No auth behavior changes
-* Performance regression < 5%
+- 0 TypeScript errors
+- No auth behavior changes
+- Performance regression < 5%
 
 ---
 
 ## 🚨 EXPLICIT NON‑GOALS (DO NOT DO)
 
-* ❌ Do not change token structure
-* ❌ Do not change JWT claims
-* ❌ Do not modify audit semantics
-* ❌ Do not alter CSRF behavior
-* ❌ Do not refactor unrelated modules
+- ❌ Do not change token structure
+- ❌ Do not change JWT claims
+- ❌ Do not modify audit semantics
+- ❌ Do not alter CSRF behavior
+- ❌ Do not refactor unrelated modules
 
 ---
 
@@ -241,11 +241,11 @@ withTransaction(async ({ userRepository, tokenRepository }) => {
 
 Phase 4 is considered complete only if:
 
-* [ ] Phase 3B fully closed
-* [ ] Phase 4A merged with no behavior changes
-* [ ] Phase 4B merged behind feature flag or controlled rollout
-* [ ] Full auth regression suite passes
-* [ ] PM + Security sign‑off recorded
+- [ ] Phase 3B fully closed
+- [ ] Phase 4A merged with no behavior changes
+- [ ] Phase 4B merged behind feature flag or controlled rollout
+- [ ] Full auth regression suite passes
+- [ ] PM + Security sign‑off recorded
 
 ---
 
@@ -262,9 +262,9 @@ If this document is present:
 
 ## 📅 OWNERSHIP & CHANGE CONTROL
 
-* Owner: Engineering / Architecture
-* Changes require: PM approval
-* This document supersedes ad‑hoc refactor plans
+- Owner: Engineering / Architecture
+- Changes require: PM approval
+- This document supersedes ad‑hoc refactor plans
 
 ---
 

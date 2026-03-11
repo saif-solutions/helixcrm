@@ -1,7 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ImportController } from '../../../src/modules/import/import.controller';
 import { ImportService } from '../../../src/modules/import/import.service';
-import { CreateImportJobDto, ImportType, ImportSource } from '../../../src/modules/import/dto/create-import-job.dto';
+import {
+  CreateImportJobDto,
+  ImportType,
+  ImportSource,
+} from '../../../src/modules/import/dto/create-import-job.dto';
 
 // Mock the guards
 jest.mock('../../../src/shared/guards/auth.guard', () => ({
@@ -31,9 +35,7 @@ describe('ImportController', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [ImportController],
-      providers: [
-        { provide: ImportService, useValue: mockImportService },
-      ],
+      providers: [{ provide: ImportService, useValue: mockImportService }],
     }).compile();
 
     controller = module.get<ImportController>(ImportController);
@@ -74,20 +76,32 @@ describe('ImportController', () => {
       const requestWithId = { user: { id: 'user-123' } };
       importService.createImportJob.mockResolvedValue(mockResult);
 
-      const result = await controller.createImportJob(createDto, requestWithId as any);
+      const result = await controller.createImportJob(
+        createDto,
+        requestWithId as any,
+      );
 
       expect(result).toEqual(mockResult);
-      expect(importService.createImportJob).toHaveBeenCalledWith(createDto, 'user-123');
+      expect(importService.createImportJob).toHaveBeenCalledWith(
+        createDto,
+        'user-123',
+      );
     });
 
     it('should successfully create an import job with user.sub', async () => {
       const requestWithSub = { user: { sub: 'user-456' } };
       importService.createImportJob.mockResolvedValue(mockResult);
 
-      const result = await controller.createImportJob(createDto, requestWithSub as any);
+      const result = await controller.createImportJob(
+        createDto,
+        requestWithSub as any,
+      );
 
       expect(result).toEqual(mockResult);
-      expect(importService.createImportJob).toHaveBeenCalledWith(createDto, 'user-456');
+      expect(importService.createImportJob).toHaveBeenCalledWith(
+        createDto,
+        'user-456',
+      );
     });
 
     it('should handle different import types', async () => {
@@ -99,14 +113,20 @@ describe('ImportController', () => {
         ImportType.PRODUCTS,
         ImportType.USERS,
       ];
-      
+
       for (const type of types) {
         const dto = { ...createDto, type };
-        importService.createImportJob.mockResolvedValue({ ...mockResult, type });
-        
+        importService.createImportJob.mockResolvedValue({
+          ...mockResult,
+          type,
+        });
+
         await controller.createImportJob(dto, mockRequest as any);
-        
-        expect(importService.createImportJob).toHaveBeenCalledWith(dto, 'user-123');
+
+        expect(importService.createImportJob).toHaveBeenCalledWith(
+          dto,
+          'user-123',
+        );
       }
     });
 
@@ -119,14 +139,20 @@ describe('ImportController', () => {
         ImportSource.MANUAL,
         ImportSource.MIGRATION,
       ];
-      
+
       for (const source of sources) {
         const dto = { ...createDto, source };
-        importService.createImportJob.mockResolvedValue({ ...mockResult, source });
-        
+        importService.createImportJob.mockResolvedValue({
+          ...mockResult,
+          source,
+        });
+
         await controller.createImportJob(dto, mockRequest as any);
-        
-        expect(importService.createImportJob).toHaveBeenCalledWith(dto, 'user-123');
+
+        expect(importService.createImportJob).toHaveBeenCalledWith(
+          dto,
+          'user-123',
+        );
       }
     });
 
@@ -150,7 +176,10 @@ describe('ImportController', () => {
 
       await controller.createImportJob(dtoWithOptions, mockRequest as any);
 
-      expect(importService.createImportJob).toHaveBeenCalledWith(dtoWithOptions, 'user-123');
+      expect(importService.createImportJob).toHaveBeenCalledWith(
+        dtoWithOptions,
+        'user-123',
+      );
     });
   });
 
@@ -197,7 +226,9 @@ describe('ImportController', () => {
       const error = new Error('Database error');
       importService.getImportJobs.mockRejectedValue(error);
 
-      await expect(controller.getImportJobs()).rejects.toThrow('Database error');
+      await expect(controller.getImportJobs()).rejects.toThrow(
+        'Database error',
+      );
     });
   });
 });

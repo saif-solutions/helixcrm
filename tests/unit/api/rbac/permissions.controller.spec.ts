@@ -35,9 +35,7 @@ describe('PermissionsController', () => {
   const createController = async () => {
     const module = await Test.createTestingModule({
       controllers: [PermissionsController],
-      providers: [
-        { provide: PermissionsService, useValue: mockPermissionsService },
-      ],
+      providers: [{ provide: PermissionsService, useValue: mockPermissionsService }],
     }).compile();
 
     return module.get<PermissionsController>(PermissionsController);
@@ -76,9 +74,7 @@ describe('PermissionsController', () => {
       },
       {
         module: 'deal',
-        permissions: [
-          { id: 'perm-3', code: 'deal:read', name: 'Read Deals' },
-        ],
+        permissions: [{ id: 'perm-3', code: 'deal:read', name: 'Read Deals' }],
       },
     ];
 

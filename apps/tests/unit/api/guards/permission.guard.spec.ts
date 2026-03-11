@@ -49,13 +49,13 @@ describe('PermissionGuard', () => {
       },
     };
 
-mockContext = {
-  switchToHttp: () => ({
-    getRequest: () => mockRequest,
-  }),
-  getHandler: jest.fn().mockReturnValue({ name: 'testHandler' }),
-  getClass: jest.fn().mockReturnValue({ name: 'TestController' }),
-};
+    mockContext = {
+      switchToHttp: () => ({
+        getRequest: () => mockRequest,
+      }),
+      getHandler: jest.fn().mockReturnValue({ name: 'testHandler' }),
+      getClass: jest.fn().mockReturnValue({ name: 'TestController' }),
+    };
 
     (getTenantContext as jest.Mock).mockReturnValue({
       tenantId: 'org-123',

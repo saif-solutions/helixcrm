@@ -6,24 +6,24 @@
 
 // ==================== DOMAIN TYPES ====================
 export interface JwtPayload {
-  sub: string;          // User ID
-  org: string;          // Organization ID
-  role: string;         // Primary user role
-  iat: number;          // Issued at timestamp
-  exp: number;          // Expiration timestamp
-  version: number;      // Token version for invalidation
-  email?: string;       // User email (optional, for context)
+  sub: string; // User ID
+  org: string; // Organization ID
+  role: string; // Primary user role
+  iat: number; // Issued at timestamp
+  exp: number; // Expiration timestamp
+  version: number; // Token version for invalidation
+  email?: string; // User email (optional, for context)
   permissions?: string[]; // User permissions array
-  roles?: string[];     // All user roles
+  roles?: string[]; // All user roles
 }
 
 export interface RefreshTokenPayload {
-  jti: string;          // Unique token identifier
-  sub: string;          // User ID
-  org: string;          // Organization ID
-  type: 'refresh';      // Token type
-  iat: number;          // Issued at timestamp
-  exp: number;          // Expiration timestamp
+  jti: string; // Unique token identifier
+  sub: string; // User ID
+  org: string; // Organization ID
+  type: 'refresh'; // Token type
+  iat: number; // Issued at timestamp
+  exp: number; // Expiration timestamp
 }
 
 export interface RefreshToken {
@@ -66,16 +66,16 @@ export interface AuthCoreContract {
   // JWT Operations
   issueAccessToken(payload: Omit<JwtPayload, 'iat' | 'exp'>): string;
   validateAccessToken(token: string): JwtPayload | null;
-  
+
   // Refresh Token Operations
   issueRefreshToken(userId: string, organizationId: string): Promise<string>;
   validateRefreshToken(token: string): RefreshTokenPayload | null;
   invalidateToken(tokenId: string): Promise<void>;
-  
+
   // Password Operations
   hashPassword(password: string): Promise<string>;
   verifyPassword(password: string, hash: string): Promise<boolean>;
-  
+
   // Security Operations
   isAccountLocked(userId: string): Promise<boolean>;
   recordFailedAttempt(userId: string): Promise<void>;

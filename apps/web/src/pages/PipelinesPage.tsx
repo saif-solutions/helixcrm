@@ -55,9 +55,30 @@ const MOCK_PIPELINES: Pipeline[] = [
     dealCount: 24,
     totalValue: 1250000,
     stages: [
-      { id: 's1', name: 'Prospecting', order: 1, probability: 10, dealCount: 8, totalValue: 320000 },
-      { id: 's2', name: 'Qualification', order: 2, probability: 25, dealCount: 6, totalValue: 380000 },
-      { id: 's3', name: 'Needs Analysis', order: 3, probability: 50, dealCount: 4, totalValue: 280000 },
+      {
+        id: 's1',
+        name: 'Prospecting',
+        order: 1,
+        probability: 10,
+        dealCount: 8,
+        totalValue: 320000,
+      },
+      {
+        id: 's2',
+        name: 'Qualification',
+        order: 2,
+        probability: 25,
+        dealCount: 6,
+        totalValue: 380000,
+      },
+      {
+        id: 's3',
+        name: 'Needs Analysis',
+        order: 3,
+        probability: 50,
+        dealCount: 4,
+        totalValue: 280000,
+      },
       { id: 's4', name: 'Proposal', order: 4, probability: 75, dealCount: 3, totalValue: 180000 },
       { id: 's5', name: 'Negotiation', order: 5, probability: 90, dealCount: 3, totalValue: 90000 },
     ],
@@ -125,7 +146,7 @@ const PipelinesPage: React.FC = () => {
   const [selectedPipeline, setSelectedPipeline] = useState<Pipeline | null>(null);
 
   // Filter pipelines
-  const filteredPipelines = pipelines.filter(p => showInactive || p.isActive);
+  const filteredPipelines = pipelines.filter((p) => showInactive || p.isActive);
   const totalPages = Math.ceil(filteredPipelines.length / ITEMS_PER_PAGE);
   const paginatedPipelines = filteredPipelines.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
@@ -241,9 +262,9 @@ const PipelinesPage: React.FC = () => {
             message={
               showInactive
                 ? "You haven't created any pipelines yet"
-                : "No active pipelines found. Try showing inactive pipelines or create a new one."
+                : 'No active pipelines found. Try showing inactive pipelines or create a new one.'
             }
-            actionLabel={hasPermission('pipeline:write') ? "Create Pipeline" : undefined}
+            actionLabel={hasPermission('pipeline:write') ? 'Create Pipeline' : undefined}
             onAction={hasPermission('pipeline:write') ? () => setShowCreateModal(true) : undefined}
           />
         </Card>
@@ -259,13 +280,15 @@ const PipelinesPage: React.FC = () => {
               {/* Pipeline Header */}
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                    pipeline.isDefault
-                      ? 'bg-primary-100 text-primary-600'
-                      : pipeline.isActive
-                      ? 'bg-blue-100 text-blue-600'
-                      : 'bg-gray-200 text-gray-500'
-                  }`}>
+                  <div
+                    className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                      pipeline.isDefault
+                        ? 'bg-primary-100 text-primary-600'
+                        : pipeline.isActive
+                          ? 'bg-blue-100 text-blue-600'
+                          : 'bg-gray-200 text-gray-500'
+                    }`}
+                  >
                     <Layers className="w-5 h-5" />
                   </div>
                   <div>
@@ -284,11 +307,11 @@ const PipelinesPage: React.FC = () => {
                 </div>
 
                 {/* Status indicator */}
-                <span className={`text-xs px-2 py-1 rounded-full ${
-                  pipeline.isActive
-                    ? 'bg-green-100 text-green-700'
-                    : 'bg-gray-100 text-gray-500'
-                }`}>
+                <span
+                  className={`text-xs px-2 py-1 rounded-full ${
+                    pipeline.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                  }`}
+                >
                   {pipeline.isActive ? 'Active' : 'Inactive'}
                 </span>
               </div>
@@ -304,7 +327,10 @@ const PipelinesPage: React.FC = () => {
                   <div className="text-xs text-gray-500">Deals</div>
                 </div>
                 <div className="bg-gray-50 rounded-lg p-2">
-                  <div className="text-lg font-bold text-gray-900 truncate" title={formatCurrency(pipeline.totalValue)}>
+                  <div
+                    className="text-lg font-bold text-gray-900 truncate"
+                    title={formatCurrency(pipeline.totalValue)}
+                  >
                     {pipeline.totalValue > 0 ? formatCurrency(pipeline.totalValue) : '$0'}
                   </div>
                   <div className="text-xs text-gray-500">Value</div>
@@ -394,7 +420,11 @@ const PipelinesPage: React.FC = () => {
                     }`}
                     title={pipeline.isActive ? 'Deactivate Pipeline' : 'Activate Pipeline'}
                   >
-                    {pipeline.isActive ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {pipeline.isActive ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
                   </button>
                 )}
 
@@ -422,7 +452,7 @@ const PipelinesPage: React.FC = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={currentPage === 1}
             >
               Previous
@@ -433,7 +463,7 @@ const PipelinesPage: React.FC = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
             >
               Next
@@ -450,9 +480,7 @@ const PipelinesPage: React.FC = () => {
         size="lg"
       >
         <div className="space-y-4">
-          <p className="text-gray-600">
-            Create a new pipeline to organize your sales process.
-          </p>
+          <p className="text-gray-600">Create a new pipeline to organize your sales process.</p>
           {/* Form fields would go here */}
           <div className="flex justify-end space-x-3 pt-4">
             <Button variant="outline" onClick={() => setShowCreateModal(false)}>
@@ -549,11 +577,7 @@ const PipelinesPage: React.FC = () => {
 
             {/* Add Stage button - requires pipeline:manage */}
             {hasPermission('pipeline:manage') && (
-              <Button
-                variant="outline"
-                leftIcon={<Plus className="w-4 h-4" />}
-                className="w-full"
-              >
+              <Button variant="outline" leftIcon={<Plus className="w-4 h-4" />} className="w-full">
                 Add Stage
               </Button>
             )}

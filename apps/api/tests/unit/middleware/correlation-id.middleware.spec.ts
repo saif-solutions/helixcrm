@@ -19,7 +19,7 @@ describe('CorrelationIdMiddleware', () => {
     // Reset all mocks before each test
     jest.clearAllMocks();
     mockUuidV4.mockReset();
-    
+
     middleware = new CorrelationIdMiddleware();
     mockRequest = {
       headers: {},
@@ -39,9 +39,9 @@ describe('CorrelationIdMiddleware', () => {
       // Arrange
       const providedCorrelationId = 'test-correlation-123';
       const providedRequestId = 'test-request-456';
-      
+
       mockUuidV4.mockReturnValueOnce(providedRequestId);
-      
+
       mockRequest.headers = {
         'x-correlation-id': providedCorrelationId,
       };
@@ -74,7 +74,7 @@ describe('CorrelationIdMiddleware', () => {
       // Arrange
       const generatedCorrelationId = 'new-correlation-789';
       const generatedRequestId = 'new-request-012';
-      
+
       mockUuidV4
         .mockReturnValueOnce(generatedCorrelationId)
         .mockReturnValueOnce(generatedRequestId);
@@ -116,9 +116,9 @@ describe('CorrelationIdMiddleware', () => {
       // Arrange
       const providedCorrelationId = 'test-correlation-123';
       const providedRequestId = 'test-request-456';
-      
+
       mockUuidV4.mockReturnValueOnce(providedRequestId);
-      
+
       mockRequest.headers = {
         'x-correlation-id': providedCorrelationId,
       };
@@ -145,7 +145,7 @@ describe('CorrelationIdMiddleware', () => {
       // Arrange
       const generatedCorrelationId = 'new-correlation-789';
       const generatedRequestId = 'new-request-012';
-      
+
       mockUuidV4
         .mockReturnValueOnce(generatedCorrelationId)
         .mockReturnValueOnce(generatedRequestId);

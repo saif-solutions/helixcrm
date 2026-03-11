@@ -9,14 +9,10 @@ import { ComplianceSchedulerService } from './src/shared/compliance/compliance-s
 
 async function testComplianceModule() {
   console.log('Testing Compliance Module with direct service imports...');
-  
+
   try {
     const module = await Test.createTestingModule({
-      imports: [
-        ConfigModule.forRoot({ isGlobal: true }),
-        PrismaModule,
-        ComplianceModule,
-      ],
+      imports: [ConfigModule.forRoot({ isGlobal: true }), PrismaModule, ComplianceModule],
       providers: [
         Soc2EvidenceService,
         Soc2ControlsService,
@@ -24,22 +20,22 @@ async function testComplianceModule() {
         ComplianceSchedulerService,
       ],
     }).compile();
-    
+
     console.log('✅ Testing module compiled successfully!');
-    
+
     // Try to get each service using their classes
     const serviceClasses = [
       Soc2EvidenceService,
       Soc2ControlsService,
       EvidenceStorageService,
-      ComplianceSchedulerService
+      ComplianceSchedulerService,
     ];
-    
+
     for (const ServiceClass of serviceClasses) {
       try {
         const service = module.get(ServiceClass);
         console.log(`✅ ${ServiceClass.name}: OK`);
-        
+
         // Check if the service has required dependencies
         if (service['prisma']) {
           console.log(`   ↳ Has PrismaService dependency`);
@@ -48,7 +44,7 @@ async function testComplianceModule() {
         console.log(`❌ ${ServiceClass.name}: ${error.message}`);
       }
     }
-    
+
     return true;
   } catch (error) {
     console.log('❌ Module compilation failed:', error.message);
@@ -59,11 +55,11 @@ async function testComplianceModule() {
 
 // Run the test
 testComplianceModule()
-  .then(success => {
+  .then((success) => {
     console.log(success ? '✅ All tests passed!' : '❌ Tests failed');
     process.exit(success ? 0 : 1);
   })
-  .catch(error => {
+  .catch((error) => {
     console.error('Unexpected error:', error.message);
     process.exit(1);
   });

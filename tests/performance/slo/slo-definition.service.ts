@@ -34,8 +34,11 @@ export interface SLOValidationResult {
 @Injectable()
 export class SLODefinitionService {
   private readonly logger = new Logger(SLODefinitionService.name);
-  private readonly sloDefinitionsPath = path.join(process.cwd(), 'configs/performance/slo-definitions.json');
-  
+  private readonly sloDefinitionsPath = path.join(
+    process.cwd(),
+    'configs/performance/slo-definitions.json',
+  );
+
   private defaultSLOs: Record<string, SLODefinition> = {
     salesMorningPeak: {
       description: '500 concurrent sales users during morning peak',
@@ -97,7 +100,7 @@ export class SLODefinitionService {
       if (fs.existsSync(this.sloDefinitionsPath)) {
         const content = await fs.promises.readFile(this.sloDefinitionsPath, 'utf8');
         const fileSLOs = JSON.parse(content);
-        
+
         // Merge with defaults (file SLOs override defaults)
         return { ...this.defaultSLOs, ...fileSLOs };
       }
@@ -122,7 +125,7 @@ export class SLODefinitionService {
 
       const content = JSON.stringify(sloDefinitions, null, 2);
       await fs.promises.writeFile(this.sloDefinitionsPath, content, 'utf8');
-      
+
       this.logger.log(`SLO definitions saved to: ${this.sloDefinitionsPath}`);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -144,7 +147,8 @@ export class SLODefinitionService {
       errors.push('p95Latency must be greater than 0');
     }
 
-    if (slo.p95Latency > 60000) { // 60 seconds
+    if (slo.p95Latency > 60000) {
+      // 60 seconds
       errors.push('p95Latency cannot exceed 60000ms (60 seconds)');
     }
 
@@ -188,7 +192,7 @@ export class SLODefinitionService {
       errorRate?: number;
       throughput?: number;
       concurrentUsers?: number;
-    }
+    },
   ): SLOValidationResult {
     const violations: Array<{
       metric: string;
@@ -250,7 +254,7 @@ export class SLODefinitionService {
     if (actualMetrics.concurrentUsers !== undefined) {
       if (actualMetrics.concurrentUsers < slo.concurrentUsers) {
         this.logger.warn(
-          `Concurrent users (${actualMetrics.concurrentUsers}) below SLO target (${slo.concurrentUsers}) for ${sloName}`
+          `Concurrent users (${actualMetrics.concurrentUsers}) below SLO target (${slo.concurrentUsers}) for ${sloName}`,
         );
       }
     }
@@ -283,7 +287,7 @@ export class SLODefinitionService {
    */
   async updateSLO(sloName: string, updates: Partial<SLODefinition>): Promise<void> {
     const slos = await this.getSLODefinitions();
-    
+
     const existingSLO = slos[sloName] || {
       description: '',
       p95Latency: 0,
@@ -295,7 +299,7 @@ export class SLODefinitionService {
     };
 
     const updatedSLO = { ...existingSLO, ...updates };
-    
+
     // Validate before saving
     const errors = this.validateSLODefinition(updatedSLO);
     if (errors.length > 0) {
@@ -311,7 +315,7 @@ export class SLODefinitionService {
    */
   async deleteSLO(sloName: string): Promise<void> {
     const slos = await this.getSLODefinitions();
-    
+
     if (!slos[sloName]) {
       throw new Error(`SLO ${sloName} not found`);
     }
@@ -338,8 +342,8 @@ export class SLODefinitionService {
 
     // Count by tag
     const byTag: Record<string, number> = {};
-    sloArray.forEach(slo => {
-      slo.tags?.forEach(tag => {
+    sloArray.forEach((slo) => {
+      slo.tags?.forEach((tag) => {
         byTag[tag] = (byTag[tag] || 0) + 1;
       });
     });
@@ -347,12 +351,12 @@ export class SLODefinitionService {
     // Categorize by compliance criticality (based on error rate tolerance)
     const complianceSummary = {
       critical: 0, // errorRate <= 0.1%
-      high: 0,     // errorRate <= 1.0%
-      medium: 0,   // errorRate <= 5.0%
-      low: 0,      // errorRate > 5.0%
+      high: 0, // errorRate <= 1.0%
+      medium: 0, // errorRate <= 5.0%
+      low: 0, // errorRate > 5.0%
     };
 
-    sloArray.forEach(slo => {
+    sloArray.forEach((slo) => {
       if (slo.errorRate <= 0.1) {
         complianceSummary.critical++;
       } else if (slo.errorRate <= 1.0) {
@@ -407,11 +411,11 @@ export class SLODefinitionService {
       doc += `- Throughput: ${slo.throughput} req/sec\n`;
       doc += `- Concurrent Users: ${slo.concurrentUsers}\n`;
       doc += `- Duration: ${slo.duration}\n\n`;
-      
+
       if (slo.tags && slo.tags.length > 0) {
         doc += `**Tags:** ${slo.tags.join(', ')}\n\n`;
       }
-      
+
       doc += `**Justification:** ${slo.justification}\n\n`;
       doc += `---\n\n`;
     });

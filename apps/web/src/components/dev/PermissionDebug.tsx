@@ -26,11 +26,11 @@ export const PermissionDebug: React.FC = () => {
           ✕
         </button>
       </div>
-      
+
       <div className="mb-2">
         <span className="text-gray-400">Roles:</span>{' '}
         {roles.length ? (
-          roles.map(r => (
+          roles.map((r) => (
             <span key={r} className="bg-blue-800 px-1 py-0.5 rounded mr-1">
               {r}
             </span>
@@ -39,12 +39,12 @@ export const PermissionDebug: React.FC = () => {
           <span className="text-gray-500">none</span>
         )}
       </div>
-      
+
       <div>
         <span className="text-gray-400">Permissions ({permissions.length}):</span>
         {permissions.length > 0 ? (
           <div className="mt-1 max-h-40 overflow-y-auto">
-            {permissions.map(p => (
+            {permissions.map((p) => (
               <div key={p} className="flex items-center">
                 <span className="text-green-400 mr-2">✓</span>
                 <span>{p}</span>
@@ -55,7 +55,7 @@ export const PermissionDebug: React.FC = () => {
           <div className="text-gray-500 mt-1">no permissions</div>
         )}
       </div>
-      
+
       {/* Quick test inputs */}
       <div className="mt-3 pt-2 border-t border-gray-700">
         <div className="text-gray-400 text-xs mb-1">Test permission:</div>

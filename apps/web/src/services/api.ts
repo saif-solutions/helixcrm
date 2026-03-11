@@ -6,7 +6,7 @@ import axios, {
   AxiosResponse,
   InternalAxiosRequestConfig,
 } from 'axios';
-import { useAuthStore } from '../stores/auth.store'; 
+import { useAuthStore } from '../stores/auth.store';
 import { mapBackendErrorToAuthError } from '../lib/utils/auth-error-mapper';
 import { API_CONFIG } from '../config/api.config';
 import { logger, generateCorrelationId } from '../lib/logging/logger.service';
@@ -137,10 +137,13 @@ api.interceptors.response.use(
   (response: AxiosResponse) => {
     // Log successful response in development
     if (IS_DEV) {
-      logger.debug(`📥 API Response: ${response.config.method?.toUpperCase()} ${response.config.url}`, {
-        status: response.status,
-        statusText: response.statusText,
-      });
+      logger.debug(
+        `📥 API Response: ${response.config.method?.toUpperCase()} ${response.config.url}`,
+        {
+          status: response.status,
+          statusText: response.statusText,
+        }
+      );
     }
     return response;
   },
@@ -169,7 +172,8 @@ api.interceptors.response.use(
 
       const apiError: ApiError = {
         status: 0,
-        message: 'Network error. Please check your connection and ensure the backend server is running.',
+        message:
+          'Network error. Please check your connection and ensure the backend server is running.',
         code: 'NETWORK_ERROR',
         requestId: originalRequest?._requestId,
       };
@@ -182,7 +186,7 @@ api.interceptors.response.use(
       const responseData = error.response?.data as ErrorResponseData;
       if (responseData.error?.message?.includes('Tenant context')) {
         logger.warn('Tenant context error', { url, requestId: originalRequest?._requestId });
-        
+
         if (!url.includes('/auth/')) {
           useAuthStore.getState().setSessionExpired(true);
         }
@@ -198,14 +202,14 @@ api.interceptors.response.use(
     // Handle 401 Unauthorized
     if (error.response?.status === 401) {
       logger.warn('Authentication required', { url, requestId: originalRequest?._requestId });
-      
+
       // Check if this is a refresh endpoint failure
       if (originalRequest.url?.includes('/auth/refresh')) {
         logger.error('Token refresh failed - redirecting to login');
         useAuthStore.getState().setSessionExpired(true);
         return Promise.reject(error);
       }
-      
+
       // Check if we've already tried refreshing
       if (originalRequest._retry) {
         logger.error('Token refresh already attempted - giving up');
@@ -233,34 +237,35 @@ api.interceptors.response.use(
       }
     }
 
-// CSRF token expired (403)
-if (error.response?.status === 403 && error.response?.data?.code === 'INVALID_CSRF_TOKEN') {
-  logger.warn('CSRF token expired, attempting refresh');
-  
-  originalRequest._csrfRetryCount = (originalRequest._csrfRetryCount || 0) + 1;
-  if (originalRequest._csrfRetryCount > 1) {
-    logger.error('CSRF retry limit exceeded');
-    useAuthStore.getState().setSessionExpired(true);
-    return Promise.reject(error);
-  }
+    // CSRF token expired (403)
+    if (error.response?.status === 403 && error.response?.data?.code === 'INVALID_CSRF_TOKEN') {
+      logger.warn('CSRF token expired, attempting refresh');
 
-  try {
-    // ✅ UPDATE THIS LINE - Replace csrfManager.refreshCsrfToken with direct API call
-    await api.get('/auth/csrf-token');
-    logger.info('CSRF token refreshed');
-    return api(originalRequest);
-  } catch (refreshError) {
-    logger.error('CSRF refresh failed', refreshError as Error);
-    useAuthStore.getState().setSessionExpired(true);
-    return Promise.reject(refreshError);
-  }
-}
+      originalRequest._csrfRetryCount = (originalRequest._csrfRetryCount || 0) + 1;
+      if (originalRequest._csrfRetryCount > 1) {
+        logger.error('CSRF retry limit exceeded');
+        useAuthStore.getState().setSessionExpired(true);
+        return Promise.reject(error);
+      }
+
+      try {
+        // ✅ UPDATE THIS LINE - Replace csrfManager.refreshCsrfToken with direct API call
+        await api.get('/auth/csrf-token');
+        logger.info('CSRF token refreshed');
+        return api(originalRequest);
+      } catch (refreshError) {
+        logger.error('CSRF refresh failed', refreshError as Error);
+        useAuthStore.getState().setSessionExpired(true);
+        return Promise.reject(refreshError);
+      }
+    }
 
     // Extract correlation ID from backend response headers
-    const correlationId = error.response?.headers['x-request-id'] || 
-                         error.response?.headers['x-correlation-id'] || 
-                         originalRequest?._requestId;
-    
+    const correlationId =
+      error.response?.headers['x-request-id'] ||
+      error.response?.headers['x-correlation-id'] ||
+      originalRequest?._requestId;
+
     // Map error for consistent handling
     const mappedError = mapBackendErrorToAuthError(error);
     const responseData = error.response?.data as ErrorResponseData;
@@ -282,7 +287,7 @@ export const initializeApi = async (): Promise<void> => {
   try {
     // Just call the endpoint - it sets cookie automatically
     await api.get('/auth/csrf-token');
-    
+
     // Verify cookie was set
     const token = getCookie('XSRF-TOKEN');
     if (token) {
@@ -306,7 +311,7 @@ export const createAbortController = (): AbortController => {
 requestIdInterceptor(api, {
   enabled: true,
   headerName: 'X-Request-ID',
-  logToConsole: import.meta.env.DEV
+  logToConsole: import.meta.env.DEV,
 });
 
 // THEN create your wrapped client using the existing api instance
@@ -398,7 +403,7 @@ export const ContactsAPI = {
    * @param data Contact data
    * @returns Created contact
    */
-  create: (data: CreateContactDto) => 
+  create: (data: CreateContactDto) =>
     apiClient.post<Contact>('/contacts', data as unknown as Record<string, unknown>),
 
   /**
@@ -407,7 +412,7 @@ export const ContactsAPI = {
    * @param data Updated contact data
    * @returns Updated contact
    */
-  update: (id: string, data: UpdateContactDto) => 
+  update: (id: string, data: UpdateContactDto) =>
     apiClient.put<Contact>(`/contacts/${id}`, data as unknown as Record<string, unknown>),
 
   /**

@@ -94,7 +94,6 @@ try {
   } catch (error: any) {
     console.log(`   ✅ Expected failure: ${error.message}`);
   }
-
 } catch (error: any) {
   console.log(`   ❌ Token verification FAILED: ${error.message}`);
 }

@@ -36,19 +36,25 @@ if (SecurityConfig.jwt.issuer !== envIssuer) {
 // Check audience alignment
 const envAudience = process.env.JWT_AUDIENCE || 'helixcrm-client';
 if (SecurityConfig.jwt.audience !== envAudience) {
-  issues.push(`Audience mismatch: SecurityConfig=${SecurityConfig.jwt.audience}, Env=${envAudience}`);
+  issues.push(
+    `Audience mismatch: SecurityConfig=${SecurityConfig.jwt.audience}, Env=${envAudience}`,
+  );
 }
 
 // Check expiry alignment
 const envExpiry = process.env.JWT_EXPIRES_IN || '15m';
 if (SecurityConfig.jwt.accessTokenExpiry !== envExpiry) {
-  issues.push(`Access token expiry mismatch: SecurityConfig=${SecurityConfig.jwt.accessTokenExpiry}, Env=${envExpiry}`);
+  issues.push(
+    `Access token expiry mismatch: SecurityConfig=${SecurityConfig.jwt.accessTokenExpiry}, Env=${envExpiry}`,
+  );
 }
 
 // Check refresh expiry alignment
 const envRefreshExpiry = process.env.JWT_REFRESH_EXPIRES_IN || '7d';
 if (SecurityConfig.jwt.refreshTokenExpiry !== envRefreshExpiry) {
-  issues.push(`Refresh token expiry mismatch: SecurityConfig=${SecurityConfig.jwt.refreshTokenExpiry}, Env=${envRefreshExpiry}`);
+  issues.push(
+    `Refresh token expiry mismatch: SecurityConfig=${SecurityConfig.jwt.refreshTokenExpiry}, Env=${envRefreshExpiry}`,
+  );
 }
 
 // Report results
@@ -56,7 +62,7 @@ if (issues.length === 0) {
   console.log('   ✅ All configurations are aligned!');
 } else {
   console.log('   ❌ Configuration issues found:');
-  issues.forEach(issue => console.log(`     - ${issue}`));
+  issues.forEach((issue) => console.log(`     - ${issue}`));
 }
 
 console.log('\n4. NEXT STEPS:');

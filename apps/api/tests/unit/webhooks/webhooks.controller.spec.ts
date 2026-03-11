@@ -45,9 +45,7 @@ describe('WebhooksController', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [WebhooksController],
-      providers: [
-        { provide: WebhooksService, useValue: mockWebhooksService },
-      ],
+      providers: [{ provide: WebhooksService, useValue: mockWebhooksService }],
     }).compile();
 
     controller = module.get<WebhooksController>(WebhooksController);
@@ -119,7 +117,10 @@ describe('WebhooksController', () => {
       const result = await controller.updateWebhook(webhookId, updateDto);
 
       expect(result).toEqual(mockResult);
-      expect(webhooksService.updateWebhook).toHaveBeenCalledWith(webhookId, updateDto);
+      expect(webhooksService.updateWebhook).toHaveBeenCalledWith(
+        webhookId,
+        updateDto,
+      );
     });
   });
 
@@ -144,7 +145,10 @@ describe('WebhooksController', () => {
       data: { dealId: 'deal-123' },
       timestamp: new Date(),
     };
-    const mockResult = { deliveryId: 'delivery-123', message: 'Webhook triggered' };
+    const mockResult = {
+      deliveryId: 'delivery-123',
+      message: 'Webhook triggered',
+    };
 
     it('should successfully trigger a webhook', async () => {
       webhooksService.triggerWebhook.mockResolvedValue(mockResult);
@@ -152,7 +156,10 @@ describe('WebhooksController', () => {
       const result = await controller.triggerWebhook(webhookId, payload);
 
       expect(result).toEqual(mockResult);
-      expect(webhooksService.triggerWebhook).toHaveBeenCalledWith(webhookId, payload);
+      expect(webhooksService.triggerWebhook).toHaveBeenCalledWith(
+        webhookId,
+        payload,
+      );
     });
   });
 
@@ -172,7 +179,11 @@ describe('WebhooksController', () => {
       const result = await controller.getDeliveryHistory(webhookId, 1, 20);
 
       expect(result).toEqual(mockHistory);
-      expect(webhooksService.getDeliveryHistory).toHaveBeenCalledWith(webhookId, 1, 20);
+      expect(webhooksService.getDeliveryHistory).toHaveBeenCalledWith(
+        webhookId,
+        1,
+        20,
+      );
     });
 
     it('should clamp limit to max 100', async () => {
@@ -180,7 +191,11 @@ describe('WebhooksController', () => {
 
       await controller.getDeliveryHistory(webhookId, 1, 200);
 
-      expect(webhooksService.getDeliveryHistory).toHaveBeenCalledWith(webhookId, 1, 100);
+      expect(webhooksService.getDeliveryHistory).toHaveBeenCalledWith(
+        webhookId,
+        1,
+        100,
+      );
     });
 
     it('should ensure page is at least 1', async () => {
@@ -188,7 +203,11 @@ describe('WebhooksController', () => {
 
       await controller.getDeliveryHistory(webhookId, 0, 20);
 
-      expect(webhooksService.getDeliveryHistory).toHaveBeenCalledWith(webhookId, 1, 20);
+      expect(webhooksService.getDeliveryHistory).toHaveBeenCalledWith(
+        webhookId,
+        1,
+        20,
+      );
     });
   });
 
@@ -202,7 +221,9 @@ describe('WebhooksController', () => {
       const result = await controller.getDeliveryStatus(deliveryId);
 
       expect(result).toEqual(mockDelivery);
-      expect(webhooksService.getDeliveryStatus).toHaveBeenCalledWith(deliveryId);
+      expect(webhooksService.getDeliveryStatus).toHaveBeenCalledWith(
+        deliveryId,
+      );
     });
   });
 

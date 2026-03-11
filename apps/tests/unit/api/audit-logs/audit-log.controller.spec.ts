@@ -41,9 +41,7 @@ describe('AuditLogController', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AuditLogController],
-      providers: [
-        { provide: AuditLogQueryService, useValue: mockAuditLogQueryService },
-      ],
+      providers: [{ provide: AuditLogQueryService, useValue: mockAuditLogQueryService }],
     }).compile();
 
     controller = module.get<AuditLogController>(AuditLogController);
@@ -243,96 +241,104 @@ describe('AuditLogController', () => {
       });
     });
 
-it('should filter by search term', async () => {
-  await controller.getAuditLogs(
-    mockRequest,
-    1, // page
-    25, // limit
-    undefined, // startDate
-    undefined, // endDate
-    undefined, // action
-    undefined, // entityType
-    undefined, // actorEmail
-    undefined, // severity
-    undefined, // actorType
-    'test', // search - this should be the 10th parameter
-  );
+    it('should filter by search term', async () => {
+      await controller.getAuditLogs(
+        mockRequest,
+        1, // page
+        25, // limit
+        undefined, // startDate
+        undefined, // endDate
+        undefined, // action
+        undefined, // entityType
+        undefined, // actorEmail
+        undefined, // severity
+        undefined, // actorType
+        'test', // search - this should be the 10th parameter
+      );
 
-  expect(auditLogQueryService.getAuditLogs).toHaveBeenCalledWith({
-    organizationId: 'org-123',
-    page: 1,
-    limit: 25,
-    startDate: undefined,
-    endDate: undefined,
-    action: undefined,
-    entityType: undefined,
-    actorEmail: undefined,
-    severity: undefined,
-    actorType: undefined,
-    search: 'test',
-  });
-});
+      expect(auditLogQueryService.getAuditLogs).toHaveBeenCalledWith({
+        organizationId: 'org-123',
+        page: 1,
+        limit: 25,
+        startDate: undefined,
+        endDate: undefined,
+        action: undefined,
+        entityType: undefined,
+        actorEmail: undefined,
+        severity: undefined,
+        actorType: undefined,
+        search: 'test',
+      });
+    });
 
     it('should throw BadRequestException if organization ID missing', async () => {
       const requestWithoutOrg = { user: {} };
 
-      await expect(controller.getAuditLogs(
-        requestWithoutOrg,
-        1,
-        25,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-      )).rejects.toThrow(BadRequestException);
+      await expect(
+        controller.getAuditLogs(
+          requestWithoutOrg,
+          1,
+          25,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+        ),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should throw BadRequestException if start date invalid', async () => {
-      await expect(controller.getAuditLogs(
-        mockRequest,
-        1,
-        25,
-        'invalid-date',
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-      )).rejects.toThrow(BadRequestException);
+      await expect(
+        controller.getAuditLogs(
+          mockRequest,
+          1,
+          25,
+          'invalid-date',
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+        ),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should throw BadRequestException if end date invalid', async () => {
-      await expect(controller.getAuditLogs(
-        mockRequest,
-        1,
-        25,
-        '2024-01-01',
-        'invalid-date',
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-      )).rejects.toThrow(BadRequestException);
+      await expect(
+        controller.getAuditLogs(
+          mockRequest,
+          1,
+          25,
+          '2024-01-01',
+          'invalid-date',
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+        ),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should throw BadRequestException if start date after end date', async () => {
-      await expect(controller.getAuditLogs(
-        mockRequest,
-        1,
-        25,
-        '2024-02-01',
-        '2024-01-01',
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-      )).rejects.toThrow(BadRequestException);
+      await expect(
+        controller.getAuditLogs(
+          mockRequest,
+          1,
+          25,
+          '2024-02-01',
+          '2024-01-01',
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+        ),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 
@@ -413,7 +419,7 @@ it('should filter by search term', async () => {
       expect(mockResponse.setHeader).toHaveBeenCalledWith('Content-Type', 'text/csv');
       expect(mockResponse.setHeader).toHaveBeenCalledWith(
         'Content-Disposition',
-        expect.stringContaining('attachment; filename=audit-logs-')
+        expect.stringContaining('attachment; filename=audit-logs-'),
       );
       expect(mockResponse.send).toHaveBeenCalled();
     });
@@ -421,8 +427,9 @@ it('should filter by search term', async () => {
     it('should throw BadRequestException if organization ID missing', async () => {
       const requestWithoutOrg = { user: {} };
 
-      await expect(controller.exportAuditLogs(requestWithoutOrg, mockResponse as any))
-        .rejects.toThrow(BadRequestException);
+      await expect(
+        controller.exportAuditLogs(requestWithoutOrg, mockResponse as any),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 });

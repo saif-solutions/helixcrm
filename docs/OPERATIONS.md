@@ -3,13 +3,15 @@
 ## Development Setup
 
 ### Prerequisites
+
 - Node.js 18 or higher
 - Docker Desktop (for PostgreSQL + Redis)
 - Git
 - PowerShell (Windows) or Bash (Mac/Linux)
 
 ### Installation
-```bash
+
+````bash
 # Install dependencies
 npm install
 
@@ -244,3 +246,4 @@ Errors tracked with stack traces
 Performance metrics collected
 
 Alerting on error patterns
+````

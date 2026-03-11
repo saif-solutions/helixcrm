@@ -1,10 +1,13 @@
 # High Signal Tests for QA Team
+
 ## (PM Recommended Focus Areas)
 
-## í¾¯ Maximum Value Tests
+## ï¿½ï¿½ï¿½ Maximum Value Tests
 
 ### 1. Concurrent Refresh Race Conditions
+
 **Test**: Simulate multiple devices refreshing simultaneously
+
 ```bash
 # Use parallel curl requests
 for i in {1..5}; do
@@ -40,7 +43,7 @@ curl -X GET http://localhost:3000/audit-logs \
   -H "Authorization: Bearer <admin_token>"
 Expected: Each failed attempt has audit entry with correct severity
 
-í´ What to Watch For
+ï¿½ï¿½ï¿½ What to Watch For
 Transaction Safety Indicators:
 No "partial" token states in database
 
@@ -62,7 +65,7 @@ Token refresh < 300ms
 
 No memory leaks in long-running sessions
 
-í³‹ Quick Validation Checklist
+ï¿½ï¿½ï¿½ Quick Validation Checklist
 Run these after the entry gate:
 
 bash
@@ -78,7 +81,7 @@ npx prisma db execute --file scripts/check-schema.sql
 # 4. Environment verification
 echo "JWT_SECRET: ${JWT_SECRET:0:5}..."
 echo "NODE_ENV: $NODE_ENV"
-íº¨ Red Flags (Stop Testing If Seen)
+ï¿½ï¿½ï¿½ Red Flags (Stop Testing If Seen)
 Database connection errors during auth
 
 Tokpersisted after logout
@@ -99,3 +102,4 @@ Token replay protection active
 Audit logs complete
 
 Performance within 5% of baseline
+```

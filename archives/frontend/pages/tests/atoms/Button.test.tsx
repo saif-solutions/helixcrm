@@ -95,7 +95,7 @@ describe('Button Component', () => {
     render(
       <Button iconOnly aria-label="Settings">
         <span data-testid="icon">⚙</span>
-      </Button>
+      </Button>,
     );
     const button = screen.getByRole('button', { name: /settings/i });
     const icon = screen.getByTestId('icon');
@@ -116,7 +116,7 @@ describe('Button Component', () => {
     render(
       <Button disabled onClick={handleClick}>
         Disabled Button
-      </Button>
+      </Button>,
     );
     const button = screen.getByRole('button', { name: /disabled button/i });
     fireEvent.click(button);
@@ -128,7 +128,7 @@ describe('Button Component', () => {
     render(
       <Button loading onClick={handleClick}>
         Loading Button
-      </Button>
+      </Button>,
     );
     const button = screen.getByRole('button', { name: /loading button/i });
     fireEvent.click(button);
@@ -163,7 +163,7 @@ describe('Button Component', () => {
     render(
       <Button data-testid="custom-button" type="submit" aria-label="Submit form">
         Submit
-      </Button>
+      </Button>,
     );
     const button = screen.getByRole('button', { name: /submit form/i });
     expect(button).toHaveAttribute('type', 'submit');

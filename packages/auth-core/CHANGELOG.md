@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.0] - 2024-01-31
 
 ### Added
+
 - Initial release of auth-core package
 - Core authentication contracts:
   - `AuthCoreContract`: Main authentication interface
@@ -22,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Unit tests for core security operations
 
 ### Security Features
+
 - Password hashing with bcrypt
 - JWT token signing and validation
 - Refresh token management with version binding
@@ -29,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Token replay protection
 
 ### Integration Features
+
 - Dependency injection support
 - Configurable token expiration
 - Extensible repository interfaces
@@ -36,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Multi-tenant support (organization-based)
 
 ### Technical Details
+
 - Written in TypeScript with strict type checking
 - Zero runtime dependencies (only dev dependencies)
 - ES6 module exports
@@ -43,6 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - MIT License
 
 ### Usage
+
 ```typescript
 import { createAuthCore } from '@helixcrm/auth-core';
 
@@ -107,3 +112,4 @@ Migration tools from legacy auth
 
 Note: This is the first production-grade release. Contracts are frozen for MVP-1.
 Breaking changes will only occur in major version updates (1.0.0, 2.0.0, etc.).
+```

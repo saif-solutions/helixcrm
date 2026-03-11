@@ -2,12 +2,16 @@
   "compilerOptions": {
     /* ==================== LANGUAGE & ENVIRONMENT ==================== */
     "target": "ES2022",
-    "lib": ["DOM", "DOM.Iterable", "ES2022"],
-    
+    "lib": [
+      "DOM",
+      "DOM.Iterable",
+      "ES2022"
+    ],
+
     /* React 19 JSX Configuration */
     "jsx": "react-jsx",
     "jsxImportSource": "react",
-    
+
     /* ==================== MODULES ==================== */
     "module": "ESNext",
     "moduleResolution": "bundler",
@@ -15,16 +19,16 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    
+
     /* Vite-specific module support */
     "moduleDetection": "force",
     "allowArbitraryExtensions": true,
-    
+
     /* ==================== INTEROP CONSTRAINTS ==================== */
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
-    
+
     /* ==================== TYPE CHECKING ==================== */
     "strict": true,
     "noImplicitAny": true,
@@ -37,59 +41,95 @@
     "alwaysStrict": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
-    
+
     /* ==================== COMPLETENESS ==================== */
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
-    
+
     /* ==================== EMIT ==================== */
     "sourceMap": true,
     "inlineSources": false,
-    
+
     /* ==================== ADVANCED ==================== */
     "incremental": true,
     "tsBuildInfoFile": "./node_modules/.tsbuildinfo",
     "disableSourceOfProjectReferenceRedirect": false,
     "disableSolutionSearching": false,
     "disableReferencedProjectLoad": false,
-    
+
     /* ==================== PATHS & ALIASES ==================== */
     "baseUrl": "./src",
     "paths": {
       // Base alias
-      "@/*": ["./*"],
-      
+      "@/*": [
+        "./*"
+      ],
+
       // Atomic Design aliases (MUST match vite.config.ts)
-      "@atoms/*": ["./components/atoms/*"],
-      "@molecules/*": ["./components/molecules/*"],
-      "@organisms/*": ["./components/organisms/*"],
-      "@feedback/*": ["./components/feedback/*"],
-      "@layout/*": ["./components/layout/*"],
-      
+      "@atoms/*": [
+        "./components/atoms/*"
+      ],
+      "@molecules/*": [
+        "./components/molecules/*"
+      ],
+      "@organisms/*": [
+        "./components/organisms/*"
+      ],
+      "@feedback/*": [
+        "./components/feedback/*"
+      ],
+      "@layout/*": [
+        "./components/layout/*"
+      ],
+
       // Feature aliases (MUST match vite.config.ts)
-      "@pages/*": ["./pages/*"],
-      "@services/*": ["./services/*"],
-      "@lib/*": ["./lib/*"],
-      "@stores/*": ["./stores/*"],
-      "@providers/*": ["./providers/*"],
-      "@hooks/*": ["./hooks/*"],
-      "@utils/*": ["./utils/*"],
-      "@contexts/*": ["./contexts/*"],
-      "@auth/*": ["./components/auth/*"],
-      "@contacts/*": ["./components/contacts/*"]
+      "@pages/*": [
+        "./pages/*"
+      ],
+      "@services/*": [
+        "./services/*"
+      ],
+      "@lib/*": [
+        "./lib/*"
+      ],
+      "@stores/*": [
+        "./stores/*"
+      ],
+      "@providers/*": [
+        "./providers/*"
+      ],
+      "@hooks/*": [
+        "./hooks/*"
+      ],
+      "@utils/*": [
+        "./utils/*"
+      ],
+      "@contexts/*": [
+        "./contexts/*"
+      ],
+      "@auth/*": [
+        "./components/auth/*"
+      ],
+      "@contacts/*": [
+        "./components/contacts/*"
+      ]
     },
-    
+
     /* ==================== TYPES ==================== */
-    "types": ["vite/client", "node", "@testing-library/jest-dom"],
-    
+    "types": [
+      "vite/client",
+      "node",
+      "@testing-library/jest-dom"
+    ],
+
     /* ==================== OUTPUT FORMATTING ==================== */
     "pretty": true,
     "newLine": "lf",
-    
+
     /* ==================== PERFORMANCE ==================== */
     "assumeChangesOnlyAffectDirectDependencies": true
   },
-  
+
   /* ==================== INCLUDE/EXCLUDE ==================== */
   "include": [
     "src/**/*.ts",
@@ -100,7 +140,7 @@
     "vitest.config.ts",
     "vitest.setup.ts"
   ],
-  
+
   "exclude": [
     "node_modules",
     "dist",

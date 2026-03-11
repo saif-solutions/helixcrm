@@ -28,11 +28,11 @@ export function useFormSubmission() {
     } catch (err: unknown) {
       const errorMessage = getErrorMessage(err);
       const formErrors = getFormErrors(err);
-      
+
       setError(errorMessage);
       setFieldErrors(formErrors);
       options?.onError?.(errorMessage, formErrors);
-      
+
       throw err;
     } finally {
       setIsSubmitting(false);

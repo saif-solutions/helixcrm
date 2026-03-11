@@ -78,12 +78,17 @@ describe('FileStorageController', () => {
         size: 1024,
         path: '/uploads/test-file.pdf',
       };
-      fileStorageService.uploadFile.mockResolvedValue({ id: 'file-123', ...dtoWithoutMetadata });
+      fileStorageService.uploadFile.mockResolvedValue({
+        id: 'file-123',
+        ...dtoWithoutMetadata,
+      });
 
       const result = await controller.uploadFile(dtoWithoutMetadata);
 
       expect(result).toBeDefined();
-      expect(fileStorageService.uploadFile).toHaveBeenCalledWith(dtoWithoutMetadata);
+      expect(fileStorageService.uploadFile).toHaveBeenCalledWith(
+        dtoWithoutMetadata,
+      );
     });
   });
 
@@ -174,7 +179,9 @@ describe('FileStorageController', () => {
 
     it('should handle UUID validation', async () => {
       const invalidId = 'not-a-uuid';
-      fileStorageService.getFileById.mockRejectedValue(new Error('Invalid UUID'));
+      fileStorageService.getFileById.mockRejectedValue(
+        new Error('Invalid UUID'),
+      );
 
       await expect(controller.getFileById(invalidId)).rejects.toThrow();
     });
@@ -194,9 +201,13 @@ describe('FileStorageController', () => {
     });
 
     it('should handle non-existent file', async () => {
-      fileStorageService.deleteFile.mockRejectedValue(new Error('File not found'));
+      fileStorageService.deleteFile.mockRejectedValue(
+        new Error('File not found'),
+      );
 
-      await expect(controller.deleteFile(fileId)).rejects.toThrow('File not found');
+      await expect(controller.deleteFile(fileId)).rejects.toThrow(
+        'File not found',
+      );
     });
   });
 });

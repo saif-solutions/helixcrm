@@ -10,8 +10,9 @@ export enum Role {
 }
 
 export const createMockUser = (overrides: Partial<any> = {}) => {
-  const password = overrides.passwordHash ?? overrides.password ?? 'hashed-password';
-  
+  const password =
+    overrides.passwordHash ?? overrides.password ?? 'hashed-password';
+
   return {
     id: `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     email: 'test@example.com',
@@ -34,11 +35,11 @@ export const createMockUser = (overrides: Partial<any> = {}) => {
   };
 };
 
-export const createMockAdmin = (overrides = {}) => 
+export const createMockAdmin = (overrides = {}) =>
   createMockUser({ role: Role.ADMIN, ...overrides });
 
-export const createMockTenantAdmin = (overrides = {}) => 
+export const createMockTenantAdmin = (overrides = {}) =>
   createMockUser({ role: Role.TENANT_ADMIN, ...overrides });
 
-export const createMockSuperAdmin = (overrides = {}) => 
+export const createMockSuperAdmin = (overrides = {}) =>
   createMockUser({ role: Role.SUPER_ADMIN, ...overrides });

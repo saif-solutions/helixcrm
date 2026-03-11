@@ -5,6 +5,7 @@
 ### TokenRepository Contracts
 
 #### Current API Implementation (6 methods):
+
 ```typescript
 interface TokenRepository {
   createRefreshToken(params: CreateRefreshTokenParams): Promise<RefreshToken>;
@@ -123,3 +124,4 @@ Login → refresh token → logout flow
 Multiple devices with same user
 
 Token version invalidation on password change
+```

@@ -58,11 +58,7 @@ const EditLeadPage: React.FC = () => {
     data: lead,
     isLoading,
     error,
-  } = useApiQuery<Lead>(
-    ['lead', id || ''],
-    () => LeadsAPI.get(id || ''),
-    { enabled: !!id }
-  );
+  } = useApiQuery<Lead>(['lead', id || ''], () => LeadsAPI.get(id || ''), { enabled: !!id });
 
   // Update lead mutation
   const updateMutation = useApiMutation<Lead, Error, { id: string; data: UpdateLeadDto }>(
@@ -131,15 +127,34 @@ const EditLeadPage: React.FC = () => {
   };
 
   // Status options - defined outside component or with useMemo for stability
-  const statusOptions = React.useMemo(() => [
-    { value: 'new' as const, label: 'New', color: 'text-blue-600 bg-blue-50 border-blue-200' },
-    { value: 'contacted' as const, label: 'Contacted', color: 'text-yellow-600 bg-yellow-50 border-yellow-200' },
-    { value: 'qualified' as const, label: 'Qualified', color: 'text-green-600 bg-green-50 border-green-200' },
-    { value: 'converted' as const, label: 'Converted', color: 'text-purple-600 bg-purple-50 border-purple-200' },
-    { value: 'disqualified' as const, label: 'Disqualified', color: 'text-red-600 bg-red-50 border-red-200' },
-  ], []);
+  const statusOptions = React.useMemo(
+    () => [
+      { value: 'new' as const, label: 'New', color: 'text-blue-600 bg-blue-50 border-blue-200' },
+      {
+        value: 'contacted' as const,
+        label: 'Contacted',
+        color: 'text-yellow-600 bg-yellow-50 border-yellow-200',
+      },
+      {
+        value: 'qualified' as const,
+        label: 'Qualified',
+        color: 'text-green-600 bg-green-50 border-green-200',
+      },
+      {
+        value: 'converted' as const,
+        label: 'Converted',
+        color: 'text-purple-600 bg-purple-50 border-purple-200',
+      },
+      {
+        value: 'disqualified' as const,
+        label: 'Disqualified',
+        color: 'text-red-600 bg-red-50 border-red-200',
+      },
+    ],
+    []
+  );
 
-    // Use useWatch instead of watch() - this is more compatible with React Compiler
+  // Use useWatch instead of watch() - this is more compatible with React Compiler
   const selectedStatus = useWatch({
     control,
     name: 'status',
@@ -153,14 +168,8 @@ const EditLeadPage: React.FC = () => {
         <Card className="p-12 text-center">
           <Shield className="w-16 h-16 text-gray-300 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Access Denied</h2>
-          <p className="text-gray-500">
-            You don't have permission to edit leads.
-          </p>
-          <Button
-            variant="primary"
-            className="mt-4"
-            onClick={() => navigate('/leads')}
-          >
+          <p className="text-gray-500">You don't have permission to edit leads.</p>
+          <Button variant="primary" className="mt-4" onClick={() => navigate('/leads')}>
             Back to Leads
           </Button>
         </Card>

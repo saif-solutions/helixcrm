@@ -42,10 +42,10 @@ console.log(`Size: ${contractContent.length} bytes\n`);
 
 let allPassed = true;
 
-checks.forEach(check => {
+checks.forEach((check) => {
   const matches = contractContent.match(check.pattern);
   const passed = !!matches === check.required;
-  
+
   console.log(`${passed ? '✅' : '❌'} ${check.name}: ${passed ? 'PASS' : 'FAIL'}`);
   if (!passed && check.required) {
     console.log(`   Expected pattern: ${check.pattern}`);
@@ -58,12 +58,15 @@ const factoryPath = path.join(__dirname, '..', 'src', 'core', 'auth-core.factory
 if (fs.existsSync(factoryPath)) {
   console.log('\n🏭 Factory File Analysis:');
   const factoryContent = fs.readFileSync(factoryPath, 'utf-8');
-  
+
   // Check for createAuthCore export
-  const hasFactoryExport = factoryContent.includes('export function createAuthCore') || 
-                          factoryContent.includes('export const createAuthCore');
-  console.log(`${hasFactoryExport ? '✅' : '❌'} createAuthCore export: ${hasFactoryExport ? 'PRESENT' : 'MISSING'}`);
-  
+  const hasFactoryExport =
+    factoryContent.includes('export function createAuthCore') ||
+    factoryContent.includes('export const createAuthCore');
+  console.log(
+    `${hasFactoryExport ? '✅' : '❌'} createAuthCore export: ${hasFactoryExport ? 'PRESENT' : 'MISSING'}`,
+  );
+
   if (!hasFactoryExport) {
     allPassed = false;
     console.log('   Factory function must be exported');
@@ -75,14 +78,14 @@ const indexPath = path.join(__dirname, '..', 'src', 'index.ts');
 if (fs.existsSync(indexPath)) {
   console.log('\n📦 Index File Analysis:');
   const indexContent = fs.readFileSync(indexPath, 'utf-8');
-  
+
   const checks = [
     { name: 'createAuthCore import', pattern: /createAuthCore/ },
     { name: 'CreateAuthCoreOptions import', pattern: /CreateAuthCoreOptions/ },
     { name: 'AuthCoreDependencies import', pattern: /AuthCoreDependencies/ },
   ];
-  
-  checks.forEach(check => {
+
+  checks.forEach((check) => {
     const hasImport = indexContent.includes(check.name);
     console.log(`${hasImport ? '✅' : '❌'} ${check.name}: ${hasImport ? 'PRESENT' : 'MISSING'}`);
     if (!hasImport) allPassed = false;

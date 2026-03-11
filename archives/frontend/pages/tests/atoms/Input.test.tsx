@@ -131,12 +131,7 @@ describe('Input Component', () => {
 
   test('passes through additional HTML attributes', () => {
     render(
-      <Input 
-        data-testid="custom-input" 
-        type="tel" 
-        aria-label="Phone number"
-        maxLength={10}
-      />
+      <Input data-testid="custom-input" type="tel" aria-label="Phone number" maxLength={10} />,
     );
     const input = screen.getByTestId('custom-input');
     expect(input).toHaveAttribute('type', 'tel');
@@ -144,15 +139,15 @@ describe('Input Component', () => {
     expect(input).toHaveAttribute('maxLength', '10');
   });
 
-test('has proper accessibility attributes when error exists', () => {
-  render(<Input label="Field" error="Invalid input" aria-describedby="custom-desc" />);
-  const input = screen.getByRole('textbox');
-  expect(input).toHaveAttribute('aria-invalid', 'true');
-  expect(input).toHaveAttribute('aria-describedby', 'custom-desc');
-  
-  // Also verify error message is rendered
-  const error = screen.getByText('Invalid input');
-  expect(error).toBeInTheDocument();
-  expect(error).toHaveAttribute('id'); // Error should have an ID
-});
+  test('has proper accessibility attributes when error exists', () => {
+    render(<Input label="Field" error="Invalid input" aria-describedby="custom-desc" />);
+    const input = screen.getByRole('textbox');
+    expect(input).toHaveAttribute('aria-invalid', 'true');
+    expect(input).toHaveAttribute('aria-describedby', 'custom-desc');
+
+    // Also verify error message is rendered
+    const error = screen.getByText('Invalid input');
+    expect(error).toBeInTheDocument();
+    expect(error).toHaveAttribute('id'); // Error should have an ID
+  });
 });

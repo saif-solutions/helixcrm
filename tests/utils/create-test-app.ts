@@ -57,9 +57,9 @@ export const createMockPrisma = (): PrismaMock => {
   });
 
   const mock: PrismaMock = {
-    $transaction: jest.fn().mockImplementation(async (cb: any) =>
-      typeof cb === 'function' ? cb(mock) : cb
-    ),
+    $transaction: jest
+      .fn()
+      .mockImplementation(async (cb: any) => (typeof cb === 'function' ? cb(mock) : cb)),
     $connect: jest.fn(),
     $disconnect: jest.fn(),
     $on: jest.fn(),
@@ -95,9 +95,13 @@ export const createMockAuthCoreAdapter = () => ({
       .mockResolvedValue({ sub: 'user-id', jti: 'mock-jti' }),
   },
   password: {
-    verify: jest.fn<Promise<boolean>, [string, string]>().mockImplementation(async (plain, hash) => plain === hash),
+    verify: jest
+      .fn<Promise<boolean>, [string, string]>()
+      .mockImplementation(async (plain, hash) => plain === hash),
     hash: jest.fn<Promise<string>, [string]>().mockResolvedValue('hashed-password'),
-    compare: jest.fn<Promise<boolean>, [string, string]>().mockImplementation(async (plain, hash) => plain === hash),
+    compare: jest
+      .fn<Promise<boolean>, [string, string]>()
+      .mockImplementation(async (plain, hash) => plain === hash),
   },
   withTransaction: jest.fn().mockImplementation((cb: any) => cb()),
   tokenRepository: {
@@ -148,11 +152,11 @@ export async function createTestApp({
     logDirect: jest.fn().mockResolvedValue({ id: 'audit-test' }),
     logWithRequestObject: jest.fn().mockResolvedValue({ id: 'audit-test' }),
   });
-  
+
   // Try both the class and a string token to be safe
-moduleBuilder.overrideProvider(AuthCoreAdapter).useValue(mockAuth);
-// Also override by string if needed
-moduleBuilder.overrideProvider('AuthCoreAdapter').useValue(mockAuth);
+  moduleBuilder.overrideProvider(AuthCoreAdapter).useValue(mockAuth);
+  // Also override by string if needed
+  moduleBuilder.overrideProvider('AuthCoreAdapter').useValue(mockAuth);
 
   // Apply any additional overrides
   overrideProviders.forEach(({ provide, useValue }) => {
@@ -167,7 +171,7 @@ moduleBuilder.overrideProvider('AuthCoreAdapter').useValue(mockAuth);
     new ValidationPipe({
       whitelist: true,
       transform: true,
-    })
+    }),
   );
 
   await app.init();
@@ -201,12 +205,12 @@ moduleBuilder.overrideProvider('AuthCoreAdapter').useValue(mockAuth);
         data.lockedUntil = new Date(Date.now() + 3600000);
       }
     }
-    
+
     // Increment tokenVersion if password changed
     if (data?.passwordHash && data.passwordHash !== currentUser.passwordHash) {
       data.tokenVersion = (currentUser.tokenVersion || 1) + 1;
     }
-    
+
     currentUser = { ...currentUser, ...data };
     return currentUser;
   });
@@ -233,7 +237,7 @@ moduleBuilder.overrideProvider('AuthCoreAdapter').useValue(mockAuth);
     id: 'role-' + Date.now(),
     ...create,
   }));
-  
+
   mockPrisma.role.findFirst.mockImplementation(async ({ where }: any) => {
     if (where?.name === 'SystemAdmin') {
       return { id: 'role-admin', name: 'SystemAdmin', organizationId: currentOrg.id };
@@ -259,8 +263,7 @@ moduleBuilder.overrideProvider('AuthCoreAdapter').useValue(mockAuth);
 // -----------------------------
 // Helpers
 // -----------------------------
-export const testRequest = (app: INestApplication) =>
-  request(app.getHttpServer());
+export const testRequest = (app: INestApplication) => request(app.getHttpServer());
 
 export const closeApp = async (app?: INestApplication) => {
   if (app) await app.close();

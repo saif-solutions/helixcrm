@@ -72,7 +72,7 @@ describe('Alert Component', () => {
   test('calls onDismiss when dismiss button is clicked', () => {
     const handleDismiss = vi.fn(); // Use vi.fn() instead of jest.fn()
     render(<Alert dismissible onDismiss={handleDismiss} message="Test" />);
-    
+
     const dismissButton = screen.getByLabelText('Dismiss alert');
     fireEvent.click(dismissButton);
     expect(handleDismiss).toHaveBeenCalledTimes(1);
@@ -80,35 +80,25 @@ describe('Alert Component', () => {
 
   test('hides alert after dismissal', () => {
     render(<Alert dismissible message="Test" />);
-    
+
     // Initially visible
     expect(screen.getByRole('status')).toBeInTheDocument();
-    
+
     // Click dismiss
     const dismissButton = screen.getByLabelText('Dismiss alert');
     fireEvent.click(dismissButton);
-    
+
     // Should be removed from DOM
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
 
   test('renders with custom icon', () => {
-    render(
-      <Alert
-        icon={<span data-testid="custom-icon">🔔</span>}
-        message="Test"
-      />
-    );
+    render(<Alert icon={<span data-testid="custom-icon">🔔</span>} message="Test" />);
     expect(screen.getByTestId('custom-icon')).toBeInTheDocument();
   });
 
   test('renders with actions', () => {
-    render(
-      <Alert
-        message="Test"
-        actions={<Button data-testid="action-button">Action</Button>}
-      />
-    );
+    render(<Alert message="Test" actions={<Button data-testid="action-button">Action</Button>} />);
     expect(screen.getByTestId('action-button')).toBeInTheDocument();
     expect(screen.getByTestId('action-button')).toHaveTextContent('Action');
   });
@@ -150,34 +140,20 @@ describe('Alert Component', () => {
   });
 
   test('applies iconClassName to icon', () => {
-    render(
-      <Alert
-        iconClassName="icon-class"
-        message="Test"
-      />
-    );
+    render(<Alert iconClassName="icon-class" message="Test" />);
     const iconContainer = screen.getByRole('status').querySelector('[aria-hidden="true"]');
     expect(iconContainer).toHaveClass('icon-class');
   });
 
   test('applies contentClassName to content', () => {
-    render(
-      <Alert
-        contentClassName="content-class"
-        message="Test"
-      />
-    );
+    render(<Alert contentClassName="content-class" message="Test" />);
     const content = screen.getByRole('status').querySelector('.flex-1');
     expect(content).toHaveClass('content-class');
   });
 
   test('applies actionsClassName to actions', () => {
     render(
-      <Alert
-        actions={<Button>Action</Button>}
-        actionsClassName="actions-class"
-        message="Test"
-      />
+      <Alert actions={<Button>Action</Button>} actionsClassName="actions-class" message="Test" />,
     );
     const actionsContainer = screen.getByText('Action').parentElement;
     expect(actionsContainer).toHaveClass('actions-class');
@@ -196,7 +172,7 @@ describe('Alert Component', () => {
           <h5>Heading</h5>
           <p>Paragraph</p>
         </div>
-      </Alert>
+      </Alert>,
     );
     expect(screen.getByTestId('complex-content')).toBeInTheDocument();
   });
@@ -221,7 +197,7 @@ describe('Alert Component', () => {
 
     rerender(<Alert variant="error" message="Test" />);
     expect(screen.getByRole('alert')).toHaveAttribute('aria-live', 'assertive');
-    
+
     rerender(<Alert variant="warning" message="Test" />);
     expect(screen.getByRole('status')).toHaveAttribute('aria-live', 'assertive');
   });

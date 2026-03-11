@@ -6,7 +6,9 @@ export const createMockAuthCoreAdapter = () => ({
   },
   tokenManager: {
     issueRefreshToken: jest.fn().mockResolvedValue('mock-refresh-token'),
-    validateRefreshToken: jest.fn().mockResolvedValue({ sub: 'user-id', jti: 'mock-jti' }),
+    validateRefreshToken: jest
+      .fn()
+      .mockResolvedValue({ sub: 'user-id', jti: 'mock-jti' }),
   },
   password: {
     verify: jest.fn().mockResolvedValue(true),
@@ -19,10 +21,10 @@ export const createMockAuthCoreAdapter = () => ({
     saveRefreshToken: jest.fn().mockResolvedValue(undefined),
   },
   userRepository: {
-    findById: jest.fn().mockResolvedValue({ 
-      id: 'user-id', 
-      email: 'test@example.com', 
-      tokenVersion: 1 
+    findById: jest.fn().mockResolvedValue({
+      id: 'user-id',
+      email: 'test@example.com',
+      tokenVersion: 1,
     }),
   },
 });

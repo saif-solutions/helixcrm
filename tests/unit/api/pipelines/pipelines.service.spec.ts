@@ -6,7 +6,12 @@ import { TenantContextService } from '@api/shared/tenant/context/tenant-context.
 import { PermissionContextService } from '@api/shared/permissions/context/permission-context.service';
 import { AuditLogService } from '@api/shared/audit-log/audit-log.service';
 import { PipelineRepository } from '@api/modules/pipelines/repositories/pipeline.repository';
-import { NotFoundException, ConflictException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import {
+  NotFoundException,
+  ConflictException,
+  ForbiddenException,
+  BadRequestException,
+} from '@nestjs/common';
 
 // Mock implementations
 const mockPrismaService = {
@@ -150,7 +155,7 @@ describe('PipelinesService', () => {
 
       expect(pipelineRepository.updateMany).toHaveBeenCalledWith(
         { isDefault: true },
-        { isDefault: false }
+        { isDefault: false },
       );
     });
   });
@@ -266,7 +271,7 @@ describe('PipelinesService', () => {
 
       expect(pipelineRepository.updateMany).toHaveBeenCalledWith(
         { isDefault: true },
-        { isDefault: false }
+        { isDefault: false },
       );
     });
 
@@ -306,7 +311,7 @@ describe('PipelinesService', () => {
     it('should set another pipeline as default when deleting default pipeline', async () => {
       const defaultPipeline = createMockPipeline({ isDefault: true, _count: { deals: 0 } });
       const anotherPipeline = createMockPipeline({ id: 'pipeline-456' });
-      
+
       pipelineRepository.findById.mockResolvedValue(defaultPipeline);
       pipelineRepository.findFirst.mockResolvedValue(anotherPipeline);
 
@@ -371,13 +376,17 @@ describe('PipelinesService', () => {
     it('should throw NotFoundException if pipeline not found', async () => {
       pipelineRepository.findById.mockResolvedValue(null);
 
-      await expect(service.createStage('pipeline-123', createStageDto)).rejects.toThrow(NotFoundException);
+      await expect(service.createStage('pipeline-123', createStageDto)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw ConflictException if stage with same order exists', async () => {
       pipelineRepository.findStageByOrder.mockResolvedValue(createMockStage());
 
-      await expect(service.createStage('pipeline-123', createStageDto)).rejects.toThrow(ConflictException);
+      await expect(service.createStage('pipeline-123', createStageDto)).rejects.toThrow(
+        ConflictException,
+      );
     });
   });
 
@@ -428,107 +437,113 @@ describe('PipelinesService', () => {
     it('should throw ConflictException if order conflicts with existing stage', async () => {
       pipelineRepository.findStageByOrder.mockResolvedValue({ id: 'another-stage' });
 
-      await expect(service.updateStage('stage-123', { order: 3 })).rejects.toThrow(ConflictException);
+      await expect(service.updateStage('stage-123', { order: 3 })).rejects.toThrow(
+        ConflictException,
+      );
     });
   });
 
-describe('removeStage', () => {
-  const mockStage = createMockStage();
-  const mockPipeline = createMockPipeline();
+  describe('removeStage', () => {
+    const mockStage = createMockStage();
+    const mockPipeline = createMockPipeline();
 
-  beforeEach(() => {
-    pipelineRepository.findStageById.mockResolvedValue({
-      ...mockStage,
-      pipeline: mockPipeline,
-      _count: { deals: 0 },
-    });
-    
-    // Mock findStagesByPipeline to return stages with non-sequential orders
-    pipelineRepository.findStagesByPipeline.mockResolvedValue([
-      { id: 'stage-1', order: 0 },
-      { id: 'stage-2', order: 2 }, // Note: order 2 after deletion of stage with order 1
-    ]);
-    
-    // Mock updateStage to return the updated stage
-    pipelineRepository.updateStage.mockResolvedValue({});
-  });
+    beforeEach(() => {
+      pipelineRepository.findStageById.mockResolvedValue({
+        ...mockStage,
+        pipeline: mockPipeline,
+        _count: { deals: 0 },
+      });
 
-  it('should successfully delete a stage with no deals', async () => {
-    await service.removeStage('stage-123');
+      // Mock findStagesByPipeline to return stages with non-sequential orders
+      pipelineRepository.findStagesByPipeline.mockResolvedValue([
+        { id: 'stage-1', order: 0 },
+        { id: 'stage-2', order: 2 }, // Note: order 2 after deletion of stage with order 1
+      ]);
 
-    expect(pipelineRepository.deleteStage).toHaveBeenCalledWith('stage-123');
-    expect(auditLog.logEvent).toHaveBeenCalled();
-  });
-
-  it('should reorder remaining stages after deletion', async () => {
-    await service.removeStage('stage-123');
-
-    // Should call updateStage at least once to reorder
-    expect(pipelineRepository.updateStage).toHaveBeenCalled();
-  });
-
-  it('should throw ConflictException if stage has deals', async () => {
-    pipelineRepository.findStageById.mockResolvedValue({
-      ...mockStage,
-      pipeline: mockPipeline,
-      _count: { deals: 5 },
+      // Mock updateStage to return the updated stage
+      pipelineRepository.updateStage.mockResolvedValue({});
     });
 
-    await expect(service.removeStage('stage-123')).rejects.toThrow(ConflictException);
-  });
+    it('should successfully delete a stage with no deals', async () => {
+      await service.removeStage('stage-123');
 
-  it('should throw NotFoundException if stage not found', async () => {
-    pipelineRepository.findStageById.mockResolvedValue(null);
-
-    await expect(service.removeStage('stage-123')).rejects.toThrow(NotFoundException);
-  });
-});
-
-describe('reorderStages', () => {
-  const stageIds = ['stage-3', 'stage-1', 'stage-2'];
-  const mockPipeline = createMockPipeline();
-
-  beforeEach(() => {
-    pipelineRepository.findById.mockResolvedValue(mockPipeline);
-    pipelineRepository.findStagesByPipeline.mockResolvedValue([
-      { id: 'stage-1', order: 0 },
-      { id: 'stage-2', order: 1 },
-      { id: 'stage-3', order: 2 },
-    ]);
-  });
-
-  it('should successfully reorder stages', async () => {
-    // Mock the transaction to execute the callback
-    pipelineRepository.transaction.mockImplementation(async (callback) => {
-      // Create a mock prisma client with update method
-      const mockPrisma = {
-        pipelineStage: {
-          update: jest.fn().mockResolvedValue({}),
-        },
-      };
-      return callback(mockPrisma);
+      expect(pipelineRepository.deleteStage).toHaveBeenCalledWith('stage-123');
+      expect(auditLog.logEvent).toHaveBeenCalled();
     });
 
-    const result = await service.reorderStages('pipeline-123', stageIds);
+    it('should reorder remaining stages after deletion', async () => {
+      await service.removeStage('stage-123');
 
-    expect(result).toEqual({ message: 'Stages reordered successfully' });
-    expect(pipelineRepository.transaction).toHaveBeenCalled();
-    expect(auditLog.logEvent).toHaveBeenCalled();
+      // Should call updateStage at least once to reorder
+      expect(pipelineRepository.updateStage).toHaveBeenCalled();
+    });
+
+    it('should throw ConflictException if stage has deals', async () => {
+      pipelineRepository.findStageById.mockResolvedValue({
+        ...mockStage,
+        pipeline: mockPipeline,
+        _count: { deals: 5 },
+      });
+
+      await expect(service.removeStage('stage-123')).rejects.toThrow(ConflictException);
+    });
+
+    it('should throw NotFoundException if stage not found', async () => {
+      pipelineRepository.findStageById.mockResolvedValue(null);
+
+      await expect(service.removeStage('stage-123')).rejects.toThrow(NotFoundException);
+    });
   });
 
-  it('should throw NotFoundException if pipeline not found', async () => {
-    pipelineRepository.findById.mockResolvedValue(null);
+  describe('reorderStages', () => {
+    const stageIds = ['stage-3', 'stage-1', 'stage-2'];
+    const mockPipeline = createMockPipeline();
 
-    await expect(service.reorderStages('pipeline-123', stageIds)).rejects.toThrow(NotFoundException);
+    beforeEach(() => {
+      pipelineRepository.findById.mockResolvedValue(mockPipeline);
+      pipelineRepository.findStagesByPipeline.mockResolvedValue([
+        { id: 'stage-1', order: 0 },
+        { id: 'stage-2', order: 1 },
+        { id: 'stage-3', order: 2 },
+      ]);
+    });
+
+    it('should successfully reorder stages', async () => {
+      // Mock the transaction to execute the callback
+      pipelineRepository.transaction.mockImplementation(async (callback) => {
+        // Create a mock prisma client with update method
+        const mockPrisma = {
+          pipelineStage: {
+            update: jest.fn().mockResolvedValue({}),
+          },
+        };
+        return callback(mockPrisma);
+      });
+
+      const result = await service.reorderStages('pipeline-123', stageIds);
+
+      expect(result).toEqual({ message: 'Stages reordered successfully' });
+      expect(pipelineRepository.transaction).toHaveBeenCalled();
+      expect(auditLog.logEvent).toHaveBeenCalled();
+    });
+
+    it('should throw NotFoundException if pipeline not found', async () => {
+      pipelineRepository.findById.mockResolvedValue(null);
+
+      await expect(service.reorderStages('pipeline-123', stageIds)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('should throw NotFoundException if any stage not found', async () => {
+      pipelineRepository.findStagesByPipeline.mockResolvedValue([
+        { id: 'stage-1', order: 0 },
+        { id: 'stage-2', order: 1 },
+      ]);
+
+      await expect(service.reorderStages('pipeline-123', ['stage-1', 'stage-999'])).rejects.toThrow(
+        NotFoundException,
+      );
+    });
   });
-
-  it('should throw NotFoundException if any stage not found', async () => {
-    pipelineRepository.findStagesByPipeline.mockResolvedValue([
-      { id: 'stage-1', order: 0 },
-      { id: 'stage-2', order: 1 },
-    ]);
-
-    await expect(service.reorderStages('pipeline-123', ['stage-1', 'stage-999'])).rejects.toThrow(NotFoundException);
-  });
-});
 });

@@ -78,15 +78,27 @@ describe('PipelinesController', () => {
       const result = await controller.create(createPipelineDto);
 
       expect(result).toEqual(mockResult);
-      expect(mockPipelinesService.create).toHaveBeenCalledWith(createPipelineDto);
+      expect(mockPipelinesService.create).toHaveBeenCalledWith(
+        createPipelineDto,
+      );
     });
   });
 
   describe('findAll', () => {
     const mockResult = {
       data: [
-        { id: 'pipeline-1', name: 'Pipeline 1', stages: [], _count: { deals: 5 } },
-        { id: 'pipeline-2', name: 'Pipeline 2', stages: [], _count: { deals: 3 } },
+        {
+          id: 'pipeline-1',
+          name: 'Pipeline 1',
+          stages: [],
+          _count: { deals: 5 },
+        },
+        {
+          id: 'pipeline-2',
+          name: 'Pipeline 2',
+          stages: [],
+          _count: { deals: 3 },
+        },
       ],
       meta: { page: 1, limit: 20, total: 2, pages: 1 },
     };
@@ -193,7 +205,10 @@ describe('PipelinesController', () => {
       const result = await controller.update(pipelineId, updatePipelineDto);
 
       expect(result).toEqual(mockResult);
-      expect(mockPipelinesService.update).toHaveBeenCalledWith(pipelineId, updatePipelineDto);
+      expect(mockPipelinesService.update).toHaveBeenCalledWith(
+        pipelineId,
+        updatePipelineDto,
+      );
     });
   });
 
@@ -232,7 +247,10 @@ describe('PipelinesController', () => {
       const result = await controller.createStage(pipelineId, createStageDto);
 
       expect(result).toEqual(mockResult);
-      expect(mockPipelinesService.createStage).toHaveBeenCalledWith(pipelineId, createStageDto);
+      expect(mockPipelinesService.createStage).toHaveBeenCalledWith(
+        pipelineId,
+        createStageDto,
+      );
     });
   });
 
@@ -257,7 +275,10 @@ describe('PipelinesController', () => {
       const result = await controller.updateStage(stageId, updateStageDto);
 
       expect(result).toEqual(mockResult);
-      expect(mockPipelinesService.updateStage).toHaveBeenCalledWith(stageId, updateStageDto);
+      expect(mockPipelinesService.updateStage).toHaveBeenCalledWith(
+        stageId,
+        updateStageDto,
+      );
     });
   });
 
@@ -288,7 +309,10 @@ describe('PipelinesController', () => {
       const result = await controller.reorderStages(pipelineId, reorderDto);
 
       expect(result).toEqual(mockResult);
-      expect(mockPipelinesService.reorderStages).toHaveBeenCalledWith(pipelineId, reorderDto.stageIds);
+      expect(mockPipelinesService.reorderStages).toHaveBeenCalledWith(
+        pipelineId,
+        reorderDto.stageIds,
+      );
     });
   });
 });

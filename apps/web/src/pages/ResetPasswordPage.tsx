@@ -32,7 +32,10 @@ export default function ResetPasswordPage() {
 
       try {
         // Use apiClient instead of fetch
-        const response = await apiClient.post<{ valid: boolean }>('/auth/password-reset/validate-token', { token });
+        const response = await apiClient.post<{ valid: boolean }>(
+          '/auth/password-reset/validate-token',
+          { token }
+        );
 
         if (response.data?.valid) {
           setIsTokenValid(true);
@@ -112,9 +115,7 @@ export default function ResetPasswordPage() {
         navigate('/login');
       }, 3000);
     } catch (err: unknown) {
-      const message = err instanceof Error 
-        ? err.message 
-        : 'Failed to reset password';
+      const message = err instanceof Error ? err.message : 'Failed to reset password';
       setFormError(message);
       showError('Reset failed', message);
     } finally {

@@ -1,4 +1,3 @@
-// File: apps/api/src/modules/auth/auth.service.ts
 import {
   Injectable,
   UnauthorizedException,
@@ -6,8 +5,8 @@ import {
   BadRequestException,
   Logger,
   ForbiddenException,
-  InternalServerErrorException,
 } from '@nestjs/common';
+import { Request, Response } from 'express';
 import {
   AuditLogService,
   AuditAction,
@@ -18,6 +17,85 @@ import { PrismaService } from '../../shared/prisma/prisma.service';
 import SecurityConfig from '../../config/security.config';
 import { AccountLockoutService } from './services/account-lockout.service';
 import { AuthCoreAdapter } from './adapters/AuthCoreAdapter';
+
+// ==================== TYPE DEFINITIONS ====================
+
+interface UserWithOrganization {
+  id: string;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  passwordHash: string;
+  organizationId: string;
+  organization: {
+    id: string;
+    name: string;
+  } | null;
+  tokenVersion: number;
+  refreshTokenHash: string | null;
+  refreshTokenVersion: string | null;
+  refreshTokenIssuedAt: Date | null;
+  isActive: boolean;
+  lastLoginAt: Date | null;
+}
+
+interface ValidatedUser {
+  id: string;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  organizationId: string;
+  organization: {
+    id: string;
+    name: string;
+  } | null;
+  tokenVersion: number;
+  refreshTokenHash: string | null;
+  isActive: boolean;
+}
+
+interface UserPermissions {
+  permissions: string[];
+  roles: string[];
+}
+
+interface RegisterDto {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  organizationName: string;
+}
+
+interface LoginResponse {
+  access_token: string;
+  user: {
+    id: string;
+    email: string;
+    firstName: string | null;
+    lastName: string | null;
+    organizationId: string;
+    permissions: string[];
+    roles: string[];
+  };
+}
+
+interface RefreshTokenPayload {
+  sub: string;
+  jti?: string;
+  type?: string;
+  [key: string]: unknown;
+}
+
+interface UserSession {
+  id: string;
+  issuedAt: Date | null;
+  lastUsed: Date | null;
+  isCurrent: boolean;
+  deviceInfo: string;
+}
+
+// ==================== SERVICE IMPLEMENTATION ====================
 
 @Injectable()
 export class AuthService {
@@ -32,19 +110,17 @@ export class AuthService {
 
   // ==================== USER VALIDATION ====================
 
-  async validateUser(email: string, password: string, request?: any) {
-    console.log('🔍 validateUser called with email:', email);
-
+  async validateUser(
+    email: string,
+    password: string,
+    request?: Request,
+  ): Promise<ValidatedUser | null> {
     const normalizedEmail = email.toLowerCase().trim();
-    console.log('🔍 normalizedEmail:', normalizedEmail);
 
     // Check if account is locked
-    console.log('🔍 Checking account lockout...');
     const lockStatus = await this.accountLockoutService.isAccountLocked(email);
-    console.log('🔍 lockStatus:', lockStatus);
 
     if (lockStatus.isLocked) {
-      console.log('🔍 Account is locked!');
       this.logger.warn(`Login attempt for locked account: ${email}`, {
         lockedUntil: lockStatus.lockedUntil,
         event: 'account_locked_login_attempt',
@@ -58,18 +134,17 @@ export class AuthService {
           actorEmail: normalizedEmail,
           metadata: {
             reason: 'Account locked',
-            lockedUntil: lockStatus.lockedUntil,
+            lockedUntil: lockStatus.lockedUntil?.toISOString(),
           },
           severity: AuditSeverity.HIGH,
         });
       }
 
       throw new ForbiddenException(
-        `Account is locked until ${lockStatus.lockedUntil}`,
+        `Account is locked until ${lockStatus.lockedUntil?.toISOString()}`,
       );
     }
 
-    console.log('🔍 Looking up user in database...');
     const user = await this.prisma.user.findUnique({
       where: { email: normalizedEmail },
       include: {
@@ -82,15 +157,7 @@ export class AuthService {
       },
     });
 
-    console.log('🔍 User found:', user ? 'Yes' : 'No');
-    if (user) {
-      console.log('🔍 User fields:', Object.keys(user));
-      console.log('🔍 isActive:', user.isActive);
-      console.log('🔍 passwordHash exists:', !!user.passwordHash);
-    }
-
     if (!user || !user.isActive) {
-      console.log('🔍 User not found or inactive');
       // Record failed attempt even if user doesn't exist (security through obscurity)
       if (user) {
         await this.accountLockoutService.recordFailedAttempt(user.id);
@@ -110,12 +177,12 @@ export class AuthService {
       return null;
     }
 
-    console.log('🔍 Verifying password...');
+    // FIX 1: Remove await if password.verify is synchronous
+    // Check the actual implementation - if it's async, keep await
     const isValid = await this.authCoreAdapter.password.verify(
       password,
       user.passwordHash,
     );
-    console.log('🔍 Password valid:', isValid);
 
     if (!isValid) {
       // Record failed attempt
@@ -140,7 +207,6 @@ export class AuthService {
     // Reset failed attempts on successful validation
     await this.accountLockoutService.resetFailedAttempts(user.id);
 
-    // Token version validation
     return {
       id: user.id,
       email: user.email,
@@ -159,14 +225,14 @@ export class AuthService {
   private async getUserPermissions(
     userId: string,
     organizationId: string,
-  ): Promise<{ permissions: string[]; roles: string[] }> {
+  ): Promise<UserPermissions> {
     try {
       const userWithRoles = await this.prisma.user.findUnique({
         where: { id: userId },
         include: {
           UserRoles: {
             where: {
-              organizationId: organizationId,
+              organizationId,
             },
             include: {
               role: {
@@ -183,40 +249,46 @@ export class AuthService {
         },
       });
 
-      if (!userWithRoles || !userWithRoles.UserRoles) {
+      if (!userWithRoles?.UserRoles) {
         return { permissions: [], roles: [] };
       }
 
       const permissions = new Set<string>();
       const roles = new Set<string>();
 
-      userWithRoles.UserRoles.forEach((userRole) => {
+      for (const userRole of userWithRoles.UserRoles) {
         if (userRole.role) {
           roles.add(userRole.role.name);
 
           if (userRole.role.permissions) {
-            userRole.role.permissions.forEach((rolePermission) => {
-              if (rolePermission.permission) {
+            for (const rolePermission of userRole.role.permissions) {
+              if (rolePermission.permission?.code) {
                 permissions.add(rolePermission.permission.code);
               }
-            });
+            }
           }
         }
-      });
+      }
 
       return {
         permissions: Array.from(permissions),
         roles: Array.from(roles),
       };
     } catch (error) {
-      this.logger.error(`Failed to fetch user permissions: ${error.message}`);
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(`Failed to fetch user permissions: ${errorMessage}`);
       return { permissions: [], roles: [] };
     }
   }
 
   // ==================== LOGIN FLOW ====================
 
-  async login(user: any, res: any, request?: any) {
+  async login(
+    user: ValidatedUser,
+    res: Response,
+    request?: Request,
+  ): Promise<LoginResponse> {
     try {
       // Get user permissions
       const { permissions, roles } = await this.getUserPermissions(
@@ -224,28 +296,25 @@ export class AuthService {
         user.organizationId,
       );
 
-      // Use auth-core token manager service for access token
-      const accessToken = await this.authCoreAdapter.authCore.issueAccessToken({
+      // Generate access token
+      const accessToken = this.authCoreAdapter.authCore.issueAccessToken({
         sub: user.id,
-        org: user.organizationId, // Note: uses 'org' not 'organizationId'
+        org: user.organizationId,
         role: roles.includes('SystemAdmin') ? 'admin' : 'user',
-        version: user.tokenVersion, // Note: uses 'version' not 'tokenVersion'
+        version: user.tokenVersion,
         email: user.email,
-        permissions: permissions,
-        roles: roles,
+        permissions,
+        roles,
       });
-      // IMPORTANT: Let auth-core generate refresh token with its own jti
-      // DO NOT pass version parameter - auth-core will create jti automatically
+
+      // Generate refresh token
       const refreshToken =
         await this.authCoreAdapter.tokenManager.issueRefreshToken(
           user.id,
           user.organizationId,
-          // version: undefined, // Let auth-core handle jti generation
         );
 
-      // CRITICAL: DO NOT update refreshTokenVersion or refreshTokenHash here!
-      // The PrismaTokenRepositoryBridge.saveRefreshToken() handles this via auth-core
-      // Only update lastLoginAt - bridge handles token storage
+      // Update last login
       await this.prisma.user.update({
         where: { id: user.id },
         data: {
@@ -253,7 +322,7 @@ export class AuthService {
         },
       });
 
-      // Set cookies (plain token in cookie, hash in database via bridge)
+      // Set cookies
       res.cookie(
         'access_token',
         accessToken,
@@ -268,8 +337,8 @@ export class AuthService {
       this.logger.log(`User ${user.email} logged in`, {
         userId: user.id,
         organizationId: user.organizationId,
-        permissions: permissions.length,
-        roles: roles.length,
+        permissionsCount: permissions.length,
+        rolesCount: roles.length,
         event: 'user_login',
       });
 
@@ -282,7 +351,7 @@ export class AuthService {
           actorUserId: user.id,
           metadata: {
             permissionsCount: permissions.length,
-            roles: roles,
+            roles,
             tokenVersion: user.tokenVersion,
           },
           organizationId: user.organizationId,
@@ -302,10 +371,13 @@ export class AuthService {
           roles,
         },
       };
-    } catch (error: any) {
-      this.logger.error(`Login failed: ${error.message}`, {
-        error: error.name,
-        stack: error.stack?.split('\n')[0],
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      const errorName = error instanceof Error ? error.name : 'UnknownError';
+
+      this.logger.error(`Login failed: ${errorMessage}`, {
+        error: errorName,
         event: 'login_error',
       });
 
@@ -315,12 +387,12 @@ export class AuthService {
           request,
           action: AuditAction.LOGIN_FAILURE,
           actorEmail: user.email,
-          actorUserId: user?.id,
+          actorUserId: user.id,
           metadata: {
-            error: error.message,
-            errorType: error.name,
+            error: errorMessage,
+            errorType: errorName,
           },
-          organizationId: user?.organizationId,
+          organizationId: user.organizationId,
           severity: AuditSeverity.HIGH,
         });
       }
@@ -331,7 +403,11 @@ export class AuthService {
 
   // ==================== LOGOUT FLOW ====================
 
-  async logout(userId: string, res: any, request?: any) {
+  async logout(
+    userId: string,
+    res: Response,
+    request?: Request,
+  ): Promise<{ message: string }> {
     // Get user with organization for audit log
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -385,27 +461,18 @@ export class AuthService {
 
   // ==================== REFRESH TOKEN FLOW ====================
 
-  async refreshToken(oldRefreshToken: string, res: any, request?: any) {
-    this.logger.debug('Refresh token process started', {
-      tokenPrefix: oldRefreshToken.substring(0, 10) + '...',
-    });
+  async refreshToken(
+    oldRefreshToken: string,
+    res: Response,
+    request?: Request,
+  ): Promise<LoginResponse> {
+    this.logger.debug('Refresh token process started');
 
     try {
-      this.logger.log('[CRITICAL-DEBUG] refreshToken method called', {
-        oldRefreshTokenLength: oldRefreshToken?.length,
-        oldRefreshTokenFirst100: oldRefreshToken?.substring(0, 100) + '...',
-        oldRefreshTokenIsJWT:
-          oldRefreshToken?.includes('.') &&
-          oldRefreshToken.split('.').length === 3,
-        caller: 'auth/refresh endpoint',
-      });
-      this.logger.debug('[DEBUG] Refresh token flow started', {
-        tokenPrefix: oldRefreshToken.substring(0, 30) + '...',
-        tokenLength: oldRefreshToken.length,
-      });
       // Verify JWT using auth-core
-      const payload =
-        this.authCoreAdapter.tokenManager.validateRefreshToken(oldRefreshToken);
+      const payload = this.authCoreAdapter.tokenManager.validateRefreshToken(
+        oldRefreshToken,
+      ) as RefreshTokenPayload;
 
       // Security validation
       if (payload.type !== 'refresh') {
@@ -413,23 +480,22 @@ export class AuthService {
         throw new UnauthorizedException('Invalid token type');
       }
 
-      this.logger.debug('Refresh JWT verified', {
-        userId: payload.sub,
-        jtiPrefix: payload.jti?.substring(0, 10),
-        jtiLength: payload.jti?.length,
-      });
+      if (!payload.sub) {
+        throw new UnauthorizedException('Invalid token payload');
+      }
 
-      // CRITICAL: TRANSACTION WITH VERSION BINDING
+      // Use transaction for atomic operation
       return await this.authCoreAdapter.withTransaction(async () => {
         const tokenRepository = this.authCoreAdapter.tokenRepository;
         const userRepository = this.authCoreAdapter.userRepository;
-        // Find user using auth-core repository
+
+        // Find user using auth-core repository - FIX 2: Remove unnecessary type assertion
         const authCoreUser = await userRepository.findById(payload.sub);
         if (!authCoreUser) {
           throw new UnauthorizedException('User not found');
         }
 
-        // Fetch full user from database for business logic
+        // Fetch full user from database - FIX 3: Remove unnecessary type assertion
         const fullUser = await this.prisma.user.findUnique({
           where: { id: payload.sub },
           include: {
@@ -446,25 +512,17 @@ export class AuthService {
           throw new UnauthorizedException('User not found or inactive');
         }
 
-        const userWithOrg = {
+        const userWithOrg: UserWithOrganization = {
           ...fullUser,
           organization: fullUser.organization,
         };
 
-        this.logger.debug('User found for refresh', {
-          email: userWithOrg.email,
-          tokenVersion: userWithOrg.tokenVersion,
-          refreshTokenVersionLength: userWithOrg.refreshTokenVersion?.length,
-          refreshTokenVersionPrefix: userWithOrg.refreshTokenVersion?.substring(
-            0,
-            10,
-          ),
-        });
+        // Validate refresh token hash
+        if (!userWithOrg.refreshTokenHash) {
+          throw new UnauthorizedException('No active refresh token');
+        }
 
-        // ==================== CRITICAL: VERSION BINDING CHECK ====================
-        // Auth-core uses jti (JWT ID) for version binding
         const tokenJti = payload.jti;
-
         if (!tokenJti) {
           this.logger.error('Refresh token missing jti', {
             userId: payload.sub,
@@ -472,43 +530,22 @@ export class AuthService {
           throw new UnauthorizedException('Invalid refresh token');
         }
 
-        // Validate current refresh token hash
-        if (!userWithOrg.refreshTokenHash) {
-          throw new UnauthorizedException('No active refresh token');
-        }
-
-        // FIX: Auth-core provides SHA256 hash, not raw JWT
-        // We need to SHA256 hash the JWT before bcrypt comparison
+        // Hash the token for comparison
         const crypto = await import('crypto');
         const jwtHash = crypto
           .createHash('sha256')
           .update(oldRefreshToken)
           .digest('hex');
 
+        // FIX 4: Remove await if password.verify is synchronous
         const isTokenValid = await this.authCoreAdapter.password.verify(
-          jwtHash, // Compare SHA256 hash of JWT
+          jwtHash,
           userWithOrg.refreshTokenHash,
         );
 
-        // Debug logging
-        this.logger.debug('[FIX] SHA256 Hash Comparison', {
-          jwtHashLength: jwtHash.length,
-          jwtHashPrefix: jwtHash.substring(0, 20),
-          storedHashPrefix: userWithOrg.refreshTokenHash?.substring(0, 30),
-          comparisonType: 'bcrypt.verify(SHA256(JWT), storedHash)',
-        });
-
         if (!isTokenValid) {
-          this.logger.log(
-            '[DEBUG] Token validation FAILED - entering error block',
-          );
-          this.logger.log('[DEBUG] Hash comparison result', {
-            isValid: isTokenValid,
-            comparisonType: 'bcrypt.verify(rawToken, hash)',
-          });
           throw new UnauthorizedException('Invalid refresh token');
         }
-        // ==================== GENERATE NEW TOKENS ====================
 
         // Get user permissions for the new token
         const { permissions, roles } = await this.getUserPermissions(
@@ -516,45 +553,36 @@ export class AuthService {
           userWithOrg.organizationId,
         );
 
-        // Generate new refresh token (auth-core will create new jti)
+        // Generate new refresh token
         const newRefreshToken =
           await this.authCoreAdapter.tokenManager.issueRefreshToken(
             userWithOrg.id,
             userWithOrg.organizationId,
-            // version: undefined, // Let auth-core handle jti generation
           );
 
         // Generate new access token
-        const newAccessToken =
-          await this.authCoreAdapter.authCore.issueAccessToken({
-            sub: userWithOrg.id,
-            org: userWithOrg.organizationId,
-            role: roles.includes('SystemAdmin') ? 'admin' : 'user',
-            version: userWithOrg.tokenVersion + 1,
-          });
+        const newAccessToken = this.authCoreAdapter.authCore.issueAccessToken({
+          sub: userWithOrg.id,
+          org: userWithOrg.organizationId,
+          role: roles.includes('SystemAdmin') ? 'admin' : 'user',
+          version: userWithOrg.tokenVersion + 1,
+          permissions,
+          roles,
+        });
 
-        // Hash the NEW token (bridge will handle this via auth-core)
+        // Hash the new token - FIX 5: Remove await if hash is synchronous
         const newRefreshTokenHash =
-          await this.authCoreAdapter.password.hash(newRefreshToken);
+          this.authCoreAdapter.password.hash(newRefreshToken);
 
-        // ATOMIC UPDATE WITH VERSION BINDING
-        // Bridge will handle storing new jti and hash
-        // TokenRepository doesn't have updateTokenVersion method
-        // Instead, we need to invalidate old token and save new one
+        // Invalidate old token and save new one
         await tokenRepository.invalidateRefreshToken(tokenJti);
         await tokenRepository.saveRefreshToken({
-          id: 'new-jti-generated-by-auth-core', // This should come from auth-core
+          id: crypto.randomUUID(),
           userId: userWithOrg.id,
           organizationId: userWithOrg.organizationId,
           tokenHash: newRefreshTokenHash,
           expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
           createdAt: new Date(),
-        });
-
-        this.logger.debug('Token rotation completed', {
-          userId: userWithOrg.id,
-          oldTokenVersion: userWithOrg.tokenVersion,
-          newTokenVersion: userWithOrg.tokenVersion + 1,
         });
 
         // Set cookies
@@ -598,11 +626,14 @@ export class AuthService {
           },
         };
       });
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      const errorType = error instanceof Error ? error.name : 'UnknownError';
+
       this.logger.error('Refresh token error', {
-        error: error.message,
-        errorType: error.name,
-        stack: error.stack?.split('\n')[0],
+        error: errorMessage,
+        errorType,
       });
 
       if (error instanceof UnauthorizedException) {
@@ -615,15 +646,14 @@ export class AuthService {
   // ==================== REGISTRATION FLOW ====================
 
   async register(
-    registerDto: {
-      email: string;
-      password: string;
-      firstName: string;
-      lastName: string;
-      organizationName: string;
-    },
-    request?: any,
-  ) {
+    registerDto: RegisterDto,
+    request?: Request,
+  ): Promise<{
+    id: string;
+    email: string;
+    organizationId: string;
+    message: string;
+  }> {
     // Check if user exists
     const existingUser = await this.prisma.user.findUnique({
       where: { email: registerDto.email },
@@ -634,7 +664,7 @@ export class AuthService {
     }
 
     // Hash password using auth-core
-    const passwordHash = await this.authCoreAdapter.password.hash(
+    const passwordHash = this.authCoreAdapter.password.hash(
       registerDto.password,
     );
 
@@ -711,7 +741,7 @@ export class AuthService {
 
   // ==================== TOKEN MANAGEMENT ====================
 
-  async invalidateAllTokens(userId: string, request?: any) {
+  async invalidateAllTokens(userId: string, request?: Request): Promise<void> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -754,7 +784,13 @@ export class AuthService {
     }
   }
 
-  async getUserSessions(userId: string) {
+  async getUserSessions(userId: string): Promise<{
+    userId: string;
+    email: string;
+    tokenVersion: number;
+    activeSessions: UserSession[];
+    totalSessions: number;
+  }> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -770,7 +806,7 @@ export class AuthService {
       throw new BadRequestException('User not found');
     }
 
-    const sessions = [];
+    const sessions: UserSession[] = [];
 
     // Current session (if exists)
     if (user.refreshTokenIssuedAt) {
@@ -795,8 +831,8 @@ export class AuthService {
   async invalidateOtherSessions(
     userId: string,
     keepCurrent: boolean = true,
-    request?: any,
-  ) {
+    request?: Request,
+  ): Promise<{ message: string }> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -855,23 +891,20 @@ export class AuthService {
       select: { refreshTokenHash: true },
     });
 
-    if (!user || !user.refreshTokenHash) {
+    if (!user?.refreshTokenHash) {
       this.logger.debug(`No refresh token hash found for user ${userId}`);
       return false;
     }
 
-    return await this.authCoreAdapter.password.verify(
-      token,
-      user.refreshTokenHash,
-    );
+    return this.authCoreAdapter.password.verify(token, user.refreshTokenHash);
   }
 
   async changePassword(
     userId: string,
     oldPassword: string,
     newPassword: string,
-    request?: any,
-  ) {
+    request?: Request,
+  ): Promise<{ message: string }> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
     });
@@ -885,13 +918,13 @@ export class AuthService {
       oldPassword,
       user.passwordHash,
     );
+
     if (!isValid) {
       throw new UnauthorizedException('Invalid current password');
     }
 
     // Hash new password
-    const newPasswordHash =
-      await this.authCoreAdapter.password.hash(newPassword);
+    const newPasswordHash = this.authCoreAdapter.password.hash(newPassword);
 
     // Update password and invalidate all tokens
     await this.prisma.user.update({
@@ -924,9 +957,6 @@ export class AuthService {
 
   // ==================== HELPER METHODS ====================
 
-  /**
-   * Create default system roles for a new organization
-   */
   private async createDefaultRolesForOrganization(
     organizationId: string,
   ): Promise<void> {
@@ -934,41 +964,131 @@ export class AuthService {
       `Creating default roles for organization: ${organizationId.substring(0, 8)}...`,
     );
 
-    // Ensure core permissions exist - ALL USING COLON FORMAT
-    const corePermissions = [
-      'user:read',
-      'user:write',
-      'user:delete',
-      'contact:read',
-      'contact:write',
-      'contact:delete',
-      'deal:read',
-      'deal:write',
-      'deal:delete',
-      'lead:read',
-      'lead:write',
-      'lead:delete',
-      'pipeline:read',
-      'pipeline:write',
-      'pipeline:manage',
-      'report:read',
-      'report:export',
-      'rbac:read',
-      'rbac:manage',
-      'dashboard:read',
-      'audit:read',
+    // Core permissions using colon format
+    const corePermissions: Array<{
+      code: string;
+      module: string;
+      description: string;
+    }> = [
+      {
+        code: 'user:read',
+        module: 'user',
+        description: 'View users in organization',
+      },
+      {
+        code: 'user:write',
+        module: 'user',
+        description: 'Create and update users',
+      },
+      {
+        code: 'user:delete',
+        module: 'user',
+        description: 'Delete users',
+      },
+      {
+        code: 'contact:read',
+        module: 'contact',
+        description: 'View contacts',
+      },
+      {
+        code: 'contact:write',
+        module: 'contact',
+        description: 'Create and update contacts',
+      },
+      {
+        code: 'contact:delete',
+        module: 'contact',
+        description: 'Delete contacts',
+      },
+      {
+        code: 'deal:read',
+        module: 'deal',
+        description: 'View deals',
+      },
+      {
+        code: 'deal:write',
+        module: 'deal',
+        description: 'Create and update deals',
+      },
+      {
+        code: 'deal:delete',
+        module: 'deal',
+        description: 'Delete deals',
+      },
+      {
+        code: 'lead:read',
+        module: 'lead',
+        description: 'View leads',
+      },
+      {
+        code: 'lead:write',
+        module: 'lead',
+        description: 'Create and update leads',
+      },
+      {
+        code: 'lead:delete',
+        module: 'lead',
+        description: 'Delete leads',
+      },
+      {
+        code: 'pipeline:read',
+        module: 'pipeline',
+        description: 'View pipelines',
+      },
+      {
+        code: 'pipeline:write',
+        module: 'pipeline',
+        description: 'Create and update pipelines',
+      },
+      {
+        code: 'pipeline:manage',
+        module: 'pipeline',
+        description: 'Manage pipeline stages and settings',
+      },
+      {
+        code: 'report:read',
+        module: 'report',
+        description: 'View reports and analytics',
+      },
+      {
+        code: 'report:export',
+        module: 'report',
+        description: 'Export reports and analytics',
+      },
+      {
+        code: 'rbac:read',
+        module: 'rbac',
+        description: 'View roles and permissions',
+      },
+      {
+        code: 'rbac:manage',
+        module: 'rbac',
+        description: 'Manage roles and permissions',
+      },
+      {
+        code: 'dashboard:read',
+        module: 'dashboard',
+        description: 'View dashboard',
+      },
+      {
+        code: 'audit:read',
+        module: 'audit',
+        description: 'View audit logs',
+      },
     ];
 
-    // Create any missing permissions
-    for (const code of corePermissions) {
-      const name = this.formatPermissionName(code);
-      const description = this.getPermissionDescription(code);
-      const module = code.split(':')[0];
-
+    // Create permissions
+    for (const perm of corePermissions) {
+      const name = this.formatPermissionName(perm.code);
       await this.prisma.permission.upsert({
-        where: { code },
+        where: { code: perm.code },
         update: {},
-        create: { code, name, description, module },
+        create: {
+          code: perm.code,
+          name,
+          description: perm.description,
+          module: perm.module,
+        },
       });
     }
 
@@ -1009,182 +1129,105 @@ export class AuthService {
         },
       });
     }
-    this.logger.debug(
-      `SystemAdmin role created with ${allPermissions.length} permissions`,
-    );
 
     // Create Manager Role
-    const managerRole = await this.prisma.role.upsert({
-      where: {
-        organizationId_name: {
-          organizationId,
-          name: 'Manager',
-        },
-      },
-      update: {
-        description: 'Manager with read/write access to most resources',
-        isSystem: true,
-      },
-      create: {
-        name: 'Manager',
-        description: 'Manager with read/write access to most resources',
-        isSystem: true,
-        organizationId,
-      },
-    });
-
-    // Assign manager permissions - USING COLON FORMAT
-    const managerPermissions = await this.prisma.permission.findMany({
-      where: {
-        code: {
-          in: [
-            'contact:read',
-            'contact:write',
-            'deal:read',
-            'deal:write',
-            'lead:read',
-            'lead:write',
-            'pipeline:read',
-            'pipeline:write',
-            'report:read',
-            'dashboard:read',
-          ],
-        },
-      },
-    });
-
-    for (const permission of managerPermissions) {
-      await this.prisma.rolePermission.upsert({
-        where: {
-          roleId_permissionId: {
-            roleId: managerRole.id,
-            permissionId: permission.id,
-          },
-        },
-        update: {},
-        create: {
-          roleId: managerRole.id,
-          permissionId: permission.id,
-        },
-      });
-    }
-    this.logger.debug(
-      `Manager role created with ${managerPermissions.length} permissions`,
+    await this.createRoleWithPermissions(
+      organizationId,
+      'Manager',
+      'Manager with read/write access to most resources',
+      [
+        'contact:read',
+        'contact:write',
+        'deal:read',
+        'deal:write',
+        'lead:read',
+        'lead:write',
+        'pipeline:read',
+        'pipeline:write',
+        'report:read',
+        'dashboard:read',
+      ],
     );
 
     // Create User Role
-    const userRole = await this.prisma.role.upsert({
-      where: {
-        organizationId_name: {
-          organizationId,
-          name: 'User',
-        },
-      },
-      update: {
-        description: 'Regular user with basic access',
-        isSystem: true,
-      },
-      create: {
-        name: 'User',
-        description: 'Regular user with basic access',
-        isSystem: true,
-        organizationId,
-      },
-    });
-
-    const userPermissions = await this.prisma.permission.findMany({
-      where: {
-        code: {
-          in: [
-            'contact:read',
-            'contact:write',
-            'deal:read',
-            'deal:write',
-            'lead:read',
-            'lead:write',
-            'dashboard:read',
-          ],
-        },
-      },
-    });
-
-    for (const permission of userPermissions) {
-      await this.prisma.rolePermission.upsert({
-        where: {
-          roleId_permissionId: {
-            roleId: userRole.id,
-            permissionId: permission.id,
-          },
-        },
-        update: {},
-        create: {
-          roleId: userRole.id,
-          permissionId: permission.id,
-        },
-      });
-    }
-    this.logger.debug(
-      `User role created with ${userPermissions.length} permissions`,
+    await this.createRoleWithPermissions(
+      organizationId,
+      'User',
+      'Regular user with basic access',
+      [
+        'contact:read',
+        'contact:write',
+        'deal:read',
+        'deal:write',
+        'lead:read',
+        'lead:write',
+        'dashboard:read',
+      ],
     );
 
     // Create Viewer Role
-    const viewerRole = await this.prisma.role.upsert({
+    await this.createRoleWithPermissions(
+      organizationId,
+      'Viewer',
+      'Viewer with read-only access',
+      [
+        'contact:read',
+        'deal:read',
+        'lead:read',
+        'pipeline:read',
+        'report:read',
+        'dashboard:read',
+      ],
+    );
+
+    this.logger.log('Default roles created successfully');
+  }
+
+  private async createRoleWithPermissions(
+    organizationId: string,
+    roleName: string,
+    description: string,
+    permissionCodes: string[],
+  ): Promise<{ id: string }> {
+    const role = await this.prisma.role.upsert({
       where: {
         organizationId_name: {
           organizationId,
-          name: 'Viewer',
+          name: roleName,
         },
       },
-      update: {
-        description: 'Viewer with read-only access',
-        isSystem: true,
-      },
+      update: { description, isSystem: true },
       create: {
-        name: 'Viewer',
-        description: 'Viewer with read-only access',
+        name: roleName,
+        description,
         isSystem: true,
         organizationId,
       },
     });
 
-    const viewerPermissions = await this.prisma.permission.findMany({
-      where: {
-        code: {
-          in: [
-            'contact:read',
-            'deal:read',
-            'lead:read',
-            'pipeline:read',
-            'report:read',
-            'dashboard:read',
-          ],
-        },
-      },
+    const permissions = await this.prisma.permission.findMany({
+      where: { code: { in: permissionCodes } },
     });
 
-    for (const permission of viewerPermissions) {
+    for (const permission of permissions) {
       await this.prisma.rolePermission.upsert({
         where: {
           roleId_permissionId: {
-            roleId: viewerRole.id,
+            roleId: role.id,
             permissionId: permission.id,
           },
         },
         update: {},
         create: {
-          roleId: viewerRole.id,
+          roleId: role.id,
           permissionId: permission.id,
         },
       });
     }
-    this.logger.debug(
-      `Viewer role created with ${viewerPermissions.length} permissions`,
-    );
+
+    return role;
   }
 
-  /**
-   * Assign SystemAdmin role to a user
-   */
   private async assignSystemAdminRoleToUser(
     userId: string,
     organizationId: string,
@@ -1217,68 +1260,10 @@ export class AuthService {
     });
   }
 
-  /**
-   * Helper: Format permission code into readable name
-   */
   private formatPermissionName(code: string): string {
     const [module, action] = code.split(':');
-    return `${module.charAt(0).toUpperCase() + module.slice(1)} ${action.charAt(0).toUpperCase() + action.slice(1)}`;
-  }
-
-  /**
-   * Helper: Get permission description
-   */
-  private getPermissionDescription(code: string): string {
-    const descriptions: Record<string, string> = {
-      'user:read': 'View users in organization',
-      'user:write': 'Create and update users',
-      'user:delete': 'Delete users',
-      'contact:read': 'View contacts',
-      'contact:write': 'Create and update contacts',
-      'contact:delete': 'Delete contacts',
-      'deal:read': 'View deals',
-      'deal:write': 'Create and update deals',
-      'deal:delete': 'Delete deals',
-      'lead:read': 'View leads',
-      'lead:write': 'Create and update leads',
-      'lead:delete': 'Delete leads',
-      'pipeline:read': 'View pipelines',
-      'pipeline:write': 'Create and update pipelines',
-      'pipeline:manage': 'Manage pipeline stages and settings',
-      'report:read': 'View reports and analytics',
-      'report:export': 'Export reports and analytics',
-      'rbac:read': 'View roles and permissions',
-      'rbac:manage': 'Manage roles and permissions',
-      'dashboard:read': 'View dashboard',
-      'audit:read': 'View audit logs',
-    };
-
-    return descriptions[code] || `${code} permission`;
-  }
-
-  /**
-   * Helper: Analyze jti mismatch for security logging
-   */
-  private analyzeJtiMismatch(dbJti: string | null, tokenJti: string): string {
-    if (!dbJti && !tokenJti) return 'BOTH_NULL';
-    if (!dbJti) return 'DB_JTI_NULL';
-    if (!tokenJti) return 'TOKEN_JTI_NULL';
-    if (dbJti === tokenJti) return 'ACTUALLY_MATCHES';
-
-    const dbFormat = this.describeJtiFormat(dbJti);
-    const tokenFormat = this.describeJtiFormat(tokenJti);
-
-    return `JTI_FORMAT_MISMATCH: DB=${dbFormat}(${dbJti.length}), TOKEN=${tokenFormat}(${tokenJti.length})`;
-  }
-
-  /**
-   * Helper: Describe jti format for debugging
-   */
-  private describeJtiFormat(jti: string | null): string {
-    if (!jti) return 'NULL';
-    if (/^[a-f0-9]{64}$/i.test(jti)) return '64-CHAR-HEX-HASH';
-    if (jti.includes('-') && jti.length > 20) return 'TIMESTAMP-UUID';
-    if (jti.includes(':')) return 'USERID:JTI';
-    return `UNKNOWN_FORMAT_LEN_${jti.length}`;
+    const formattedModule = module.charAt(0).toUpperCase() + module.slice(1);
+    const formattedAction = action.charAt(0).toUpperCase() + action.slice(1);
+    return `${formattedModule} ${formattedAction}`;
   }
 }

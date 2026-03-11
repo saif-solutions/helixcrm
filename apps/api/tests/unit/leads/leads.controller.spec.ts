@@ -81,12 +81,15 @@ describe('LeadsController', () => {
       const result = await controller.create(createLeadDto, mockRequest as any);
 
       expect(result).toEqual(mockResult);
-      expect(mockLeadsService.create).toHaveBeenCalledWith(createLeadDto, 'user-123');
+      expect(mockLeadsService.create).toHaveBeenCalledWith(
+        createLeadDto,
+        'user-123',
+      );
     });
 
     it('should throw ForbiddenException if permission context not initialized', async () => {
       const uninitializedController = await createController(false);
-      
+
       try {
         await uninitializedController.create(createLeadDto, mockRequest as any);
         // If we get here, the test should fail
@@ -95,7 +98,7 @@ describe('LeadsController', () => {
         expect(error).toBeInstanceOf(ForbiddenException);
         expect(error.message).toBe('Permission context not initialized');
       }
-      
+
       expect(mockLeadsService.create).not.toHaveBeenCalled();
     });
   });
@@ -186,7 +189,7 @@ describe('LeadsController', () => {
 
     it('should throw ForbiddenException if permission context not initialized', async () => {
       const uninitializedController = await createController(false);
-      
+
       try {
         await uninitializedController.findAll(mockRequest as any, 1, 20);
         expect(true).toBe(false);
@@ -194,7 +197,7 @@ describe('LeadsController', () => {
         expect(error).toBeInstanceOf(ForbiddenException);
         expect(error.message).toBe('Permission context not initialized');
       }
-      
+
       expect(mockLeadsService.findAll).not.toHaveBeenCalled();
     });
 
@@ -207,7 +210,7 @@ describe('LeadsController', () => {
       } catch (error) {
         expect(error).toBeInstanceOf(ForbiddenException);
       }
-      
+
       expect(mockLeadsService.findAll).not.toHaveBeenCalled();
     });
   });
@@ -230,7 +233,7 @@ describe('LeadsController', () => {
 
     it('should throw ForbiddenException if permission context not initialized', async () => {
       const uninitializedController = await createController(false);
-      
+
       try {
         await uninitializedController.getStats();
         expect(true).toBe(false);
@@ -238,7 +241,7 @@ describe('LeadsController', () => {
         expect(error).toBeInstanceOf(ForbiddenException);
         expect(error.message).toBe('Permission context not initialized');
       }
-      
+
       expect(mockLeadsService.getStats).not.toHaveBeenCalled();
     });
   });
@@ -258,7 +261,7 @@ describe('LeadsController', () => {
 
     it('should throw ForbiddenException if permission context not initialized', async () => {
       const uninitializedController = await createController(false);
-      
+
       try {
         await uninitializedController.findOne(leadId);
         expect(true).toBe(false);
@@ -266,36 +269,51 @@ describe('LeadsController', () => {
         expect(error).toBeInstanceOf(ForbiddenException);
         expect(error.message).toBe('Permission context not initialized');
       }
-      
+
       expect(mockLeadsService.findOne).not.toHaveBeenCalled();
     });
   });
 
   describe('update', () => {
     const leadId = 'lead-123';
-    const updateLeadDto = { name: 'Updated Name', status: LeadStatus.contacted };
+    const updateLeadDto = {
+      name: 'Updated Name',
+      status: LeadStatus.contacted,
+    };
     const mockResult = { id: leadId, ...updateLeadDto };
 
     it('should successfully update a lead', async () => {
       mockLeadsService.update.mockResolvedValue(mockResult);
 
-      const result = await controller.update(leadId, updateLeadDto, mockRequest as any);
+      const result = await controller.update(
+        leadId,
+        updateLeadDto,
+        mockRequest as any,
+      );
 
       expect(result).toEqual(mockResult);
-      expect(mockLeadsService.update).toHaveBeenCalledWith(leadId, updateLeadDto, 'user-123');
+      expect(mockLeadsService.update).toHaveBeenCalledWith(
+        leadId,
+        updateLeadDto,
+        'user-123',
+      );
     });
 
     it('should throw ForbiddenException if permission context not initialized', async () => {
       const uninitializedController = await createController(false);
-      
+
       try {
-        await uninitializedController.update(leadId, updateLeadDto, mockRequest as any);
+        await uninitializedController.update(
+          leadId,
+          updateLeadDto,
+          mockRequest as any,
+        );
         expect(true).toBe(false);
       } catch (error) {
         expect(error).toBeInstanceOf(ForbiddenException);
         expect(error.message).toBe('Permission context not initialized');
       }
-      
+
       expect(mockLeadsService.update).not.toHaveBeenCalled();
     });
   });
@@ -315,7 +333,7 @@ describe('LeadsController', () => {
 
     it('should throw ForbiddenException if permission context not initialized', async () => {
       const uninitializedController = await createController(false);
-      
+
       try {
         await uninitializedController.remove(leadId, mockRequest as any);
         expect(true).toBe(false);
@@ -323,7 +341,7 @@ describe('LeadsController', () => {
         expect(error).toBeInstanceOf(ForbiddenException);
         expect(error.message).toBe('Permission context not initialized');
       }
-      
+
       expect(mockLeadsService.remove).not.toHaveBeenCalled();
     });
   });

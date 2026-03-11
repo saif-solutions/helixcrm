@@ -1,19 +1,24 @@
 # HelixCRM API Contracts
 
 ## Versioning
+
 - Current API version: `v1`
 - Version in URL: `/api/v1/`
 - Breaking changes require version increment
 - Deprecation period: 6 months
 
 ## Authentication
+
 All endpoints (except public ones) require:
+
 - Valid JWT token in `Authorization` header or HTTP-only cookie
 - CSRF token for state-changing operations (POST, PUT, PATCH, DELETE)
 - Header: `X-CSRF-Token`
 
 ## Response Format
+
 ### Success
+
 ```json
 {
   "data": {...},
@@ -45,7 +50,7 @@ No authentication required.
 Authentication
 text
 POST /api/v1/auth/register
-POST /api/v1/auth/login  
+POST /api/v1/auth/login
 POST /api/v1/auth/logout
 POST /api/v1/auth/refresh-token
 GET  /api/v1/auth/csrf-token
@@ -141,3 +146,4 @@ API contracts updated before deployment
 Changes communicated via changelog
 
 Backward compatibility maintained within major version
+```

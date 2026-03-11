@@ -67,9 +67,7 @@ const AuditLogsPage: React.FC = () => {
         setLogs(response.data);
         setPagination(response.pagination);
       } catch (err: unknown) {
-        const errorMessage = err instanceof Error 
-          ? err.message 
-          : 'Failed to fetch audit logs';
+        const errorMessage = err instanceof Error ? err.message : 'Failed to fetch audit logs';
         setError(errorMessage);
         console.error('Failed to load audit logs:', err);
       } finally {
@@ -92,8 +90,8 @@ const AuditLogsPage: React.FC = () => {
   ]);
 
   const handleFilterChange = (newFilters: Partial<typeof filters>) => {
-    setFilters(prev => ({ ...prev, ...newFilters }));
-    setPagination(prev => ({ ...prev, page: 1 })); // Reset to first page
+    setFilters((prev) => ({ ...prev, ...newFilters }));
+    setPagination((prev) => ({ ...prev, page: 1 })); // Reset to first page
   };
 
   const handleResetFilters = () => {
@@ -106,17 +104,17 @@ const AuditLogsPage: React.FC = () => {
       from: '',
       to: '',
     });
-    setPagination(prev => ({ ...prev, page: 1 }));
+    setPagination((prev) => ({ ...prev, page: 1 }));
   };
 
   const handlePageChange = (page: number) => {
-    setPagination(prev => ({ ...prev, page }));
+    setPagination((prev) => ({ ...prev, page }));
   };
 
   const handleExportCSV = async () => {
     try {
       setIsLoading(true);
-      
+
       const csvData = auditLogsService.generateCSV(logs);
       const blob = new Blob([csvData], { type: 'text/csv' });
       const url = window.URL.createObjectURL(blob);
@@ -127,7 +125,7 @@ const AuditLogsPage: React.FC = () => {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      
+
       console.log('CSV exported successfully');
     } catch (err) {
       console.error('Failed to export CSV:', err);
@@ -144,9 +142,7 @@ const AuditLogsPage: React.FC = () => {
         <Card className="p-12 text-center">
           <Shield className="w-16 h-16 text-gray-300 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Access Denied</h2>
-          <p className="text-gray-500">
-            You don't have permission to view audit logs.
-          </p>
+          <p className="text-gray-500">You don't have permission to view audit logs.</p>
         </Card>
       </div>
     );

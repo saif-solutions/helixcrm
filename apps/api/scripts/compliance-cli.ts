@@ -20,39 +20,42 @@ program
   .option('-v, --verify', 'Verify controls after collection', false)
   .action(async (options) => {
     console.log('Collecting SOC 2 evidence...\n');
-    
+
     // Create app with ONLY ComplianceModule (it imports ConfigModule and PrismaModule)
     const app = await NestFactory.createApplicationContext(ComplianceModule);
-    
+
     try {
       const evidenceService = app.get(Soc2EvidenceService);
-      
+
       // Collect evidence
-      console.log('Ì≥ä Collecting evidence...');
+      console.log('ÔøΩÔøΩÔøΩ Collecting evidence...');
       const evidence = await evidenceService.collectAllEvidence();
       console.log(`‚úÖ Collected ${evidence.length} evidence items`);
-      
+
       // Show summary
-      const byCriteria = evidence.reduce((acc: Record<string, number>, item) => {
-        acc[item.criteria] = (acc[item.criteria] || 0) + 1;
-        return acc;
-      }, {});
-      
-      console.log('\nÌ≥à Evidence Summary:');
+      const byCriteria = evidence.reduce(
+        (acc: Record<string, number>, item) => {
+          acc[item.criteria] = (acc[item.criteria] || 0) + 1;
+          return acc;
+        },
+        {},
+      );
+
+      console.log('\nÔøΩÔøΩÔøΩ Evidence Summary:');
       Object.entries(byCriteria).forEach(([criteria, count]) => {
         console.log(`  ${criteria}: ${count} items`);
       });
-      
-      console.log('\nÌæØ Controls collected:');
-      evidence.forEach(item => {
+
+      console.log('\nÔøΩÔøΩÔøΩ Controls collected:');
+      evidence.forEach((item) => {
         console.log(`  ${item.controlId}: ${item.controlName}`);
       });
-      
+
       // Store evidence if requested
       if (options.store) {
-        console.log('\nÌ≤æ Storing evidence with integrity...');
+        console.log('\nÔøΩÔøΩÔøΩ Storing evidence with integrity...');
         const storageService = app.get(EvidenceStorageService);
-        
+
         const storedEvidence = await storageService.storeEvidenceWithIntegrity({
           collectionId: `manual-${Date.now()}`,
           totalControls: evidence.length,
@@ -61,40 +64,48 @@ program
           collectedBy: 'CLI',
           timestamp: new Date(),
         });
-        
-        console.log(`‚úÖ Evidence stored with hash: ${storedEvidence.evidenceHash.substring(0, 16)}...`);
+
+        console.log(
+          `‚úÖ Evidence stored with hash: ${storedEvidence.evidenceHash.substring(0, 16)}...`,
+        );
         console.log(`   Collection ID: ${storedEvidence.collectionId}`);
-        console.log(`   Stored at: ${storedEvidence.collectedAt.toISOString()}`);
+        console.log(
+          `   Stored at: ${storedEvidence.collectedAt.toISOString()}`,
+        );
       }
-      
+
       // Verify controls if requested
       if (options.verify) {
-        console.log('\nÌ¥ç Verifying controls...');
+        console.log('\nÔøΩÔøΩÔøΩ Verifying controls...');
         const controlsService = app.get(Soc2ControlsService);
-        
+
         for (const evidenceItem of evidence) {
           const result = await controlsService.verifyControl(
             evidenceItem.controlId,
             evidenceItem,
-            'CLI'
+            'CLI',
           );
-          console.log(`  ${result.controlId}: ${result.status} (${result.evidenceCount} evidence)`);
+          console.log(
+            `  ${result.controlId}: ${result.status} (${result.evidenceCount} evidence)`,
+          );
         }
-        
+
         // Get verification summary
         const summary = await controlsService.getControlStatusSummary(30);
-        console.log(`\nÌ≥ä Verification Summary:`);
+        console.log(`\nÔøΩÔøΩÔøΩ Verification Summary:`);
         console.log(`  Overall status: ${summary.overallStatus}`);
         console.log(`  Total controls: ${summary.totalControls}`);
         console.log(`  Verified: ${summary.verifiedControls}`);
       }
-      
-      console.log('\nÌæâ Evidence collection completed successfully!');
-      
+
+      console.log('\nÔøΩÔøΩÔøΩ Evidence collection completed successfully!');
     } catch (error: any) {
       console.error('‚ùå Error:', error?.message || 'Unknown error');
       if (error.stack) {
-        console.error('Stack (first 3 lines):', error.stack.split('\n').slice(0, 3).join('\n'));
+        console.error(
+          'Stack (first 3 lines):',
+          error.stack.split('\n').slice(0, 3).join('\n'),
+        );
       }
       process.exit(1);
     } finally {
@@ -107,46 +118,49 @@ program
   .description('Perform gap analysis')
   .action(async () => {
     console.log('Performing SOC 2 gap analysis...\n');
-    
+
     const app = await NestFactory.createApplicationContext(ComplianceModule);
-    
+
     try {
       const evidenceService = app.get(Soc2EvidenceService);
-      
-      console.log('Ì≥ä Performing gap analysis...');
+
+      console.log('ÔøΩÔøΩÔøΩ Performing gap analysis...');
       const gaps = await evidenceService.performGapAnalysis();
-      
+
       console.log(`‚úÖ Analyzed ${gaps.length} controls`);
-      
-      const completed = gaps.filter(g => g.status === 'COMPLETE').length;
-      const partial = gaps.filter(g => g.status === 'PARTIAL').length;
-      const missing = gaps.filter(g => g.status === 'MISSING').length;
-      
-      console.log('\nÌ≥à Gap Analysis Results:');
+
+      const completed = gaps.filter((g) => g.status === 'COMPLETE').length;
+      const partial = gaps.filter((g) => g.status === 'PARTIAL').length;
+      const missing = gaps.filter((g) => g.status === 'MISSING').length;
+
+      console.log('\nÔøΩÔøΩÔøΩ Gap Analysis Results:');
       console.log(`  ‚úÖ COMPLETE: ${completed}`);
       console.log(`  ‚ö†Ô∏è  PARTIAL: ${partial}`);
       console.log(`  ‚ùå MISSING: ${missing}`);
-      
+
       // Show missing controls
-      const missingControls = gaps.filter(g => g.status === 'MISSING');
+      const missingControls = gaps.filter((g) => g.status === 'MISSING');
       if (missingControls.length > 0) {
         console.log('\n‚ö†Ô∏è  Missing Controls:');
-        missingControls.forEach(control => {
+        missingControls.forEach((control) => {
           console.log(`  ‚Ä¢ ${control.controlId}: ${control.controlName}`);
-          console.log(`    Risk: ${control.riskLevel} - ${control.recommendation}`);
+          console.log(
+            `    Risk: ${control.riskLevel} - ${control.recommendation}`,
+          );
         });
       }
-      
+
       // Show partial controls
-      const partialControls = gaps.filter(g => g.status === 'PARTIAL');
+      const partialControls = gaps.filter((g) => g.status === 'PARTIAL');
       if (partialControls.length > 0) {
-        console.log('\nÌ¥ç Controls Needing Improvement:');
-        partialControls.forEach(control => {
+        console.log('\nÔøΩÔøΩÔøΩ Controls Needing Improvement:');
+        partialControls.forEach((control) => {
           console.log(`  ‚Ä¢ ${control.controlId}: ${control.controlName}`);
-          console.log(`    Missing evidence: ${control.missingEvidence.join(', ')}`);
+          console.log(
+            `    Missing evidence: ${control.missingEvidence.join(', ')}`,
+          );
         });
       }
-      
     } catch (error: any) {
       console.error('‚ùå Error:', error?.message || 'Unknown error');
       process.exit(1);
@@ -160,15 +174,15 @@ program
   .description('Verify evidence chain integrity')
   .action(async () => {
     console.log('Verifying evidence chain integrity...\n');
-    
+
     const app = await NestFactory.createApplicationContext(ComplianceModule);
-    
+
     try {
       const storageService = app.get(EvidenceStorageService);
-      
-      console.log('Ì¥ó Verifying evidence chain...');
+
+      console.log('ÔøΩÔøΩÔøΩ Verifying evidence chain...');
       const result = await storageService.verifyEvidenceChain();
-      
+
       if (result.valid) {
         console.log(`‚úÖ Evidence chain is VALID`);
         console.log(`   Chain length: ${result.chainLength} entries`);
@@ -176,25 +190,28 @@ program
         console.log(`‚ùå Evidence chain is INVALID`);
         console.log(`   Issues: ${result.issues.join(', ')}`);
       }
-      
+
       // Show recent collections
-      console.log('\nÌ≥Å Recent evidence collections:');
+      console.log('\nÔøΩÔøΩÔøΩ Recent evidence collections:');
       const recentCollections = await storageService.getRecentCollections(5);
-      
+
       if (recentCollections.length === 0) {
         console.log('  No evidence collections found');
       } else {
         recentCollections.forEach((collection, index) => {
           console.log(`  ${index + 1}. ${collection.collectionId}`);
-          console.log(`     Collected: ${new Date(collection.collectedAt).toLocaleString()}`);
+          console.log(
+            `     Collected: ${new Date(collection.collectedAt).toLocaleString()}`,
+          );
           console.log(`     Controls: ${collection.totalControls}`);
           console.log(`     Status: ${collection.status}`);
           if (collection.evidenceChain?.[0]?.evidenceHash) {
-            console.log(`     Hash: ${collection.evidenceChain[0].evidenceHash.substring(0, 16)}...`);
+            console.log(
+              `     Hash: ${collection.evidenceChain[0].evidenceHash.substring(0, 16)}...`,
+            );
           }
         });
       }
-      
     } catch (error: any) {
       console.error('‚ùå Error:', error?.message || 'Unknown error');
       process.exit(1);
@@ -208,40 +225,45 @@ program
   .description('Show compliance status')
   .action(async () => {
     console.log('Checking compliance status...\n');
-    
+
     const app = await NestFactory.createApplicationContext(ComplianceModule);
-    
+
     try {
       const evidenceService = app.get(Soc2EvidenceService);
       const controlsService = app.get(Soc2ControlsService);
       const storageService = app.get(EvidenceStorageService);
-      
+
       // Get evidence collection history
-      console.log('Ì≥ä Evidence Collection Status:');
+      console.log('ÔøΩÔøΩÔøΩ Evidence Collection Status:');
       const history = await evidenceService.getCollectionHistory(1);
       if (history.length > 0) {
-        console.log(`  Last collection: ${new Date(history[0].collectedAt).toLocaleString()}`);
+        console.log(
+          `  Last collection: ${new Date(history[0].collectedAt).toLocaleString()}`,
+        );
         console.log(`  Controls collected: ${history[0].totalControls}`);
       } else {
         console.log('  No evidence collections yet');
       }
-      
+
       // Get control verification status
-      console.log('\nÌ¥ç Control Verification Status:');
+      console.log('\nÔøΩÔøΩÔøΩ Control Verification Status:');
       const summary = await controlsService.getControlStatusSummary(30);
       console.log(`  Overall: ${summary.overallStatus}`);
-      console.log(`  Verified controls: ${summary.verifiedControls}/${summary.totalControls}`);
-      
+      console.log(
+        `  Verified controls: ${summary.verifiedControls}/${summary.totalControls}`,
+      );
+
       // Get chain status
-      console.log('\nÌ¥ó Evidence Chain Status:');
+      console.log('\nÔøΩÔøΩÔøΩ Evidence Chain Status:');
       const chainResult = await storageService.verifyEvidenceChain();
       console.log(`  Chain valid: ${chainResult.valid ? '‚úÖ' : '‚ùå'}`);
       console.log(`  Chain length: ${chainResult.chainLength}`);
-      
-      console.log('\nÌæØ SOC 2 Readiness Status:');
-      const readiness = (summary.verifiedControls / summary.totalControls) * 100;
+
+      console.log('\nÔøΩÔøΩÔøΩ SOC 2 Readiness Status:');
+      const readiness =
+        (summary.verifiedControls / summary.totalControls) * 100;
       console.log(`  ${readiness.toFixed(1)}% complete`);
-      
+
       if (readiness >= 80) {
         console.log('  ‚úÖ Ready for SOC 2 Type I audit');
       } else if (readiness >= 50) {
@@ -249,7 +271,6 @@ program
       } else {
         console.log('  ‚ùå Needs significant work before audit');
       }
-      
     } catch (error: any) {
       console.error('‚ùå Error:', error?.message || 'Unknown error');
       process.exit(1);

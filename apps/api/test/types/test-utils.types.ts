@@ -61,6 +61,9 @@ export type MockAuthCoreAdapter = {
     saveRefreshToken: jest.Mock<Promise<void>, []>;
   };
   userRepository: {
-    findById: jest.Mock<Promise<{ id: string; email: string; tokenVersion: number }>, [string]>;
+    findById: jest.Mock<
+      Promise<{ id: string; email: string; tokenVersion: number }>,
+      [string]
+    >;
   };
 };

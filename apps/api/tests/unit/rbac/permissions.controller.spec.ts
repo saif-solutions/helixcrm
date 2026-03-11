@@ -76,14 +76,14 @@ describe('PermissionsController', () => {
       },
       {
         module: 'deal',
-        permissions: [
-          { id: 'perm-3', code: 'deal:read', name: 'Read Deals' },
-        ],
+        permissions: [{ id: 'perm-3', code: 'deal:read', name: 'Read Deals' }],
       },
     ];
 
     it('should return permissions grouped by module', async () => {
-      mockPermissionsService.findGrouped.mockResolvedValue(mockGroupedPermissions);
+      mockPermissionsService.findGrouped.mockResolvedValue(
+        mockGroupedPermissions,
+      );
 
       const result = await controller.findGrouped();
 
@@ -104,7 +104,9 @@ describe('PermissionsController', () => {
     };
 
     it('should return permission hierarchy', async () => {
-      mockPermissionsService.getPermissionHierarchy.mockResolvedValue(mockHierarchy);
+      mockPermissionsService.getPermissionHierarchy.mockResolvedValue(
+        mockHierarchy,
+      );
 
       const result = await controller.getHierarchy();
 

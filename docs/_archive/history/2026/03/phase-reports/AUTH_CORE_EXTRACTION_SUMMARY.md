@@ -8,6 +8,7 @@
 ## 🎯 What Was Built
 
 ### Package Structure
+
 packages/auth-core/
 ├── package.json # v0.1.0 (experimental)
 ├── tsconfig.json # TypeScript configuration
@@ -30,7 +31,9 @@ packages/auth-core/
 text
 
 ### Contract Architecture
+
 ✅ **Separation Achieved:**
+
 1. **Contract Definitions** (`/packages/auth-core/src/contracts/`)
    - TypeScript interfaces only
    - Defines public API surface
@@ -42,13 +45,16 @@ text
    - Protects against regression
 
 ### MVP Scope Adherence
+
 ✅ **Included (v0.1):**
+
 - JWT token issuance/validation
 - Refresh token management
 - Password hashing/verification
 - Basic account lock checks
 
 ✅ **Excluded (Deferred to v0.2):**
+
 - Token rotation strategies
 - Bulk invalidation
 - Advanced rate limiting
@@ -57,17 +63,20 @@ text
 ## 🛡️ Governance Compliance
 
 ### SSOT Compliance
+
 - ✅ `/docs/SSOT.md` respected (no scope creep)
 - ✅ `/docs/MVP_AUTH_BOUNDARIES.md` created
 - ✅ `MVP1_SCOPE_FREEZE.md` honored
 
 ### Team Rules Compliance
+
 - ✅ No code in `/apps/` moved to `/packages/` (yet)
 - ✅ No client-specific logic in core
 - ✅ Contract-first approach followed
 - ✅ Documentation governance maintained
 
-### Decisions Compliance  
+### Decisions Compliance
+
 - ✅ Version 0.1.0 (not 1.0.0-alpha)
 - ✅ Sequential extraction (auth-core first)
 - ✅ Module boundaries strictly defined
@@ -76,6 +85,7 @@ text
 ## 🔄 What's Next (Immediate Steps)
 
 ### Phase 2: API Integration
+
 1. **Analyze Current Auth Implementation**
    - Review `apps/api/src/modules/auth/`
    - Identify extractable vs framework-dependent code
@@ -96,11 +106,13 @@ text
    - Run existing authentication tests
 
 ### Phase 3: Validation & Cleanup
+
 1. **Verify Build & Tests**
    ```bash
    cd packages/auth-core
    npm run verify  # builds and tests
-Run Integration Tests
+   Run Integration Tests
+   ```
 
 bash
 ./tests/integration/test-auth-simple.sh

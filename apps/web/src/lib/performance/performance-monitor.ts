@@ -1,6 +1,6 @@
 /**
  * Performance Monitoring Service
- * 
+ *
  * Tracks Core Web Vitals, component render times, and API latency.
  * Reports metrics to logging service and optionally to analytics.
  */
@@ -76,7 +76,7 @@ class PerformanceMonitor {
         const entries = list.getEntries();
         const lastEntry = entries[entries.length - 1];
         const lcp = lastEntry.startTime;
-        
+
         this.recordMetric({
           name: 'LCP',
           value: lcp,
@@ -99,7 +99,7 @@ class PerformanceMonitor {
         const entries = list.getEntries();
         if (entries.length > 0) {
           const fcp = entries[0].startTime;
-          
+
           this.recordMetric({
             name: 'FCP',
             value: fcp,
@@ -127,7 +127,7 @@ class PerformanceMonitor {
             clsValue += layoutShiftEntry.value;
           }
         }
-        
+
         this.recordMetric({
           name: 'CLS',
           value: clsValue,
@@ -150,7 +150,7 @@ class PerformanceMonitor {
         const entries = list.getEntries();
         const firstInput = entries[0] as PerformanceEventTiming;
         const fid = firstInput.processingStart - firstInput.startTime;
-        
+
         this.recordMetric({
           name: 'FID',
           value: fid,
@@ -167,7 +167,6 @@ class PerformanceMonitor {
       });
       fidObserver.observe({ type: 'first-input', buffered: true });
       this.observers.push(fidObserver);
-
     } catch (error) {
       logger.warn('PerformanceObserver not fully supported', { error });
     }
@@ -265,7 +264,7 @@ class PerformanceMonitor {
    */
   recordMetric(metric: PerformanceMetric) {
     this.metrics.push(metric);
-    
+
     // Keep only last 100 metrics in memory
     if (this.metrics.length > 100) {
       this.metrics = this.metrics.slice(-100);
@@ -334,7 +333,7 @@ class PerformanceMonitor {
       if (!summary[metric.name]) {
         summary[metric.name] = { avg: 0, min: Infinity, max: 0, count: 0 };
       }
-      
+
       const stat = summary[metric.name];
       stat.avg = (stat.avg * stat.count + metric.value) / (stat.count + 1);
       stat.min = Math.min(stat.min, metric.value);
@@ -352,7 +351,7 @@ class PerformanceMonitor {
     if (this.metrics.length === 0) return;
 
     const metrics = [...this.metrics];
-    
+
     try {
       await fetch('/api/v1/metrics', {
         method: 'POST',
@@ -387,13 +386,13 @@ export function withPerformanceTracking<P extends object>(
   componentName: string
 ): React.FC<P> {
   const displayName = WrappedComponent.displayName || WrappedComponent.name || 'Component';
-  
+
   const ComponentWithTracking: React.FC<P> = (props) => {
     const renderStartRef = useRef<number>(0);
 
     useEffect(() => {
       renderStartRef.current = performance.now();
-      
+
       return () => {
         const renderTime = performance.now() - renderStartRef.current;
         performanceMonitor.trackComponentRender(componentName, renderTime);
@@ -402,9 +401,9 @@ export function withPerformanceTracking<P extends object>(
 
     return React.createElement(WrappedComponent, props);
   };
-  
+
   ComponentWithTracking.displayName = `withPerformanceTracking(${displayName})`;
-  
+
   return ComponentWithTracking;
 }
 
@@ -414,7 +413,7 @@ export function usePerformanceTracking(componentName: string) {
 
   useEffect(() => {
     renderStartRef.current = performance.now();
-    
+
     return () => {
       const renderTime = performance.now() - renderStartRef.current;
       performanceMonitor.trackComponentRender(componentName, renderTime);

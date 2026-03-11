@@ -5,26 +5,22 @@ import { ComplianceModule } from './src/shared/compliance/compliance.module';
 
 async function testComplianceModule() {
   console.log('Testing Compliance Module...');
-  
+
   try {
     const module = await Test.createTestingModule({
-      imports: [
-        ConfigModule.forRoot({ isGlobal: true }),
-        PrismaModule,
-        ComplianceModule,
-      ],
+      imports: [ConfigModule.forRoot({ isGlobal: true }), PrismaModule, ComplianceModule],
     }).compile();
-    
+
     console.log('✅ ComplianceModule compiled successfully!');
-    
+
     // Try to get each service
     const services = [
       'Soc2EvidenceService',
       'Soc2ControlsService',
       'EvidenceStorageService',
-      'ComplianceSchedulerService'
+      'ComplianceSchedulerService',
     ];
-    
+
     for (const serviceName of services) {
       try {
         const service = module.get(serviceName);
@@ -33,7 +29,7 @@ async function testComplianceModule() {
         console.log(`❌ ${serviceName}: ${error.message}`);
       }
     }
-    
+
     return true;
   } catch (error) {
     console.log('❌ Module compilation failed:', error.message);
@@ -44,10 +40,10 @@ async function testComplianceModule() {
 
 // Run the test
 testComplianceModule()
-  .then(success => {
+  .then((success) => {
     process.exit(success ? 0 : 1);
   })
-  .catch(error => {
+  .catch((error) => {
     console.error('Unexpected error:', error);
     process.exit(1);
   });

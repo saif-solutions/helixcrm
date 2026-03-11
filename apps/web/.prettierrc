@@ -15,7 +15,7 @@
   "embeddedLanguageFormatting": "auto",
   "jsxSingleQuote": false,
   "vueIndentScriptAndStyle": false,
-  
+
   "overrides": [
     {
       "files": ["*.json", "*.json5", "*.jsonc"],

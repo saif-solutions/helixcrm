@@ -181,10 +181,15 @@ describe('DealsController', () => {
     it('should return deal statistics', async () => {
       mockDealsService.getDealStats.mockResolvedValue(mockStats);
 
-      const result = await controller.getStats(mockRequest as any, 'pipeline-123');
+      const result = await controller.getStats(
+        mockRequest as any,
+        'pipeline-123',
+      );
 
       expect(result).toEqual(mockStats);
-      expect(mockDealsService.getDealStats).toHaveBeenCalledWith('pipeline-123');
+      expect(mockDealsService.getDealStats).toHaveBeenCalledWith(
+        'pipeline-123',
+      );
     });
 
     it('should throw ForbiddenException if permission context not initialized', async () => {
@@ -208,19 +213,28 @@ describe('DealsController', () => {
     ];
 
     it('should return pipeline performance', async () => {
-      mockDealsService.getPipelinePerformance.mockResolvedValue(mockPerformance);
+      mockDealsService.getPipelinePerformance.mockResolvedValue(
+        mockPerformance,
+      );
 
-      const result = await controller.getPipelinePerformance(mockRequest as any, 'pipeline-123');
+      const result = await controller.getPipelinePerformance(
+        mockRequest as any,
+        'pipeline-123',
+      );
 
       expect(result).toEqual(mockPerformance);
-      expect(mockDealsService.getPipelinePerformance).toHaveBeenCalledWith('pipeline-123');
+      expect(mockDealsService.getPipelinePerformance).toHaveBeenCalledWith(
+        'pipeline-123',
+      );
     });
 
     it('should throw ForbiddenException if permission context not initialized', async () => {
       const uninitializedController = await createController(false);
 
       try {
-        await uninitializedController.getPipelinePerformance(mockRequest as any);
+        await uninitializedController.getPipelinePerformance(
+          mockRequest as any,
+        );
         expect(true).toBe(false);
       } catch (error) {
         expect(error).toBeInstanceOf(ForbiddenException);
@@ -230,40 +244,48 @@ describe('DealsController', () => {
     });
   });
 
-describe('findOne', () => {
-  const dealId = 'deal-123';
-  const mockDeal = { id: dealId, name: 'Test Deal' };
+  describe('findOne', () => {
+    const dealId = 'deal-123';
+    const mockDeal = { id: dealId, name: 'Test Deal' };
 
-  it('should return a deal by id', async () => {
-    mockDealsService.findOne.mockResolvedValue(mockDeal);
+    it('should return a deal by id', async () => {
+      mockDealsService.findOne.mockResolvedValue(mockDeal);
 
-    const result = await controller.findOne(dealId, mockRequest as any, false); // Pass boolean, not string
+      const result = await controller.findOne(
+        dealId,
+        mockRequest as any,
+        false,
+      ); // Pass boolean, not string
 
-    expect(result).toEqual(mockDeal);
-    expect(mockDealsService.findOne).toHaveBeenCalledWith(dealId, false);
+      expect(result).toEqual(mockDeal);
+      expect(mockDealsService.findOne).toHaveBeenCalledWith(dealId, false);
+    });
+
+    it('should handle includeDeleted parameter', async () => {
+      mockDealsService.findOne.mockResolvedValue(mockDeal);
+
+      await controller.findOne(dealId, mockRequest as any, true); // Pass boolean, not string
+
+      expect(mockDealsService.findOne).toHaveBeenCalledWith(dealId, true);
+    });
+
+    it('should throw ForbiddenException if permission context not initialized', async () => {
+      const uninitializedController = await createController(false);
+
+      try {
+        await uninitializedController.findOne(
+          dealId,
+          mockRequest as any,
+          false,
+        );
+        expect(true).toBe(false);
+      } catch (error) {
+        expect(error).toBeInstanceOf(ForbiddenException);
+        expect(error.message).toBe('Permission context not initialized');
+      }
+      expect(mockDealsService.findOne).not.toHaveBeenCalled();
+    });
   });
-
-  it('should handle includeDeleted parameter', async () => {
-    mockDealsService.findOne.mockResolvedValue(mockDeal);
-
-    await controller.findOne(dealId, mockRequest as any, true); // Pass boolean, not string
-
-    expect(mockDealsService.findOne).toHaveBeenCalledWith(dealId, true);
-  });
-
-  it('should throw ForbiddenException if permission context not initialized', async () => {
-    const uninitializedController = await createController(false);
-
-    try {
-      await uninitializedController.findOne(dealId, mockRequest as any, false);
-      expect(true).toBe(false);
-    } catch (error) {
-      expect(error).toBeInstanceOf(ForbiddenException);
-      expect(error.message).toBe('Permission context not initialized');
-    }
-    expect(mockDealsService.findOne).not.toHaveBeenCalled();
-  });
-});
 
   describe('getStageHistory', () => {
     const dealId = 'deal-123';
@@ -274,7 +296,10 @@ describe('findOne', () => {
     it('should return stage history', async () => {
       mockDealsService.getStageHistory.mockResolvedValue(mockHistory);
 
-      const result = await controller.getStageHistory(dealId, mockRequest as any);
+      const result = await controller.getStageHistory(
+        dealId,
+        mockRequest as any,
+      );
 
       expect(result).toEqual(mockHistory);
       expect(mockDealsService.getStageHistory).toHaveBeenCalledWith(dealId);
@@ -284,7 +309,10 @@ describe('findOne', () => {
       const uninitializedController = await createController(false);
 
       try {
-        await uninitializedController.getStageHistory(dealId, mockRequest as any);
+        await uninitializedController.getStageHistory(
+          dealId,
+          mockRequest as any,
+        );
         expect(true).toBe(false);
       } catch (error) {
         expect(error).toBeInstanceOf(ForbiddenException);
@@ -302,17 +330,29 @@ describe('findOne', () => {
     it('should successfully update a deal', async () => {
       mockDealsService.update.mockResolvedValue(mockResult);
 
-      const result = await controller.update(dealId, updateDealDto, mockRequest as any);
+      const result = await controller.update(
+        dealId,
+        updateDealDto,
+        mockRequest as any,
+      );
 
       expect(result).toEqual(mockResult);
-      expect(mockDealsService.update).toHaveBeenCalledWith(dealId, updateDealDto, 'user-123');
+      expect(mockDealsService.update).toHaveBeenCalledWith(
+        dealId,
+        updateDealDto,
+        'user-123',
+      );
     });
 
     it('should throw ForbiddenException if permission context not initialized', async () => {
       const uninitializedController = await createController(false);
 
       try {
-        await uninitializedController.update(dealId, updateDealDto, mockRequest as any);
+        await uninitializedController.update(
+          dealId,
+          updateDealDto,
+          mockRequest as any,
+        );
         expect(true).toBe(false);
       } catch (error) {
         expect(error).toBeInstanceOf(ForbiddenException);
@@ -361,7 +401,10 @@ describe('findOne', () => {
     it('should successfully create a simple deal', async () => {
       mockDealsService.createSimple.mockResolvedValue(mockResult);
 
-      const result = await controller.createSimple(createSimpleDto, mockRequest as any);
+      const result = await controller.createSimple(
+        createSimpleDto,
+        mockRequest as any,
+      );
 
       expect(result).toEqual(mockResult);
       expect(mockDealsService.createSimple).toHaveBeenCalledWith({
@@ -374,7 +417,10 @@ describe('findOne', () => {
       const uninitializedController = await createController(false);
 
       try {
-        await uninitializedController.createSimple(createSimpleDto, mockRequest as any);
+        await uninitializedController.createSimple(
+          createSimpleDto,
+          mockRequest as any,
+        );
         expect(true).toBe(false);
       } catch (error) {
         expect(error).toBeInstanceOf(ForbiddenException);
@@ -392,17 +438,29 @@ describe('findOne', () => {
     it('should successfully move deal to another stage', async () => {
       mockDealsService.moveStage.mockResolvedValue(mockResult);
 
-      const result = await controller.moveStage(dealId, moveDto, mockRequest as any);
+      const result = await controller.moveStage(
+        dealId,
+        moveDto,
+        mockRequest as any,
+      );
 
       expect(result).toEqual(mockResult);
-      expect(mockDealsService.moveStage).toHaveBeenCalledWith(dealId, moveDto, 'user-123');
+      expect(mockDealsService.moveStage).toHaveBeenCalledWith(
+        dealId,
+        moveDto,
+        'user-123',
+      );
     });
 
     it('should throw ForbiddenException if permission context not initialized', async () => {
       const uninitializedController = await createController(false);
 
       try {
-        await uninitializedController.moveStage(dealId, moveDto, mockRequest as any);
+        await uninitializedController.moveStage(
+          dealId,
+          moveDto,
+          mockRequest as any,
+        );
         expect(true).toBe(false);
       } catch (error) {
         expect(error).toBeInstanceOf(ForbiddenException);
@@ -427,19 +485,33 @@ describe('findOne', () => {
         .mockResolvedValueOnce(mockResults[0])
         .mockResolvedValueOnce(mockResults[1]);
 
-      const result = await controller.bulkMoveStage(bulkMoveDto, mockRequest as any);
+      const result = await controller.bulkMoveStage(
+        bulkMoveDto,
+        mockRequest as any,
+      );
 
       expect(result).toEqual(mockResults);
       expect(mockDealsService.moveStage).toHaveBeenCalledTimes(2);
-      expect(mockDealsService.moveStage).toHaveBeenCalledWith('deal-1', { stageId: 'stage-456' }, 'user-123');
-      expect(mockDealsService.moveStage).toHaveBeenCalledWith('deal-2', { stageId: 'stage-456' }, 'user-123');
+      expect(mockDealsService.moveStage).toHaveBeenCalledWith(
+        'deal-1',
+        { stageId: 'stage-456' },
+        'user-123',
+      );
+      expect(mockDealsService.moveStage).toHaveBeenCalledWith(
+        'deal-2',
+        { stageId: 'stage-456' },
+        'user-123',
+      );
     });
 
     it('should throw ForbiddenException if permission context not initialized', async () => {
       const uninitializedController = await createController(false);
 
       try {
-        await uninitializedController.bulkMoveStage(bulkMoveDto, mockRequest as any);
+        await uninitializedController.bulkMoveStage(
+          bulkMoveDto,
+          mockRequest as any,
+        );
         expect(true).toBe(false);
       } catch (error) {
         expect(error).toBeInstanceOf(ForbiddenException);
@@ -463,19 +535,31 @@ describe('findOne', () => {
         .mockResolvedValueOnce(mockResults[0])
         .mockResolvedValueOnce(mockResults[1]);
 
-      const result = await controller.bulkRemove(bulkRemoveDto, mockRequest as any);
+      const result = await controller.bulkRemove(
+        bulkRemoveDto,
+        mockRequest as any,
+      );
 
       expect(result).toEqual(mockResults);
       expect(mockDealsService.remove).toHaveBeenCalledTimes(2);
-      expect(mockDealsService.remove).toHaveBeenCalledWith('deal-1', 'user-123');
-      expect(mockDealsService.remove).toHaveBeenCalledWith('deal-2', 'user-123');
+      expect(mockDealsService.remove).toHaveBeenCalledWith(
+        'deal-1',
+        'user-123',
+      );
+      expect(mockDealsService.remove).toHaveBeenCalledWith(
+        'deal-2',
+        'user-123',
+      );
     });
 
     it('should throw ForbiddenException if permission context not initialized', async () => {
       const uninitializedController = await createController(false);
 
       try {
-        await uninitializedController.bulkRemove(bulkRemoveDto, mockRequest as any);
+        await uninitializedController.bulkRemove(
+          bulkRemoveDto,
+          mockRequest as any,
+        );
         expect(true).toBe(false);
       } catch (error) {
         expect(error).toBeInstanceOf(ForbiddenException);

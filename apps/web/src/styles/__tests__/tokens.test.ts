@@ -13,7 +13,7 @@ describe('Design Tokens', () => {
 
     it('should have consistent shade ranges', () => {
       const categories = Object.keys(designTokens.colors);
-      categories.forEach(category => {
+      categories.forEach((category) => {
         const shades = Object.keys((designTokens.colors as any)[category]);
         expect(shades).toContain('50');
         expect(shades).toContain('500');
@@ -31,14 +31,14 @@ describe('Design Tokens', () => {
       };
 
       // These should have sufficient contrast (> 4.5:1 for AA)
-      Object.values(baseColors).forEach(color => {
+      Object.values(baseColors).forEach((color) => {
         // Simple brightness check (not full WCAG but good enough for tests)
         const hex = color.replace('#', '');
         const r = parseInt(hex.substr(0, 2), 16);
         const g = parseInt(hex.substr(2, 2), 16);
         const b = parseInt(hex.substr(4, 2), 16);
         const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-        
+
         // Should be dark enough on white background
         expect(brightness).toBeLessThan(180);
       });
@@ -47,15 +47,15 @@ describe('Design Tokens', () => {
 
   describe('Spacing', () => {
     it('should follow 8px base unit', () => {
-      expect(designTokens.spacing[1]).toBe('4px');   // 0.5 * 8
-      expect(designTokens.spacing[2]).toBe('8px');   // 1 * 8
-      expect(designTokens.spacing[4]).toBe('16px');  // 2 * 8
-      expect(designTokens.spacing[8]).toBe('32px');  // 4 * 8
+      expect(designTokens.spacing[1]).toBe('4px'); // 0.5 * 8
+      expect(designTokens.spacing[2]).toBe('8px'); // 1 * 8
+      expect(designTokens.spacing[4]).toBe('16px'); // 2 * 8
+      expect(designTokens.spacing[8]).toBe('32px'); // 4 * 8
     });
 
     it('should have consistent naming', () => {
       const spacingKeys = Object.keys(designTokens.spacing);
-      spacingKeys.forEach(key => {
+      spacingKeys.forEach((key) => {
         if (key !== 'px' && key !== '0') {
           expect(parseFloat(key)).toBeDefined();
         }
@@ -66,12 +66,12 @@ describe('Design Tokens', () => {
   describe('CSS Variables', () => {
     it('should generate CSS variables', () => {
       const variables = getCssVariables();
-      
+
       // Should have color variables
       expect(variables['--color-primary-500']).toBe('#3b82f6');
       expect(variables['--color-success-500']).toBe('#22c55e');
       expect(variables['--color-error-500']).toBe('#ef4444');
-      
+
       // Should have spacing variables
       expect(variables['--spacing-2']).toBe('8px');
       expect(variables['--spacing-4']).toBe('16px');
@@ -81,7 +81,7 @@ describe('Design Tokens', () => {
       const variables = getCssVariables();
       const variableNames = Object.keys(variables);
       const uniqueNames = new Set(variableNames);
-      
+
       expect(variableNames.length).toBe(uniqueNames.size);
     });
   });

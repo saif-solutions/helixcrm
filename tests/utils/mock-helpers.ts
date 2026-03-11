@@ -10,13 +10,13 @@ export const MockFn = () => jest.fn().mockImplementation(() => Promise.resolve(u
 /**
  * Helper to create a mock function that returns a resolved promise with a value
  */
-export const MockResolved = <T>(value: T) => 
+export const MockResolved = <T>(value: T) =>
   jest.fn().mockImplementation(() => Promise.resolve(value));
 
 /**
  * Helper to create a mock function that returns a rejected promise
  */
-export const MockRejected = (error: Error) => 
+export const MockRejected = (error: Error) =>
   jest.fn().mockImplementation(() => Promise.reject(error));
 
 /**

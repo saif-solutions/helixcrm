@@ -48,7 +48,7 @@ describe('UsersController', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
-    
+
     // Default to true for most tests
     mockPermissionContext.isInitialized.mockReturnValue(true);
 
@@ -160,7 +160,9 @@ describe('UsersController', () => {
     it('should throw ForbiddenException if permission context not initialized', async () => {
       permissionContext.isInitialized.mockReturnValue(false);
 
-      await expect(controller.update(userId, updateUserDto, mockRequest)).rejects.toThrow(ForbiddenException);
+      await expect(controller.update(userId, updateUserDto, mockRequest)).rejects.toThrow(
+        ForbiddenException,
+      );
       expect(usersService.update).not.toHaveBeenCalled();
     });
   });

@@ -38,9 +38,7 @@ describe('FileStorageController', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [FileStorageController],
-      providers: [
-        { provide: FileStorageService, useValue: mockFileStorageService },
-      ],
+      providers: [{ provide: FileStorageService, useValue: mockFileStorageService }],
     }).compile();
 
     controller = module.get<FileStorageController>(FileStorageController);

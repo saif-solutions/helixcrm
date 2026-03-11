@@ -846,7 +846,7 @@ export const useDialogFocusTrapHook = (
   );
 
   const getPreviousActiveElement = useCallback(() => previousActiveElement.current, []);
-  
+
   return {
     handleKeyDown,
     getPreviousActiveElement,

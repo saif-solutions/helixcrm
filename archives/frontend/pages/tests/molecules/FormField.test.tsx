@@ -1,13 +1,13 @@
 // D:\Projects-In-Hand\helixcrm\apps\web\src\components\molecules\FormField\FormField.test.tsx
 import { render, screen } from '@testing-library/react';
-import { 
-  FormField, 
-  FormFieldGroup, 
+import {
+  FormField,
+  FormFieldGroup,
   FormActions,
   TextFormField,
   EmailFormField,
   PasswordFormField,
-  TextareaFormField
+  TextareaFormField,
 } from './FormField';
 import { Button } from '../../atoms/Button/Button';
 
@@ -28,24 +28,14 @@ describe('FormField Component', () => {
 
   test('renders helper text', () => {
     render(
-      <FormField 
-        label="Password" 
-        name="password" 
-        helperText="Must be at least 8 characters" 
-      />
+      <FormField label="Password" name="password" helperText="Must be at least 8 characters" />,
     );
     expect(screen.getByText('Must be at least 8 characters')).toBeInTheDocument();
     expect(screen.getByText('Must be at least 8 characters')).toHaveClass('text-sm');
   });
 
   test('renders error message', () => {
-    render(
-      <FormField 
-        label="Email" 
-        name="email" 
-        error="Email is required" 
-      />
-    );
+    render(<FormField label="Email" name="email" error="Email is required" />);
     const error = screen.getByText('Email is required');
     expect(error).toBeInTheDocument();
     expect(error).toHaveClass('text-red-600');
@@ -53,13 +43,7 @@ describe('FormField Component', () => {
   });
 
   test('sets aria-invalid when error exists', () => {
-    render(
-      <FormField 
-        label="Field" 
-        name="field" 
-        error="Error message" 
-      />
-    );
+    render(<FormField label="Field" name="field" error="Error message" />);
     const input = screen.getByLabelText('Field');
     expect(input).toHaveAttribute('aria-invalid', 'true');
   });
@@ -79,28 +63,13 @@ describe('FormField Component', () => {
   });
 
   test('applies label width in horizontal layout', () => {
-    render(
-      <FormField 
-        label="Test" 
-        name="test" 
-        layout="horizontal" 
-        labelWidth="150px" 
-      />
-    );
+    render(<FormField label="Test" name="test" layout="horizontal" labelWidth="150px" />);
     const label = screen.getByText('Test');
     expect(label).toHaveStyle({ width: '150px', minWidth: '150px' });
   });
 
   test('forwards input props to underlying Input component', () => {
-    render(
-      <FormField 
-        label="Search" 
-        name="search" 
-        placeholder="Search..." 
-        disabled 
-        readOnly 
-      />
-    );
+    render(<FormField label="Search" name="search" placeholder="Search..." disabled readOnly />);
     const input = screen.getByLabelText('Search');
     expect(input).toHaveAttribute('placeholder', 'Search...');
     expect(input).toBeDisabled();
@@ -136,7 +105,7 @@ describe('FormField Component', () => {
     render(
       <FormFieldGroup title="Section" description="Description">
         <div data-testid="child">Child</div>
-      </FormFieldGroup>
+      </FormFieldGroup>,
     );
     expect(screen.getByText('Section')).toBeInTheDocument();
     expect(screen.getByText('Description')).toBeInTheDocument();
@@ -147,57 +116,41 @@ describe('FormField Component', () => {
     render(
       <FormActions>
         <Button>Submit</Button>
-      </FormActions>
+      </FormActions>,
     );
     const actions = screen.getByText('Submit').closest('div');
-    expect(actions).toHaveClass('flex', 'items-center', 'justify-end', 'gap-3', 'pt-6', 'border-t', 'border-gray-200');
+    expect(actions).toHaveClass(
+      'flex',
+      'items-center',
+      'justify-end',
+      'gap-3',
+      'pt-6',
+      'border-t',
+      'border-gray-200',
+    );
   });
 
   test('applies custom wrapperClassName', () => {
-    render(
-      <FormField 
-        label="Test" 
-        name="test" 
-        wrapperClassName="custom-wrapper" 
-      />
-    );
+    render(<FormField label="Test" name="test" wrapperClassName="custom-wrapper" />);
     const wrapper = screen.getByLabelText('Test').closest('.form-field');
     expect(wrapper).toHaveClass('custom-wrapper');
   });
 
   test('applies custom labelClassName', () => {
-    render(
-      <FormField 
-        label="Test" 
-        name="test" 
-        labelClassName="custom-label" 
-      />
-    );
+    render(<FormField label="Test" name="test" labelClassName="custom-label" />);
     const label = screen.getByText('Test');
     expect(label).toHaveClass('custom-label');
   });
 
   test('applies custom errorClassName', () => {
-    render(
-      <FormField 
-        label="Test" 
-        name="test" 
-        error="Error" 
-        errorClassName="custom-error" 
-      />
-    );
+    render(<FormField label="Test" name="test" error="Error" errorClassName="custom-error" />);
     const error = screen.getByText('Error');
     expect(error).toHaveClass('custom-error');
   });
 
   test('applies custom helperClassName', () => {
     render(
-      <FormField 
-        label="Test" 
-        name="test" 
-        helperText="Helper" 
-        helperClassName="custom-helper" 
-      />
+      <FormField label="Test" name="test" helperText="Helper" helperClassName="custom-helper" />,
     );
     const helper = screen.getByText('Helper');
     expect(helper).toHaveClass('custom-helper');
@@ -208,21 +161,21 @@ describe('FormField Component', () => {
       <>
         <FormField label="Field1" name="field1" helperText="Help 1" />
         <FormField label="Field2" name="field2" helperText="Help 2" error="Error 2" />
-      </>
+      </>,
     );
-    
+
     const input1 = screen.getByLabelText('Field1');
     const input2 = screen.getByLabelText('Field2');
-    
+
     expect(input1.id).toBe('field1-field');
     expect(input2.id).toBe('field2-field');
-    
+
     const helper1 = screen.getByText('Help 1');
     const error2 = screen.getByText('Error 2');
-    
+
     expect(helper1.id).toBe('field1-field-helper');
     expect(error2.id).toBe('field2-field-error');
-    
+
     // Check aria-describedby
     expect(input1).toHaveAttribute('aria-describedby', 'field1-field-helper');
     expect(input2).toHaveAttribute('aria-describedby', 'field2-field-helper field2-field-error');
@@ -263,39 +216,19 @@ describe('FormField Component', () => {
   });
 
   test('renders with variant prop', () => {
-    render(
-      <FormField 
-        label="Test" 
-        name="test" 
-        variant="warning" 
-        helperText="Warning message"
-      />
-    );
+    render(<FormField label="Test" name="test" variant="warning" helperText="Warning message" />);
     const helper = screen.getByText('Warning message');
     expect(helper).toHaveClass('text-amber-600');
   });
 
   test('renders textarea with custom rows', () => {
-    render(
-      <TextareaFormField 
-        label="Description" 
-        name="description" 
-        rows={6}
-      />
-    );
+    render(<TextareaFormField label="Description" name="description" rows={6} />);
     const textarea = screen.getByLabelText('Description');
     expect(textarea).toHaveAttribute('rows', '6');
   });
 
   test('TextareaFormField respects disabled prop', () => {
-    render(
-      <TextareaFormField 
-        label="Comments" 
-        name="comments" 
-        disabled
-        value="Disabled text"
-      />
-    );
+    render(<TextareaFormField label="Comments" name="comments" disabled value="Disabled text" />);
     const textarea = screen.getByLabelText('Comments');
     expect(textarea).toBeDisabled();
     expect(textarea).toHaveValue('Disabled text');
@@ -303,24 +236,20 @@ describe('FormField Component', () => {
 
   test('FormFieldGroup applies custom className', () => {
     const { container } = render(
-      <FormFieldGroup 
-        title="Section" 
-        description="Description"
-        className="custom-group"
-      >
+      <FormFieldGroup title="Section" description="Description" className="custom-group">
         <div>Child</div>
-      </FormFieldGroup>
+      </FormFieldGroup>,
     );
-    
+
     // Find the wrapper by its base classes
     const group = container.querySelector('div.space-y-6');
     expect(group).toBeInTheDocument();
     expect(group).toHaveClass('custom-group');
-    
+
     // Also verify it has other expected classes
     expect(group).toHaveClass('p-6');
     expect(group).toHaveClass('bg-gray-50');
-    
+
     // Verify content
     expect(screen.getByText('Section')).toBeInTheDocument();
     expect(screen.getByText('Description')).toBeInTheDocument();
@@ -330,7 +259,7 @@ describe('FormField Component', () => {
     render(
       <FormActions className="custom-actions">
         <Button>Submit</Button>
-      </FormActions>
+      </FormActions>,
     );
     const actions = screen.getByText('Submit').closest('div');
     expect(actions).toHaveClass('custom-actions');

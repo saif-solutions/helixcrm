@@ -377,7 +377,9 @@ const DialogOverlay = React.forwardRef<
       closeOnOverlayClick = true,
       onClose,
       triggerPersistentFeedback,
-      getTestId = (element: 'overlay' | 'header' | 'body' | 'footer' | 'container' | 'close-button' | 'action') => `dialog-${element}`,
+      getTestId = (
+        element: 'overlay' | 'header' | 'body' | 'footer' | 'container' | 'close-button' | 'action'
+      ) => `dialog-${element}`,
       ...props
     },
     ref
@@ -846,7 +848,7 @@ export const Dialog = React.forwardRef<DialogRef, DialogProps>((props, forwarded
         clearTimeout(exitActiveTimer);
       };
     }
-    
+
     // Add this return for the case when neither condition is true
     return undefined;
   }, [
@@ -981,7 +983,10 @@ export const Dialog = React.forwardRef<DialogRef, DialogProps>((props, forwarded
     ]
   );
 
-  const contextAccessibility: DialogAccessibilityContextType = React.useMemo(() => dialogIds, [dialogIds]);
+  const contextAccessibility: DialogAccessibilityContextType = React.useMemo(
+    () => dialogIds,
+    [dialogIds]
+  );
 
   const contextRefs: DialogRefsContextType = React.useMemo(
     () => ({
@@ -996,7 +1001,19 @@ export const Dialog = React.forwardRef<DialogRef, DialogProps>((props, forwarded
 
   const contextUtils: DialogUtilitiesContextType = React.useMemo(
     () => ({
-      getTestId: (element: string) => getDialogTestId(testId, element as 'overlay' | 'header' | 'body' | 'footer' | 'container' | 'close-button' | 'action', nestedLevel),
+      getTestId: (element: string) =>
+        getDialogTestId(
+          testId,
+          element as
+            | 'overlay'
+            | 'header'
+            | 'body'
+            | 'footer'
+            | 'container'
+            | 'close-button'
+            | 'action',
+          nestedLevel
+        ),
       portalContainer: portal ? getPortalContainer(portalContainer, nestedLevel) : null,
     }),
     [testId, nestedLevel, portal, portalContainer]
@@ -1153,7 +1170,16 @@ export const Dialog = React.forwardRef<DialogRef, DialogProps>((props, forwarded
         closeOnOverlayClick={closeOnOverlayClick}
         onClose={handleClose}
         triggerPersistentFeedback={triggerPersistentFeedback}
-        getTestId={(element: 'overlay' | 'header' | 'body' | 'footer' | 'container' | 'close-button' | 'action') => getDialogTestId(testId, element, nestedLevel)}
+        getTestId={(
+          element:
+            | 'overlay'
+            | 'header'
+            | 'body'
+            | 'footer'
+            | 'container'
+            | 'close-button'
+            | 'action'
+        ) => getDialogTestId(testId, element, nestedLevel)}
       />
     );
   })();
@@ -1176,10 +1202,7 @@ export const Dialog = React.forwardRef<DialogRef, DialogProps>((props, forwarded
 
     // Default header with ref attached internally by DialogHeader
     return (
-      <DialogHeader
-        {...headerProps}
-        data-testid={getDialogTestId(testId, 'header', nestedLevel)}
-      />
+      <DialogHeader {...headerProps} data-testid={getDialogTestId(testId, 'header', nestedLevel)} />
     );
   })();
 
@@ -1189,16 +1212,13 @@ export const Dialog = React.forwardRef<DialogRef, DialogProps>((props, forwarded
 
     if (renderFooter) {
       // Custom render footer with parameters
-      return renderFooter(
-        footerProps?.actions || defaultActions,
-        () => (
-          <DialogFooter
-            {...footerProps}
-            data-testid={getDialogTestId(testId, 'footer', nestedLevel)}
-            id={dialogIds.footerId}
-          />
-        )
-      );
+      return renderFooter(footerProps?.actions || defaultActions, () => (
+        <DialogFooter
+          {...footerProps}
+          data-testid={getDialogTestId(testId, 'footer', nestedLevel)}
+          id={dialogIds.footerId}
+        />
+      ));
     }
 
     // Default footer with ref attached internally by DialogFooter
@@ -1286,17 +1306,16 @@ export const Dialog = React.forwardRef<DialogRef, DialogProps>((props, forwarded
     return dialogContent;
   }
 
-  return ReactDOM.createPortal(
-    dialogContent,
-    targetContainer
-  );
+  return ReactDOM.createPortal(dialogContent, targetContainer);
 });
 
 // Add display name
 Dialog.displayName = 'Dialog';
 
 // Attach compound components with proper typing
-interface DialogComponent extends React.ForwardRefExoticComponent<DialogProps & React.RefAttributes<DialogRef>> {
+interface DialogComponent extends React.ForwardRefExoticComponent<
+  DialogProps & React.RefAttributes<DialogRef>
+> {
   Header: typeof DialogHeader;
   Body: typeof DialogBody;
   Footer: typeof DialogFooter;

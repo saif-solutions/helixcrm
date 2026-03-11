@@ -89,13 +89,16 @@ describe('ExportQueueController', () => {
 
     it('should handle different export types', async () => {
       const types = ['contacts', 'deals', 'leads', 'all'] as const;
-      
+
       for (const exportType of types) {
         const dto = { ...requestDto, exportType };
-        exportQueueService.requestExport.mockResolvedValue({ ...mockResult, exportType });
-        
+        exportQueueService.requestExport.mockResolvedValue({
+          ...mockResult,
+          exportType,
+        });
+
         await controller.requestExport(dto);
-        
+
         expect(exportQueueService.requestExport).toHaveBeenCalledWith(
           exportType,
           requestDto.format,
@@ -107,13 +110,16 @@ describe('ExportQueueController', () => {
 
     it('should handle different formats', async () => {
       const formats = ['csv', 'excel', 'pdf'] as const;
-      
+
       for (const format of formats) {
         const dto = { ...requestDto, format };
-        exportQueueService.requestExport.mockResolvedValue({ ...mockResult, format });
-        
+        exportQueueService.requestExport.mockResolvedValue({
+          ...mockResult,
+          format,
+        });
+
         await controller.requestExport(dto);
-        
+
         expect(exportQueueService.requestExport).toHaveBeenCalledWith(
           requestDto.exportType,
           format,
@@ -176,7 +182,11 @@ describe('ExportQueueController', () => {
       const result = await controller.listUserJobs(1, 20);
 
       expect(result).toEqual(mockJobs);
-      expect(exportQueueService.listUserJobs).toHaveBeenCalledWith(1, 20, undefined);
+      expect(exportQueueService.listUserJobs).toHaveBeenCalledWith(
+        1,
+        20,
+        undefined,
+      );
     });
 
     it('should list jobs with status filter', async () => {
@@ -184,7 +194,11 @@ describe('ExportQueueController', () => {
 
       await controller.listUserJobs(1, 20, 'completed');
 
-      expect(exportQueueService.listUserJobs).toHaveBeenCalledWith(1, 20, 'completed');
+      expect(exportQueueService.listUserJobs).toHaveBeenCalledWith(
+        1,
+        20,
+        'completed',
+      );
     });
 
     it('should handle custom pagination', async () => {
@@ -192,7 +206,11 @@ describe('ExportQueueController', () => {
 
       await controller.listUserJobs(2, 50, 'processing');
 
-      expect(exportQueueService.listUserJobs).toHaveBeenCalledWith(2, 50, 'processing');
+      expect(exportQueueService.listUserJobs).toHaveBeenCalledWith(
+        2,
+        50,
+        'processing',
+      );
     });
   });
 

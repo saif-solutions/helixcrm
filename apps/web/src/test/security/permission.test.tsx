@@ -23,7 +23,7 @@ describe('Permission System Security Tests', () => {
   describe('usePermission Hook', () => {
     it('should return correct permissions for user', () => {
       const { result } = renderHook(() => usePermission());
-      
+
       expect(result.current.hasPermission('contact:read')).toBe(true);
       expect(result.current.hasPermission('contact:write')).toBe(false);
       expect(result.current.hasPermission('lead:read')).toBe(true);
@@ -32,7 +32,7 @@ describe('Permission System Security Tests', () => {
 
     it('should handle hasAnyPermission correctly', () => {
       const { result } = renderHook(() => usePermission());
-      
+
       expect(result.current.hasAnyPermission(['contact:read', 'contact:write'])).toBe(true);
       expect(result.current.hasAnyPermission(['contact:write', 'deal:write'])).toBe(false);
       expect(result.current.hasAnyPermission([])).toBe(false);
@@ -40,7 +40,7 @@ describe('Permission System Security Tests', () => {
 
     it('should handle hasAllPermissions correctly', () => {
       const { result } = renderHook(() => usePermission());
-      
+
       expect(result.current.hasAllPermissions(['contact:read', 'lead:read'])).toBe(true);
       expect(result.current.hasAllPermissions(['contact:read', 'contact:write'])).toBe(false);
     });
@@ -62,7 +62,7 @@ describe('Permission System Security Tests', () => {
 
     it('should grant all permissions to admin users', () => {
       const { result } = renderHook(() => usePermission());
-      
+
       expect(result.current.hasPermission('contact:write')).toBe(true);
       expect(result.current.hasPermission('user:delete')).toBe(true);
       expect(result.current.hasPermission('any:random')).toBe(true);
@@ -76,7 +76,7 @@ describe('Permission System Security Tests', () => {
           <div data-testid="protected-content">Protected Content</div>
         </RequirePermission>
       );
-      
+
       expect(screen.getByTestId('protected-content')).toBeInTheDocument();
     });
 
@@ -86,20 +86,20 @@ describe('Permission System Security Tests', () => {
           <div data-testid="protected-content">Protected Content</div>
         </RequirePermission>
       );
-      
+
       expect(screen.queryByTestId('protected-content')).not.toBeInTheDocument();
     });
 
     it('should render fallback when provided and permission denied', () => {
       render(
-        <RequirePermission 
-          permission="contact:write" 
+        <RequirePermission
+          permission="contact:write"
           fallback={<div data-testid="fallback">Access Denied</div>}
         >
           <div data-testid="protected-content">Protected Content</div>
         </RequirePermission>
       );
-      
+
       expect(screen.queryByTestId('protected-content')).not.toBeInTheDocument();
       expect(screen.getByTestId('fallback')).toBeInTheDocument();
     });
@@ -110,7 +110,7 @@ describe('Permission System Security Tests', () => {
           <div data-testid="protected-content">Protected Content</div>
         </RequirePermission>
       );
-      
+
       expect(screen.getByTestId('protected-content')).toBeInTheDocument();
     });
 
@@ -120,7 +120,7 @@ describe('Permission System Security Tests', () => {
           <div data-testid="protected-content">Protected Content</div>
         </RequirePermission>
       );
-      
+
       expect(screen.getByTestId('protected-content')).toBeInTheDocument();
     });
 
@@ -130,7 +130,7 @@ describe('Permission System Security Tests', () => {
           <div data-testid="protected-content">Protected Content</div>
         </RequirePermission>
       );
-      
+
       expect(screen.queryByTestId('protected-content')).not.toBeInTheDocument();
     });
   });
@@ -148,7 +148,7 @@ describe('Permission System Security Tests', () => {
       }));
 
       const { result } = renderHook(() => usePermission());
-      
+
       expect(result.current.hasPermission('contact:read')).toBe(false);
       expect(result.current.hasAnyPermission(['contact:read'])).toBe(false);
     });
@@ -159,7 +159,7 @@ describe('Permission System Security Tests', () => {
       }));
 
       const { result } = renderHook(() => usePermission());
-      
+
       expect(result.current.hasPermission('contact:read')).toBe(false);
       expect(result.current.permissions).toEqual([]);
       expect(result.current.roles).toEqual([]);
@@ -177,7 +177,7 @@ describe('Permission System Security Tests', () => {
       }));
 
       const { result } = renderHook(() => usePermission());
-      
+
       expect(result.current.hasPermission('anything')).toBe(true);
       expect(result.current.hasPermission('user:delete')).toBe(true);
     });

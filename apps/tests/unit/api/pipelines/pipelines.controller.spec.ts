@@ -43,9 +43,7 @@ describe('PipelinesController', () => {
   const createController = async () => {
     const module = await Test.createTestingModule({
       controllers: [PipelinesController],
-      providers: [
-        { provide: PipelinesService, useValue: mockPipelinesService },
-      ],
+      providers: [{ provide: PipelinesService, useValue: mockPipelinesService }],
     }).compile();
 
     return module.get<PipelinesController>(PipelinesController);
@@ -288,7 +286,10 @@ describe('PipelinesController', () => {
       const result = await controller.reorderStages(pipelineId, reorderDto);
 
       expect(result).toEqual(mockResult);
-      expect(mockPipelinesService.reorderStages).toHaveBeenCalledWith(pipelineId, reorderDto.stageIds);
+      expect(mockPipelinesService.reorderStages).toHaveBeenCalledWith(
+        pipelineId,
+        reorderDto.stageIds,
+      );
     });
   });
 });

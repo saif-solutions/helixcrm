@@ -6,11 +6,11 @@ import * as crypto from 'crypto';
 jest.mock('crypto', () => ({
   createHash: jest.fn().mockImplementation(() => {
     const hashMock = {
-      update: jest.fn().mockImplementation(function(this: any, data: string) {
+      update: jest.fn().mockImplementation(function (this: any, data: string) {
         (this as any).data = data;
         return this;
       }),
-      digest: jest.fn().mockImplementation(function(this: any) {
+      digest: jest.fn().mockImplementation(function (this: any) {
         const data = (this as any).data || '';
         // Return specific hashes based on the content
         if (data.includes('LOGIN')) return 'hash-1';
@@ -50,7 +50,9 @@ describe('EvidenceStorageService', () => {
     };
 
     // Create service instance with mock
-    service = new EvidenceStorageService(prismaMock as unknown as PrismaService);
+    service = new EvidenceStorageService(
+      prismaMock as unknown as PrismaService,
+    );
   });
 
   it('should be defined', () => {
@@ -91,7 +93,9 @@ describe('EvidenceStorageService', () => {
       // Arrange
       prismaMock.evidenceChain.findFirst.mockResolvedValue(null);
       prismaMock.evidenceChain.create.mockResolvedValue(mockChainEntry);
-      prismaMock.evidenceCollection.create.mockResolvedValue(mockCollectionEntry);
+      prismaMock.evidenceCollection.create.mockResolvedValue(
+        mockCollectionEntry,
+      );
 
       // Act
       const result = await service.storeEvidenceWithIntegrity(mockEvidence);
@@ -136,7 +140,9 @@ describe('EvidenceStorageService', () => {
       // Arrange
       prismaMock.evidenceChain.findFirst.mockResolvedValue(mockLastChainEntry);
       prismaMock.evidenceChain.create.mockResolvedValue(mockChainEntry);
-      prismaMock.evidenceCollection.create.mockResolvedValue(mockCollectionEntry);
+      prismaMock.evidenceCollection.create.mockResolvedValue(
+        mockCollectionEntry,
+      );
 
       // Act
       const result = await service.storeEvidenceWithIntegrity(mockEvidence);
@@ -161,7 +167,9 @@ describe('EvidenceStorageService', () => {
       };
       prismaMock.evidenceChain.findFirst.mockResolvedValue(mockLastChainEntry);
       prismaMock.evidenceChain.create.mockResolvedValue(mockChainEntry);
-      prismaMock.evidenceCollection.create.mockResolvedValue(mockCollectionEntry);
+      prismaMock.evidenceCollection.create.mockResolvedValue(
+        mockCollectionEntry,
+      );
 
       // Act
       await service.storeEvidenceWithIntegrity(evidenceWithId);
@@ -208,7 +216,9 @@ describe('EvidenceStorageService', () => {
       prismaMock.evidenceChain.findFirst.mockRejectedValue(error);
 
       // Act & Assert
-      await expect(service.storeEvidenceWithIntegrity(mockEvidence)).rejects.toThrow('Database error');
+      await expect(
+        service.storeEvidenceWithIntegrity(mockEvidence),
+      ).rejects.toThrow('Database error');
     });
 
     it('should log success message', async () => {
@@ -216,14 +226,16 @@ describe('EvidenceStorageService', () => {
       const loggerSpy = jest.spyOn((service as any).logger, 'log');
       prismaMock.evidenceChain.findFirst.mockResolvedValue(null);
       prismaMock.evidenceChain.create.mockResolvedValue(mockChainEntry);
-      prismaMock.evidenceCollection.create.mockResolvedValue(mockCollectionEntry);
+      prismaMock.evidenceCollection.create.mockResolvedValue(
+        mockCollectionEntry,
+      );
 
       // Act
       await service.storeEvidenceWithIntegrity(mockEvidence);
 
       // Assert
       expect(loggerSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Evidence stored with integrity')
+        expect.stringContaining('Evidence stored with integrity'),
       );
     });
   });
@@ -376,7 +388,9 @@ describe('EvidenceStorageService', () => {
 
     it('should return collection with chain entry', async () => {
       // Arrange
-      prismaMock.evidenceCollection.findUnique.mockResolvedValue(mockCollection);
+      prismaMock.evidenceCollection.findUnique.mockResolvedValue(
+        mockCollection,
+      );
       prismaMock.evidenceChain.findFirst.mockResolvedValue(mockChainEntry);
 
       // Act
@@ -409,7 +423,9 @@ describe('EvidenceStorageService', () => {
 
     it('should handle collection without chain entry', async () => {
       // Arrange
-      prismaMock.evidenceCollection.findUnique.mockResolvedValue(mockCollection);
+      prismaMock.evidenceCollection.findUnique.mockResolvedValue(
+        mockCollection,
+      );
       prismaMock.evidenceChain.findFirst.mockResolvedValue(null);
 
       // Act
@@ -428,7 +444,9 @@ describe('EvidenceStorageService', () => {
       prismaMock.evidenceCollection.findUnique.mockRejectedValue(error);
 
       // Act & Assert
-      await expect(service.getEvidenceCollection(collectionId)).rejects.toThrow('Database error');
+      await expect(service.getEvidenceCollection(collectionId)).rejects.toThrow(
+        'Database error',
+      );
     });
   });
 
@@ -500,7 +518,9 @@ describe('EvidenceStorageService', () => {
       prismaMock.evidenceCollection.findMany.mockRejectedValue(error);
 
       // Act & Assert
-      await expect(service.getRecentCollections()).rejects.toThrow('Database error');
+      await expect(service.getRecentCollections()).rejects.toThrow(
+        'Database error',
+      );
     });
   });
 
@@ -519,7 +539,9 @@ describe('EvidenceStorageService', () => {
 
     it('should delete evidence older than retention days', async () => {
       // Arrange
-      prismaMock.evidenceCollection.deleteMany.mockResolvedValue(mockDeleteResult);
+      prismaMock.evidenceCollection.deleteMany.mockResolvedValue(
+        mockDeleteResult,
+      );
       const cutoffDate = new Date(fixedDate);
       cutoffDate.setDate(cutoffDate.getDate() - 365);
 
@@ -537,7 +559,9 @@ describe('EvidenceStorageService', () => {
 
     it('should use default retention of 365 days', async () => {
       // Arrange
-      prismaMock.evidenceCollection.deleteMany.mockResolvedValue(mockDeleteResult);
+      prismaMock.evidenceCollection.deleteMany.mockResolvedValue(
+        mockDeleteResult,
+      );
       const cutoffDate = new Date(fixedDate);
       cutoffDate.setDate(cutoffDate.getDate() - 365);
 
@@ -554,7 +578,9 @@ describe('EvidenceStorageService', () => {
 
     it('should handle custom retention days', async () => {
       // Arrange
-      prismaMock.evidenceCollection.deleteMany.mockResolvedValue(mockDeleteResult);
+      prismaMock.evidenceCollection.deleteMany.mockResolvedValue(
+        mockDeleteResult,
+      );
       const cutoffDate = new Date(fixedDate);
       cutoffDate.setDate(cutoffDate.getDate() - 30);
 
@@ -583,14 +609,16 @@ describe('EvidenceStorageService', () => {
     it('should log cleanup result', async () => {
       // Arrange
       const loggerSpy = jest.spyOn((service as any).logger, 'log');
-      prismaMock.evidenceCollection.deleteMany.mockResolvedValue(mockDeleteResult);
+      prismaMock.evidenceCollection.deleteMany.mockResolvedValue(
+        mockDeleteResult,
+      );
 
       // Act
       await service.cleanupOldEvidence();
 
       // Assert
       expect(loggerSpy).toHaveBeenCalledWith(
-        `Cleaned up ${mockDeleteResult.count} old evidence collections`
+        `Cleaned up ${mockDeleteResult.count} old evidence collections`,
       );
     });
 
@@ -600,7 +628,9 @@ describe('EvidenceStorageService', () => {
       prismaMock.evidenceCollection.deleteMany.mockRejectedValue(error);
 
       // Act & Assert
-      await expect(service.cleanupOldEvidence()).rejects.toThrow('Database error');
+      await expect(service.cleanupOldEvidence()).rejects.toThrow(
+        'Database error',
+      );
     });
   });
 
@@ -608,7 +638,7 @@ describe('EvidenceStorageService', () => {
     it('should generate hash using crypto', () => {
       // Act
       const result = (service as any).generateHash('test data');
-      
+
       // Assert
       expect(crypto.createHash).toHaveBeenCalledWith('sha256');
       expect(result).toBe('mocked-hash-123');
@@ -617,7 +647,7 @@ describe('EvidenceStorageService', () => {
     it('should handle empty string', () => {
       // Act
       const result = (service as any).generateHash('');
-      
+
       // Assert
       expect(crypto.createHash).toHaveBeenCalledWith('sha256');
       expect(result).toBe('mocked-hash-123');
@@ -626,7 +656,7 @@ describe('EvidenceStorageService', () => {
     it('should handle special characters', () => {
       // Act
       const result = (service as any).generateHash('!@#$%^&*()');
-      
+
       // Assert
       expect(crypto.createHash).toHaveBeenCalledWith('sha256');
       expect(result).toBe('mocked-hash-123');

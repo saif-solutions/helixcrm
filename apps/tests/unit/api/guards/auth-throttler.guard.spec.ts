@@ -47,11 +47,7 @@ describe('AuthThrottlerGuard', () => {
         {
           provide: AuthThrottlerGuard,
           useFactory: () => {
-            return new AuthThrottlerGuard(
-              mockOptions,
-              mockStorageService,
-              mockReflector,
-            );
+            return new AuthThrottlerGuard(mockOptions, mockStorageService, mockReflector);
           },
         },
       ],

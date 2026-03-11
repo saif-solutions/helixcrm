@@ -100,10 +100,26 @@ const NewLeadPage: React.FC = () => {
     color: string;
   }[] = [
     { value: 'new', label: 'New', color: 'text-blue-600 bg-blue-50 border-blue-200' },
-    { value: 'contacted', label: 'Contacted', color: 'text-yellow-600 bg-yellow-50 border-yellow-200' },
-    { value: 'qualified', label: 'Qualified', color: 'text-green-600 bg-green-50 border-green-200' },
-    { value: 'converted', label: 'Converted', color: 'text-purple-600 bg-purple-50 border-purple-200' },
-    { value: 'disqualified', label: 'Disqualified', color: 'text-red-600 bg-red-50 border-red-200' },
+    {
+      value: 'contacted',
+      label: 'Contacted',
+      color: 'text-yellow-600 bg-yellow-50 border-yellow-200',
+    },
+    {
+      value: 'qualified',
+      label: 'Qualified',
+      color: 'text-green-600 bg-green-50 border-green-200',
+    },
+    {
+      value: 'converted',
+      label: 'Converted',
+      color: 'text-purple-600 bg-purple-50 border-purple-200',
+    },
+    {
+      value: 'disqualified',
+      label: 'Disqualified',
+      color: 'text-red-600 bg-red-50 border-red-200',
+    },
   ];
 
   // Check write permission for page access
@@ -113,14 +129,8 @@ const NewLeadPage: React.FC = () => {
         <Card className="p-12 text-center">
           <Shield className="w-16 h-16 text-gray-300 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Access Denied</h2>
-          <p className="text-gray-500">
-            You don't have permission to create leads.
-          </p>
-          <Button
-            variant="primary"
-            className="mt-4"
-            onClick={() => navigate('/leads')}
-          >
+          <p className="text-gray-500">You don't have permission to create leads.</p>
+          <Button variant="primary" className="mt-4" onClick={() => navigate('/leads')}>
             Back to Leads
           </Button>
         </Card>

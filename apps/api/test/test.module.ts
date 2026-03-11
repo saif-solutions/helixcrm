@@ -5,7 +5,10 @@ import { AuthModule } from '../src/modules/auth/auth.module';
 import { jest } from '@jest/globals';
 import { Soc2EvidenceService } from '../src/shared/compliance/soc2/soc2-evidence.service';
 import { ComplianceSchedulerService } from '../src/shared/compliance/compliance-scheduler.service';
-import { mockSoc2EvidenceService, mockComplianceSchedulerService } from './mocks/compliance.mock';
+import {
+  mockSoc2EvidenceService,
+  mockComplianceSchedulerService,
+} from './mocks/compliance.mock';
 
 // Mock ConfigService provider for testing
 const mockConfigService = {

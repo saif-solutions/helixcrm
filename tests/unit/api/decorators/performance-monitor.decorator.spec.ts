@@ -19,10 +19,10 @@ describe('PerformanceMonitor Decorator', () => {
   it('should set metadata with operation name', () => {
     // Arrange
     const operationName = 'getDeals';
-    
+
     // Act
     const result = PerformanceMonitor(operationName);
-    
+
     // Assert
     expect(SetMetadata).toHaveBeenCalledWith('performance-monitor', operationName);
     expect(result).toEqual({ key: 'performance-monitor', value: operationName });
@@ -31,7 +31,7 @@ describe('PerformanceMonitor Decorator', () => {
   it('should handle empty string operation name', () => {
     // Act
     const result = PerformanceMonitor('');
-    
+
     // Assert
     expect(SetMetadata).toHaveBeenCalledWith('performance-monitor', '');
     expect(result).toEqual({ key: 'performance-monitor', value: '' });
@@ -40,10 +40,10 @@ describe('PerformanceMonitor Decorator', () => {
   it('should handle operation names with spaces', () => {
     // Arrange
     const operationName = 'get user deals';
-    
+
     // Act
     const result = PerformanceMonitor(operationName);
-    
+
     // Assert
     expect(SetMetadata).toHaveBeenCalledWith('performance-monitor', operationName);
     expect(result).toEqual({ key: 'performance-monitor', value: operationName });
@@ -52,10 +52,10 @@ describe('PerformanceMonitor Decorator', () => {
   it('should handle operation names with special characters', () => {
     // Arrange
     const operationName = 'get-user@deals#123';
-    
+
     // Act
     const result = PerformanceMonitor(operationName);
-    
+
     // Assert
     expect(SetMetadata).toHaveBeenCalledWith('performance-monitor', operationName);
     expect(result).toEqual({ key: 'performance-monitor', value: operationName });

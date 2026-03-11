@@ -86,7 +86,7 @@ describe('LeadsController', () => {
 
     it('should throw ForbiddenException if permission context not initialized', async () => {
       const uninitializedController = await createController(false);
-      
+
       try {
         await uninitializedController.create(createLeadDto, mockRequest as any);
         // If we get here, the test should fail
@@ -95,7 +95,7 @@ describe('LeadsController', () => {
         expect(error).toBeInstanceOf(ForbiddenException);
         expect(error.message).toBe('Permission context not initialized');
       }
-      
+
       expect(mockLeadsService.create).not.toHaveBeenCalled();
     });
   });
@@ -109,13 +109,7 @@ describe('LeadsController', () => {
     it('should return paginated leads with default params', async () => {
       mockLeadsService.findAll.mockResolvedValue(mockResult);
 
-      const result = await controller.findAll(
-        mockRequest as any,
-        1,
-        20,
-        undefined,
-        undefined,
-      );
+      const result = await controller.findAll(mockRequest as any, 1, 20, undefined, undefined);
 
       expect(result).toEqual(mockResult);
       expect(mockLeadsService.findAll).toHaveBeenCalledWith({
@@ -129,13 +123,7 @@ describe('LeadsController', () => {
     it('should return paginated leads with all params', async () => {
       mockLeadsService.findAll.mockResolvedValue(mockResult);
 
-      const result = await controller.findAll(
-        mockRequest as any,
-        2,
-        50,
-        'new',
-        'john',
-      );
+      const result = await controller.findAll(mockRequest as any, 2, 50, 'new', 'john');
 
       expect(result).toEqual(mockResult);
       expect(mockLeadsService.findAll).toHaveBeenCalledWith({
@@ -149,13 +137,7 @@ describe('LeadsController', () => {
     it('should cap limit at 100', async () => {
       mockLeadsService.findAll.mockResolvedValue(mockResult);
 
-      await controller.findAll(
-        mockRequest as any,
-        1,
-        200,
-        undefined,
-        undefined,
-      );
+      await controller.findAll(mockRequest as any, 1, 200, undefined, undefined);
 
       expect(mockLeadsService.findAll).toHaveBeenCalledWith({
         page: 1,
@@ -168,13 +150,7 @@ describe('LeadsController', () => {
     it('should ignore invalid status values', async () => {
       mockLeadsService.findAll.mockResolvedValue(mockResult);
 
-      await controller.findAll(
-        mockRequest as any,
-        1,
-        20,
-        'invalid_status',
-        undefined,
-      );
+      await controller.findAll(mockRequest as any, 1, 20, 'invalid_status', undefined);
 
       expect(mockLeadsService.findAll).toHaveBeenCalledWith({
         page: 1,
@@ -186,7 +162,7 @@ describe('LeadsController', () => {
 
     it('should throw ForbiddenException if permission context not initialized', async () => {
       const uninitializedController = await createController(false);
-      
+
       try {
         await uninitializedController.findAll(mockRequest as any, 1, 20);
         expect(true).toBe(false);
@@ -194,7 +170,7 @@ describe('LeadsController', () => {
         expect(error).toBeInstanceOf(ForbiddenException);
         expect(error.message).toBe('Permission context not initialized');
       }
-      
+
       expect(mockLeadsService.findAll).not.toHaveBeenCalled();
     });
 
@@ -207,7 +183,7 @@ describe('LeadsController', () => {
       } catch (error) {
         expect(error).toBeInstanceOf(ForbiddenException);
       }
-      
+
       expect(mockLeadsService.findAll).not.toHaveBeenCalled();
     });
   });
@@ -230,7 +206,7 @@ describe('LeadsController', () => {
 
     it('should throw ForbiddenException if permission context not initialized', async () => {
       const uninitializedController = await createController(false);
-      
+
       try {
         await uninitializedController.getStats();
         expect(true).toBe(false);
@@ -238,7 +214,7 @@ describe('LeadsController', () => {
         expect(error).toBeInstanceOf(ForbiddenException);
         expect(error.message).toBe('Permission context not initialized');
       }
-      
+
       expect(mockLeadsService.getStats).not.toHaveBeenCalled();
     });
   });
@@ -258,7 +234,7 @@ describe('LeadsController', () => {
 
     it('should throw ForbiddenException if permission context not initialized', async () => {
       const uninitializedController = await createController(false);
-      
+
       try {
         await uninitializedController.findOne(leadId);
         expect(true).toBe(false);
@@ -266,7 +242,7 @@ describe('LeadsController', () => {
         expect(error).toBeInstanceOf(ForbiddenException);
         expect(error.message).toBe('Permission context not initialized');
       }
-      
+
       expect(mockLeadsService.findOne).not.toHaveBeenCalled();
     });
   });
@@ -287,7 +263,7 @@ describe('LeadsController', () => {
 
     it('should throw ForbiddenException if permission context not initialized', async () => {
       const uninitializedController = await createController(false);
-      
+
       try {
         await uninitializedController.update(leadId, updateLeadDto, mockRequest as any);
         expect(true).toBe(false);
@@ -295,7 +271,7 @@ describe('LeadsController', () => {
         expect(error).toBeInstanceOf(ForbiddenException);
         expect(error.message).toBe('Permission context not initialized');
       }
-      
+
       expect(mockLeadsService.update).not.toHaveBeenCalled();
     });
   });
@@ -315,7 +291,7 @@ describe('LeadsController', () => {
 
     it('should throw ForbiddenException if permission context not initialized', async () => {
       const uninitializedController = await createController(false);
-      
+
       try {
         await uninitializedController.remove(leadId, mockRequest as any);
         expect(true).toBe(false);
@@ -323,7 +299,7 @@ describe('LeadsController', () => {
         expect(error).toBeInstanceOf(ForbiddenException);
         expect(error.message).toBe('Permission context not initialized');
       }
-      
+
       expect(mockLeadsService.remove).not.toHaveBeenCalled();
     });
   });

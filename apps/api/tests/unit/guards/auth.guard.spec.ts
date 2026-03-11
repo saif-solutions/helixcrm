@@ -66,18 +66,18 @@ describe('AuthGuard - Isolated Tests', () => {
         .mockReturnValueOnce(['deal:read']); // requiredPermissions
 
       // Act & Assert
-      await expect(guard.canActivate(mockContext as any))
-        .rejects
-        .toThrow(UnauthorizedException);
+      await expect(guard.canActivate(mockContext as any)).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
   });
 
   describe('token validation failures', () => {
     it('should throw UnauthorizedException when token verification fails', async () => {
       // Arrange
-      const mockRequest: RequestWithUser = { 
-        cookies: { access_token: 'invalid-token' }, 
-        headers: {} 
+      const mockRequest: RequestWithUser = {
+        cookies: { access_token: 'invalid-token' },
+        headers: {},
       };
       const mockContext = {
         switchToHttp: () => ({ getRequest: () => mockRequest }),
@@ -92,16 +92,16 @@ describe('AuthGuard - Isolated Tests', () => {
       mockJwtService.verifyAsync.mockRejectedValue(new Error('Invalid token'));
 
       // Act & Assert
-      await expect(guard.canActivate(mockContext as any))
-        .rejects
-        .toThrow(UnauthorizedException);
+      await expect(guard.canActivate(mockContext as any)).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('should throw UnauthorizedException when token missing required claims', async () => {
       // Arrange
-      const mockRequest: RequestWithUser = { 
-        cookies: { access_token: 'valid-token' }, 
-        headers: {} 
+      const mockRequest: RequestWithUser = {
+        cookies: { access_token: 'valid-token' },
+        headers: {},
       };
       const mockContext = {
         switchToHttp: () => ({ getRequest: () => mockRequest }),
@@ -119,9 +119,9 @@ describe('AuthGuard - Isolated Tests', () => {
       });
 
       // Act & Assert
-      await expect(guard.canActivate(mockContext as any))
-        .rejects
-        .toThrow(UnauthorizedException);
+      await expect(guard.canActivate(mockContext as any)).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
   });
 
@@ -140,9 +140,9 @@ describe('AuthGuard - Isolated Tests', () => {
 
     it('should throw UnauthorizedException when user not found', async () => {
       // Arrange
-      const mockRequest: RequestWithUser = { 
-        cookies: { access_token: 'valid-token' }, 
-        headers: {} 
+      const mockRequest: RequestWithUser = {
+        cookies: { access_token: 'valid-token' },
+        headers: {},
       };
       const mockContext = {
         switchToHttp: () => ({ getRequest: () => mockRequest }),
@@ -153,16 +153,16 @@ describe('AuthGuard - Isolated Tests', () => {
       mockPrismaService.user.findUnique.mockResolvedValue(null);
 
       // Act & Assert
-      await expect(guard.canActivate(mockContext as any))
-        .rejects
-        .toThrow(UnauthorizedException);
+      await expect(guard.canActivate(mockContext as any)).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('should throw UnauthorizedException when user is inactive', async () => {
       // Arrange
-      const mockRequest: RequestWithUser = { 
-        cookies: { access_token: 'valid-token' }, 
-        headers: {} 
+      const mockRequest: RequestWithUser = {
+        cookies: { access_token: 'valid-token' },
+        headers: {},
       };
       const mockContext = {
         switchToHttp: () => ({ getRequest: () => mockRequest }),
@@ -177,16 +177,16 @@ describe('AuthGuard - Isolated Tests', () => {
       });
 
       // Act & Assert
-      await expect(guard.canActivate(mockContext as any))
-        .rejects
-        .toThrow(UnauthorizedException);
+      await expect(guard.canActivate(mockContext as any)).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('should throw UnauthorizedException when token version mismatches', async () => {
       // Arrange
-      const mockRequest: RequestWithUser = { 
-        cookies: { access_token: 'valid-token' }, 
-        headers: {} 
+      const mockRequest: RequestWithUser = {
+        cookies: { access_token: 'valid-token' },
+        headers: {},
       };
       const mockContext = {
         switchToHttp: () => ({ getRequest: () => mockRequest }),
@@ -201,9 +201,9 @@ describe('AuthGuard - Isolated Tests', () => {
       });
 
       // Act & Assert
-      await expect(guard.canActivate(mockContext as any))
-        .rejects
-        .toThrow(UnauthorizedException);
+      await expect(guard.canActivate(mockContext as any)).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
   });
 
@@ -222,9 +222,9 @@ describe('AuthGuard - Isolated Tests', () => {
 
     it('should return true when authentication succeeds', async () => {
       // Arrange
-      const mockRequest: RequestWithUser = { 
-        cookies: { access_token: 'valid-token' }, 
-        headers: {} 
+      const mockRequest: RequestWithUser = {
+        cookies: { access_token: 'valid-token' },
+        headers: {},
       };
       const mockContext = {
         switchToHttp: () => ({ getRequest: () => mockRequest }),

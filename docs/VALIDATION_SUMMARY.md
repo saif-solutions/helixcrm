@@ -12,20 +12,19 @@
 **Validation Scripts Version:** 1.0.0
 **Validation Confidence Level:** L2 — Structural + Static Analysis
 
-
 > **Validation Scope:** This validation covers structural compliance, archive integrity, decision stream singularity, and naming conventions as defined in the governance model. New validation rules added in the future will be reflected in subsequent validation runs.
 
 ## Validation Results
 
-| Check | Status | Details |
-|-------|--------|---------|
-| Decision Stream Singularity | ✅ PASS | Single `DECISIONS.md` at root; no parallel decision logs detected |
-| Archive Integrity | ✅ PASS | All 140 archived files immutable with hash tracking |
-| Archive Structure | ✅ PASS | All files in `docs/_archive/history/YYYY/MM/` format with metadata |
-| Dependency Graph | ✅ PASS | Policy loaded from `docs/architecture/dependency-policy.json`; boundaries respected |
-| Root Directory Clean | ✅ PASS | Only `DECISIONS.md` and `README.md` at root |
-| Shadow Files | ✅ PASS | No `.backup`, `.new`, `.fix`, `.final`, or `.bak` files in active tree |
-| Naming Convention | ✅ PASS | No spaces or illegal characters in active document names |
+| Check                       | Status  | Details                                                                             |
+| --------------------------- | ------- | ----------------------------------------------------------------------------------- |
+| Decision Stream Singularity | ✅ PASS | Single `DECISIONS.md` at root; no parallel decision logs detected                   |
+| Archive Integrity           | ✅ PASS | All 140 archived files immutable with hash tracking                                 |
+| Archive Structure           | ✅ PASS | All files in `docs/_archive/history/YYYY/MM/` format with metadata                  |
+| Dependency Graph            | ✅ PASS | Policy loaded from `docs/architecture/dependency-policy.json`; boundaries respected |
+| Root Directory Clean        | ✅ PASS | Only `DECISIONS.md` and `README.md` at root                                         |
+| Shadow Files                | ✅ PASS | No `.backup`, `.new`, `.fix`, `.final`, or `.bak` files in active tree              |
+| Naming Convention           | ✅ PASS | No spaces or illegal characters in active document names                            |
 
 ## Verified Absences
 
@@ -40,10 +39,12 @@ The following structural violations are confirmed **NOT PRESENT**:
 ## Document Inventory by Authority Level
 
 ### Level 1A - Constitutional (Immutable Core)
+
 - `docs/INVARIANTS.md` - System invariants with P0-P3 severity
 - `docs/VOCABULARY.md` - Canonical terminology
 
 ### Level 1B - Controlled Authority
+
 - `docs/API_CONTRACTS.md` - API specifications
 - `docs/ARCHITECTURE.md` - Architecture overview
 - `docs/SECURITY.md` - Security model
@@ -58,12 +59,15 @@ The following structural violations are confirmed **NOT PRESENT**:
 - `docs/VALIDATION_SUMMARY.md` - Validation snapshot (this document)
 
 ### Level 2 - Governance & Decisions
+
 - `DECISIONS.md` (root) - Architectural decision log
 
 ### Level 4 - Module/Process
+
 - `docs/team/TEAM_RULES.md` - Team process rules
 
 ### Level 3 & 5 - Archives
+
 - `docs/_archive/` - Historical files (count at validation time: 140)
   - Legacy documents from previous phases
   - Shadow/backup files preserved with metadata
@@ -72,15 +76,15 @@ The following structural violations are confirmed **NOT PRESENT**:
 
 ## Key Metrics (at validation time)
 
-| Metric | Count |
-|--------|-------|
-| **Active Documents** | 20 |
-| **Archived Documents** | 140 |
-| **Total Invariants** | 17 (see `docs/invariants/registry.json`) |
-| **P0 Invariants** | 3 |
-| **P1 Invariants** | 5 |
-| **P2 Invariants** | 6 |
-| **P3 Invariants** | 3 |
+| Metric                 | Count                                                               |
+| ---------------------- | ------------------------------------------------------------------- |
+| **Active Documents**   | 20                                                                  |
+| **Archived Documents** | 140                                                                 |
+| **Total Invariants**   | 17 (see `docs/invariants/registry.json`)                            |
+| **P0 Invariants**      | 3                                                                   |
+| **P1 Invariants**      | 5                                                                   |
+| **P2 Invariants**      | 6                                                                   |
+| **P3 Invariants**      | 3                                                                   |
 | **Validation Scripts** | 7 automated checks (including archive immutability pre-commit hook) |
 
 ## Validation Context
@@ -104,15 +108,15 @@ The documentation system is now fully compliant with the governance model define
 
 ---
 
-**Document Generated:**** 2026-02-13T09:36:01Z
+**Document Generated:\*\*** 2026-02-13T09:36:01Z
 **Next Scheduled Validation:** 2026-02-21
 **Registry Sync:** Confirmed with invariants registry v2.0.0
 
 ## Governance State
 
-| Attribute | Value |
-|-----------|-------|
-| **Governance Phase** | Phase 1 (Foundational) |
-| **Governance State** | ✅ Active & Enforced |
-| **Next Governance Review** | 2026-03-14 (30 days) or upon significant architectural change |
+| Attribute                     | Value                                                                                                |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------- |
+| **Governance Phase**          | Phase 1 (Foundational)                                                                               |
+| **Governance State**          | ✅ Active & Enforced                                                                                 |
+| **Next Governance Review**    | 2026-03-14 (30 days) or upon significant architectural change                                        |
 | **Review Trigger Conditions** | - New module extraction<br>- Security model changes<br>- Invariant modifications<br>- 30-day elapsed |

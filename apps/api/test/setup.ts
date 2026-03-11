@@ -1,7 +1,7 @@
 // test/setup.ts
 import { jest, beforeEach, expect } from '@jest/globals';
 import './mocks/bullmq.mock';
-import './mocks/csrf.mock'; 
+import './mocks/csrf.mock';
 
 import './mocks/compliance.mock'; // Add this line
 
@@ -19,12 +19,14 @@ expect.extend({
     const pass = received >= floor && received <= ceiling;
     if (pass) {
       return {
-        message: () => `expected ${received} not to be within range ${floor} - ${ceiling}`,
+        message: () =>
+          `expected ${received} not to be within range ${floor} - ${ceiling}`,
         pass: true,
       };
     } else {
       return {
-        message: () => `expected ${received} to be within range ${floor} - ${ceiling}`,
+        message: () =>
+          `expected ${received} to be within range ${floor} - ${ceiling}`,
         pass: false,
       };
     }

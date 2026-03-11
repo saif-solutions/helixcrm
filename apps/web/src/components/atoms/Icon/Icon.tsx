@@ -237,7 +237,13 @@ export const Icon = React.memo(
       if (children && React.isValidElement(children)) {
         return (
           <IconChild
-            children={children as React.ReactElement<{ className?: string; 'data-testid'?: string; [key: string]: unknown; }>}
+            children={
+              children as React.ReactElement<{
+                className?: string;
+                'data-testid'?: string;
+                [key: string]: unknown;
+              }>
+            }
             iconClasses={iconClasses}
             combinedStyle={combinedStyle}
             testId={testId}

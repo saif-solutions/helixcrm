@@ -59,7 +59,9 @@ export const leadsService = {
     if (search) queryParams.append('search', search);
     if (status) queryParams.append('status', status);
 
-    const response = await apiClient.get<PaginatedResponse<Lead>>(`/leads?${queryParams.toString()}`);
+    const response = await apiClient.get<PaginatedResponse<Lead>>(
+      `/leads?${queryParams.toString()}`
+    );
     return response; // Return the full paginated response
   },
 

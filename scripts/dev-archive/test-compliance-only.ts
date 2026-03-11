@@ -6,7 +6,7 @@ import { Soc2EvidenceService } from './src/shared/compliance/soc2/soc2-evidence.
 
 async function testComplianceOnly() {
   console.log('Testing Compliance Module standalone...');
-  
+
   try {
     const moduleRef = await Test.createTestingModule({
       imports: [
@@ -20,13 +20,13 @@ async function testComplianceOnly() {
     }).compile();
 
     const app = moduleRef.createNestApplication();
-    
+
     console.log('✅ Nest application created with ComplianceModule');
-    
+
     // Test if we can instantiate and use Soc2EvidenceService
     const evidenceService = moduleRef.get(Soc2EvidenceService);
     console.log('✅ Soc2EvidenceService instantiated');
-    
+
     // Try to call a simple method
     try {
       // This might fail if there's no data, but that's OK
@@ -35,11 +35,10 @@ async function testComplianceOnly() {
     } catch (error) {
       console.log('⚠️  collectAllEvidence() failed (might be expected if no data):', error.message);
     }
-    
+
     await app.close();
     console.log('✅ Test completed successfully!');
     return true;
-    
   } catch (error) {
     console.log('❌ Test failed with error:', error.message);
     console.log('Error stack (first 5 lines):');
@@ -50,11 +49,11 @@ async function testComplianceOnly() {
 
 // Run the test
 testComplianceOnly()
-  .then(success => {
+  .then((success) => {
     console.log(success ? '✅ COMPLIANCE MODULE TEST PASSED' : '❌ COMPLIANCE MODULE TEST FAILED');
     process.exit(success ? 0 : 1);
   })
-  .catch(error => {
+  .catch((error) => {
     console.error('Unexpected error:', error.message);
     process.exit(1);
   });

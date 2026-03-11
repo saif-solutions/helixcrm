@@ -6,11 +6,7 @@
 import { JwtService } from './jwt.service';
 import { PasswordService } from './password.service';
 import { TokenManager } from './token-manager.service';
-import { 
-  AuthCoreContract, 
-  TokenRepository, 
-  UserRepository 
-} from '../contracts/auth.contract';
+import { AuthCoreContract, TokenRepository, UserRepository } from '../contracts/auth.contract';
 
 // Configuration types
 export interface CreateAuthCoreOptions {
@@ -28,7 +24,7 @@ export interface AuthCoreDependencies {
 // Factory implementation
 export function createAuthCore(
   options: CreateAuthCoreOptions,
-  dependencies: AuthCoreDependencies
+  dependencies: AuthCoreDependencies,
 ): AuthCoreContract {
   const {
     jwtSecret,
@@ -71,8 +67,10 @@ export function createAuthCore(
 
     // Security Operations
     isAccountLocked: async (userId) => await dependencies.userRepository.isAccountLocked(userId),
-    recordFailedAttempt: async (userId) => await dependencies.userRepository.recordFailedAttempt(userId),
-    resetFailedAttempts: async (userId) => await dependencies.userRepository.resetFailedAttempts(userId),
+    recordFailedAttempt: async (userId) =>
+      await dependencies.userRepository.recordFailedAttempt(userId),
+    resetFailedAttempts: async (userId) =>
+      await dependencies.userRepository.resetFailedAttempts(userId),
   };
 
   return implementation;

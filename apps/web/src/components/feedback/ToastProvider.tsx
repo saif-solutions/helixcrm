@@ -79,10 +79,7 @@ export const useToast = () => {
 
   const { addToast, removeToast, updateToast } = context;
 
-  const toast = useCallback(
-    (message: Omit<ToastMessage, 'id'>) => addToast(message),
-    [addToast]
-  );
+  const toast = useCallback((message: Omit<ToastMessage, 'id'>) => addToast(message), [addToast]);
 
   const success = useCallback(
     (title: string, description?: string) => addToast({ title, description, type: 'success' }),

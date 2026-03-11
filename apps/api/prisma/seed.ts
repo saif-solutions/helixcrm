@@ -1,15 +1,15 @@
 // D:\Projects-In-Hand\helixcrm\apps\api\prisma\seed.ts
 
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient();
 
 async function main() {
-  console.log('Starting seed...')
-  
+  console.log('Starting seed...');
+
   // Clear existing data in correct order (skipping append-only tables)
-  console.log('Clearing existing data...')
-  
+  console.log('Clearing existing data...');
+
   try {
     // First, try to delete in reverse dependency order
     await prisma.$transaction([
@@ -51,16 +51,16 @@ async function main() {
       prisma.account.deleteMany(),
       prisma.user.deleteMany(),
       prisma.organization.deleteMany(),
-    ])
-    
-    console.log('Successfully cleared existing data')
+    ]);
+
+    console.log('Successfully cleared existing data');
   } catch (error) {
-    console.log('Note: Some tables could not be cleared (append-only tables)')
+    console.log('Note: Some tables could not be cleared (append-only tables)');
     // Continue with seeding even if deletion fails for some tables
   }
 
-  console.log('Creating organizations...')
-  const organizations = []
+  console.log('Creating organizations...');
+  const organizations = [];
   for (let i = 1; i <= 10; i++) {
     const org = await prisma.organization.create({
       data: {
@@ -70,14 +70,20 @@ async function main() {
         status: 'active',
         settings: {
           timezone: 'America/New_York',
-          industry: ['Technology', 'Finance', 'Healthcare', 'Manufacturing', 'Retail'][i % 5]
-        }
-      }
-    })
-    organizations.push(org)
+          industry: [
+            'Technology',
+            'Finance',
+            'Healthcare',
+            'Manufacturing',
+            'Retail',
+          ][i % 5],
+        },
+      },
+    });
+    organizations.push(org);
   }
 
-  console.log('Creating permissions...')
+  console.log('Creating permissions...');
   const permissionsData = [
     { code: 'user:read', name: 'Read Users', module: 'User' },
     { code: 'user:write', name: 'Write Users', module: 'User' },
@@ -93,22 +99,22 @@ async function main() {
     { code: 'report:read', name: 'Read Reports', module: 'Report' },
     { code: 'admin:access', name: 'Admin Access', module: 'Admin' },
     { code: 'settings:manage', name: 'Manage Settings', module: 'Settings' },
-  ]
+  ];
 
-  const permissions = []
+  const permissions = [];
   for (const perm of permissionsData) {
     const created = await prisma.permission.create({
       data: {
         id: `perm_${perm.code.replace(/:/g, '_')}`,
         ...perm,
-        description: `Can ${perm.name.toLowerCase()}`
-      }
-    })
-    permissions.push(created)
+        description: `Can ${perm.name.toLowerCase()}`,
+      },
+    });
+    permissions.push(created);
   }
 
-  console.log('Creating roles for each organization...')
-  const roles = []
+  console.log('Creating roles for each organization...');
+  const roles = [];
   for (const org of organizations) {
     // Admin Role
     const adminRole = await prisma.role.create({
@@ -118,9 +124,9 @@ async function main() {
         description: 'Full system access',
         isSystem: true,
         organizationId: org.id,
-      }
-    })
-    roles.push(adminRole)
+      },
+    });
+    roles.push(adminRole);
 
     // Manager Role
     const managerRole = await prisma.role.create({
@@ -130,9 +136,9 @@ async function main() {
         description: 'Can manage deals and contacts',
         isSystem: true,
         organizationId: org.id,
-      }
-    })
-    roles.push(managerRole)
+      },
+    });
+    roles.push(managerRole);
 
     // Sales Rep Role
     const repRole = await prisma.role.create({
@@ -142,41 +148,50 @@ async function main() {
         description: 'Can view and update assigned deals',
         isSystem: true,
         organizationId: org.id,
-      }
-    })
-    roles.push(repRole)
+      },
+    });
+    roles.push(repRole);
   }
 
-console.log('Creating role permissions...')
-for (const role of roles) {
-  // Explicitly type the variable
-  let permsToAssign: typeof permissions = []
-  
-  if (role.name === 'Admin') {
-    permsToAssign = permissions
-  } else if (role.name === 'Manager') {
-    permsToAssign = permissions.filter(p => 
-      ['deal:read', 'deal:write', 'contact:read', 'contact:write', 'pipeline:read', 'report:read'].includes(p.code)
-    )
-  } else if (role.name === 'Sales Representative') {
-    permsToAssign = permissions.filter(p => 
-      ['deal:read', 'deal:write', 'contact:read', 'contact:write'].includes(p.code)
-    )
+  console.log('Creating role permissions...');
+  for (const role of roles) {
+    // Explicitly type the variable
+    let permsToAssign: typeof permissions = [];
+
+    if (role.name === 'Admin') {
+      permsToAssign = permissions;
+    } else if (role.name === 'Manager') {
+      permsToAssign = permissions.filter((p) =>
+        [
+          'deal:read',
+          'deal:write',
+          'contact:read',
+          'contact:write',
+          'pipeline:read',
+          'report:read',
+        ].includes(p.code),
+      );
+    } else if (role.name === 'Sales Representative') {
+      permsToAssign = permissions.filter((p) =>
+        ['deal:read', 'deal:write', 'contact:read', 'contact:write'].includes(
+          p.code,
+        ),
+      );
+    }
+
+    for (const perm of permsToAssign) {
+      await prisma.rolePermission.create({
+        data: {
+          id: `rp_${role.id}_${perm.id}`,
+          roleId: role.id,
+          permissionId: perm.id,
+        },
+      });
+    }
   }
 
-  for (const perm of permsToAssign) {
-    await prisma.rolePermission.create({
-      data: {
-        id: `rp_${role.id}_${perm.id}`,
-        roleId: role.id,
-        permissionId: perm.id,
-      }
-    })
-  }
-}
-
-  console.log('Creating users for each organization...')
-  const users = []
+  console.log('Creating users for each organization...');
+  const users = [];
   for (const org of organizations) {
     for (let j = 1; j <= 10; j++) {
       const user = await prisma.user.create({
@@ -189,28 +204,32 @@ for (const role of roles) {
           role: j === 1 ? 'admin' : j === 2 ? 'manager' : 'user',
           organizationId: org.id,
           emailVerified: true,
-          lastLoginAt: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000),
+          lastLoginAt: new Date(
+            Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000,
+          ),
           tokenVersion: 1,
           failedLoginAttempts: 0,
           mustChangePassword: false,
-        }
-      })
-      users.push(user)
+        },
+      });
+      users.push(user);
     }
   }
 
-  console.log('Creating user roles...')
+  console.log('Creating user roles...');
   for (const user of users) {
-    const orgRoles = roles.filter(r => r.organizationId === user.organizationId)
-    let roleToAssign
+    const orgRoles = roles.filter(
+      (r) => r.organizationId === user.organizationId,
+    );
+    let roleToAssign;
     if (user.role === 'admin') {
-      roleToAssign = orgRoles.find(r => r.name === 'Admin')
+      roleToAssign = orgRoles.find((r) => r.name === 'Admin');
     } else if (user.role === 'manager') {
-      roleToAssign = orgRoles.find(r => r.name === 'Manager')
+      roleToAssign = orgRoles.find((r) => r.name === 'Manager');
     } else {
-      roleToAssign = orgRoles.find(r => r.name === 'Sales Representative')
+      roleToAssign = orgRoles.find((r) => r.name === 'Sales Representative');
     }
-    
+
     if (roleToAssign) {
       await prisma.userRole.create({
         data: {
@@ -218,12 +237,12 @@ for (const role of roles) {
           userId: user.id,
           roleId: roleToAssign.id,
           organizationId: user.organizationId,
-        }
-      })
+        },
+      });
     }
   }
 
-  console.log('Creating refresh tokens...')
+  console.log('Creating refresh tokens...');
   for (const user of users) {
     for (let t = 1; t <= 2; t++) {
       await prisma.refreshToken.create({
@@ -235,38 +254,45 @@ for (const role of roles) {
           expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
           revoked: t === 2 && Math.random() > 0.7,
           ipAddress: `192.168.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`,
-          userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        }
-      })
+          userAgent:
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        },
+      });
     }
   }
 
-  console.log('Creating accounts for each organization...')
-  const accounts = []
+  console.log('Creating accounts for each organization...');
+  const accounts = [];
   for (const org of organizations) {
     for (let j = 1; j <= 10; j++) {
       const account = await prisma.account.create({
         data: {
           id: `acc_${org.id}_${j}`,
           name: `Account ${j} for ${org.name}`,
-          industry: ['Technology', 'Finance', 'Healthcare', 'Manufacturing', 'Retail'][j % 5],
+          industry: [
+            'Technology',
+            'Finance',
+            'Healthcare',
+            'Manufacturing',
+            'Retail',
+          ][j % 5],
           website: `https://account${j}.com`,
           phone: `+1-555-${String(j).padStart(4, '0')}`,
           email: `info@account${j}.com`,
           address: `${j} Main St, City, State 12345`,
           organizationId: org.id,
           metadata: { founded: 2000 + j, employees: j * 100 },
-        }
-      })
-      accounts.push(account)
+        },
+      });
+      accounts.push(account);
     }
   }
 
-  console.log('Creating contacts...')
-  const contacts = []
+  console.log('Creating contacts...');
+  const contacts = [];
   for (const org of organizations) {
-    const orgAccounts = accounts.filter(a => a.organizationId === org.id)
-    
+    const orgAccounts = accounts.filter((a) => a.organizationId === org.id);
+
     for (let j = 1; j <= 15; j++) {
       const contact = await prisma.contact.create({
         data: {
@@ -279,15 +305,16 @@ for (const role of roles) {
           department: ['Executive', 'Sales', 'Engineering', 'Marketing'][j % 4],
           company: `Company ${j}`,
           organizationId: org.id,
-          accountId: j % 2 === 0 ? orgAccounts[j % orgAccounts.length]?.id : null,
+          accountId:
+            j % 2 === 0 ? orgAccounts[j % orgAccounts.length]?.id : null,
           metadata: { source: 'website', preferred_contact: 'email' },
-        }
-      })
-      contacts.push(contact)
+        },
+      });
+      contacts.push(contact);
     }
   }
 
-  console.log('Creating leads...')
+  console.log('Creating leads...');
   for (const org of organizations) {
     for (let j = 1; j <= 10; j++) {
       await prisma.lead.create({
@@ -299,28 +326,35 @@ for (const role of roles) {
           status: ['new', 'contacted', 'qualified'][j % 3] as any,
           organizationId: org.id,
           metadata: { source: 'website', campaign: 'summer_promo' },
-        }
-      })
+        },
+      });
     }
   }
 
-  console.log('Creating pipelines...')
-  const pipelines = []
+  console.log('Creating pipelines...');
+  const pipelines = [];
   for (const org of organizations) {
     for (let j = 1; j <= 2; j++) {
       const pipeline = await prisma.pipeline.create({
         data: {
           id: `pipe_${org.id}_${j}`,
           name: j === 1 ? 'Sales Pipeline' : 'Custom Pipeline',
-          description: j === 1 ? 'Standard sales process' : 'Custom sales process',
+          description:
+            j === 1 ? 'Standard sales process' : 'Custom sales process',
           isDefault: j === 1,
           organizationId: org.id,
-        }
-      })
-      pipelines.push(pipeline)
+        },
+      });
+      pipelines.push(pipeline);
 
       // Create stages for each pipeline
-      const stages = ['Lead', 'Qualified', 'Proposal', 'Negotiation', 'Closed Won']
+      const stages = [
+        'Lead',
+        'Qualified',
+        'Proposal',
+        'Negotiation',
+        'Closed Won',
+      ];
       for (let k = 0; k < stages.length; k++) {
         await prisma.pipelineStage.create({
           data: {
@@ -330,27 +364,27 @@ for (const role of roles) {
             order: k + 1,
             probability: (k + 1) * 20,
             pipelineId: pipeline.id,
-          }
-        })
+          },
+        });
       }
     }
   }
 
-  console.log('Creating deals...')
-  const deals = []
+  console.log('Creating deals...');
+  const deals = [];
   for (const org of organizations) {
-    const orgUsers = users.filter(u => u.organizationId === org.id)
-    const orgPipelines = pipelines.filter(p => p.organizationId === org.id)
-    const orgContacts = contacts.filter(c => c.organizationId === org.id)
-    const orgAccounts = accounts.filter(a => a.organizationId === org.id)
+    const orgUsers = users.filter((u) => u.organizationId === org.id);
+    const orgPipelines = pipelines.filter((p) => p.organizationId === org.id);
+    const orgContacts = contacts.filter((c) => c.organizationId === org.id);
+    const orgAccounts = accounts.filter((a) => a.organizationId === org.id);
 
     for (let j = 1; j <= 20; j++) {
-      const pipeline = orgPipelines[j % orgPipelines.length]
-      const stages = await prisma.pipelineStage.findMany({ 
-        where: { pipelineId: pipeline.id } 
-      })
-      const stage = stages[j % stages.length]
-      
+      const pipeline = orgPipelines[j % orgPipelines.length];
+      const stages = await prisma.pipelineStage.findMany({
+        where: { pipelineId: pipeline.id },
+      });
+      const stage = stages[j % stages.length];
+
       const deal = await prisma.deal.create({
         data: {
           id: `deal_${org.id}_${j}`,
@@ -359,7 +393,9 @@ for (const role of roles) {
           currency: ['USD', 'EUR', 'GBP'][j % 3],
           status: ['open', 'won', 'lost'][j % 3] as any,
           probability: Math.floor(Math.random() * 100),
-          expectedCloseDate: new Date(Date.now() + Math.random() * 90 * 24 * 60 * 60 * 1000),
+          expectedCloseDate: new Date(
+            Date.now() + Math.random() * 90 * 24 * 60 * 60 * 1000,
+          ),
           pipelineId: pipeline.id,
           stageId: stage.id,
           contactId: orgContacts[j % orgContacts.length]?.id,
@@ -367,18 +403,18 @@ for (const role of roles) {
           ownerUserId: orgUsers[j % orgUsers.length].id,
           organizationId: org.id,
           metadata: { priority: 'high', notes: 'Important client' },
-        }
-      })
-      deals.push(deal)
+        },
+      });
+      deals.push(deal);
     }
   }
 
-  console.log('Creating deal stage history...')
+  console.log('Creating deal stage history...');
   for (const deal of deals) {
     const stages = await prisma.pipelineStage.findMany({
-      where: { pipelineId: deal.pipelineId }
-    })
-    
+      where: { pipelineId: deal.pipelineId },
+    });
+
     for (let h = 1; h <= 3; h++) {
       if (stages.length > h) {
         await prisma.dealStageHistory.create({
@@ -389,23 +425,24 @@ for (const role of roles) {
             toStageId: stages[h - 1].id,
             changedByUserId: deal.ownerUserId,
             changedAt: new Date(Date.now() - (3 - h) * 7 * 24 * 60 * 60 * 1000),
-          }
-        })
+          },
+        });
       }
     }
   }
 
-  console.log('Creating activities...')
+  console.log('Creating activities...');
   for (const org of organizations) {
-    const orgUsers = users.filter(u => u.organizationId === org.id)
-    const orgContacts = contacts.filter(c => c.organizationId === org.id)
-    const orgDeals = deals.filter(d => d.organizationId === org.id)
+    const orgUsers = users.filter((u) => u.organizationId === org.id);
+    const orgContacts = contacts.filter((c) => c.organizationId === org.id);
+    const orgDeals = deals.filter((d) => d.organizationId === org.id);
 
     for (let j = 1; j <= 30; j++) {
-      const relatedTo = j % 2 === 0 
-        ? orgContacts[j % orgContacts.length] 
-        : orgDeals[j % orgDeals.length]
-      
+      const relatedTo =
+        j % 2 === 0
+          ? orgContacts[j % orgContacts.length]
+          : orgDeals[j % orgDeals.length];
+
       await prisma.activity.create({
         data: {
           id: `act_${org.id}_${j}`,
@@ -417,14 +454,19 @@ for (const role of roles) {
           userId: orgUsers[j % orgUsers.length].id,
           relatedToId: relatedTo?.id,
           relatedToType: j % 2 === 0 ? 'contact' : 'deal',
-          scheduledAt: new Date(Date.now() + Math.random() * 7 * 24 * 60 * 60 * 1000),
-          completedAt: Math.random() > 0.3 ? new Date(Date.now() - Math.random() * 2 * 24 * 60 * 60 * 1000) : null,
-        }
-      })
+          scheduledAt: new Date(
+            Date.now() + Math.random() * 7 * 24 * 60 * 60 * 1000,
+          ),
+          completedAt:
+            Math.random() > 0.3
+              ? new Date(Date.now() - Math.random() * 2 * 24 * 60 * 60 * 1000)
+              : null,
+        },
+      });
     }
   }
 
-  console.log('Creating email templates...')
+  console.log('Creating email templates...');
   for (const org of organizations) {
     for (let j = 1; j <= 5; j++) {
       await prisma.emailTemplate.create({
@@ -434,22 +476,24 @@ for (const role of roles) {
           subject: `Subject for template ${j}`,
           body: `<h1>Welcome!</h1><p>This is template ${j}</p>`,
           bodyText: `Plain text version of template ${j}`,
-          category: ['Welcome', 'Follow-up', 'Newsletter', 'Promotional'][j % 4],
+          category: ['Welcome', 'Follow-up', 'Newsletter', 'Promotional'][
+            j % 4
+          ],
           variables: ['{{name}}', '{{email}}', '{{company}}'],
           isActive: true,
           organizationId: org.id,
-        }
-      })
+        },
+      });
     }
   }
 
-  console.log('Creating sent emails...')
+  console.log('Creating sent emails...');
   for (const org of organizations) {
-    const orgUsers = users.filter(u => u.organizationId === org.id)
-    const orgContacts = contacts.filter(c => c.organizationId === org.id)
+    const orgUsers = users.filter((u) => u.organizationId === org.id);
+    const orgContacts = contacts.filter((c) => c.organizationId === org.id);
     const orgTemplates = await prisma.emailTemplate.findMany({
-      where: { organizationId: org.id }
-    })
+      where: { organizationId: org.id },
+    });
 
     for (let j = 1; j <= 20; j++) {
       await prisma.sentEmail.create({
@@ -468,17 +512,25 @@ for (const role of roles) {
           organizationId: org.id,
           userId: orgUsers[j % orgUsers.length]?.id,
           contactId: orgContacts[j % orgContacts.length]?.id,
-          sentAt: new Date(Date.now() - Math.random() * 10 * 24 * 60 * 60 * 1000),
-          openedAt: Math.random() > 0.4 ? new Date(Date.now() - Math.random() * 9 * 24 * 60 * 60 * 1000) : null,
-          clickedAt: Math.random() > 0.7 ? new Date(Date.now() - Math.random() * 8 * 24 * 60 * 60 * 1000) : null,
-        }
-      })
+          sentAt: new Date(
+            Date.now() - Math.random() * 10 * 24 * 60 * 60 * 1000,
+          ),
+          openedAt:
+            Math.random() > 0.4
+              ? new Date(Date.now() - Math.random() * 9 * 24 * 60 * 60 * 1000)
+              : null,
+          clickedAt:
+            Math.random() > 0.7
+              ? new Date(Date.now() - Math.random() * 8 * 24 * 60 * 60 * 1000)
+              : null,
+        },
+      });
     }
   }
 
-  console.log('Creating files...')
+  console.log('Creating files...');
   for (const org of organizations) {
-    const orgUsers = users.filter(u => u.organizationId === org.id)
+    const orgUsers = users.filter((u) => u.organizationId === org.id);
 
     for (let j = 1; j <= 15; j++) {
       await prisma.file.create({
@@ -486,20 +538,24 @@ for (const role of roles) {
           id: `file_${org.id}_${j}`,
           filename: `file_${j}.pdf`,
           originalName: `Document ${j}.pdf`,
-          mimeType: ['application/pdf', 'image/jpeg', 'application/vnd.ms-excel'][j % 3],
+          mimeType: [
+            'application/pdf',
+            'image/jpeg',
+            'application/vnd.ms-excel',
+          ][j % 3],
           size: Math.floor(Math.random() * 5000000 + 10000),
           path: `/uploads/${org.id}/file_${j}.pdf`,
           metadata: { description: 'Uploaded document' },
           organizationId: org.id,
           userId: orgUsers[j % orgUsers.length]?.id,
-        }
-      })
+        },
+      });
     }
   }
 
-  console.log('Creating export jobs...')
+  console.log('Creating export jobs...');
   for (const org of organizations) {
-    const orgUsers = users.filter(u => u.organizationId === org.id)
+    const orgUsers = users.filter((u) => u.organizationId === org.id);
 
     for (let j = 1; j <= 10; j++) {
       await prisma.exportJob.create({
@@ -516,18 +572,25 @@ for (const role of roles) {
           errorMessage: j % 4 === 3 ? 'Export failed' : null,
           organizationId: org.id,
           userId: orgUsers[j % orgUsers.length]?.id,
-          createdAt: new Date(Date.now() - Math.random() * 20 * 24 * 60 * 60 * 1000),
-          startedAt: new Date(Date.now() - Math.random() * 19 * 24 * 60 * 60 * 1000),
-          completedAt: Math.random() > 0.2 ? new Date(Date.now() - Math.random() * 18 * 24 * 60 * 60 * 1000) : null,
+          createdAt: new Date(
+            Date.now() - Math.random() * 20 * 24 * 60 * 60 * 1000,
+          ),
+          startedAt: new Date(
+            Date.now() - Math.random() * 19 * 24 * 60 * 60 * 1000,
+          ),
+          completedAt:
+            Math.random() > 0.2
+              ? new Date(Date.now() - Math.random() * 18 * 24 * 60 * 60 * 1000)
+              : null,
           expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-        }
-      })
+        },
+      });
     }
   }
 
-  console.log('Creating import jobs...')
+  console.log('Creating import jobs...');
   for (const org of organizations) {
-    const orgUsers = users.filter(u => u.organizationId === org.id)
+    const orgUsers = users.filter((u) => u.organizationId === org.id);
 
     for (let j = 1; j <= 8; j++) {
       await prisma.importJob.create({
@@ -541,19 +604,30 @@ for (const role of roles) {
           totalRecords: Math.floor(Math.random() * 1000 + 50),
           processedRecords: Math.floor(Math.random() * 900 + 40),
           failedRecords: Math.floor(Math.random() * 50),
-          errorMessage: j % 4 === 3 ? 'Import failed due to invalid data' : null,
-          metadata: { source_system: 'external', mapping: { name: 'full_name' } },
+          errorMessage:
+            j % 4 === 3 ? 'Import failed due to invalid data' : null,
+          metadata: {
+            source_system: 'external',
+            mapping: { name: 'full_name' },
+          },
           organizationId: org.id,
           userId: orgUsers[j % orgUsers.length]?.id,
-          createdAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000),
-          startedAt: new Date(Date.now() - Math.random() * 29 * 24 * 60 * 60 * 1000),
-          completedAt: Math.random() > 0.2 ? new Date(Date.now() - Math.random() * 25 * 24 * 60 * 60 * 1000) : null,
-        }
-      })
+          createdAt: new Date(
+            Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
+          ),
+          startedAt: new Date(
+            Date.now() - Math.random() * 29 * 24 * 60 * 60 * 1000,
+          ),
+          completedAt:
+            Math.random() > 0.2
+              ? new Date(Date.now() - Math.random() * 25 * 24 * 60 * 60 * 1000)
+              : null,
+        },
+      });
     }
   }
 
-  console.log('Creating webhooks...')
+  console.log('Creating webhooks...');
   for (const org of organizations) {
     for (let j = 1; j <= 5; j++) {
       await prisma.webhook.create({
@@ -568,16 +642,16 @@ for (const role of roles) {
           retryCount: 3,
           timeoutMs: 10000,
           headers: { 'X-Custom-Header': 'value' },
-        }
-      })
+        },
+      });
     }
   }
 
-  console.log('Creating webhook deliveries...')
+  console.log('Creating webhook deliveries...');
   for (const org of organizations) {
     const orgWebhooks = await prisma.webhook.findMany({
-      where: { organizationId: org.id }
-    })
+      where: { organizationId: org.id },
+    });
 
     for (let j = 1; j <= 20; j++) {
       await prisma.webhookDelivery.create({
@@ -593,22 +667,39 @@ for (const role of roles) {
           organizationId: org.id,
           attempts: Math.floor(Math.random() * 3 + 1),
           retryCount: Math.floor(Math.random() * 2),
-          attemptedAt: new Date(Date.now() - Math.random() * 10 * 24 * 60 * 60 * 1000),
-          completedAt: Math.random() > 0.3 ? new Date(Date.now() - Math.random() * 9 * 24 * 60 * 60 * 1000) : null,
-          nextAttemptAt: Math.random() < 0.2 ? new Date(Date.now() + Math.random() * 24 * 60 * 60 * 1000) : null,
-        }
-      })
+          attemptedAt: new Date(
+            Date.now() - Math.random() * 10 * 24 * 60 * 60 * 1000,
+          ),
+          completedAt:
+            Math.random() > 0.3
+              ? new Date(Date.now() - Math.random() * 9 * 24 * 60 * 60 * 1000)
+              : null,
+          nextAttemptAt:
+            Math.random() < 0.2
+              ? new Date(Date.now() + Math.random() * 24 * 60 * 60 * 1000)
+              : null,
+        },
+      });
     }
   }
 
-  console.log('Creating audit logs...')
-  const actions = ['LOGIN_SUCCESS', 'LOGIN_FAILURE', 'LOGOUT', 'USER_CREATED', 'USER_UPDATED', 
-                   'CONTACT_CREATED', 'CONTACT_UPDATED', 'DEAL_CREATED', 'DEAL_UPDATED', 
-                   'PERMISSION_DENIED']
-  const entityTypes = ['USER', 'CONTACT', 'DEAL', 'AUTH', 'SYSTEM']
-  
+  console.log('Creating audit logs...');
+  const actions = [
+    'LOGIN_SUCCESS',
+    'LOGIN_FAILURE',
+    'LOGOUT',
+    'USER_CREATED',
+    'USER_UPDATED',
+    'CONTACT_CREATED',
+    'CONTACT_UPDATED',
+    'DEAL_CREATED',
+    'DEAL_UPDATED',
+    'PERMISSION_DENIED',
+  ];
+  const entityTypes = ['USER', 'CONTACT', 'DEAL', 'AUTH', 'SYSTEM'];
+
   for (const org of organizations) {
-    const orgUsers = users.filter(u => u.organizationId === org.id)
+    const orgUsers = users.filter((u) => u.organizationId === org.id);
 
     for (let j = 1; j <= 50; j++) {
       await prisma.auditLog.create({
@@ -618,7 +709,8 @@ for (const role of roles) {
           entityType: entityTypes[j % entityTypes.length] as any,
           entityId: `entity_${j}`,
           organizationId: org.id,
-          actorUserId: Math.random() > 0.1 ? orgUsers[j % orgUsers.length]?.id : null,
+          actorUserId:
+            Math.random() > 0.1 ? orgUsers[j % orgUsers.length]?.id : null,
           actorEmail: `user${j % 10}@example.com`,
           actorType: Math.random() > 0.2 ? 'USER' : 'SYSTEM',
           requestId: `req_${Math.random().toString(36).substring(2, 10)}`,
@@ -627,82 +719,93 @@ for (const role of roles) {
           ipAddress: `192.168.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`,
           userAgent: 'Mozilla/5.0...',
           correlationId: `corr_${Math.random().toString(36).substring(2, 10)}`,
-        }
-      })
+        },
+      });
     }
   }
 
   // Handle append-only tables (we'll just add data, not delete)
-console.log('Creating append-only audit chain entries...')
+  console.log('Creating append-only audit chain entries...');
 
-// First, check the current max block_index
-const maxBlock = await prisma.appendOnlyAuditChain.aggregate({
-  _max: {
-    blockIndex: true
-  }
-})
+  // First, check the current max block_index
+  const maxBlock = await prisma.appendOnlyAuditChain.aggregate({
+    _max: {
+      blockIndex: true,
+    },
+  });
 
-const startBlock = (maxBlock._max.blockIndex || 0) + 1
+  const startBlock = (maxBlock._max.blockIndex || 0) + 1;
 
-for (let i = 0; i < 20; i++) {
-  const blockIndex = startBlock + i
-  await prisma.appendOnlyAuditChain.create({
-    data: {
-      id: `aoc_${blockIndex}`,
-      eventHash: `hash_${Math.random().toString(36).substring(2, 15)}`,
-      previousHash: blockIndex === 1 ? '0'.repeat(64) : `hash_${Math.random().toString(36).substring(2, 15)}`,
-      blockIndex: blockIndex,
-      metadata: { event: `Event ${blockIndex}`, timestamp: new Date() },
-    }
-  }).catch(e => {
-    // If unique constraint fails, try with a different hash
-    if (e.code === 'P2002') {
-      return prisma.appendOnlyAuditChain.create({
+  for (let i = 0; i < 20; i++) {
+    const blockIndex = startBlock + i;
+    await prisma.appendOnlyAuditChain
+      .create({
         data: {
-          id: `aoc_${blockIndex}_${Date.now()}`,
-          eventHash: `hash_${Math.random().toString(36).substring(2, 15)}_${Date.now()}`,
-          previousHash: blockIndex === 1 ? '0'.repeat(64) : `hash_${Math.random().toString(36).substring(2, 15)}`,
+          id: `aoc_${blockIndex}`,
+          eventHash: `hash_${Math.random().toString(36).substring(2, 15)}`,
+          previousHash:
+            blockIndex === 1
+              ? '0'.repeat(64)
+              : `hash_${Math.random().toString(36).substring(2, 15)}`,
           blockIndex: blockIndex,
           metadata: { event: `Event ${blockIndex}`, timestamp: new Date() },
-        }
+        },
       })
-    }
-    throw e
-  })
-}
+      .catch((e) => {
+        // If unique constraint fails, try with a different hash
+        if (e.code === 'P2002') {
+          return prisma.appendOnlyAuditChain.create({
+            data: {
+              id: `aoc_${blockIndex}_${Date.now()}`,
+              eventHash: `hash_${Math.random().toString(36).substring(2, 15)}_${Date.now()}`,
+              previousHash:
+                blockIndex === 1
+                  ? '0'.repeat(64)
+                  : `hash_${Math.random().toString(36).substring(2, 15)}`,
+              blockIndex: blockIndex,
+              metadata: { event: `Event ${blockIndex}`, timestamp: new Date() },
+            },
+          });
+        }
+        throw e;
+      });
+  }
 
-
-
-  console.log('Creating evidence collections...')
+  console.log('Creating evidence collections...');
   for (let i = 1; i <= 15; i++) {
     await prisma.evidenceCollection.create({
       data: {
         id: `ec_${i}`,
         collectionId: `collection_${i}`,
-        collectedAt: new Date(Date.now() - Math.random() * 60 * 24 * 60 * 60 * 1000),
+        collectedAt: new Date(
+          Date.now() - Math.random() * 60 * 24 * 60 * 60 * 1000,
+        ),
         totalControls: Math.floor(Math.random() * 50 + 10),
         criteriaBreakdown: { completed: 30, pending: 15, failed: 5 },
         evidencePath: `/evidence/collection_${i}`,
         verificationHash: `hash_${Math.random().toString(36).substring(2, 15)}`,
         status: ['completed', 'in_progress', 'failed'][i % 3],
-      }
-    })
+      },
+    });
   }
 
-  console.log('Creating evidence chains...')
+  console.log('Creating evidence chains...');
   for (let i = 1; i <= 25; i++) {
     await prisma.evidenceChain.create({
       data: {
         id: `ech_${i}`,
         evidenceHash: `ev_hash_${Math.random().toString(36).substring(2, 15)}`,
-        previousHash: i === 1 ? '0'.repeat(64) : `ev_hash_${Math.random().toString(36).substring(2, 15)}`,
+        previousHash:
+          i === 1
+            ? '0'.repeat(64)
+            : `ev_hash_${Math.random().toString(36).substring(2, 15)}`,
         collectionId: `collection_${Math.floor(i / 2) + 1}`,
         evidenceData: { file: `evidence_${i}.pdf`, size: 1024, hash: 'abc123' },
-      }
-    })
+      },
+    });
   }
 
-  console.log('Creating control verifications...')
+  console.log('Creating control verifications...');
   for (let i = 1; i <= 20; i++) {
     await prisma.controlVerification.create({
       data: {
@@ -710,39 +813,43 @@ for (let i = 0; i < 20; i++) {
         controlId: `control_${i}`,
         controlName: `Control ${i}`,
         criteria: `Criteria for control ${i}`,
-        verificationDate: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000),
+        verificationDate: new Date(
+          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
+        ),
         status: ['compliant', 'non_compliant', 'partial'][i % 3],
         evidenceCount: Math.floor(Math.random() * 10 + 1),
         verifiedBy: `auditor_${i % 5}`,
         notes: `Verification notes for control ${i}`,
-      }
-    })
+      },
+    });
   }
 
-  console.log('Creating gap analyses...')
+  console.log('Creating gap analyses...');
   for (let i = 1; i <= 8; i++) {
     await prisma.gapAnalysis.create({
       data: {
         id: `ga_${i}`,
-        analysisDate: new Date(Date.now() - Math.random() * 45 * 24 * 60 * 60 * 1000),
+        analysisDate: new Date(
+          Date.now() - Math.random() * 45 * 24 * 60 * 60 * 1000,
+        ),
         totalControls: Math.floor(Math.random() * 100 + 50),
         completedControls: Math.floor(Math.random() * 60 + 20),
         partialControls: Math.floor(Math.random() * 30),
         missingControls: Math.floor(Math.random() * 20),
         overallRisk: ['low', 'medium', 'high'][i % 3],
         reportPath: `/reports/gap_analysis_${i}.pdf`,
-      }
-    })
+      },
+    });
   }
 
-  console.log('Creating daily summaries...')
-  
+  console.log('Creating daily summaries...');
+
   // Revenue Daily Summaries
   for (const org of organizations) {
     for (let d = 0; d < 30; d++) {
-      const date = new Date()
-      date.setDate(date.getDate() - d)
-      
+      const date = new Date();
+      date.setDate(date.getDate() - d);
+
       await prisma.revenueDailySummary.create({
         data: {
           id: `rds_${org.id}_${d}`,
@@ -756,17 +863,17 @@ for (let i = 0; i < 20; i++) {
           averageDealSize: Math.floor(Math.random() * 5000 + 1000),
           currency: 'USD',
           summarizedAt: new Date(),
-        }
-      })
+        },
+      });
     }
   }
 
   // Deal Summary Daily
   for (const org of organizations) {
     for (let d = 0; d < 30; d++) {
-      const date = new Date()
-      date.setDate(date.getDate() - d)
-      
+      const date = new Date();
+      date.setDate(date.getDate() - d);
+
       await prisma.dealSummaryDaily.create({
         data: {
           id: `dsd_${org.id}_${d}`,
@@ -780,17 +887,17 @@ for (let i = 0; i < 20; i++) {
           totalValue: Math.floor(Math.random() * 500000 + 100000),
           averageValue: Math.floor(Math.random() * 10000 + 2000),
           summarizedAt: new Date(),
-        }
-      })
+        },
+      });
     }
   }
 
   // Activity Daily Summary
   for (const org of organizations) {
     for (let d = 0; d < 30; d++) {
-      const date = new Date()
-      date.setDate(date.getDate() - d)
-      
+      const date = new Date();
+      date.setDate(date.getDate() - d);
+
       await prisma.activityDailySummary.create({
         data: {
           id: `ads_${org.id}_${d}`,
@@ -808,28 +915,28 @@ for (let i = 0; i < 20; i++) {
           activeUsers: Math.floor(Math.random() * 30 + 5),
           totalActions: Math.floor(Math.random() * 200 + 50),
           summarizedAt: new Date(),
-        }
-      })
+        },
+      });
     }
   }
 
-  console.log('Seed completed successfully!')
-  
+  console.log('Seed completed successfully!');
+
   // Print summary
-  console.log('\n=== SEED SUMMARY ===')
-  console.log(`Organizations: ${organizations.length}`)
-  console.log(`Users: ${users.length}`)
-  console.log(`Accounts: ${accounts.length}`)
-  console.log(`Contacts: ${contacts.length}`)
-  console.log(`Deals: ${deals.length}`)
-  console.log('====================\n')
+  console.log('\n=== SEED SUMMARY ===');
+  console.log(`Organizations: ${organizations.length}`);
+  console.log(`Users: ${users.length}`);
+  console.log(`Accounts: ${accounts.length}`);
+  console.log(`Contacts: ${contacts.length}`);
+  console.log(`Deals: ${deals.length}`);
+  console.log('====================\n');
 }
 
 main()
   .catch((e) => {
-    console.error('Error during seeding:', e)
-    process.exit(1)
+    console.error('Error during seeding:', e);
+    process.exit(1);
   })
   .finally(async () => {
-    await prisma.$disconnect()
-  })
+    await prisma.$disconnect();
+  });

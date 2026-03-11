@@ -1,6 +1,7 @@
 # Auth-Core Integration Guide
 
 ## Overview
+
 This document describes how to integrate and use the `@helixcrm/auth-core` package within the HelixCRM API.
 
 ## Package Installation
@@ -56,20 +57,20 @@ constructor(private authAdapter: AuthCoreAdapter) {}
 async login(email: string, password: string) {
   // Get auth-core instance
   const authCore = this.authAdapter.getAuthCore();
-  
+
   // Use auth-core for password verification
   const user = await this.userRepository.findByEmail(email);
   if (!user) throw new Error('User not found');
-  
+
   const isValid = await authCore.verifyPassword(password, user.passwordHash);
   if (!isValid) {
     await authCore.recordFailedAttempt(user.id);
     throw new Error('Invalid credentials');
   }
-  
+
   // Reset failed attempts on successful login
   await authCore.resetFailedAttempts(user.id);
-  
+
   // Generate tokens
   const accessToken = authCore.issueAccessToken({
     sub: user.id,
@@ -77,12 +78,12 @@ async login(email: string, password: string) {
     role: 'user',
     version: user.tokenVersion,
   });
-  
+
   const refreshToken = await authCore.issueRefreshToken(
     user.id,
     user.organizationId
   );
-  
+
   return { accessToken, refreshToken };
 }
 Transaction Safety
@@ -94,13 +95,13 @@ await this.authAdapter.withTransaction(async ({ tokenRepository, userRepository 
   // 1. Validate old refresh token
   const isValid = await tokenRepository.validateRefreshToken(params);
   if (!isValid) throw new Error('Invalid token');
-  
+
   // 2. Update token version (atomic)
   await userRepository.updateTokenVersion(userId, 1);
-  
+
   // 3. Save new token
   await tokenRepository.createRefreshToken(newTokenParams);
-  
+
   // All operations succeed or roll back together
 });
 Security Considerations
@@ -159,3 +160,4 @@ Review bridge implementation against auth-core contracts
 Verify database schema matches expectations
 
 Check environment variables (JWT secrets, etc.)
+```

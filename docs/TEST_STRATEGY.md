@@ -1,4 +1,5 @@
 # Helix CRM - Test Strategy Document
+
 **Version:** 6.0 (Enterprise Edition)  
 **Last Updated:** 2026-03-11  
 **Owner:** Engineering Team  
@@ -6,30 +7,32 @@
 
 ## ‚ö° Quick Reference Card
 
-| What | Where | Command |
-|------|-------|---------|
-| **Run all unit tests** | `/tests/unit/api/` | `npm run test:unit` |
-| **Run single test** | Any | `npm test -- -t "test name"` |
-| **Add new auth test** | `/tests/unit/api/auth/` | - |
-| **Add new security test** | `/tests/security/` | - |
-| **Add new component test** | `/tests/unit/web/components/` | - |
-| **Run E2E tests** | `/tests/e2e/` | `npm run test:e2e` (main only) |
-| **Run performance tests** | `/tests/performance/` | `npm run test:performance` (nightly) |
-| **Debug flaky test** | - | `npm test -- --runInBand` |
-| **Check test coverage** | - | `npm run test:coverage` |
+| What                       | Where                         | Command                              |
+| -------------------------- | ----------------------------- | ------------------------------------ |
+| **Run all unit tests**     | `/tests/unit/api/`            | `npm run test:unit`                  |
+| **Run single test**        | Any                           | `npm test -- -t "test name"`         |
+| **Add new auth test**      | `/tests/unit/api/auth/`       | -                                    |
+| **Add new security test**  | `/tests/security/`            | -                                    |
+| **Add new component test** | `/tests/unit/web/components/` | -                                    |
+| **Run E2E tests**          | `/tests/e2e/`                 | `npm run test:e2e` (main only)       |
+| **Run performance tests**  | `/tests/performance/`         | `npm run test:performance` (nightly) |
+| **Debug flaky test**       | -                             | `npm test -- --runInBand`            |
+| **Check test coverage**    | -                             | `npm run test:coverage`              |
 
 **Golden Rule**: If you touch code, you must update/add tests in the same PR.
 
 ---
 
-## Ì≥Ñ Document Purpose
+## ÔøΩÔøΩÔøΩ Document Purpose
+
 This document defines the testing strategy for Helix CRM, establishing standards, patterns, and practices for all testing activities. It serves as the single source of truth for how we test our application.
 
 ---
 
-## Ì∑† Testing Philosophy
+## ÔøΩÔøΩÔøΩ Testing Philosophy
 
 ### Core Principles
+
 1. **Risk-Based Testing**: Focus testing effort on critical business functions and security boundaries
 2. **Shift-Left**: Find defects as early as possible in the development cycle
 3. **Test Independence**: Tests should be isolated, deterministic, and not depend on external state
@@ -41,6 +44,7 @@ This document defines the testing strategy for Helix CRM, establishing standards
 9. **Behavior Over Implementation**: Test what the code does, not how it does it
 
 ### Quality Goals
+
 - **Production Readiness**: All critical paths must be tested before release
 - **Security First**: Security invariants must never be violated
 - **Tenant Isolation**: No cross-tenant data leakage
@@ -50,7 +54,9 @@ This document defines the testing strategy for Helix CRM, establishing standards
 - **Performance SLOs**: Meet response time targets under load
 
 ### Definition of Done
+
 A feature is considered complete when:
+
 - ‚úÖ Unit tests are written and passing
 - ‚úÖ Integration tests are added for cross-module interactions
 - ‚úÖ Security invariants are validated
@@ -63,16 +69,17 @@ A feature is considered complete when:
 
 ---
 
-## Ì≥ä Test Pyramid
+## ÔøΩÔøΩÔøΩ Test Pyramid
+
 ‚ï±‚ï≤
 ‚ï± ‚ï≤
 ‚ï± E2E ‚ï≤ ‚Üê 3% (10-15 critical flows)
 ‚ï± Tests ‚ï≤
-‚ï±________‚ï≤
+‚ï±**\_\_\_\_**‚ï≤
 ‚ï± ‚ï≤
 ‚ï± Security ‚ï≤ ‚Üê 7% (25+ security invariants)
 ‚ï± Tests ‚ï≤
-‚ï±________________‚ï≤
+‚ï±******\_\_\_\_******‚ï≤
 ‚ï± ‚ï≤
 ‚ï± Integration Tests ‚ï≤ ‚Üê 20% (50+ tests)
 ‚ï± ‚ï≤
@@ -83,6 +90,7 @@ A feature is considered complete when:
 text
 
 **Target Distribution**:
+
 - **Unit Tests**: 70% (250+ tests, <100ms each)
 - **Integration Tests**: 20% (50+ tests, <1s each)
 - **Security Tests**: 7% (25+ invariants)
@@ -90,9 +98,10 @@ text
 
 ---
 
-## ÌøóÔ∏è Test Architecture
+## ÔøΩÔøΩÔøΩÔ∏è Test Architecture
 
 ### Repository Structure
+
 helixcrm/
 ‚îú‚îÄ‚îÄ apps/ # Applications
 ‚îÇ ‚îú‚îÄ‚îÄ api/ # Backend app
@@ -178,43 +187,44 @@ helixcrm/
 
 text
 
-### Ì≥ç Clear Test Location Rules
+### ÔøΩÔøΩÔøΩ Clear Test Location Rules
 
-| Test Type | Location | Example | Command |
-|-----------|----------|---------|---------|
-| **Backend Unit Tests** | `/tests/unit/api/[module]/` | `/tests/unit/api/auth/auth.service.spec.ts` | `npm run test:unit:api` |
-| **Frontend Unit Tests** | `/tests/unit/web/[category]/` | `/tests/unit/web/components/Button.test.tsx` | `npm run test:unit:web` |
-| **Package Tests** | `/packages/[name]/tests/` | `/packages/auth-core/tests/unit/jwt.service.spec.ts` | `cd packages/auth-core && npm test` |
-| **Smoke Tests** | `/apps/api/tests/smoke/` | `/apps/api/tests/smoke/app-start.spec.ts` | `npm run test:smoke` |
-| **Integration Tests** | `/tests/integration/[category]/` | `/tests/integration/modules/auth-audit.int-spec.ts` | `npm run test:integration` |
-| **E2E Tests** | `/tests/e2e/api/` | `/tests/e2e/api/auth.flow.e2e-spec.ts` | `npm run test:e2e` |
-| **Security Tests** | `/tests/security/` | `/tests/security/invariants/tenant-isolation.spec.ts` | `npm run test:security` |
-| **Performance Tests** | `/tests/performance/` | `/tests/performance/load-tests.suite.ts` | `npm run test:performance` |
+| Test Type               | Location                         | Example                                               | Command                             |
+| ----------------------- | -------------------------------- | ----------------------------------------------------- | ----------------------------------- |
+| **Backend Unit Tests**  | `/tests/unit/api/[module]/`      | `/tests/unit/api/auth/auth.service.spec.ts`           | `npm run test:unit:api`             |
+| **Frontend Unit Tests** | `/tests/unit/web/[category]/`    | `/tests/unit/web/components/Button.test.tsx`          | `npm run test:unit:web`             |
+| **Package Tests**       | `/packages/[name]/tests/`        | `/packages/auth-core/tests/unit/jwt.service.spec.ts`  | `cd packages/auth-core && npm test` |
+| **Smoke Tests**         | `/apps/api/tests/smoke/`         | `/apps/api/tests/smoke/app-start.spec.ts`             | `npm run test:smoke`                |
+| **Integration Tests**   | `/tests/integration/[category]/` | `/tests/integration/modules/auth-audit.int-spec.ts`   | `npm run test:integration`          |
+| **E2E Tests**           | `/tests/e2e/api/`                | `/tests/e2e/api/auth.flow.e2e-spec.ts`                | `npm run test:e2e`                  |
+| **Security Tests**      | `/tests/security/`               | `/tests/security/invariants/tenant-isolation.spec.ts` | `npm run test:security`             |
+| **Performance Tests**   | `/tests/performance/`            | `/tests/performance/load-tests.suite.ts`              | `npm run test:performance`          |
 
 **‚ùå DO NOT** put unit tests in `/apps/api/tests/unit/` - that directory is deprecated.
 
 ---
 
-## Ì±• Test Ownership
+## ÔøΩÔøΩÔøΩ Test Ownership
 
 Each domain module owns its test suite with clear accountability:
 
-| Domain | Owner | Test Location | Criticality | CI Stage |
-|--------|-------|---------------|-------------|----------|
-| **Auth** | Auth Team | `tests/unit/api/auth/` | Ì¥¥ Critical | unit-tests |
-| **Leads** | CRM Team | `tests/unit/api/leads/` | Ìø° High | unit-tests |
-| **Deals** | CRM Team | `tests/unit/api/deals/` | Ìø° High | unit-tests |
-| **Pipelines** | CRM Team | `tests/unit/api/pipelines/` | Ìø° High | unit-tests |
-| **Contacts** | CRM Team | `tests/unit/api/contacts/` | Ìø¢ Medium | unit-tests |
-| **Frontend Components** | Web Team | `tests/unit/web/components/` | Ìø° High | unit-tests-web |
-| **Frontend Hooks** | Web Team | `tests/unit/web/hooks/` | Ìø¢ Medium | unit-tests-web |
-| **Audit** | Platform Team | `tests/observability/` | Ì¥¥ Critical | observability |
-| **Security** | Security Team | `tests/security/` | Ì¥¥ Critical | security-tests |
-| **Database** | Platform Team | `tests/integration/database/` | Ì¥¥ Critical | integration-tests |
-| **API Contracts** | Platform Team | `tests/contracts/api/` | Ìø° High | contract-tests |
-| **Performance** | DevOps | `tests/performance/` | Ìø¢ Medium | nightly |
+| Domain                  | Owner         | Test Location                 | Criticality  | CI Stage          |
+| ----------------------- | ------------- | ----------------------------- | ------------ | ----------------- |
+| **Auth**                | Auth Team     | `tests/unit/api/auth/`        | ÔøΩÔøΩÔøΩ Critical | unit-tests        |
+| **Leads**               | CRM Team      | `tests/unit/api/leads/`       | ÔøΩÔøΩÔøΩ High     | unit-tests        |
+| **Deals**               | CRM Team      | `tests/unit/api/deals/`       | ÔøΩÔøΩÔøΩ High     | unit-tests        |
+| **Pipelines**           | CRM Team      | `tests/unit/api/pipelines/`   | ÔøΩÔøΩÔøΩ High     | unit-tests        |
+| **Contacts**            | CRM Team      | `tests/unit/api/contacts/`    | ÔøΩÔøΩÔøΩ Medium   | unit-tests        |
+| **Frontend Components** | Web Team      | `tests/unit/web/components/`  | ÔøΩÔøΩÔøΩ High     | unit-tests-web    |
+| **Frontend Hooks**      | Web Team      | `tests/unit/web/hooks/`       | ÔøΩÔøΩÔøΩ Medium   | unit-tests-web    |
+| **Audit**               | Platform Team | `tests/observability/`        | ÔøΩÔøΩÔøΩ Critical | observability     |
+| **Security**            | Security Team | `tests/security/`             | ÔøΩÔøΩÔøΩ Critical | security-tests    |
+| **Database**            | Platform Team | `tests/integration/database/` | ÔøΩÔøΩÔøΩ Critical | integration-tests |
+| **API Contracts**       | Platform Team | `tests/contracts/api/`        | ÔøΩÔøΩÔøΩ High     | contract-tests    |
+| **Performance**         | DevOps        | `tests/performance/`          | ÔøΩÔøΩÔøΩ Medium   | nightly           |
 
 **Ownership Rules**:
+
 - Owners are responsible for test maintenance
 - PRs affecting a domain require owner review
 - Flaky tests are escalated to owners
@@ -223,20 +233,23 @@ Each domain module owns its test suite with clear accountability:
 
 ---
 
-## Ì∑™ Test Levels
+## ÔøΩÔøΩÔøΩ Test Levels
 
 ### 0. Smoke Tests (App-Level)
+
 **Purpose**: Verify application boots and core modules wire correctly
 
 **Location**: `apps/api/tests/smoke/`, `apps/web/tests/component/`
 
 **Characteristics**:
+
 - Fast startup verification (<5s)
 - Catch configuration errors early
 - Run in CI before other tests
 - Must pass within 10 seconds
 
 **Example**:
+
 ```typescript
 // apps/api/tests/smoke/app-start.spec.ts
 import { Test } from '@nestjs/testing';
@@ -247,7 +260,7 @@ describe('App Bootstrap', () => {
     const module = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
-    
+
     const app = module.createNestApplication();
     await app.init();
     expect(app).toBeDefined();
@@ -339,10 +352,10 @@ describe('Button', () => {
   it('should call onClick when clicked', async () => {
     const user = userEvent.setup();
     const onClick = jest.fn();
-    
+
     render(<Button onClick={onClick}>Click me</Button>);
     await user.click(screen.getByText('Click me'));
-    
+
     expect(onClick).toHaveBeenCalledTimes(1);
   });
 
@@ -371,7 +384,7 @@ describe('usePermission', () => {
     });
 
     const { result } = renderHook(() => usePermission('deals:create'));
-    
+
     expect(result.current.isLoading).toBe(true);
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(result.current.hasPermission).toBe(true);
@@ -383,7 +396,7 @@ describe('usePermission', () => {
     });
 
     const { result } = renderHook(() => usePermission('deals:create'));
-    
+
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(result.current.hasPermission).toBe(false);
   });
@@ -402,9 +415,9 @@ describe('AuthStore', () => {
   it('should set user on login', () => {
     const store = createAuthStore();
     const user = { id: '1', email: 'test@example.com' };
-    
+
     store.getState().setUser(user);
-    
+
     expect(store.getState().user).toEqual(user);
     expect(store.getState().isAuthenticated).toBe(true);
   });
@@ -413,7 +426,7 @@ describe('AuthStore', () => {
     const store = createAuthStore();
     store.getState().setUser({ id: '1', email: 'test@example.com' });
     store.getState().logout();
-    
+
     expect(store.getState().user).toBeNull();
     expect(store.getState().isAuthenticated).toBe(false);
   });
@@ -493,7 +506,7 @@ export async function withTestTransaction<T>(
   testFn: (tx: PrismaClient) => Promise<T>
 ): Promise<T> {
   let result: T;
-  
+
   await prisma.$transaction(async (tx) => {
     result = await testFn(tx as unknown as PrismaClient);
     // Force rollback by throwing (preserves result)
@@ -503,7 +516,7 @@ export async function withTestTransaction<T>(
       throw err; // Real error, not rollback
     }
   });
-  
+
   return result!;
 }
 
@@ -539,7 +552,7 @@ describe('Database Isolation', () => {
         },
       });
     });
-    
+
     // Test 2: Verify data doesn't exist in new transaction
     await withTestTransaction(async (tx) => {
       const user = await tx.user.findUnique({
@@ -560,26 +573,26 @@ describe('Database Migrations', () => {
   it('should apply cleanly', async () => {
     // Reset database
     execSync('npx prisma migrate reset --force');
-    
+
     // Run migrations
     execSync('npx prisma migrate deploy');
-    
+
     // Verify schema
     const tables = await prisma.$queryRaw`
-      SELECT table_name 
-      FROM information_schema.tables 
+      SELECT table_name
+      FROM information_schema.tables
       WHERE table_schema = 'public'
     `;
     expect(Array.isArray(tables)).toBe(true);
   });
-  
+
   it('should maintain RLS policies after migration', async () => {
     const result = await prisma.$queryRaw`
-      SELECT tablename, rowsecurity 
-      FROM pg_tables 
+      SELECT tablename, rowsecurity
+      FROM pg_tables
       WHERE schemaname = 'public' AND tablename IN ('users', 'deals', 'leads')
     `;
-    
+
     for (const row of result as any[]) {
       expect(row.rowsecurity).toBe(true);
     }
@@ -664,7 +677,7 @@ describe('Payment Service Integration', () => {
       .reply(200, { id: 'ch_123', status: 'succeeded' });
 
     const result = await paymentService.charge(1000, 'tok_visa');
-    
+
     expect(result.id).toBe('ch_123');
     expect(result.status).toBe('succeeded');
   });
@@ -688,17 +701,17 @@ import { withTestContainers } from '../../helpers/test-containers';
 describe('BullMQ Integration', () => {
   it('should retry on failure with exponential backoff', async () => {
     const queue = new QueueService();
-    
+
     const job = await queue.add('test-job', { data: 'test' });
-    
+
     // Simulate failure
     await expect(queue.process(job.id)).rejects.toThrow();
-    
+
     // Verify retry count increased
     const updatedJob = await queue.getJob(job.id);
     expect(updatedJob.attempts).toBe(1);
   });
-  
+
   it('should recover after Redis restart', async () => {
     // This test would run in nightly chaos tests
     // Requires test containers to restart Redis
@@ -778,7 +791,7 @@ describe('Lead to Deal Flow (E2E)', () => {
 
     // 3. Move through pipeline stages
     const stages = ['qualification', 'proposal', 'negotiation'];
-    
+
     for (const stage of stages) {
       const moveResponse = await request(app.getHttpServer())
         .patch(`/deals/${dealId}/stage`)
@@ -881,7 +894,7 @@ describe('@critical Tenant Isolation', () => {
     // Test security boundary
   });
 });
-Ì∫´ Merge Blockers:
+ÔøΩÔøΩÔøΩ Merge Blockers:
 Security tests are explicit merge blockers:
 
 PRs cannot be merged if any security invariant fails
@@ -954,10 +967,10 @@ describe('Auth API Contract', () => {
     const apiSpec = await swagger.parse(
       path.join(__dirname, '../../../apps/api/swagger.json')
     );
-    
+
     expect(apiSpec.paths['/auth/login']).toBeDefined();
     expect(apiSpec.paths['/auth/login'].post).toBeDefined();
-    
+
     const bodySchema = apiSpec.paths['/auth/login'].post.requestBody;
     expect(bodySchema).toBeDefined();
     expect(bodySchema.content['application/json'].schema.properties.email)
@@ -1003,11 +1016,11 @@ import { v4 as uuidv4 } from 'uuid';
 describe('Correlation ID Propagation', () => {
   it('should maintain same correlation ID across services', async () => {
     const correlationId = uuidv4();
-    
+
     const response = await request(app.getHttpServer())
       .get('/api/deals')
       .set('X-Request-ID', correlationId);
-    
+
     expect(response.headers['x-request-id']).toBe(correlationId);
   });
 });
@@ -1018,12 +1031,12 @@ describe('Audit Logging', () => {
     const response = await request(app.getHttpServer())
       .post('/auth/login')
       .send({ email: 'test@example.com', password: 'password' });
-    
+
     // Verify audit log was created
     const auditLogs = await prisma.auditLog.findMany({
       where: { action: 'LOGIN_SUCCESS' },
     });
-    
+
     expect(auditLogs.length).toBeGreaterThan(0);
     expect(auditLogs[0].actorEmail).toBe('test@example.com');
   });
@@ -1101,14 +1114,14 @@ export const options = {
 export default function() {
   // Test health endpoint
   const res = http.get('http://localhost:3000/api/health');
-  
+
   const success = check(res, {
     'status is 200': (r) => r.status === 200,
     'response time < 200ms': (r) => r.timings.duration < 200,
   });
-  
+
   errorRate.add(!success);
-  
+
   sleep(1);
 }
 Run command:
@@ -1152,35 +1165,35 @@ describe('Redis Outage Resilience', () => {
   it('should degrade gracefully when Redis is down', async () => {
     // Stop Redis container
     await execAsync('docker stop helix-redis');
-    
+
     // Wait for service to detect outage
     await new Promise(resolve => setTimeout(resolve, 5000));
-    
+
     // Verify API still responds (with degraded functionality)
     const response = await fetch('http://localhost:3000/api/deals');
     expect(response.status).toBe(200);
-    
+
     // Verify rate limiting is disabled (or fallback works)
     const multipleRequests = await Promise.all([
       fetch('http://localhost:3000/api/deals'),
       fetch('http://localhost:3000/api/deals'),
       fetch('http://localhost:3000/api/deals'),
     ]);
-    
+
     multipleRequests.forEach(r => expect(r.status).toBe(200));
-    
+
     // Restart Redis
     await execAsync('docker start helix-redis');
-    
+
     // Wait for recovery
     await new Promise(resolve => setTimeout(resolve, 10000));
-    
+
     // Verify full functionality restored
     const recoveredResponse = await fetch('http://localhost:3000/api/deals');
     expect(recoveredResponse.status).toBe(200);
   });
 });
-Ì≥ä Test Data Strategy
+ÔøΩÔøΩÔøΩ Test Data Strategy
 Test Data Policy
 Tests must create their own data using factories
 
@@ -1220,7 +1233,7 @@ export const createUser = (overrides = {}) => ({
 });
 
 // For parallel test safety:
-export const createUniqueUser = (overrides = {}) => 
+export const createUniqueUser = (overrides = {}) =>
   createUser({
     email: `test-${randomUUID()}@helix-test.com`,
     ...overrides
@@ -1245,7 +1258,7 @@ export const seedTestTenant = async (prisma: PrismaClient) => {
 
 export const seedAdminUser = async (prisma: PrismaClient) => {
   await seedTestTenant(prisma);
-  
+
   return prisma.user.upsert({
     where: { email: 'admin@helix-test.com' },
     update: {},
@@ -1303,7 +1316,7 @@ export const server = setupServer(...handlers);
 beforeAll(() => server.listen());
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
-Ì∞≥ Test Environments
+ÔøΩÔøΩÔøΩ Test Environments
 Local Development
 yaml
 # docker-compose.test.yml
@@ -1370,7 +1383,7 @@ Regular test runs against staging
 
 Performance monitoring with real traffic patterns
 
-Ì¥Ñ Parallel Execution Policy
+ÔøΩÔøΩÔøΩ Parallel Execution Policy
 Tests must be safe to run in parallel:
 
 Rules:
@@ -1400,7 +1413,7 @@ module.exports = {
   maxConcurrency: 10,
   testTimeout: 10000,
 };
-Ì∫Ä CI/CD Pipeline Strategy
+ÔøΩÔøΩÔøΩ CI/CD Pipeline Strategy
 Pipeline Architecture
 text
 PR Pipeline (Fast: ~2-3 min)
@@ -1476,7 +1489,7 @@ jobs:
           node-version: 20
           cache: 'npm'
       - run: npm ci
-      
+
       - name: Cache dependencies
         uses: actions/cache@v3
         with:
@@ -1601,7 +1614,7 @@ jobs:
       - run: npm run build
       - name: Test Docker build
         run: docker build -t helixcrm-api ./apps/api
-      
+
       - name: Notify on failure
         if: failure()
         uses: slackapi/slack-github-action@v1
@@ -1623,7 +1636,7 @@ jobs:
   e2e-tests:
     runs-on: ubuntu-latest
     if: contains(github.event.pull_request.labels.*.name, 'run-e2e') || github.event_name == 'push'
-    
+
     services:
       postgres:
         image: postgres:15
@@ -1647,7 +1660,7 @@ jobs:
           cache: 'npm'
       - run: npm ci
       - run: npm run test:e2e
-      
+
       - name: Retry flaky tests
         if: failure()
         uses: nick-fields/retry@v2
@@ -1713,7 +1726,7 @@ Critical Tests	@engineering-leads	#critical-alerts	Fix within 1 hour
 Unit/Integration	Domain owners	#ci-failures	Fix within 24 hours
 Performance	@devops	#performance	Review within 1 week
 E2E	QA Team	#e2e-results	Fix before release
-Ì¥ß Flaky Test Policy
+ÔøΩÔøΩÔøΩ Flaky Test Policy
 Definition
 A flaky test is any test that passes and fails intermittently without code changes.
 
@@ -1747,7 +1760,7 @@ typescript
  * Owner: @auth-team
  * Fixed by: 2026-03-18
  */
-Ì≥ù Test Review Guidelines
+ÔøΩÔøΩÔøΩ Test Review Guidelines
 During PR review, verify:
 
 Behavior, not implementation: Does the test assert what the code does, not how?
@@ -1774,7 +1787,7 @@ Coverage: Does it maintain or improve coverage?
 
 Speed: Is the test reasonably fast? (<100ms for unit, <1s for integration)
 
-Ì∑™ Test Versioning Policy
+ÔøΩÔøΩÔøΩ Test Versioning Policy
 When behavior changes:
 
 Update tests in the same PR as the code change
@@ -1787,7 +1800,7 @@ Mark breaking changes with version tags in contract tests
 
 Document API version changes in API contract tests
 
-Ì∫´ Testing Anti-Patterns (What NOT To Do)
+ÔøΩÔøΩÔøΩ Testing Anti-Patterns (What NOT To Do)
 ‚ùå Tests Longer Than 5 Seconds
 If a test takes >5s, it's not a unit test - move to integration.
 
@@ -1821,7 +1834,7 @@ Use proper debuggers or test output formatters.
 ‚ùå Skipping Security Tests
 Security tests must always run and pass before merge.
 
-Ì∫® Critical System Tests (Must Never Fail)
+ÔøΩÔøΩÔøΩ Critical System Tests (Must Never Fail)
 These 15 tests must always pass before deployment:
 
 #	Test	Category	Owner	Tag	Why Critical
@@ -1846,7 +1859,7 @@ Run them with:
 
 bash
 npm run test:critical
-Ì≥ä Test Coverage Goals
+ÔøΩÔøΩÔøΩ Test Coverage Goals
 Test Type	Current	Target (Q2)	Target (Q3)	Owner	Critical Paths
 Unit Tests (API)	51	150	250+	Domain Teams	80-90%
 Unit Tests (Web)	0	50	100+	Web Team	70-80%
@@ -1857,7 +1870,7 @@ E2E	1	6	12-15	QA Team	100%
 Observability	0	5	10+	Platform Team	90%+
 Performance	0	3	5+	DevOps	SLO met
 Chaos	0	3	5+	DevOps	N/A
-Ì∞õ Test Debugging Guide
+ÔøΩÔøΩÔøΩ Test Debugging Guide
 Running Specific Tests
 bash
 # Run by test name pattern
@@ -1933,7 +1946,7 @@ Use test containers with tmpfs for speed
 
 Parallelize with multiple connections
 
-Ì≥à Coverage Reporting
+ÔøΩÔøΩÔøΩ Coverage Reporting
 Local Coverage
 bash
 npm run test:coverage
@@ -1964,7 +1977,7 @@ module.exports = {
     },
   },
 };
-Ì¥Æ Future Strategic Additions (Optional)
+ÔøΩÔøΩÔøΩ Future Strategic Additions (Optional)
 1. Mutation Testing
 Measure test quality by introducing bugs and seeing if tests catch them.
 
@@ -2031,7 +2044,7 @@ markdown
 - [ ] CI pipeline passes
 - [ ] Security tests pass (`@critical` tests)
 - [ ] No new linting/type errors
-Ì≥ö Best Practices
+ÔøΩÔøΩÔøΩ Best Practices
 Do's
 ‚úÖ Write tests before fixing bugs (test-driven debugging)
 ‚úÖ Keep tests isolated and independent
@@ -2063,7 +2076,7 @@ Don'ts
 ‚ùå Let tests run longer than 5 seconds
 ‚ùå Use shared fixtures
 
-Ì¥ú Immediate Next Steps
+ÔøΩÔøΩÔøΩ Immediate Next Steps
 Set up test containers infrastructure (docker-compose.test.yml)
 
 Configure test database with .env.test
@@ -2094,7 +2107,7 @@ Set up nightly chaos tests for resilience validation
 
 Add coverage reporting with Codecov
 
-Ì≥ñ References
+ÔøΩÔøΩÔøΩ References
 NestJS Testing Documentation
 
 Jest Documentation
@@ -2121,10 +2134,11 @@ Stryker Mutation Testing
 
 ‚úÖ Document Approval
 Role	Name	Date	Signature
-Tech Lead			
-QA Lead			
-Engineering Manager			
-Security Lead			
-DevOps Lead			
-Product Manager			
+Tech Lead
+QA Lead
+Engineering Manager
+Security Lead
+DevOps Lead
+Product Manager
 *This document is a living document. Last reviewed: 2026-03-11*
+```

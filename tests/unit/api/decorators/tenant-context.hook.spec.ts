@@ -22,10 +22,10 @@ describe('TenantContextHook', () => {
 
   it('should create a valid parameter decorator', () => {
     const hook = TenantContextHook();
-    
+
     // Verify it has the expected structure of a parameter decorator
     expect(hook.length).toBe(3); // Parameter decorators take 3 arguments
-    
+
     // It should not throw when called with valid arguments
     expect(() => {
       hook({}, 'methodName', 0);
@@ -41,7 +41,7 @@ describe('TenantContextHook', () => {
           return context;
         }
       }
-      
+
       const controller = new TestController();
       expect(controller.testMethod).toBeDefined();
     });
@@ -50,20 +50,20 @@ describe('TenantContextHook', () => {
     it('should create a decorator that accesses the request', () => {
       // Create a spy to track when the factory is called
       const factorySpy = jest.fn();
-      
+
       // Mock the implementation
       const originalHook = TenantContextHook;
-      
+
       try {
         // Replace with a spy
         (TenantContextHook as any) = jest.fn().mockImplementation(() => {
           factorySpy();
           return () => {};
         });
-        
+
         // Trigger the factory
         TenantContextHook();
-        
+
         expect(factorySpy).toHaveBeenCalled();
       } finally {
         // Restore

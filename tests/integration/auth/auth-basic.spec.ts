@@ -1,7 +1,7 @@
 /**
  * Example Integration Test
  * This shows the pattern for integration tests
- * 
+ *
  * Note: This test requires a running PostgreSQL database
  * Run: docker-compose -f ../../../../docker-compose.test.yml up -d
  */
@@ -31,7 +31,7 @@ describe('Auth Integration (Example)', () => {
     return request(app.getHttpServer())
       .get('/health')
       .expect(200)
-      .expect(res => {
+      .expect((res) => {
         expect(res.body.status).toBe('ok');
       });
   });

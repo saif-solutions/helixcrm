@@ -12,8 +12,8 @@ export interface User {
   firstName?: string;
   lastName?: string;
   organizationId: string;
-  roles?: string[];        // ✅ Changed from 'role?' to 'roles?' array
-  permissions?: string[];   // ✅ Keep permissions array
+  roles?: string[]; // ✅ Changed from 'role?' to 'roles?' array
+  permissions?: string[]; // ✅ Keep permissions array
 }
 
 // Define a type for API errors
@@ -60,7 +60,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       await initializeApi();
 
       const hasToken = document.cookie.includes('access_token');
-      
+
       if (!hasToken) {
         set({
           user: null,
@@ -72,18 +72,18 @@ export const useAuthStore = create<AuthState>((set) => ({
         return;
       }
 
-      const response = await apiClient.get<{ 
-        user: User & { permissions?: string[]; roles?: string[] } 
+      const response = await apiClient.get<{
+        user: User & { permissions?: string[]; roles?: string[] };
       }>('/auth/me');
-      
+
       console.log('🔥 Raw user data from /auth/me:', response);
       console.log('🔥 Permissions received:', response.user?.permissions);
       console.log('🔥 Roles received:', response.user?.roles);
-      
+
       if (response.user) {
         setUserContext(response.user.id, response.user.organizationId);
       }
-      
+
       set({
         user: response.user,
         isAuthenticated: true,
@@ -128,8 +128,8 @@ export const useAuthStore = create<AuthState>((set) => ({
       await initializeApi();
 
       // Fetch the full user profile including permissions
-      const userResponse = await apiClient.get<{ 
-        user: User & { permissions?: string[]; roles?: string[] } 
+      const userResponse = await apiClient.get<{
+        user: User & { permissions?: string[]; roles?: string[] };
       }>('/auth/me');
 
       // Log what we received for debugging
@@ -137,7 +137,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         id: userResponse.user.id,
         email: userResponse.user.email,
         roles: userResponse.user.roles,
-        permissions: userResponse.user.permissions?.length
+        permissions: userResponse.user.permissions?.length,
       });
 
       set({
@@ -149,7 +149,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       });
     } catch (error: unknown) {
       const formErrors = mapBackendErrorToFormErrors(error);
-      
+
       // Check if it's an API error with response status
       let isSessionExpired = false;
       if (error && typeof error === 'object' && 'response' in error) {
@@ -218,7 +218,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     } finally {
       // Clear user context from logger
       clearUserContext();
-      
+
       set({
         user: null,
         isAuthenticated: false,

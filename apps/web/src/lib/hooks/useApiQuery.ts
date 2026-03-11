@@ -1,8 +1,14 @@
 // src/lib/hooks/useApiQuery.ts
 
-import { useQuery, useMutation, useQueryClient, UseQueryOptions, UseMutationOptions } from '@tanstack/react-query';
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  UseQueryOptions,
+  UseMutationOptions,
+} from '@tanstack/react-query';
 
-export const useApiQuery = <T,>(
+export const useApiQuery = <T>(
   queryKey: string[],
   queryFn: () => Promise<T>,
   options?: Omit<UseQueryOptions<T>, 'queryKey' | 'queryFn'>

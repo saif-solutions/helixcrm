@@ -1,8 +1,10 @@
 # TEAM RULES (SIMPLE & ENFORCEABLE)
+
 **Effective:** $(date +"%Y-%m-%d")
 **For:** All team members (Product, Engineering, QA)
 
-## Ì∫´ ABSOLUTE PROHIBITIONS
+## ÔøΩÔøΩÔøΩ ABSOLUTE PROHIBITIONS
+
 1. **No code in `/apps/` that belongs in `/packages/`**
    - If it's reusable, it's a package
    - If it's client-specific config, it's in `/configs/`
@@ -27,6 +29,7 @@
    - Tech debt tracked, not accumulated
 
 ## ‚úÖ MANDATORY PRACTICES
+
 1. **Contract-First Development**
    - Tests before implementation
    - Contracts before refactoring
@@ -40,15 +43,18 @@
    - Config-driven, not hardcoded
    - Feature flags for gradual rollout
 
-## Ì¥ê ENFORCEMENT
+## ÔøΩÔøΩÔøΩ ENFORCEMENT
+
 - **PR Reviews**: Reject violations immediately
 - **CI/CD**: Block merges that break contracts
 - **Weekly Review**: Team lead audits for rule drift
 - **Onboarding**: New members read this first
 
-## ÌæØ PHILOSOPHY
+## ÔøΩÔøΩÔøΩ PHILOSOPHY
+
 These rules exist for one reason: **to keep the platform commercially viable**.
 Every violation reduces our ability to:
+
 - Sell modules independently
 - Deploy white-label versions
 - Onboard enterprise clients

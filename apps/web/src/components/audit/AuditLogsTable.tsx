@@ -111,21 +111,13 @@ export const AuditLogsTable: React.FC<AuditLogsTableProps> = ({
                     {log.actorType}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <Badge
-                      className={getSeverityColor(log.severity)}
-                    >
-                      {log.severity}
-                    </Badge>
+                    <Badge className={getSeverityColor(log.severity)}>{log.severity}</Badge>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {log.ipAddress || '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleViewMetadata(log)}
-                    >
+                    <Button variant="ghost" size="sm" onClick={() => handleViewMetadata(log)}>
                       View Details
                     </Button>
                   </td>
@@ -157,9 +149,7 @@ export const AuditLogsTable: React.FC<AuditLogsTableProps> = ({
             <div>
               <p className="text-sm text-gray-700">
                 Showing{' '}
-                <span className="font-medium">
-                  {(pagination.page - 1) * pagination.limit + 1}
-                </span>{' '}
+                <span className="font-medium">{(pagination.page - 1) * pagination.limit + 1}</span>{' '}
                 to{' '}
                 <span className="font-medium">
                   {Math.min(pagination.page * pagination.limit, pagination.total)}
@@ -225,7 +215,9 @@ export const AuditLogsTable: React.FC<AuditLogsTableProps> = ({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700">Action</label>
-                <p className="mt-1 text-sm text-gray-900">{getActionLabel(selectedLog.displayAction || selectedLog.action)}</p>
+                <p className="mt-1 text-sm text-gray-900">
+                  {getActionLabel(selectedLog.displayAction || selectedLog.action)}
+                </p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">Severity</label>
@@ -249,7 +241,9 @@ export const AuditLogsTable: React.FC<AuditLogsTableProps> = ({
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">User Agent</label>
-                <p className="mt-1 text-sm text-gray-900 truncate">{selectedLog.userAgent || '-'}</p>
+                <p className="mt-1 text-sm text-gray-900 truncate">
+                  {selectedLog.userAgent || '-'}
+                </p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">Entity Type</label>
@@ -267,9 +261,7 @@ export const AuditLogsTable: React.FC<AuditLogsTableProps> = ({
 
             {selectedLog.metadata && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Metadata
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Metadata</label>
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <pre className="text-sm text-gray-700 whitespace-pre-wrap overflow-x-auto">
                     {JSON.stringify(selectedLog.metadata, null, 2)}

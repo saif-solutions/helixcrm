@@ -38,14 +38,14 @@ describe('Leads Module Tenant Isolation (Integration)', () => {
     // Create test users
     await prisma.user.createMany({
       data: [
-        { 
-          id: userA.sub, 
+        {
+          id: userA.sub,
           email: 'user-a-leads@test.com',
           organizationId: orgA,
           name: 'User A Leads',
         },
-        { 
-          id: userB.sub, 
+        {
+          id: userB.sub,
           email: 'user-b-leads@test.com',
           organizationId: orgB,
           name: 'User B Leads',

@@ -58,9 +58,7 @@ export const Header: React.FC = () => {
             </div>
             <div className="hidden md:block">
               <div className="text-sm font-medium text-gray-900">{getUserDisplayName()}</div>
-              <div className="text-xs text-gray-500">
-                {isAdmin ? 'Administrator' : 'User'}
-              </div>
+              <div className="text-xs text-gray-500">{isAdmin ? 'Administrator' : 'User'}</div>
             </div>
           </div>
         </div>

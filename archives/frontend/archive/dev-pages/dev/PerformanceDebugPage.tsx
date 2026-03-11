@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { performanceBaseline, PerformanceBaseline } from '../../lib/performance/performance-baseline';
+import {
+  performanceBaseline,
+  PerformanceBaseline,
+} from '../../lib/performance/performance-baseline';
 import { Card } from '../../components/molecules/Card';
 import { Button } from '../../components/atoms/Button';
 import { Activity, Clock, Zap, BarChart3, RefreshCw, Download } from 'lucide-react';
@@ -16,7 +19,7 @@ const PerformanceDebugPage: React.FC = () => {
         setBaseline(performanceBaseline.getBaseline());
       }
     }, 0);
-    
+
     return () => clearTimeout(timer);
   }, []);
 
@@ -26,7 +29,7 @@ const PerformanceDebugPage: React.FC = () => {
   }
   const handleMeasureNow = () => {
     setIsRecording(true);
-    
+
     // Wait a bit for metrics to update
     setTimeout(() => {
       setBaseline(performanceBaseline.getBaseline());
@@ -36,12 +39,12 @@ const PerformanceDebugPage: React.FC = () => {
 
   const handleExportJSON = () => {
     if (!baseline) return;
-    
+
     const dataStr = JSON.stringify(baseline, null, 2);
-    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-    
+    const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+
     const exportFileDefaultName = `performance-baseline-${new Date().toISOString().split('T')[0]}.json`;
-    
+
     const linkElement = document.createElement('a');
     linkElement.setAttribute('href', dataUri);
     linkElement.setAttribute('download', exportFileDefaultName);
@@ -80,7 +83,7 @@ const PerformanceDebugPage: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-900">Performance Debug</h1>
           <p className="text-gray-600">Monitor Core Web Vitals and performance metrics</p>
         </div>
-        
+
         <div className="flex items-center gap-3">
           <Button
             variant="outline"
@@ -165,12 +168,8 @@ const PerformanceDebugPage: React.FC = () => {
             </div>
             <BarChart3 className="w-8 h-8 text-green-500" />
           </div>
-          <div className="text-3xl font-bold mb-2">
-            {formatTime(baseline?.TTI || 0)}
-          </div>
-          <div className="text-xs text-gray-500">
-            Approximate • Lower is better
-          </div>
+          <div className="text-3xl font-bold mb-2">{formatTime(baseline?.TTI || 0)}</div>
+          <div className="text-xs text-gray-500">Approximate • Lower is better</div>
         </Card>
       </div>
 
