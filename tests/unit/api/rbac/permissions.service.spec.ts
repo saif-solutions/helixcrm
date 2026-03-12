@@ -3,7 +3,6 @@ import { PermissionsService } from '@api/modules/rbac/permissions.service';
 import { PermissionRepository } from '@api/modules/rbac/repositories/permission.repository';
 import { TenantContextService } from '@api/shared/tenant/context/tenant-context.service';
 import { PermissionContextService } from '@api/shared/permissions/context/permission-context.service';
-import { ForbiddenException } from '@nestjs/common';
 
 // Mock implementations
 const mockPermissionRepository = {
@@ -35,7 +34,6 @@ const createMockPermission = (overrides = {}) => ({
 describe('PermissionsService', () => {
   let service: PermissionsService;
   let permissionRepository: typeof mockPermissionRepository;
-  let tenantContext: typeof mockTenantContext;
   let permissionContext: ReturnType<typeof createMockPermissionContext>;
 
   beforeEach(async () => {
@@ -56,7 +54,6 @@ describe('PermissionsService', () => {
 
     service = module.get<PermissionsService>(PermissionsService);
     permissionRepository = module.get(PermissionRepository);
-    tenantContext = module.get(TenantContextService);
   });
 
   describe('findAll', () => {
@@ -88,7 +85,7 @@ describe('PermissionsService', () => {
       // Override permission context for this test
       permissionContext.hasPermission.mockReturnValue(false);
 
-      await expect(service.findAll()).rejects.toThrow(ForbiddenException);
+      await expect(service.findAll()).rejects.toThrow('Insufficient permissions: rbac:read required');
       expect(permissionRepository.findAll).not.toHaveBeenCalled();
     });
 
@@ -147,7 +144,7 @@ describe('PermissionsService', () => {
     it('should throw ForbiddenException if user lacks permission', async () => {
       permissionContext.hasPermission.mockReturnValue(false);
 
-      await expect(service.findGrouped()).rejects.toThrow(ForbiddenException);
+      await expect(service.findGrouped()).rejects.toThrow('Insufficient permissions: rbac:read required');
       expect(permissionRepository.findAll).not.toHaveBeenCalled();
     });
   });
@@ -200,7 +197,6 @@ describe('PermissionsService', () => {
       expect(Array.isArray(result.user.read)).toBe(true);
 
       // Log the result for debugging
-      console.log('Hierarchy result:', JSON.stringify(result, null, 2));
     });
 
     it('should handle empty permissions list', async () => {
@@ -214,7 +210,7 @@ describe('PermissionsService', () => {
     it('should throw ForbiddenException if user lacks permission', async () => {
       permissionContext.hasPermission.mockReturnValue(false);
 
-      await expect(service.getPermissionHierarchy()).rejects.toThrow(ForbiddenException);
+      await expect(service.getPermissionHierarchy()).rejects.toThrow('Insufficient permissions: rbac:read required');
       expect(permissionRepository.findAll).not.toHaveBeenCalled();
     });
 

@@ -1,19 +1,54 @@
 // src/modules/rbac/permissions.service.ts
-import { Injectable, ForbiddenException } from '@nestjs/common';
+import { Injectable, ForbiddenException, Logger } from '@nestjs/common';
 import { PermissionRepository } from './repositories/permission.repository';
 import { TenantContextService } from '../../shared/tenant/context/tenant-context.service';
 import { PermissionContextService } from '../../shared/permissions/context/permission-context.service';
+import type { Permission } from '@prisma/client';
+
+// ==================== TYPE DEFINITIONS ====================
+
+interface GroupedPermissions {
+  module: string;
+  permissions: Permission[];
+}
+
+interface PermissionHierarchy {
+  [module: string]: {
+    [action: string]: Permission[];
+  };
+}
+
+// ==================== SERVICE IMPLEMENTATION ====================
 
 @Injectable()
 export class PermissionsService {
+  private readonly logger = new Logger(PermissionsService.name);
+
   constructor(
     private readonly permissionRepository: PermissionRepository,
     private readonly tenantContext: TenantContextService,
     private readonly permissionContext: PermissionContextService,
   ) {}
 
-  async findAll() {
-    // 1. PERMISSION CHECK - FIXED: 'rbac.read' → 'rbac:read'
+  private handleError(
+    error: unknown,
+    context: string,
+    metadata: Record<string, any>,
+  ): never {
+    const errorMessage =
+      error instanceof Error ? error.message : 'Unknown error';
+    const errorStack = error instanceof Error ? error.stack : undefined;
+
+    this.logger.error(
+      `${context} failed: ${errorMessage}`,
+      errorStack,
+      metadata,
+    );
+    throw error;
+  }
+
+  async findAll(): Promise<Permission[]> {
+    // 1. PERMISSION CHECK
     if (!this.permissionContext.hasPermission('rbac:read')) {
       throw new ForbiddenException(
         'Insufficient permissions: rbac:read required',
@@ -26,21 +61,17 @@ export class PermissionsService {
     try {
       // 2. BUSINESS LOGIC USING REPOSITORY
       const permissions = await this.permissionRepository.findAll();
-
       return permissions;
-    } catch (error: any) {
-      // 3. ERROR HANDLING
-      console.error(`PermissionsService.findAll failed: ${error.message}`, {
+    } catch (error) {
+      this.handleError(error, 'PermissionsService.findAll', {
         tenantId,
         userId,
-        error: error.stack,
       });
-      throw error;
     }
   }
 
-  async findGrouped() {
-    // 1. PERMISSION CHECK - FIXED: 'rbac.read' → 'rbac:read'
+  async findGrouped(): Promise<GroupedPermissions[]> {
+    // 1. PERMISSION CHECK
     if (!this.permissionContext.hasPermission('rbac:read')) {
       throw new ForbiddenException(
         'Insufficient permissions: rbac:read required',
@@ -54,9 +85,8 @@ export class PermissionsService {
       // 2. GET PERMISSIONS USING REPOSITORY
       const permissions = await this.permissionRepository.findAll();
 
-      // 3. GROUP BY MODULE (PRESERVE ORIGINAL BUSINESS LOGIC)
-      // Note: Permission codes are now in colon format (module:action)
-      const grouped = permissions.reduce(
+      // 3. GROUP BY MODULE
+      const grouped = permissions.reduce<Record<string, Permission[]>>(
         (acc, permission) => {
           const [module] = permission.code.split(':');
           if (!acc[module]) {
@@ -65,7 +95,7 @@ export class PermissionsService {
           acc[module].push(permission);
           return acc;
         },
-        {} as Record<string, any[]>,
+        {},
       );
 
       // 4. CONVERT TO ARRAY FORMAT
@@ -73,18 +103,16 @@ export class PermissionsService {
         module,
         permissions: perms,
       }));
-    } catch (error: any) {
-      console.error(`PermissionsService.findGrouped failed: ${error.message}`, {
+    } catch (error) {
+      this.handleError(error, 'PermissionsService.findGrouped', {
         tenantId,
         userId,
-        error: error.stack,
       });
-      throw error;
     }
   }
 
-  async getPermissionHierarchy() {
-    // 1. PERMISSION CHECK - FIXED: 'rbac.read' → 'rbac:read'
+  async getPermissionHierarchy(): Promise<PermissionHierarchy> {
+    // 1. PERMISSION CHECK
     if (!this.permissionContext.hasPermission('rbac:read')) {
       throw new ForbiddenException(
         'Insufficient permissions: rbac:read required',
@@ -98,9 +126,8 @@ export class PermissionsService {
       // 2. GET PERMISSIONS USING REPOSITORY
       const permissions = await this.permissionRepository.findAll();
 
-      // 3. ORGANIZE BY MODULE.ACTION (PRESERVE ORIGINAL BUSINESS LOGIC)
-      // Updated to handle colon format (module:action)
-      const hierarchy: Record<string, any> = {};
+      // 3. ORGANIZE BY MODULE.ACTION
+      const hierarchy: PermissionHierarchy = {};
 
       permissions.forEach((permission) => {
         const [module, action] = permission.code.split(':');
@@ -113,21 +140,15 @@ export class PermissionsService {
           hierarchy[module][action] = [];
         }
 
-        // Note: No scope in colon format - this part is simplified
-        // If you need scope, you might want to use format like module:action:scope
+        hierarchy[module][action].push(permission);
       });
 
       return hierarchy;
-    } catch (error: any) {
-      console.error(
-        `PermissionsService.getPermissionHierarchy failed: ${error.message}`,
-        {
-          tenantId,
-          userId,
-          error: error.stack,
-        },
-      );
-      throw error;
+    } catch (error) {
+      this.handleError(error, 'PermissionsService.getPermissionHierarchy', {
+        tenantId,
+        userId,
+      });
     }
   }
 }

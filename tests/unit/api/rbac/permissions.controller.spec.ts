@@ -1,21 +1,21 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { PermissionsController } from '@api/modules/rbac/permissions.controller';
 import { PermissionsService } from '@api/modules/rbac/permissions.service';
 
 // Mock the guards
-jest.mock('../../../src/shared/guards/auth.guard', () => ({
+jest.mock('@api/shared/guards/auth.guard', () => ({
   AuthGuard: jest.fn().mockImplementation(() => ({
     canActivate: jest.fn().mockReturnValue(true),
   })),
 }));
 
-jest.mock('../../../src/shared/guards/tenant.guard', () => ({
+jest.mock('@api/shared/guards/tenant.guard', () => ({
   TenantGuard: jest.fn().mockImplementation(() => ({
     canActivate: jest.fn().mockReturnValue(true),
   })),
 }));
 
-jest.mock('../../../src/shared/guards/permission.guard', () => ({
+jest.mock('@api/shared/guards/permission.guard', () => ({
   PermissionGuard: jest.fn().mockImplementation(() => ({
     canActivate: jest.fn().mockReturnValue(true),
   })),
@@ -30,7 +30,6 @@ const mockPermissionsService = {
 
 describe('PermissionsController', () => {
   let controller: PermissionsController;
-  let permissionsService: typeof mockPermissionsService;
 
   const createController = async () => {
     const module = await Test.createTestingModule({

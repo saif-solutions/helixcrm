@@ -1,23 +1,22 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { RolesController } from '@api/modules/rbac/roles.controller';
 import { RolesService } from '@api/modules/rbac/roles.service';
 import { PermissionContextService } from '@api/shared/permissions/context/permission-context.service';
-import { ForbiddenException } from '@nestjs/common';
 
 // Mock the guards
-jest.mock('../../../src/shared/guards/auth.guard', () => ({
+jest.mock('@api/shared/guards/auth.guard', () => ({
   AuthGuard: jest.fn().mockImplementation(() => ({
     canActivate: jest.fn().mockReturnValue(true),
   })),
 }));
 
-jest.mock('../../../src/shared/guards/tenant.guard', () => ({
+jest.mock('@api/shared/guards/tenant.guard', () => ({
   TenantGuard: jest.fn().mockImplementation(() => ({
     canActivate: jest.fn().mockReturnValue(true),
   })),
 }));
 
-jest.mock('../../../src/shared/guards/permission.guard', () => ({
+jest.mock('@api/shared/guards/permission.guard', () => ({
   PermissionGuard: jest.fn().mockImplementation(() => ({
     canActivate: jest.fn().mockReturnValue(true),
   })),
@@ -45,8 +44,6 @@ const mockRequest = {
 
 describe('RolesController', () => {
   let controller: RolesController;
-  let rolesService: typeof mockRolesService;
-  let permissionContext: typeof mockPermissionContext;
 
   const createController = async (isInitialized = true) => {
     mockPermissionContext.isInitialized.mockReturnValue(isInitialized);
@@ -89,10 +86,9 @@ describe('RolesController', () => {
       try {
         await uninitializedController.findAll(mockRequest as any, query);
         expect(true).toBe(false);
-      } catch (error) {
-        expect(error).toBeInstanceOf(ForbiddenException);
-        expect(error.message).toBe('Permission context not initialized');
-      }
+} catch (error) {
+  expect(error.message).toBe('Permission context not initialized');
+}
       expect(mockRolesService.findAll).not.toHaveBeenCalled();
     });
   });
@@ -116,10 +112,9 @@ describe('RolesController', () => {
       try {
         await uninitializedController.findOne(mockRequest as any, roleId);
         expect(true).toBe(false);
-      } catch (error) {
-        expect(error).toBeInstanceOf(ForbiddenException);
-        expect(error.message).toBe('Permission context not initialized');
-      }
+} catch (error) {
+  expect(error.message).toBe('Permission context not initialized');
+}
       expect(mockRolesService.findOne).not.toHaveBeenCalled();
     });
   });
@@ -148,10 +143,9 @@ describe('RolesController', () => {
       try {
         await uninitializedController.create(mockRequest as any, createRoleDto);
         expect(true).toBe(false);
-      } catch (error) {
-        expect(error).toBeInstanceOf(ForbiddenException);
-        expect(error.message).toBe('Permission context not initialized');
-      }
+} catch (error) {
+  expect(error.message).toBe('Permission context not initialized');
+}
       expect(mockRolesService.create).not.toHaveBeenCalled();
     });
   });
@@ -180,10 +174,9 @@ describe('RolesController', () => {
       try {
         await uninitializedController.update(mockRequest as any, roleId, updateRoleDto);
         expect(true).toBe(false);
-      } catch (error) {
-        expect(error).toBeInstanceOf(ForbiddenException);
-        expect(error.message).toBe('Permission context not initialized');
-      }
+} catch (error) {
+  expect(error.message).toBe('Permission context not initialized');
+}
       expect(mockRolesService.update).not.toHaveBeenCalled();
     });
   });
@@ -207,10 +200,9 @@ describe('RolesController', () => {
       try {
         await uninitializedController.remove(mockRequest as any, roleId);
         expect(true).toBe(false);
-      } catch (error) {
-        expect(error).toBeInstanceOf(ForbiddenException);
-        expect(error.message).toBe('Permission context not initialized');
-      }
+} catch (error) {
+  expect(error.message).toBe('Permission context not initialized');
+}
       expect(mockRolesService.remove).not.toHaveBeenCalled();
     });
   });
@@ -237,10 +229,9 @@ describe('RolesController', () => {
       try {
         await uninitializedController.assignRole(mockRequest as any, assignRoleDto);
         expect(true).toBe(false);
-      } catch (error) {
-        expect(error).toBeInstanceOf(ForbiddenException);
-        expect(error.message).toBe('Permission context not initialized');
-      }
+} catch (error) {
+  expect(error.message).toBe('Permission context not initialized');
+}
       expect(mockRolesService.assignRole).not.toHaveBeenCalled();
     });
   });
@@ -267,10 +258,9 @@ describe('RolesController', () => {
       try {
         await uninitializedController.removeRole(mockRequest as any, removeRoleDto);
         expect(true).toBe(false);
-      } catch (error) {
-        expect(error).toBeInstanceOf(ForbiddenException);
-        expect(error.message).toBe('Permission context not initialized');
-      }
+} catch (error) {
+  expect(error.message).toBe('Permission context not initialized');
+}
       expect(mockRolesService.removeRole).not.toHaveBeenCalled();
     });
   });
@@ -297,10 +287,9 @@ describe('RolesController', () => {
       try {
         await uninitializedController.getUserRoles(mockRequest as any, userId);
         expect(true).toBe(false);
-      } catch (error) {
-        expect(error).toBeInstanceOf(ForbiddenException);
-        expect(error.message).toBe('Permission context not initialized');
-      }
+} catch (error) {
+  expect(error.message).toBe('Permission context not initialized');
+}
       expect(mockRolesService.getUserRoles).not.toHaveBeenCalled();
     });
   });

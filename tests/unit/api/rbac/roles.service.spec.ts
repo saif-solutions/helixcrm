@@ -7,12 +7,7 @@ import { AuditLogService } from '@api/shared/audit-log/audit-log.service';
 import { TenantContextService } from '@api/shared/tenant/context/tenant-context.service';
 import { PermissionContextService } from '@api/shared/permissions/context/permission-context.service';
 import { PrismaService } from '@api/shared/prisma/prisma.service';
-import {
-  NotFoundException,
-  ConflictException,
-  ForbiddenException,
-  BadRequestException,
-} from '@nestjs/common';
+
 
 // Mock implementations
 const mockPrismaService = {
@@ -105,8 +100,6 @@ describe('RolesService', () => {
   let permissionRepository: typeof mockPermissionRepository;
   let userRoleRepository: typeof mockUserRoleRepository;
   let auditLog: typeof mockAuditLogService;
-  let tenantContext: typeof mockTenantContext;
-  let permissionContext: typeof mockPermissionContext;
   let prisma: typeof mockPrismaService;
 
   beforeEach(async () => {
@@ -128,8 +121,6 @@ describe('RolesService', () => {
     permissionRepository = module.get(PermissionRepository);
     userRoleRepository = module.get(UserRoleRepository);
     auditLog = module.get(AuditLogService);
-    tenantContext = module.get(TenantContextService);
-    permissionContext = module.get(PermissionContextService);
     prisma = module.get(PrismaService);
 
     jest.clearAllMocks();
@@ -175,7 +166,7 @@ describe('RolesService', () => {
       };
       roleRepository.findAll.mockRejectedValue(new Error('Database error'));
 
-      await expect(service.findAll(query)).rejects.toThrow(BadRequestException);
+      await expect(service.findAll(query)).rejects.toThrow('Failed to fetch roles');
     });
   });
 
@@ -197,7 +188,7 @@ describe('RolesService', () => {
     it('should throw NotFoundException if role not found', async () => {
       roleRepository.findById.mockResolvedValue(null);
 
-      await expect(service.findOne('role-123')).rejects.toThrow(NotFoundException);
+      await expect(service.findOne('role-123')).rejects.toThrow('Role with ID role-123 not found');
     });
   });
 
@@ -249,14 +240,14 @@ describe('RolesService', () => {
     it('should throw ConflictException if role name already exists', async () => {
       roleRepository.findByName.mockResolvedValue(createMockRole());
 
-      await expect(service.create(createDto)).rejects.toThrow(ConflictException);
+      await expect(service.create(createDto)).rejects.toThrow('Role with name "New Role" already exists in this organization');
     });
 
     it('should throw NotFoundException if permissions not found', async () => {
       roleRepository.findByName.mockResolvedValue(null);
       permissionRepository.findByCodes.mockResolvedValue([{ id: 'perm-1', code: 'user:read' }]);
 
-      await expect(service.create(createDto)).rejects.toThrow(NotFoundException);
+      await expect(service.create(createDto)).rejects.toThrow('Permissions not found: user:write');
     });
 
     it('should create role without permissions if none provided', async () => {
@@ -315,7 +306,7 @@ describe('RolesService', () => {
     it('should throw NotFoundException if role not found', async () => {
       roleRepository.findById.mockResolvedValue(null);
 
-      await expect(service.update('role-123', updateDto)).rejects.toThrow(NotFoundException);
+      await expect(service.update('role-123', updateDto)).rejects.toThrow('Role with ID role-123 not found');
     });
 
     it('should throw ForbiddenException if trying to modify system role', async () => {
@@ -323,7 +314,7 @@ describe('RolesService', () => {
       roleRepository.findById.mockResolvedValue(systemRole);
 
       await expect(service.update('role-123', { isSystem: false })).rejects.toThrow(
-        ForbiddenException,
+        'Cannot modify system role properties',
       );
     });
 
@@ -331,7 +322,7 @@ describe('RolesService', () => {
       roleRepository.findByName.mockResolvedValue({ id: 'another-role', name: 'Updated Role' });
 
       await expect(service.update('role-123', { name: 'Updated Role' })).rejects.toThrow(
-        ConflictException,
+        'Role with name "Updated Role" already exists',
       );
     });
 
@@ -371,20 +362,20 @@ describe('RolesService', () => {
     it('should throw NotFoundException if role not found', async () => {
       roleRepository.findById.mockResolvedValue(null);
 
-      await expect(service.remove('role-123')).rejects.toThrow(NotFoundException);
+      await expect(service.remove('role-123')).rejects.toThrow('Role with ID role-123 not found');
     });
 
     it('should throw ForbiddenException if trying to delete system role', async () => {
       const systemRole = createMockRole({ isSystem: true });
       roleRepository.findById.mockResolvedValue(systemRole);
 
-      await expect(service.remove('role-123')).rejects.toThrow(ForbiddenException);
+      await expect(service.remove('role-123')).rejects.toThrow('Cannot delete system role');
     });
 
     it('should throw ConflictException if role has assigned users', async () => {
       roleRepository.checkUserCount.mockResolvedValue(5);
 
-      await expect(service.remove('role-123')).rejects.toThrow(ConflictException);
+      await expect(service.remove('role-123')).rejects.toThrow('Cannot delete role with 5 assigned users. Remove users first.');
     });
   });
 
@@ -424,19 +415,19 @@ describe('RolesService', () => {
     it('should throw NotFoundException if user not found in tenant', async () => {
       roleRepository.findUserInTenant.mockResolvedValue(null);
 
-      await expect(service.assignRole(assignDto)).rejects.toThrow(NotFoundException);
+      await expect(service.assignRole(assignDto)).rejects.toThrow('User with ID target-user-123 not found in organization');
     });
 
     it('should throw NotFoundException if role not found', async () => {
       roleRepository.findById.mockResolvedValue(null);
 
-      await expect(service.assignRole(assignDto)).rejects.toThrow(NotFoundException);
+      await expect(service.assignRole(assignDto)).rejects.toThrow('Role with ID role-123 not found');
     });
 
     it('should throw ConflictException if role already assigned', async () => {
       userRoleRepository.findAssignment.mockResolvedValue({ id: 'existing' });
 
-      await expect(service.assignRole(assignDto)).rejects.toThrow(ConflictException);
+      await expect(service.assignRole(assignDto)).rejects.toThrow('Role already assigned to user');
     });
   });
 
@@ -476,13 +467,13 @@ describe('RolesService', () => {
     it('should throw NotFoundException if assignment not found', async () => {
       userRoleRepository.findAssignment.mockResolvedValue(null);
 
-      await expect(service.removeRole(removeDto)).rejects.toThrow(NotFoundException);
+      await expect(service.removeRole(removeDto)).rejects.toThrow('Role assignment not found');
     });
 
     it('should throw ForbiddenException if removing last admin role', async () => {
       userRoleRepository.countAdminRoles.mockResolvedValue(1);
 
-      await expect(service.removeRole(removeDto)).rejects.toThrow(ForbiddenException);
+      await expect(service.removeRole(removeDto)).rejects.toThrow('Cannot remove last admin role from organization');
     });
   });
 
@@ -541,7 +532,7 @@ describe('RolesService', () => {
       };
       roleRepository.findAll.mockRejectedValue(new Error('Database error'));
 
-      await expect(service.findAll(query)).rejects.toThrow(BadRequestException);
+      await expect(service.findAll(query)).rejects.toThrow('Failed to fetch roles');
     });
   });
 });

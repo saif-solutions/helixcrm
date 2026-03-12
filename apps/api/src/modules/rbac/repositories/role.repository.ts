@@ -1,23 +1,48 @@
 // src/modules/rbac/repositories/role.repository.ts
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
 import { TenantAwareRepository } from '../../../shared/database/tenant-aware.repository';
 import { CreateRoleDto } from '../dto/create-role.dto';
 import { UpdateRoleDto } from '../dto/update-role.dto';
 import { RoleQueryDto } from '../dto/role-query.dto';
+import { Prisma } from '@prisma/client';
+
+// ==================== TYPE DEFINITIONS ====================
+
+type WhereClause = Prisma.RoleWhereInput & {
+  organizationId: string;
+};
+
+interface UpdateData {
+  name?: string;
+  description?: string | null;
+  isSystem?: boolean;
+}
+
+// ==================== REPOSITORY IMPLEMENTATION ====================
 
 @Injectable()
 export class RoleRepository extends TenantAwareRepository {
+  private readonly logger = new Logger(RoleRepository.name);
+
   constructor(prisma: PrismaService) {
     super(prisma);
   }
 
   async findAll(query: RoleQueryDto) {
     const { isSystem, search, includeUserCount } = query;
-    const where: any = { organizationId: this.tenantId };
 
-    if (isSystem !== undefined) where.isSystem = isSystem;
-    if (search) where.name = { contains: search, mode: 'insensitive' };
+    const where: WhereClause = {
+      organizationId: this.tenantId,
+    };
+
+    if (isSystem !== undefined) {
+      where.isSystem = isSystem;
+    }
+
+    if (search) {
+      where.name = { contains: search, mode: 'insensitive' };
+    }
 
     return this.prisma.role.findMany({
       where,
@@ -31,7 +56,10 @@ export class RoleRepository extends TenantAwareRepository {
 
   async findById(id: string) {
     return this.prisma.role.findFirst({
-      where: { id, organizationId: this.tenantId },
+      where: {
+        id,
+        organizationId: this.tenantId,
+      },
       include: {
         permissions: { include: { permission: true } },
         _count: { select: { userRoles: true } },
@@ -41,7 +69,10 @@ export class RoleRepository extends TenantAwareRepository {
 
   async findSystemRole(id: string) {
     return this.prisma.role.findFirst({
-      where: { id, isSystem: true },
+      where: {
+        id,
+        isSystem: true,
+      },
     });
   }
 
@@ -57,11 +88,19 @@ export class RoleRepository extends TenantAwareRepository {
   }
 
   async update(id: string, data: UpdateRoleDto) {
-    const updateData: any = {};
-    if (data.name !== undefined) updateData.name = data.name;
-    if (data.description !== undefined)
+    const updateData: UpdateData = {};
+
+    if (data.name !== undefined) {
+      updateData.name = data.name;
+    }
+
+    if (data.description !== undefined) {
       updateData.description = data.description;
-    if (data.isSystem !== undefined) updateData.isSystem = data.isSystem;
+    }
+
+    if (data.isSystem !== undefined) {
+      updateData.isSystem = data.isSystem;
+    }
 
     return this.prisma.role.update({
       where: { id },
@@ -76,22 +115,31 @@ export class RoleRepository extends TenantAwareRepository {
   }
 
   async findByName(name: string, excludeId?: string) {
-    const where: any = {
-      name: { equals: name, mode: 'insensitive' },
+    const where: Prisma.RoleWhereInput = {
+      name: {
+        equals: name,
+        mode: 'insensitive',
+      },
       organizationId: this.tenantId,
     };
-    if (excludeId) where.id = { not: excludeId };
+
+    if (excludeId) {
+      where.id = { not: excludeId };
+    }
 
     return this.prisma.role.findFirst({ where });
   }
 
-  async checkUserCount(roleId: string) {
+  async checkUserCount(roleId: string): Promise<number> {
     return this.prisma.userRole.count({
       where: { roleId },
     });
   }
 
-  async assignPermissions(roleId: string, permissionIds: string[]) {
+  async assignPermissions(
+    roleId: string,
+    permissionIds: string[],
+  ): Promise<void> {
     // Remove existing permissions
     await this.prisma.rolePermission.deleteMany({
       where: { roleId },
@@ -116,8 +164,10 @@ export class RoleRepository extends TenantAwareRepository {
       });
       return user?.email || `user-${userId}@unknown.example.com`;
     } catch (error) {
-      console.warn(
-        `Failed to fetch email for user ${userId}: ${error.message}`,
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.warn(
+        `Failed to fetch email for user ${userId}: ${errorMessage}`,
       );
       return `user-${userId}@error.example.com`;
     }
@@ -125,7 +175,10 @@ export class RoleRepository extends TenantAwareRepository {
 
   async findUserInTenant(userId: string, tenantId: string) {
     return this.prisma.user.findFirst({
-      where: { id: userId, organizationId: tenantId },
+      where: {
+        id: userId,
+        organizationId: tenantId,
+      },
     });
   }
 }
