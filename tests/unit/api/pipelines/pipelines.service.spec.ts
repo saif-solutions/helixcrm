@@ -6,12 +6,7 @@ import { TenantContextService } from '@api/shared/tenant/context/tenant-context.
 import { PermissionContextService } from '@api/shared/permissions/context/permission-context.service';
 import { AuditLogService } from '@api/shared/audit-log/audit-log.service';
 import { PipelineRepository } from '@api/modules/pipelines/repositories/pipeline.repository';
-import {
-  NotFoundException,
-  ConflictException,
-  ForbiddenException,
-  BadRequestException,
-} from '@nestjs/common';
+
 
 // Mock implementations
 const mockPrismaService = {
@@ -91,9 +86,7 @@ describe('PipelinesService', () => {
   let service: PipelinesService;
   let prisma: typeof mockPrismaService;
   let pipelineRepository: typeof mockPipelineRepository;
-  let tenantContext: typeof mockTenantContext;
   let auditLog: typeof mockAuditLogService;
-  let permissionContext: typeof mockPermissionContext;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -111,9 +104,7 @@ describe('PipelinesService', () => {
     service = module.get<PipelinesService>(PipelinesService);
     prisma = module.get(PrismaService);
     pipelineRepository = module.get(PipelineRepository);
-    tenantContext = module.get(TenantContextService);
     auditLog = module.get(AuditLogService);
-    permissionContext = module.get(PermissionContextService);
 
     jest.clearAllMocks();
     prisma.user.findUnique.mockResolvedValue({ email: 'test@example.com' });
@@ -143,7 +134,7 @@ describe('PipelinesService', () => {
     it('should throw ConflictException if pipeline with same name exists', async () => {
       pipelineRepository.findFirst.mockResolvedValue(createMockPipeline());
 
-      await expect(service.create(createDto)).rejects.toThrow(ConflictException);
+      await expect(service.create(createDto)).rejects.toThrow('Pipeline with name "New Pipeline" already exists');
     });
 
     it('should unset other default pipelines when creating a default pipeline', async () => {
@@ -232,7 +223,7 @@ describe('PipelinesService', () => {
     it('should throw NotFoundException if pipeline not found', async () => {
       pipelineRepository.findById.mockResolvedValue(null);
 
-      await expect(service.findOne('pipeline-123')).rejects.toThrow(NotFoundException);
+      await expect(service.findOne('pipeline-123')).rejects.toThrow('Pipeline pipeline-123 not found');
     });
   });
 
@@ -278,7 +269,7 @@ describe('PipelinesService', () => {
     it('should throw NotFoundException if pipeline not found', async () => {
       pipelineRepository.findById.mockResolvedValue(null);
 
-      await expect(service.update('pipeline-123', updateDto)).rejects.toThrow(NotFoundException);
+      await expect(service.update('pipeline-123', updateDto)).rejects.toThrow('Pipeline pipeline-123 not found');
     });
   });
 
@@ -304,7 +295,7 @@ describe('PipelinesService', () => {
       const pipelineWithDeals = createMockPipeline({ _count: { deals: 5 } });
       pipelineRepository.findById.mockResolvedValue(pipelineWithDeals);
 
-      await expect(service.remove('pipeline-123')).rejects.toThrow(ConflictException);
+      await expect(service.remove('pipeline-123')).rejects.toThrow('Cannot delete pipeline with 5 deal(s). Move deals to another pipeline first.');
       expect(pipelineRepository.delete).not.toHaveBeenCalled();
     });
 
@@ -323,7 +314,7 @@ describe('PipelinesService', () => {
     it('should throw NotFoundException if pipeline not found', async () => {
       pipelineRepository.findById.mockResolvedValue(null);
 
-      await expect(service.remove('pipeline-123')).rejects.toThrow(NotFoundException);
+      await expect(service.remove('pipeline-123')).rejects.toThrow('Pipeline pipeline-123 not found');
     });
   });
 
@@ -341,7 +332,7 @@ describe('PipelinesService', () => {
     it('should throw NotFoundException if no default pipeline', async () => {
       pipelineRepository.getDefaultPipeline.mockResolvedValue(null);
 
-      await expect(service.getDefaultPipeline()).rejects.toThrow(NotFoundException);
+      await expect(service.getDefaultPipeline()).rejects.toThrow('No default pipeline found');
     });
   });
 
@@ -377,7 +368,7 @@ describe('PipelinesService', () => {
       pipelineRepository.findById.mockResolvedValue(null);
 
       await expect(service.createStage('pipeline-123', createStageDto)).rejects.toThrow(
-        NotFoundException,
+        'Pipeline pipeline-123 not found',
       );
     });
 
@@ -385,7 +376,7 @@ describe('PipelinesService', () => {
       pipelineRepository.findStageByOrder.mockResolvedValue(createMockStage());
 
       await expect(service.createStage('pipeline-123', createStageDto)).rejects.toThrow(
-        ConflictException,
+        'Stage with order 2 already exists in this pipeline',
       );
     });
   });
@@ -421,7 +412,7 @@ describe('PipelinesService', () => {
     it('should throw NotFoundException if stage not found', async () => {
       pipelineRepository.findStageById.mockResolvedValue(null);
 
-      await expect(service.updateStage('stage-123', updateDto)).rejects.toThrow(NotFoundException);
+      await expect(service.updateStage('stage-123', updateDto)).rejects.toThrow('Pipeline stage stage-123 not found');
     });
 
     it('should throw ForbiddenException if stage belongs to different tenant', async () => {
@@ -431,14 +422,14 @@ describe('PipelinesService', () => {
       };
       pipelineRepository.findStageById.mockResolvedValue(stageWithWrongTenant);
 
-      await expect(service.updateStage('stage-123', updateDto)).rejects.toThrow(ForbiddenException);
+      await expect(service.updateStage('stage-123', updateDto)).rejects.toThrow('Stage does not belong to your organization');
     });
 
     it('should throw ConflictException if order conflicts with existing stage', async () => {
       pipelineRepository.findStageByOrder.mockResolvedValue({ id: 'another-stage' });
 
       await expect(service.updateStage('stage-123', { order: 3 })).rejects.toThrow(
-        ConflictException,
+        'Stage with order 3 already exists in this pipeline',
       );
     });
   });
@@ -485,13 +476,13 @@ describe('PipelinesService', () => {
         _count: { deals: 5 },
       });
 
-      await expect(service.removeStage('stage-123')).rejects.toThrow(ConflictException);
+      await expect(service.removeStage('stage-123')).rejects.toThrow('Cannot delete stage with 5 deal(s). Move deals to another stage first.');
     });
 
     it('should throw NotFoundException if stage not found', async () => {
       pipelineRepository.findStageById.mockResolvedValue(null);
 
-      await expect(service.removeStage('stage-123')).rejects.toThrow(NotFoundException);
+      await expect(service.removeStage('stage-123')).rejects.toThrow('Pipeline stage stage-123 not found');
     });
   });
 
@@ -531,7 +522,7 @@ describe('PipelinesService', () => {
       pipelineRepository.findById.mockResolvedValue(null);
 
       await expect(service.reorderStages('pipeline-123', stageIds)).rejects.toThrow(
-        NotFoundException,
+        'Pipeline pipeline-123 not found',
       );
     });
 
@@ -542,7 +533,7 @@ describe('PipelinesService', () => {
       ]);
 
       await expect(service.reorderStages('pipeline-123', ['stage-1', 'stage-999'])).rejects.toThrow(
-        NotFoundException,
+        'One or more stages not found in this pipeline: stage-999',
       );
     });
   });

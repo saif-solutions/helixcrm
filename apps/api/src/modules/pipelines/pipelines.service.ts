@@ -5,6 +5,7 @@ import {
   ForbiddenException,
   BadRequestException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { AppLogger } from '../../shared/logging/logger.service';
 import { TenantContextService } from '../../shared/tenant/context/tenant-context.service';
@@ -16,6 +17,8 @@ import type { UpdatePipelineDto } from './dto/update-pipeline.dto';
 import type { CreatePipelineStageDto } from './dto/create-pipeline-stage.dto';
 import type { UpdatePipelineStageDto } from './dto/update-pipeline-stage.dto';
 
+// ==================== TYPE DEFINITIONS ====================
+
 interface FindAllOptions {
   page?: number;
   limit?: number;
@@ -24,6 +27,45 @@ interface FindAllOptions {
   sortOrder?: 'asc' | 'desc';
   isDefault?: boolean;
 }
+
+interface PipelineWithStages {
+  id: string;
+  name: string;
+  description: string | null;
+  isDefault: boolean;
+  organizationId: string;
+  createdAt: Date;
+  updatedAt: Date;
+  stages?: Array<{
+    id: string;
+    name: string;
+    description: string | null;
+    order: number;
+    probability: number;
+  }>;
+  _count?: {
+    deals: number;
+  };
+}
+
+interface StageWithPipeline {
+  id: string;
+  name: string;
+  description: string | null;
+  order: number;
+  probability: number;
+  pipelineId: string;
+  pipeline: {
+    id: string;
+    organizationId: string;
+    name: string;
+  };
+  _count?: {
+    deals: number;
+  };
+}
+
+// ==================== SERVICE IMPLEMENTATION ====================
 
 @Injectable()
 export class PipelinesService {
@@ -36,6 +78,47 @@ export class PipelinesService {
     private readonly pipelineRepository: PipelineRepository,
   ) {}
 
+  // ==================== HELPER METHODS ====================
+
+  private handleError(error: unknown, context: string): never {
+    const errorMessage =
+      error instanceof Error ? error.message : 'Unknown error';
+    const errorStack = error instanceof Error ? error.stack : undefined;
+
+    this.logger.error(`${context}: ${errorMessage}`, errorStack);
+
+    if (
+      error instanceof NotFoundException ||
+      error instanceof ConflictException ||
+      error instanceof ForbiddenException ||
+      error instanceof BadRequestException
+    ) {
+      throw error;
+    }
+
+    throw new BadRequestException(context);
+  }
+
+  private async getUserEmail(userId: string): Promise<string> {
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { email: true },
+      });
+      return user?.email || 'system@unknown';
+    } catch {
+      return 'system@unknown';
+    }
+  }
+
+  private logPerformance(method: string, duration: number, tenantId: string) {
+    this.logger.log(`Pipeline.${method} completed in ${duration}ms`, {
+      duration,
+      tenantId,
+      performance: duration > 2000 ? 'slow' : 'normal',
+    });
+  }
+
   // ==================== PIPELINE METHODS ====================
 
   async create(data: CreatePipelineDto) {
@@ -44,7 +127,7 @@ export class PipelinesService {
     const userId = this.tenantContext.getUserId();
 
     try {
-      // 2. CHECK FOR EXISTING PIPELINE WITH SAME NAME
+      // Check for existing pipeline with same name
       const existing = await this.pipelineRepository.findFirst({
         name: data.name,
       });
@@ -55,7 +138,7 @@ export class PipelinesService {
         );
       }
 
-      // 3. IF SETTING AS DEFAULT, UNSET ANY EXISTING DEFAULT
+      // If setting as default, unset any existing default
       if (data.isDefault) {
         await this.pipelineRepository.updateMany(
           { isDefault: true },
@@ -63,14 +146,14 @@ export class PipelinesService {
         );
       }
 
-      // 4. CREATE PIPELINE USING REPOSITORY
+      // Create pipeline using repository
       const pipeline = await this.pipelineRepository.create({
         name: data.name,
         description: data.description,
         isDefault: data.isDefault || false,
       });
 
-      // 5. AUDIT LOG
+      // Audit log
       await this.auditLogService.logEvent({
         action: 'PIPELINE_CREATED',
         entityType: 'PIPELINE',
@@ -81,7 +164,7 @@ export class PipelinesService {
           pipelineName: pipeline.name,
           isDefault: pipeline.isDefault,
         },
-        severity: 'INFO' as any,
+        severity: 'INFO',
         organizationId: tenantId,
       });
 
@@ -92,55 +175,32 @@ export class PipelinesService {
       });
 
       return pipeline;
-    } catch (error: any) {
-      // 6. ERROR HANDLING
-      this.logger.error('Failed to create pipeline', error.stack, {
+    } catch (error) {
+      this.logger.error('Failed to create pipeline', {
         tenantId,
         userId,
         method: 'create',
         data,
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
 
-      if (
-        error instanceof ConflictException ||
-        error instanceof ForbiddenException ||
-        error instanceof BadRequestException
-      ) {
-        throw error;
-      }
-
-      throw new BadRequestException('Failed to create pipeline');
+      this.handleError(error, 'Failed to create pipeline');
     } finally {
-      // 7. PERFORMANCE MONITORING
-      const duration = Date.now() - startTime;
-      this.logger.log(`Pipeline.create completed in ${duration}ms`, {
-        duration,
-        tenantId,
-        performance: duration > 2000 ? 'slow' : 'normal',
-      });
+      this.logPerformance('create', Date.now() - startTime, tenantId);
     }
   }
 
-  async findAll({
-    page = 1,
-    limit = 20,
-    search,
-    sortBy,
-    sortOrder,
-    isDefault,
-  }: FindAllOptions) {
+  async findAll({ page = 1, limit = 20, search, isDefault }: FindAllOptions) {
     const startTime = Date.now();
     const tenantId = this.tenantContext.getTenantId();
-    const userId = this.tenantContext.getUserId();
 
     try {
       const skip = (page - 1) * limit;
       const take = Math.min(limit, 100);
 
-      // Build where clause
-      const where: any = {};
+      // Build where clause with proper typing
+      const where: Prisma.PipelineWhereInput = {};
 
-      // Add search filter if provided
       if (search) {
         where.OR = [
           { name: { contains: search, mode: 'insensitive' } },
@@ -148,12 +208,11 @@ export class PipelinesService {
         ];
       }
 
-      // Add isDefault filter if provided
       if (isDefault !== undefined) {
         where.isDefault = isDefault;
       }
 
-      // 2. BUSINESS LOGIC USING REPOSITORY
+      // Get pipelines and total count
       const [pipelines, total] = await Promise.all([
         this.pipelineRepository.findMany({
           where,
@@ -165,7 +224,7 @@ export class PipelinesService {
         this.pipelineRepository.count(where),
       ]);
 
-      const result = {
+      return {
         data: pipelines,
         meta: {
           page,
@@ -174,70 +233,45 @@ export class PipelinesService {
           pages: Math.ceil(total / take),
         },
       };
-
-      return result;
-    } catch (error: any) {
-      // 3. ERROR HANDLING
-      this.logger.error('findAll failed', error.stack, {
+    } catch (error) {
+      this.logger.error('findAll failed', {
         tenantId,
-        userId,
         method: 'findAll',
         page,
         limit,
         search,
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
 
-      throw new BadRequestException('Failed to fetch pipelines');
+      this.handleError(error, 'Failed to fetch pipelines');
     } finally {
-      // 4. PERFORMANCE MONITORING
-      const duration = Date.now() - startTime;
-      this.logger.log(`Pipeline.findAll completed in ${duration}ms`, {
-        duration,
-        tenantId,
-        performance: duration > 2000 ? 'slow' : 'normal',
-      });
+      this.logPerformance('findAll', Date.now() - startTime, tenantId);
     }
   }
 
-  async findOne(id: string) {
+  async findOne(id: string): Promise<PipelineWithStages> {
     const startTime = Date.now();
     const tenantId = this.tenantContext.getTenantId();
-    const userId = this.tenantContext.getUserId();
 
     try {
-      // 2. BUSINESS LOGIC USING REPOSITORY
       const pipeline = await this.pipelineRepository.findById(id, true);
 
       if (!pipeline) {
         throw new NotFoundException(`Pipeline ${id} not found`);
       }
 
-      return pipeline;
-    } catch (error: any) {
-      // 3. ENTERPRISE ERROR HANDLING
-      this.logger.error(`findOne failed: ${error.message}`, error.stack, {
+      return pipeline as PipelineWithStages;
+    } catch (error) {
+      this.logger.error(`findOne failed`, {
         tenantId,
-        userId,
         method: 'findOne',
         id,
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
 
-      if (
-        error instanceof NotFoundException ||
-        error instanceof ForbiddenException
-      ) {
-        throw error;
-      }
-
-      throw new BadRequestException('Failed to fetch pipeline');
+      this.handleError(error, 'Failed to fetch pipeline');
     } finally {
-      // 4. PERFORMANCE MONITORING
-      const duration = Date.now() - startTime;
-      this.logger.log(`Pipeline.findOne completed in ${duration}ms`, {
-        duration,
-        tenantId,
-        performance: duration > 2000 ? 'slow' : 'normal',
-      });
+      this.logPerformance('findOne', Date.now() - startTime, tenantId);
     }
   }
 
@@ -247,7 +281,6 @@ export class PipelinesService {
     const userId = this.tenantContext.getUserId();
 
     try {
-      // 2. VERIFY PIPELINE EXISTS AND BELONGS TO TENANT
       const existingPipeline = await this.pipelineRepository.findById(
         id,
         false,
@@ -256,7 +289,6 @@ export class PipelinesService {
         throw new NotFoundException(`Pipeline ${id} not found`);
       }
 
-      // 3. PRESERVE BUSINESS LOGIC: DEFAULT PIPELINE HANDLING
       if (updatePipelineDto.isDefault === true) {
         await this.pipelineRepository.updateMany(
           { isDefault: true },
@@ -264,13 +296,11 @@ export class PipelinesService {
         );
       }
 
-      // 4. UPDATE PIPELINE
       const pipeline = await this.pipelineRepository.update(
         id,
         updatePipelineDto,
       );
 
-      // 5. AUDIT LOG
       await this.auditLogService.logEvent({
         action: 'PIPELINE_UPDATED',
         entityType: 'PIPELINE',
@@ -281,7 +311,7 @@ export class PipelinesService {
           pipelineName: pipeline.name,
           isDefault: pipeline.isDefault,
         },
-        severity: 'INFO' as any,
+        severity: 'INFO',
         organizationId: tenantId,
       });
 
@@ -292,32 +322,19 @@ export class PipelinesService {
       });
 
       return pipeline;
-    } catch (error: any) {
-      // 6. ERROR HANDLING
-      this.logger.error(`update failed: ${error.message}`, error.stack, {
+    } catch (error) {
+      this.logger.error(`update failed`, {
         tenantId,
         userId,
         method: 'update',
         id,
         data: updatePipelineDto,
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
 
-      if (
-        error instanceof NotFoundException ||
-        error instanceof ForbiddenException
-      ) {
-        throw error;
-      }
-
-      throw new BadRequestException('Failed to update pipeline');
+      this.handleError(error, 'Failed to update pipeline');
     } finally {
-      // 7. PERFORMANCE MONITORING
-      const duration = Date.now() - startTime;
-      this.logger.log(`Pipeline.update completed in ${duration}ms`, {
-        duration,
-        tenantId,
-        performance: duration > 2000 ? 'slow' : 'normal',
-      });
+      this.logPerformance('update', Date.now() - startTime, tenantId);
     }
   }
 
@@ -327,15 +344,12 @@ export class PipelinesService {
     const userId = this.tenantContext.getUserId();
 
     try {
-      // 2. GET PIPELINE WITH DEAL COUNT
-      const pipeline = await this.pipelineRepository.findById(id, false);
+      const pipeline = await this.pipelineRepository.findById(id, true);
       if (!pipeline) {
         throw new NotFoundException(`Pipeline ${id} not found`);
       }
 
-      // 3. PRESERVE BUSINESS LOGIC: DEAL COUNT VALIDATION
-      // Type assertion to access deal count
-      const pipelineWithCount = pipeline as any;
+      const pipelineWithCount = pipeline as PipelineWithStages;
       const dealCount = pipelineWithCount._count?.deals || 0;
 
       if (dealCount > 0) {
@@ -344,7 +358,6 @@ export class PipelinesService {
         );
       }
 
-      // 4. PRESERVE BUSINESS LOGIC: DEFAULT PIPELINE REASSIGNMENT
       if (pipeline.isDefault) {
         const anotherPipeline = await this.pipelineRepository.findFirst({
           id: { not: id },
@@ -357,10 +370,8 @@ export class PipelinesService {
         }
       }
 
-      // 5. DELETE PIPELINE
       await this.pipelineRepository.delete(id);
 
-      // 6. AUDIT LOG
       await this.auditLogService.logEvent({
         action: 'PIPELINE_DELETED',
         entityType: 'PIPELINE',
@@ -371,7 +382,7 @@ export class PipelinesService {
           pipelineName: pipeline.name,
           wasDefault: pipeline.isDefault,
         },
-        severity: 'INFO' as any,
+        severity: 'INFO',
         organizationId: tenantId,
       });
 
@@ -382,42 +393,26 @@ export class PipelinesService {
       });
 
       return { message: 'Pipeline deleted successfully' };
-    } catch (error: any) {
-      // 7. ERROR HANDLING
-      this.logger.error(`remove failed: ${error.message}`, error.stack, {
+    } catch (error) {
+      this.logger.error(`remove failed`, {
         tenantId,
         userId,
         method: 'remove',
         id,
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
 
-      if (
-        error instanceof NotFoundException ||
-        error instanceof ConflictException ||
-        error instanceof ForbiddenException
-      ) {
-        throw error;
-      }
-
-      throw new BadRequestException('Failed to delete pipeline');
+      this.handleError(error, 'Failed to delete pipeline');
     } finally {
-      // 8. PERFORMANCE MONITORING
-      const duration = Date.now() - startTime;
-      this.logger.log(`Pipeline.remove completed in ${duration}ms`, {
-        duration,
-        tenantId,
-        performance: duration > 2000 ? 'slow' : 'normal',
-      });
+      this.logPerformance('remove', Date.now() - startTime, tenantId);
     }
   }
 
   async getDefaultPipeline() {
     const startTime = Date.now();
     const tenantId = this.tenantContext.getTenantId();
-    const userId = this.tenantContext.getUserId();
 
     try {
-      // 2. BUSINESS LOGIC USING REPOSITORY
       const pipeline = await this.pipelineRepository.getDefaultPipeline();
 
       if (!pipeline) {
@@ -425,36 +420,19 @@ export class PipelinesService {
       }
 
       return pipeline;
-    } catch (error: any) {
-      // 3. ERROR HANDLING
-      this.logger.error(
-        `getDefaultPipeline failed: ${error.message}`,
-        error.stack,
-        {
-          tenantId,
-          userId,
-          method: 'getDefaultPipeline',
-        },
-      );
+    } catch (error) {
+      this.logger.error(`getDefaultPipeline failed`, {
+        tenantId,
+        method: 'getDefaultPipeline',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
 
-      if (
-        error instanceof NotFoundException ||
-        error instanceof ForbiddenException
-      ) {
-        throw error;
-      }
-
-      throw new BadRequestException('Failed to fetch default pipeline');
+      this.handleError(error, 'Failed to fetch default pipeline');
     } finally {
-      // 4. PERFORMANCE MONITORING
-      const duration = Date.now() - startTime;
-      this.logger.log(
-        `Pipeline.getDefaultPipeline completed in ${duration}ms`,
-        {
-          duration,
-          tenantId,
-          performance: duration > 2000 ? 'slow' : 'normal',
-        },
+      this.logPerformance(
+        'getDefaultPipeline',
+        Date.now() - startTime,
+        tenantId,
       );
     }
   }
@@ -467,7 +445,6 @@ export class PipelinesService {
     const userId = this.tenantContext.getUserId();
 
     try {
-      // 2. VERIFY PIPELINE EXISTS
       const pipeline = await this.pipelineRepository.findById(
         pipelineId,
         false,
@@ -476,7 +453,6 @@ export class PipelinesService {
         throw new NotFoundException(`Pipeline ${pipelineId} not found`);
       }
 
-      // 3. CHECK FOR EXISTING STAGE WITH SAME ORDER
       const existingStage = await this.pipelineRepository.findStageByOrder(
         pipelineId,
         data.order,
@@ -487,27 +463,25 @@ export class PipelinesService {
         );
       }
 
-      // 4. CREATE STAGE
       const stage = await this.pipelineRepository.createStage({
         ...data,
         pipelineId,
       });
 
-      // 5. AUDIT LOG - Use pipeline audit actions since stage-specific ones don't exist
       await this.auditLogService.logEvent({
-        action: 'PIPELINE_UPDATED', // Revert to original
-        entityType: 'PIPELINE', // Revert to original
+        action: 'PIPELINE_UPDATED',
+        entityType: 'PIPELINE',
         actorEmail: await this.getUserEmail(userId),
         actorUserId: userId,
-        entityId: pipelineId, // Pipeline ID (not stage ID)
+        entityId: pipelineId,
         metadata: {
           stageName: stage.name,
-          stageId: stage.id, // Add stage ID to metadata
+          stageId: stage.id,
           pipelineId,
           order: stage.order,
-          action: 'stage_created', // Add action type to metadata
+          action: 'stage_created',
         },
-        severity: 'INFO' as any,
+        severity: 'INFO',
         organizationId: tenantId,
       });
 
@@ -519,33 +493,19 @@ export class PipelinesService {
       });
 
       return stage;
-    } catch (error: any) {
-      // 6. ERROR HANDLING
-      this.logger.error(`createStage failed: ${error.message}`, error.stack, {
+    } catch (error) {
+      this.logger.error(`createStage failed`, {
         tenantId,
         userId,
         method: 'createStage',
         pipelineId,
         data,
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
 
-      if (
-        error instanceof NotFoundException ||
-        error instanceof ConflictException ||
-        error instanceof ForbiddenException
-      ) {
-        throw error;
-      }
-
-      throw new BadRequestException('Failed to create pipeline stage');
+      this.handleError(error, 'Failed to create pipeline stage');
     } finally {
-      // 7. PERFORMANCE MONITORING
-      const duration = Date.now() - startTime;
-      this.logger.log(`Pipeline.createStage completed in ${duration}ms`, {
-        duration,
-        tenantId,
-        performance: duration > 2000 ? 'slow' : 'normal',
-      });
+      this.logPerformance('createStage', Date.now() - startTime, tenantId);
     }
   }
 
@@ -555,23 +515,20 @@ export class PipelinesService {
     const userId = this.tenantContext.getUserId();
 
     try {
-      // 2. GET STAGE WITH PIPELINE INFO
       const stage = await this.pipelineRepository.findStageById(stageId, true);
-      if (!stage || !(stage as any).pipeline) {
+      if (!stage) {
         throw new NotFoundException(`Pipeline stage ${stageId} not found`);
       }
 
-      const stageWithPipeline = stage as any;
+      const stageWithPipeline = stage as StageWithPipeline;
       const pipeline = stageWithPipeline.pipeline;
 
-      // 3. CHECK TENANT OWNERSHIP
       if (pipeline.organizationId !== tenantId) {
         throw new ForbiddenException(
           'Stage does not belong to your organization',
         );
       }
 
-      // 4. CHECK FOR ORDER CONFLICT IF ORDER IS CHANGING
       if (updateDto.order !== undefined && updateDto.order !== stage.order) {
         const existingStage = await this.pipelineRepository.findStageByOrder(
           stage.pipelineId,
@@ -585,19 +542,17 @@ export class PipelinesService {
         }
       }
 
-      // 5. UPDATE STAGE
       const updatedStage = await this.pipelineRepository.updateStage(
         stageId,
         updateDto,
       );
 
-      // 6. AUDIT LOG - Use pipeline audit actions
       await this.auditLogService.logEvent({
-        action: 'PIPELINE_UPDATED', // Revert to original
-        entityType: 'PIPELINE', // Revert to original
+        action: 'PIPELINE_UPDATED',
+        entityType: 'PIPELINE',
         actorEmail: await this.getUserEmail(userId),
         actorUserId: userId,
-        entityId: stage.pipelineId, // Pipeline ID
+        entityId: stage.pipelineId,
         metadata: {
           stageName: updatedStage.name,
           stageId: updatedStage.id,
@@ -605,7 +560,7 @@ export class PipelinesService {
           order: updatedStage.order,
           action: 'stage_updated',
         },
-        severity: 'INFO' as any,
+        severity: 'INFO',
         organizationId: tenantId,
       });
 
@@ -617,33 +572,19 @@ export class PipelinesService {
       });
 
       return updatedStage;
-    } catch (error: any) {
-      // 7. ERROR HANDLING
-      this.logger.error(`updateStage failed: ${error.message}`, error.stack, {
+    } catch (error) {
+      this.logger.error(`updateStage failed`, {
         tenantId,
         userId,
         method: 'updateStage',
         stageId,
         data: updateDto,
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
 
-      if (
-        error instanceof NotFoundException ||
-        error instanceof ConflictException ||
-        error instanceof ForbiddenException
-      ) {
-        throw error;
-      }
-
-      throw new BadRequestException('Failed to update pipeline stage');
+      this.handleError(error, 'Failed to update pipeline stage');
     } finally {
-      // 8. PERFORMANCE MONITORING
-      const duration = Date.now() - startTime;
-      this.logger.log(`Pipeline.updateStage completed in ${duration}ms`, {
-        duration,
-        tenantId,
-        performance: duration > 2000 ? 'slow' : 'normal',
-      });
+      this.logPerformance('updateStage', Date.now() - startTime, tenantId);
     }
   }
 
@@ -653,23 +594,20 @@ export class PipelinesService {
     const userId = this.tenantContext.getUserId();
 
     try {
-      // 2. GET STAGE WITH DEAL COUNT
       const stage = await this.pipelineRepository.findStageById(stageId, true);
-      if (!stage || !(stage as any).pipeline) {
+      if (!stage) {
         throw new NotFoundException(`Pipeline stage ${stageId} not found`);
       }
 
-      const stageWithPipeline = stage as any;
+      const stageWithPipeline = stage as StageWithPipeline;
       const pipeline = stageWithPipeline.pipeline;
 
-      // 3. CHECK TENANT OWNERSHIP
       if (pipeline.organizationId !== tenantId) {
         throw new ForbiddenException(
           'Stage does not belong to your organization',
         );
       }
 
-      // 4. CHECK FOR ACTIVE DEALS
       const dealCount = stageWithPipeline._count?.deals || 0;
       if (dealCount > 0) {
         throw new ConflictException(
@@ -677,14 +615,11 @@ export class PipelinesService {
         );
       }
 
-      // 5. DELETE STAGE
       await this.pipelineRepository.deleteStage(stageId);
 
-      // 6. PRESERVE BUSINESS LOGIC: REORDER REMAINING STAGES
       const remainingStages =
         await this.pipelineRepository.findStagesByPipeline(stage.pipelineId);
 
-      // Update orders to be sequential
       for (let i = 0; i < remainingStages.length; i++) {
         if (remainingStages[i].order !== i) {
           await this.pipelineRepository.updateStage(remainingStages[i].id, {
@@ -693,13 +628,12 @@ export class PipelinesService {
         }
       }
 
-      // 7. AUDIT LOG - Use pipeline audit actions
       await this.auditLogService.logEvent({
-        action: 'PIPELINE_UPDATED', // Revert to original
-        entityType: 'PIPELINE', // Revert to original
+        action: 'PIPELINE_UPDATED',
+        entityType: 'PIPELINE',
         actorEmail: await this.getUserEmail(userId),
         actorUserId: userId,
-        entityId: stage.pipelineId, // Pipeline ID
+        entityId: stage.pipelineId,
         metadata: {
           stageName: stage.name,
           stageId: stageId,
@@ -707,7 +641,7 @@ export class PipelinesService {
           reorderedStages: remainingStages.length,
           action: 'stage_deleted',
         },
-        severity: 'INFO' as any,
+        severity: 'INFO',
         organizationId: tenantId,
       });
 
@@ -719,32 +653,18 @@ export class PipelinesService {
       });
 
       return { message: 'Pipeline stage deleted successfully' };
-    } catch (error: any) {
-      // 8. ERROR HANDLING
-      this.logger.error(`removeStage failed: ${error.message}`, error.stack, {
+    } catch (error) {
+      this.logger.error(`removeStage failed`, {
         tenantId,
         userId,
         method: 'removeStage',
         stageId,
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
 
-      if (
-        error instanceof NotFoundException ||
-        error instanceof ConflictException ||
-        error instanceof ForbiddenException
-      ) {
-        throw error;
-      }
-
-      throw new BadRequestException('Failed to delete pipeline stage');
+      this.handleError(error, 'Failed to delete pipeline stage');
     } finally {
-      // 9. PERFORMANCE MONITORING
-      const duration = Date.now() - startTime;
-      this.logger.log(`Pipeline.removeStage completed in ${duration}ms`, {
-        duration,
-        tenantId,
-        performance: duration > 2000 ? 'slow' : 'normal',
-      });
+      this.logPerformance('removeStage', Date.now() - startTime, tenantId);
     }
   }
 
@@ -754,7 +674,6 @@ export class PipelinesService {
     const userId = this.tenantContext.getUserId();
 
     try {
-      // 2. VERIFY PIPELINE EXISTS AND BELONGS TO TENANT
       const pipeline = await this.pipelineRepository.findById(
         pipelineId,
         false,
@@ -763,7 +682,6 @@ export class PipelinesService {
         throw new NotFoundException(`Pipeline ${pipelineId} not found`);
       }
 
-      // 3. VERIFY ALL STAGES BELONG TO THIS PIPELINE
       const stages =
         await this.pipelineRepository.findStagesByPipeline(pipelineId);
       const stageMap = new Map(stages.map((stage) => [stage.id, stage]));
@@ -774,22 +692,21 @@ export class PipelinesService {
           `One or more stages not found in this pipeline: ${invalidStages.join(', ')}`,
         );
       }
+      await this.pipelineRepository.transaction(
+        async (tx: Prisma.TransactionClient) => {
+          const updates = stageIds.map((id, index) =>
+            tx.pipelineStage.update({
+              where: { id },
+              data: { order: index },
+            }),
+          );
 
-      // 4. REORDER STAGES USING TRANSACTION
-      await this.pipelineRepository.transaction(async (prisma) => {
-        const updates = stageIds.map((id, index) =>
-          prisma.pipelineStage.update({
-            where: { id },
-            data: { order: index },
-          }),
-        );
+          await Promise.all(updates);
+        },
+      );
 
-        await Promise.all(updates);
-      });
-
-      // 5. AUDIT LOG
       await this.auditLogService.logEvent({
-        action: 'PIPELINE_UPDATED', // Revert to original (not PIPELINE_STAGE_REORDERED)
+        action: 'PIPELINE_UPDATED',
         entityType: 'PIPELINE',
         actorEmail: await this.getUserEmail(userId),
         actorUserId: userId,
@@ -800,7 +717,7 @@ export class PipelinesService {
           newOrder: stageIds,
           action: 'stages_reordered',
         },
-        severity: 'INFO' as any,
+        severity: 'INFO',
         organizationId: tenantId,
       });
 
@@ -812,47 +729,19 @@ export class PipelinesService {
       });
 
       return { message: 'Stages reordered successfully' };
-    } catch (error: any) {
-      // 6. ERROR HANDLING
-      this.logger.error(`reorderStages failed: ${error.message}`, error.stack, {
+    } catch (error) {
+      this.logger.error(`reorderStages failed`, {
         tenantId,
         userId,
         method: 'reorderStages',
         pipelineId,
         stageIds,
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
 
-      if (
-        error instanceof NotFoundException ||
-        error instanceof ForbiddenException
-      ) {
-        throw error;
-      }
-
-      throw new BadRequestException('Failed to reorder stages');
+      this.handleError(error, 'Failed to reorder stages');
     } finally {
-      // 7. PERFORMANCE MONITORING
-      const duration = Date.now() - startTime;
-      this.logger.log(`Pipeline.reorderStages completed in ${duration}ms`, {
-        duration,
-        tenantId,
-        performance: duration > 2000 ? 'slow' : 'normal',
-      });
-    }
-  }
-
-  private async getUserEmail(userId: string): Promise<string> {
-    try {
-      const user = await this.prisma.user.findUnique({
-        where: { id: userId },
-        select: { email: true },
-      });
-      return user?.email || 'system@unknown';
-    } catch (error) {
-      this.logger.warn(
-        `Failed to fetch user email for ${userId}: ${error.message}`,
-      );
-      return 'system@unknown';
+      this.logPerformance('reorderStages', Date.now() - startTime, tenantId);
     }
   }
 }
