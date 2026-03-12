@@ -1,22 +1,21 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { ContactsController } from '@api/modules/contacts/contacts.controller';
 import { ContactsService } from '@api/modules/contacts/contacts.service';
-import { ForbiddenException } from '@nestjs/common';
 
 // Mock the guards
-jest.mock('../../../src/shared/guards/auth.guard', () => ({
+jest.mock('@api/shared/guards/auth.guard', () => ({
   AuthGuard: jest.fn().mockImplementation(() => ({
     canActivate: jest.fn().mockReturnValue(true),
   })),
 }));
 
-jest.mock('../../../src/shared/guards/tenant.guard', () => ({
+jest.mock('@api/shared/guards/tenant.guard', () => ({
   TenantGuard: jest.fn().mockImplementation(() => ({
     canActivate: jest.fn().mockReturnValue(true),
   })),
 }));
 
-jest.mock('../../../src/shared/guards/permission.guard', () => ({
+jest.mock('@api/shared/guards/permission.guard', () => ({
   PermissionGuard: jest.fn().mockImplementation(() => ({
     canActivate: jest.fn().mockReturnValue(true),
   })),
@@ -37,7 +36,6 @@ const mockRequest = {
 
 describe('ContactsController', () => {
   let controller: ContactsController;
-  let contactsService: typeof mockContactsService;
 
   const createController = async () => {
     const module = await Test.createTestingModule({

@@ -2,22 +2,21 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { UsersController } from '@api/modules/users/users.controller';
 import { UsersService } from '@api/modules/users/users.service';
 import { PermissionContextService } from '@api/shared/permissions/context/permission-context.service';
-import { ForbiddenException } from '@nestjs/common';
 
 // Mock the guards
-jest.mock('../../../src/shared/guards/auth.guard', () => ({
+jest.mock('@api/shared/guards/auth.guard', () => ({
   AuthGuard: jest.fn().mockImplementation(() => ({
     canActivate: jest.fn().mockReturnValue(true),
   })),
 }));
 
-jest.mock('../../../src/shared/guards/tenant.guard', () => ({
+jest.mock('@api/shared/guards/tenant.guard', () => ({
   TenantGuard: jest.fn().mockImplementation(() => ({
     canActivate: jest.fn().mockReturnValue(true),
   })),
 }));
 
-jest.mock('../../../src/shared/guards/permission.guard', () => ({
+jest.mock('@api/shared/guards/permission.guard', () => ({
   PermissionGuard: jest.fn().mockImplementation(() => ({
     canActivate: jest.fn().mockReturnValue(true),
   })),
@@ -104,7 +103,7 @@ describe('UsersController', () => {
     it('should throw ForbiddenException if permission context not initialized', async () => {
       permissionContext.isInitialized.mockReturnValue(false);
 
-      await expect(controller.findAll(query)).rejects.toThrow(ForbiddenException);
+      await expect(controller.findAll(query)).rejects.toThrow('Permission context not initialized');
       expect(usersService.findAll).not.toHaveBeenCalled();
     });
   });
@@ -138,7 +137,7 @@ describe('UsersController', () => {
     it('should throw ForbiddenException if permission context not initialized', async () => {
       permissionContext.isInitialized.mockReturnValue(false);
 
-      await expect(controller.findOne(userId)).rejects.toThrow(ForbiddenException);
+      await expect(controller.findOne(userId)).rejects.toThrow('Permission context not initialized');
       expect(usersService.findOne).not.toHaveBeenCalled();
     });
   });
@@ -160,9 +159,9 @@ describe('UsersController', () => {
     it('should throw ForbiddenException if permission context not initialized', async () => {
       permissionContext.isInitialized.mockReturnValue(false);
 
-      await expect(controller.update(userId, updateUserDto, mockRequest)).rejects.toThrow(
-        ForbiddenException,
-      );
+await expect(controller.update(userId, updateUserDto, mockRequest)).rejects.toThrow(
+  'Permission context not initialized',
+);
       expect(usersService.update).not.toHaveBeenCalled();
     });
   });
@@ -183,7 +182,7 @@ describe('UsersController', () => {
     it('should throw ForbiddenException if permission context not initialized', async () => {
       permissionContext.isInitialized.mockReturnValue(false);
 
-      await expect(controller.remove(userId, mockRequest)).rejects.toThrow(ForbiddenException);
+      await expect(controller.remove(userId, mockRequest)).rejects.toThrow('Permission context not initialized');
       expect(usersService.remove).not.toHaveBeenCalled();
     });
   });

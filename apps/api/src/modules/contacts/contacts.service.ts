@@ -2,12 +2,39 @@ import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { UpdateContactDto } from './dto/update-contact.dto';
 import { ContactRepository } from './repositories/contact.repository';
 import { PermissionContextService } from '../../shared/permissions/context/permission-context.service';
+import type { Contact, Prisma } from '@prisma/client';
+
+// ==================== TYPE DEFINITIONS ====================
 
 interface FindAllOptions {
   page?: number;
   limit?: number;
   search?: string;
 }
+
+interface CreateContactInput {
+  firstName: string;
+  lastName: string;
+  email?: string;
+  phone?: string;
+  company?: string;
+  title?: string;
+  department?: string;
+  metadata?: Record<string, any>;
+}
+
+interface UpdateContactInput {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+  company?: string;
+  title?: string;
+  department?: string;
+  metadata?: Record<string, any>;
+}
+
+// ==================== SERVICE IMPLEMENTATION ====================
 
 @Injectable()
 export class ContactsService {
@@ -20,10 +47,13 @@ export class ContactsService {
     this.logger.log('ContactsService initialized');
   }
 
-  private async checkPermission(permission: string): Promise<boolean> {
+  /**
+   * Check permission - non-async since hasPermission is likely synchronous
+   */
+  private checkPermission(permission: string): boolean {
     try {
       return this.permissionContext.hasPermission(permission);
-    } catch (error) {
+    } catch {
       this.logger.debug(
         `Permission context not ready for ${permission}, relying on guard`,
       );
@@ -31,29 +61,46 @@ export class ContactsService {
     }
   }
 
-  async create(data: any, tenantId: string) {
+  /**
+   * Parse full name into firstName and lastName
+   */
+  private parseFullName(name: string): { firstName: string; lastName: string } {
+    const nameParts = name.trim().split(/\s+/);
+    const firstName = nameParts[0] || '';
+    const lastName = nameParts.slice(1).join(' ') || '';
+    return { firstName, lastName };
+  }
+
+  async create(
+    data: Record<string, unknown>,
+    tenantId: string,
+  ): Promise<Contact> {
     this.logger.log('=== CREATE CONTACT START ===');
     this.logger.log(`Using tenant ID: ${tenantId}`);
 
     try {
-      await this.checkPermission('contact:write');
+      this.checkPermission('contact:write');
       this.logger.log('Permission check passed');
 
       const { name, ...restData } = data;
-
-      const nameParts = name ? name.trim().split(/\s+/) : [];
-      const firstName = nameParts[0] || '';
-      const lastName = nameParts.slice(1).join(' ') || '';
+      const { firstName, lastName } = this.parseFullName(
+        (name as string) || '',
+      );
 
       this.logger.log(
         `Creating contact with firstName: ${firstName}, lastName: ${lastName}`,
       );
 
-      const contact = await this.contactRepository.create(tenantId, {
-        ...restData,
+      const createInput: CreateContactInput = {
         firstName,
         lastName,
-      });
+        ...restData,
+      };
+
+      const contact = await this.contactRepository.create(
+        tenantId,
+        createInput,
+      );
 
       this.logger.log('Contact created successfully:', {
         contactId: contact.id,
@@ -62,20 +109,32 @@ export class ContactsService {
 
       return contact;
     } catch (error) {
-      this.logger.error('Failed to create contact', error.stack);
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      const errorStack = error instanceof Error ? error.stack : undefined;
+      this.logger.error(
+        `Failed to create contact: ${errorMessage}`,
+        errorStack,
+      );
       throw error;
     }
   }
 
-  async findAll(options: FindAllOptions, tenantId: string) {
+  async findAll(
+    options: FindAllOptions,
+    tenantId: string,
+  ): Promise<{
+    data: Contact[];
+    meta: { page: number; limit: number; total: number; pages: number };
+  }> {
     try {
-      await this.checkPermission('contact:read');
+      this.checkPermission('contact:read');
 
       const { page = 1, limit = 20, search } = options;
       const skip = (page - 1) * limit;
       const take = limit;
 
-      const where: any = {};
+      const where: Prisma.ContactWhereInput = {};
 
       if (search) {
         where.OR = [
@@ -107,14 +166,20 @@ export class ContactsService {
         },
       };
     } catch (error) {
-      this.logger.error('Failed to fetch contacts', error.stack);
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      const errorStack = error instanceof Error ? error.stack : undefined;
+      this.logger.error(
+        `Failed to fetch contacts: ${errorMessage}`,
+        errorStack,
+      );
       throw error;
     }
   }
 
-  async findOne(id: string, tenantId: string) {
+  async findOne(id: string, tenantId: string): Promise<Contact> {
     try {
-      await this.checkPermission('contact:read');
+      this.checkPermission('contact:read');
 
       const contact = await this.contactRepository.findById(id, tenantId);
 
@@ -127,7 +192,10 @@ export class ContactsService {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      this.logger.error('Failed to fetch contact', error.stack);
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      const errorStack = error instanceof Error ? error.stack : undefined;
+      this.logger.error(`Failed to fetch contact: ${errorMessage}`, errorStack);
       throw error;
     }
   }
@@ -136,20 +204,19 @@ export class ContactsService {
     id: string,
     updateContactDto: UpdateContactDto,
     tenantId: string,
-  ) {
+  ): Promise<Contact> {
     try {
-      await this.checkPermission('contact:write');
+      this.checkPermission('contact:write');
 
       await this.findOne(id, tenantId);
 
-      const { name, ...updateData } = updateContactDto as any;
-
-      const updatePayload: any = { ...updateData };
+      const { name, ...updateData } = updateContactDto;
+      const updatePayload: UpdateContactInput = { ...updateData };
 
       if (name !== undefined) {
-        const nameParts = name.trim().split(/\s+/);
-        updatePayload.firstName = nameParts[0] || '';
-        updatePayload.lastName = nameParts.slice(1).join(' ') || '';
+        const { firstName, lastName } = this.parseFullName(name);
+        updatePayload.firstName = firstName;
+        updatePayload.lastName = lastName;
       }
 
       const contact = await this.contactRepository.update(tenantId, {
@@ -164,14 +231,20 @@ export class ContactsService {
 
       return contact;
     } catch (error) {
-      this.logger.error('Failed to update contact', error.stack);
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      const errorStack = error instanceof Error ? error.stack : undefined;
+      this.logger.error(
+        `Failed to update contact: ${errorMessage}`,
+        errorStack,
+      );
       throw error;
     }
   }
 
-  async remove(id: string, tenantId: string) {
+  async remove(id: string, tenantId: string): Promise<Contact> {
     try {
-      await this.checkPermission('contact:delete');
+      this.checkPermission('contact:delete');
 
       await this.findOne(id, tenantId);
 
@@ -184,7 +257,13 @@ export class ContactsService {
 
       return contact;
     } catch (error) {
-      this.logger.error('Failed to delete contact', error.stack);
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      const errorStack = error instanceof Error ? error.stack : undefined;
+      this.logger.error(
+        `Failed to delete contact: ${errorMessage}`,
+        errorStack,
+      );
       throw error;
     }
   }

@@ -232,7 +232,7 @@ describe('ContactsService', () => {
     it('should throw NotFoundException if contact not found', async () => {
       contactRepository.findById.mockResolvedValue(null);
 
-      await expect(service.findOne('contact-123', 'org-123')).rejects.toThrow(NotFoundException);
+      await expect(service.findOne('contact-123', 'org-123')).rejects.toThrow('Contact contact-123 not found');
     });
 
     it('should check permission before fetching', async () => {

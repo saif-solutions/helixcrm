@@ -2,9 +2,8 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
-  BadRequestException,
-  Logger,
   ForbiddenException,
+  Logger,
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -12,20 +11,73 @@ import { UserQueryDto } from './dto/user-query.dto';
 import * as bcrypt from 'bcrypt';
 import { UserRepository } from './repositories/user.repository';
 import { TenantContextService } from '../../shared/tenant/context/tenant-context.service';
+import type { User, Prisma } from '@prisma/client';
+
+// ==================== TYPE DEFINITIONS ====================
+
+interface UserWithoutPassword {
+  id: string;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  role: string;
+  isActive: boolean;
+  organizationId: string;
+  tokenVersion: number;
+  lastLoginAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+  deletedAt: Date | null;
+}
+
+// ==================== SERVICE IMPLEMENTATION ====================
 
 @Injectable()
 export class UsersService {
   private readonly logger = new Logger(UsersService.name);
+  private readonly SALT_ROUNDS = 10;
 
   constructor(
     private userRepository: UserRepository,
-    private tenantContext: TenantContextService, // ✅ Keep only tenant context
+    private tenantContext: TenantContextService,
   ) {}
+
+  /**
+   * Remove password hash from user object
+   */
+  private removePasswordHash(user: User): UserWithoutPassword {
+    // Create a plain object copy without the passwordHash property
+    const result: UserWithoutPassword = {
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      role: user.role,
+      isActive: user.isActive,
+      organizationId: user.organizationId,
+      tokenVersion: user.tokenVersion,
+      lastLoginAt: user.lastLoginAt,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+      deletedAt: user.deletedAt,
+    };
+    return result;
+  }
+
+  /**
+   * Remove password hash from array of user objects
+   */
+  private removePasswordHashFromUsers(users: User[]): UserWithoutPassword[] {
+    return users.map((user) => this.removePasswordHash(user));
+  }
 
   /**
    * Create a new user in the current tenant
    */
-  async create(createUserDto: CreateUserDto, createdById?: string) {
+  async create(
+    createUserDto: CreateUserDto,
+    createdById?: string,
+  ): Promise<UserWithoutPassword> {
     const {
       email,
       password,
@@ -45,8 +97,7 @@ export class UsersService {
     }
 
     // Hash password
-    const saltRounds = 10;
-    const passwordHash = await bcrypt.hash(password, saltRounds);
+    const passwordHash = await bcrypt.hash(password, this.SALT_ROUNDS);
 
     // Get current tenant ID for organization connection
     const organizationId = this.tenantContext.getTenantId();
@@ -67,29 +118,36 @@ export class UsersService {
       },
     });
 
-    // AUDIT LOGGING - use tenantContext.getUserId() instead
+    // Audit logging
     this.logger.log(`User created successfully`, {
       event: 'user_created',
       newUserId: user.id,
       newUserEmail: user.email,
-      createdByUserId: createdById || this.tenantContext.getUserId(), // ✅ FIXED
+      createdByUserId: createdById || this.tenantContext.getUserId(),
       organizationId,
     });
 
     // Return without password hash
-    const { passwordHash: _, ...userWithoutPassword } = user;
-    return userWithoutPassword;
+    return this.removePasswordHash(user);
   }
 
   /**
    * Find all users in current tenant
    */
-  async findAll(query: UserQueryDto) {
+  async findAll(query: UserQueryDto): Promise<UserWithoutPassword[]> {
     const { isActive, search, role } = query;
-    const where: any = {};
 
-    if (isActive !== undefined) where.isActive = isActive;
-    if (role) where.role = role;
+    // Build where clause with proper typing
+    const where: Prisma.UserWhereInput = {};
+
+    if (isActive !== undefined) {
+      where.isActive = isActive;
+    }
+
+    if (role) {
+      where.role = role;
+    }
+
     if (search) {
       where.OR = [
         { email: { contains: search, mode: 'insensitive' } },
@@ -103,25 +161,21 @@ export class UsersService {
       orderBy: { createdAt: 'desc' },
     });
 
-    // Remove password hash from all users
-    const usersWithoutPasswords = users.map(
-      ({ passwordHash: _, ...user }) => user,
-    );
-
-    // DEBUG LOGGING - use tenantContext.getUserId() instead
+    // Debug logging
     this.logger.debug(`User list fetched`, {
       userCount: users.length,
-      requesterId: this.tenantContext.getUserId(), // ✅ FIXED
+      requesterId: this.tenantContext.getUserId(),
       organizationId: this.tenantContext.getTenantId(),
     });
 
-    return usersWithoutPasswords;
+    // Remove password hash from all users
+    return this.removePasswordHashFromUsers(users);
   }
 
   /**
    * Find a user by ID within current tenant
    */
-  async findOne(id: string) {
+  async findOne(id: string): Promise<UserWithoutPassword> {
     const user = await this.userRepository.findById(id);
 
     if (!user) {
@@ -130,15 +184,17 @@ export class UsersService {
       );
     }
 
-    // Remove password hash
-    const { passwordHash: _, ...userWithoutPassword } = user;
-    return userWithoutPassword;
+    return this.removePasswordHash(user);
   }
 
   /**
    * Update user in current tenant
    */
-  async update(id: string, updateUserDto: UpdateUserDto, updatedById?: string) {
+  async update(
+    id: string,
+    updateUserDto: UpdateUserDto,
+    updatedById?: string,
+  ): Promise<UserWithoutPassword> {
     // Check if user exists in current tenant
     const existingUser = await this.userRepository.findById(id);
     if (!existingUser) {
@@ -148,14 +204,23 @@ export class UsersService {
     }
 
     // Prepare update data
-    const updateData: any = {};
-    if (updateUserDto.firstName !== undefined)
+    const updateData: Prisma.UserUpdateInput = {};
+
+    if (updateUserDto.firstName !== undefined) {
       updateData.firstName = updateUserDto.firstName;
-    if (updateUserDto.lastName !== undefined)
+    }
+
+    if (updateUserDto.lastName !== undefined) {
       updateData.lastName = updateUserDto.lastName;
-    if (updateUserDto.isActive !== undefined)
+    }
+
+    if (updateUserDto.isActive !== undefined) {
       updateData.isActive = updateUserDto.isActive;
-    if (updateUserDto.role !== undefined) updateData.role = updateUserDto.role;
+    }
+
+    if (updateUserDto.role !== undefined) {
+      updateData.role = updateUserDto.role;
+    }
 
     // Update user using repository
     const updatedUser = await this.userRepository.update({
@@ -166,21 +231,19 @@ export class UsersService {
     this.logger.log(`User updated`, {
       event: 'user_updated',
       userId: id,
-      updatedBy: updatedById || this.tenantContext.getUserId(), // ✅ FIXED
+      updatedBy: updatedById || this.tenantContext.getUserId(),
       organizationId: this.tenantContext.getTenantId(),
     });
 
-    // Remove password hash
-    const { passwordHash: _, ...userWithoutPassword } = updatedUser;
-    return userWithoutPassword;
+    return this.removePasswordHash(updatedUser);
   }
 
   /**
    * Remove user from current tenant
    */
-  async remove(id: string, deletedById?: string) {
+  async remove(id: string, deletedById?: string): Promise<UserWithoutPassword> {
     // Cannot delete yourself
-    const currentUserId = this.tenantContext.getUserId(); // ✅ FIXED
+    const currentUserId = this.tenantContext.getUserId();
     if (id === currentUserId) {
       throw new ForbiddenException('Cannot delete your own account');
     }
@@ -203,15 +266,13 @@ export class UsersService {
       organizationId: this.tenantContext.getTenantId(),
     });
 
-    // Remove password hash
-    const { passwordHash: _, ...userWithoutPassword } = deletedUser;
-    return userWithoutPassword;
+    return this.removePasswordHash(deletedUser);
   }
 
   /**
    * Get current user's profile
    */
-  async getProfile(userId: string) {
+  async getProfile(userId: string): Promise<UserWithoutPassword> {
     // User can always view their own profile
     const user = await this.userRepository.findById(userId);
 
@@ -219,43 +280,44 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
 
-    // Remove password hash
-    const { passwordHash: _, ...userWithoutPassword } = user;
-    return userWithoutPassword;
+    return this.removePasswordHash(user);
   }
 
   /**
    * Soft delete user (archive)
    */
-  async archive(id: string, archivedById?: string) {
-    console.log('Archive method called with id:', id);
-
+  async archive(
+    id: string,
+    archivedById?: string,
+  ): Promise<UserWithoutPassword> {
     const currentUserId = this.tenantContext.getUserId();
-    console.log('Current user ID:', currentUserId);
 
     if (id === currentUserId) {
       throw new ForbiddenException('Cannot archive your own account');
     }
 
     const user = await this.userRepository.findById(id);
-    console.log('User found:', user ? 'yes' : 'no');
 
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
     const archivedUser = await this.userRepository.softDelete(id);
-    console.log('User archived:', archivedUser.id);
 
-    // Remove password hash
-    const { passwordHash: _, ...userWithoutPassword } = archivedUser;
-    return userWithoutPassword;
+    this.logger.log(`User archived`, {
+      event: 'user_archived',
+      userId: id,
+      archivedBy: archivedById || currentUserId,
+      organizationId: this.tenantContext.getTenantId(),
+    });
+
+    return this.removePasswordHash(archivedUser);
   }
 
   /**
    * Search users in current tenant
    */
-  async search(searchTerm: string) {
+  async search(searchTerm: string): Promise<UserWithoutPassword[]> {
     const users = await this.userRepository.findAll({
       where: {
         OR: [
@@ -267,7 +329,6 @@ export class UsersService {
       take: 20,
     });
 
-    // Remove password hash from all users
-    return users.map(({ passwordHash: _, ...user }) => user);
+    return this.removePasswordHashFromUsers(users);
   }
 }
