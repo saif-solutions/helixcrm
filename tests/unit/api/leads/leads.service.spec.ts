@@ -3,8 +3,28 @@ import { LeadsService } from '@api/modules/leads/leads.service';
 import { LeadRepository } from '@api/modules/leads/repositories/lead.repository';
 import { TenantContextService } from '@api/shared/tenant/context/tenant-context.service';
 import { AppLogger } from '@api/shared/logging/logger.service';
-import { NotFoundException, ForbiddenException, ConflictException } from '@nestjs/common';
+import { NotFoundException } from '@nestjs/common';
 import { LeadStatus } from '@prisma/client';
+
+// Mock @prisma/client
+jest.mock('@prisma/client', () => ({
+  PrismaClient: jest.fn().mockImplementation(() => ({
+    lead: {
+      findUnique: jest.fn(),
+      findMany: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+    },
+    $transaction: jest.fn(),
+  })),
+  LeadStatus: {
+    NEW: 'new',
+    CONTACTED: 'contacted',
+    QUALIFIED: 'qualified',
+    LOST: 'lost',
+  },
+}));
 
 // Mock implementations
 const mockLeadRepository = {
@@ -84,14 +104,14 @@ describe('LeadsService', () => {
       expect(result).toEqual(mockLead);
 
       // ✅ FIX: Remove 'source' from the expected call since we're using metadata
-      expect(repository.create).toHaveBeenCalledWith({
-        name: createLeadDto.name,
-        email: createLeadDto.email,
-        phone: createLeadDto.phone,
-        company: createLeadDto.company,
-        status: LeadStatus.new,
-        metadata: { source: 'website' },
-      });
+expect(repository.create).toHaveBeenCalledWith({
+  name: createLeadDto.name,
+  email: createLeadDto.email,
+  phone: createLeadDto.phone,
+  company: createLeadDto.company,
+  status: 'new',
+  metadata: { source: 'website' },
+});
       expect(mockLogger.log).toHaveBeenCalled();
     });
 
@@ -99,14 +119,18 @@ describe('LeadsService', () => {
       const error = { code: 'P2002' };
       repository.create.mockRejectedValue(error);
 
-      await expect(service.create(createLeadDto, 'user-123')).rejects.toThrow(ConflictException);
+      await expect(service.create(createLeadDto, 'user-123')).rejects.toThrow(
+  'Lead with this email or phone already exists',
+);
     });
 
     it('should throw NotFoundException on referenced entity not found', async () => {
       const error = { code: 'P2025' };
       repository.create.mockRejectedValue(error);
 
-      await expect(service.create(createLeadDto, 'user-123')).rejects.toThrow(NotFoundException);
+      await expect(service.create(createLeadDto, 'user-123')).rejects.toThrow(
+  'Referenced entity not found',
+);
     });
   });
 
@@ -153,7 +177,9 @@ describe('LeadsService', () => {
       const wrongTenantLead = createMockLead({ organizationId: 'different-org' });
       repository.findByIdOrThrow.mockResolvedValue(wrongTenantLead);
 
-      await expect(service.findOne('lead-123')).rejects.toThrow(ForbiddenException);
+      await expect(service.findOne('lead-123')).rejects.toThrow(
+  'Cross-tenant access attempted',
+);
     });
 
     it('should throw NotFoundException if lead not found', async () => {

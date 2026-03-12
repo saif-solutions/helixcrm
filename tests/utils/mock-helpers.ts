@@ -5,7 +5,8 @@ import { jest } from '@jest/globals';
  * Helper to create a mock function that returns a resolved promise with undefined
  * Eliminates 80% of Jest typing pain
  */
-export const MockFn = () => jest.fn().mockImplementation(() => Promise.resolve(undefined));
+export const MockFn = () =>
+  jest.fn().mockImplementation(() => Promise.resolve(undefined));
 
 /**
  * Helper to create a mock function that returns a resolved promise with a value

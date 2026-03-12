@@ -59,7 +59,9 @@ export const createMockPrisma = (): PrismaMock => {
   const mock: PrismaMock = {
     $transaction: jest
       .fn()
-      .mockImplementation(async (cb: any) => (typeof cb === 'function' ? cb(mock) : cb)),
+      .mockImplementation(async (cb: any) =>
+        typeof cb === 'function' ? cb(mock) : cb,
+      ),
     $connect: jest.fn(),
     $disconnect: jest.fn(),
     $on: jest.fn(),
@@ -86,10 +88,14 @@ export const createMockPrisma = (): PrismaMock => {
 // -----------------------------
 export const createMockAuthCoreAdapter = () => ({
   authCore: {
-    issueAccessToken: jest.fn<Promise<string>, []>().mockResolvedValue('mock-access-token'),
+    issueAccessToken: jest
+      .fn<Promise<string>, []>()
+      .mockResolvedValue('mock-access-token'),
   },
   tokenManager: {
-    issueRefreshToken: jest.fn<Promise<string>, []>().mockResolvedValue('mock-refresh-token'),
+    issueRefreshToken: jest
+      .fn<Promise<string>, []>()
+      .mockResolvedValue('mock-refresh-token'),
     validateRefreshToken: jest
       .fn<Promise<{ sub: string; jti: string }>, []>()
       .mockResolvedValue({ sub: 'user-id', jti: 'mock-jti' }),
@@ -98,20 +104,31 @@ export const createMockAuthCoreAdapter = () => ({
     verify: jest
       .fn<Promise<boolean>, [string, string]>()
       .mockImplementation(async (plain, hash) => plain === hash),
-    hash: jest.fn<Promise<string>, [string]>().mockResolvedValue('hashed-password'),
+    hash: jest
+      .fn<Promise<string>, [string]>()
+      .mockResolvedValue('hashed-password'),
     compare: jest
       .fn<Promise<boolean>, [string, string]>()
       .mockImplementation(async (plain, hash) => plain === hash),
   },
   withTransaction: jest.fn().mockImplementation((cb: any) => cb()),
   tokenRepository: {
-    invalidateRefreshToken: jest.fn<Promise<void>, []>().mockResolvedValue(undefined),
+    invalidateRefreshToken: jest
+      .fn<Promise<void>, []>()
+      .mockResolvedValue(undefined),
     saveRefreshToken: jest.fn<Promise<void>, []>().mockResolvedValue(undefined),
   },
   userRepository: {
     findById: jest
-      .fn<Promise<{ id: string; email: string; tokenVersion: number }>, [string]>()
-      .mockResolvedValue({ id: 'user-id', email: 'test@example.com', tokenVersion: 1 }),
+      .fn<
+        Promise<{ id: string; email: string; tokenVersion: number }>,
+        [string]
+      >()
+      .mockResolvedValue({
+        id: 'user-id',
+        email: 'test@example.com',
+        tokenVersion: 1,
+      }),
   },
 });
 
@@ -128,7 +145,9 @@ export async function createTestApp({
   imports,
   providers = [],
   overrideProviders = [],
-}: CreateTestAppOptions): Promise<INestApplication & { mockPrisma: PrismaMock }> {
+}: CreateTestAppOptions): Promise<
+  INestApplication & { mockPrisma: PrismaMock }
+> {
   const mockPrisma = createMockPrisma();
   const mockAuth = createMockAuthCoreAdapter();
 
@@ -240,7 +259,11 @@ export async function createTestApp({
 
   mockPrisma.role.findFirst.mockImplementation(async ({ where }: any) => {
     if (where?.name === 'SystemAdmin') {
-      return { id: 'role-admin', name: 'SystemAdmin', organizationId: currentOrg.id };
+      return {
+        id: 'role-admin',
+        name: 'SystemAdmin',
+        organizationId: currentOrg.id,
+      };
     }
     return null;
   });
@@ -252,10 +275,12 @@ export async function createTestApp({
   }));
 
   // RolePermission mocks
-  mockPrisma.rolePermission.upsert.mockImplementation(async ({ create }: any) => ({
-    id: 'roleperm-' + Date.now(),
-    ...create,
-  }));
+  mockPrisma.rolePermission.upsert.mockImplementation(
+    async ({ create }: any) => ({
+      id: 'roleperm-' + Date.now(),
+      ...create,
+    }),
+  );
 
   return app as INestApplication & { mockPrisma: PrismaMock };
 }
@@ -263,7 +288,8 @@ export async function createTestApp({
 // -----------------------------
 // Helpers
 // -----------------------------
-export const testRequest = (app: INestApplication) => request(app.getHttpServer());
+export const testRequest = (app: INestApplication) =>
+  request(app.getHttpServer());
 
 export const closeApp = async (app?: INestApplication) => {
   if (app) await app.close();

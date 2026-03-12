@@ -1,0 +1,46 @@
+=== Test Helper Migration Log ===
+Date: Thu, Mar 12, 2026  4:53:35 AM
+
+Migrating factories...
+✅ Factories migrated to tests/helpers/factories/
+Migrating mocks...
+✅ Mocks migrated to tests/helpers/mocks/
+Migrating types...
+✅ Types migrated to tests/types/
+Migrating utils...
+✅ Utils migrated to tests/utils/
+Migrating scenarios...
+✅ Scenarios migrated to tests/scenarios/
+Migrating E2E flows...
+✅ E2E flows migrated to tests/e2e/flows/
+✅ Setup file backed up to tests/helpers/setup.old.ts
+✅ Test module backed up to tests/test.module.old.ts
+✅ Auth test module backed up to tests/auth-test.module.old.ts
+
+Archiving original apps/api/test folder...
+✅ Original test folder archived
+
+=== Final Helper Structure ===
+total 29
+drwxr-xr-x 1 saifz 197609    0 Mar 12 04:53 ./
+drwxr-xr-x 1 saifz 197609    0 Mar 12 04:53 ../
+-rw-r--r-- 1 saifz 197609 1079 Mar 12 02:21 database.ts
+drwxr-xr-x 1 saifz 197609    0 Mar 12 04:53 factories/
+drwxr-xr-x 1 saifz 197609    0 Mar 12 04:53 mocks/
+-rw-r--r-- 1 saifz 197609   15 Mar 11 12:32 README.md
+-rw-r--r-- 1 saifz 197609  843 Mar 12 04:53 setup.old.ts
+-rw-r--r-- 1 saifz 197609  698 Mar 12 02:21 setup.ts
+drwxr-xr-x 1 saifz 197609    0 Mar 11 12:32 test-containers/
+-rw-r--r-- 1 saifz 197609  736 Mar 12 02:21 web-setup.ts
+
+total 15
+drwxr-xr-x 1 saifz 197609    0 Mar 12 04:53 ./
+drwxr-xr-x 1 saifz 197609    0 Mar 12 04:53 ../
+-rw-r--r-- 1 saifz 197609  786 Mar 12 04:53 audit-log.factory.ts
+-rw-r--r-- 1 saifz 197609  684 Mar 12 04:53 deal.factory.ts
+
+total 41
+drwxr-xr-x 1 saifz 197609    0 Mar 12 04:53 ./
+drwxr-xr-x 1 saifz 197609    0 Mar 12 04:53 ../
+-rw-r--r-- 1 saifz 197609  925 Mar 12 04:53 auth.mock.ts
+-rw-r--r-- 1 saifz 197609 2019 Mar 12 04:53 bullmq.mock.ts

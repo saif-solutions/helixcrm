@@ -6,13 +6,27 @@ import { AuditLogService } from '@api/shared/audit-log/audit-log.service';
 import { DealRepository } from '@api/modules/deals/repositories/deal.repository';
 import { PermissionContextService } from '@api/shared/permissions/context/permission-context.service';
 import { TenantContextService } from '@api/shared/tenant/context/tenant-context.service';
-import {
-  NotFoundException,
-  ForbiddenException,
-  ConflictException,
-  BadRequestException,
-} from '@nestjs/common';
+
 import { DealStatus } from '@prisma/client';
+
+// Mock @prisma/client
+jest.mock('@prisma/client', () => ({
+  PrismaClient: jest.fn().mockImplementation(() => ({
+    deal: {
+      findUnique: jest.fn(),
+      findMany: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+    },
+    $transaction: jest.fn(),
+  })),
+  DealStatus: {
+    OPEN: 'open',
+    WON: 'won',
+    LOST: 'lost',
+  },
+}));
 
 // Mock implementations
 const mockPrismaService = {
@@ -106,7 +120,6 @@ describe('DealsService', () => {
   let service: DealsService;
   let prisma: typeof mockPrismaService;
   let dealRepository: typeof mockDealRepository;
-  let tenantContext: typeof mockTenantContext;
   let auditLog: typeof mockAuditLogService;
 
   beforeEach(async () => {
@@ -125,7 +138,6 @@ describe('DealsService', () => {
     service = module.get<DealsService>(DealsService);
     prisma = module.get(PrismaService);
     dealRepository = module.get(DealRepository);
-    tenantContext = module.get(TenantContextService);
     auditLog = module.get(AuditLogService);
 
     jest.clearAllMocks();
@@ -170,9 +182,9 @@ describe('DealsService', () => {
     it('should throw NotFoundException if pipeline not found', async () => {
       prisma.pipeline.findFirst.mockResolvedValue(null);
 
-      await expect(service.create({ userId: 'user-123', ...createDealDto })).rejects.toThrow(
-        NotFoundException,
-      );
+await expect(service.create({ userId: 'user-123', ...createDealDto })).rejects.toThrow(
+  'Pipeline pipeline-123 not found',
+);
     });
 
     it('should throw BadRequestException if stage does not belong to pipeline', async () => {
@@ -181,25 +193,25 @@ describe('DealsService', () => {
         stages: [{ id: 'wrong-stage', probability: 50 }],
       });
 
-      await expect(service.create({ userId: 'user-123', ...createDealDto })).rejects.toThrow(
-        BadRequestException,
-      );
+await expect(service.create({ userId: 'user-123', ...createDealDto })).rejects.toThrow(
+  	'Stage stage-123 does not belong to pipeline pipeline-123',
+);
     });
 
     it('should throw BadRequestException if contact not found', async () => {
       prisma.contact.findFirst.mockResolvedValue(null);
 
-      await expect(service.create({ userId: 'user-123', ...createDealDto })).rejects.toThrow(
-        BadRequestException,
-      );
+await expect(service.create({ userId: 'user-123', ...createDealDto })).rejects.toThrow(
+  'Contact contact-123 not found in organization',
+);
     });
 
     it('should throw ConflictException if deal with same name exists', async () => {
       prisma.deal.findFirst.mockResolvedValue({ id: 'existing-deal' });
 
-      await expect(service.create({ userId: 'user-123', ...createDealDto })).rejects.toThrow(
-        ConflictException,
-      );
+await expect(service.create({ userId: 'user-123', ...createDealDto })).rejects.toThrow(
+  'Deal with name "New Deal" already exists in this pipeline',
+);
     });
   });
 
@@ -280,7 +292,7 @@ describe('DealsService', () => {
 
       await expect(
         service.createSimple({ userId: 'user-123', ...createSimpleDto }),
-      ).rejects.toThrow(BadRequestException);
+      ).rejects.toThrow('Stage stage-123 not found in organization\'s default pipeline');
     });
 
     it('should throw ConflictException if deal with same title exists', async () => {
@@ -288,7 +300,7 @@ describe('DealsService', () => {
 
       await expect(
         service.createSimple({ userId: 'user-123', ...createSimpleDto }),
-      ).rejects.toThrow(ConflictException);
+      ).rejects.toThrow('Deal with title "Simple Deal" already exists in this pipeline');
     });
   });
 
@@ -348,14 +360,14 @@ describe('DealsService', () => {
     it('should throw NotFoundException if deal not found', async () => {
       dealRepository.findById.mockResolvedValue(null);
 
-      await expect(service.findOne('deal-123')).rejects.toThrow(NotFoundException);
+      await expect(service.findOne('deal-123')).rejects.toThrow('Deal deal-123 not found');
     });
 
     it('should throw ForbiddenException if deal belongs to different tenant', async () => {
       const wrongTenantDeal = createMockDeal({ organizationId: 'different-org' });
       dealRepository.findById.mockResolvedValue(wrongTenantDeal);
 
-      await expect(service.findOne('deal-123')).rejects.toThrow(ForbiddenException);
+      await expect(service.findOne('deal-123')).rejects.toThrow('Access to deal deal-123 denied');
     });
   });
 
@@ -395,7 +407,7 @@ describe('DealsService', () => {
       dealRepository.findById.mockResolvedValue(null);
 
       await expect(service.update('deal-123', updateDto, 'user-123')).rejects.toThrow(
-        NotFoundException,
+        'Deal deal-123 not found',
       );
     });
 
@@ -404,7 +416,7 @@ describe('DealsService', () => {
 
       await expect(
         service.update('deal-123', { name: 'Existing Name' }, 'user-123'),
-      ).rejects.toThrow(ConflictException);
+      ).rejects.toThrow('Deal with name "Existing Name" already exists in this pipeline');
     });
   });
 
@@ -429,7 +441,7 @@ describe('DealsService', () => {
     it('should throw NotFoundException if deal not found', async () => {
       dealRepository.findById.mockResolvedValue(null);
 
-      await expect(service.remove('deal-123', 'user-123')).rejects.toThrow(NotFoundException);
+      await expect(service.remove('deal-123', 'user-123')).rejects.toThrow('Deal deal-123 not found');
     });
   });
 
@@ -476,7 +488,7 @@ describe('DealsService', () => {
       const sameStageData = { stageId: 'stage-123' };
 
       await expect(service.moveStage('deal-123', sameStageData, 'user-123')).rejects.toThrow(
-        BadRequestException,
+        'Deal is already in this stage',
       );
     });
   });
@@ -498,7 +510,7 @@ describe('DealsService', () => {
     it('should throw NotFoundException if deal not found', async () => {
       dealRepository.findById.mockResolvedValue(null);
 
-      await expect(service.getStageHistory('deal-123')).rejects.toThrow(NotFoundException);
+      await expect(service.getStageHistory('deal-123')).rejects.toThrow('Deal deal-123 not found');
     });
   });
 

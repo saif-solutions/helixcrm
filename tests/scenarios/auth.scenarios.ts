@@ -64,7 +64,10 @@ export async function registerScenario(
 /**
  * Get current user profile scenario
  */
-export async function getProfileScenario(app: INestApplication, accessToken: string): Promise<any> {
+export async function getProfileScenario(
+  app: INestApplication,
+  accessToken: string,
+): Promise<any> {
   const response = await testRequest(app)
     .get('/auth/me')
     .set('Authorization', `Bearer ${accessToken}`);

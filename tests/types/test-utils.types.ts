@@ -7,7 +7,9 @@ import { createMockAuthCoreAdapter } from '../mocks/auth.mock';
 
 // Use actual Prisma Client types instead of manual mocks
 type PrismaModels = {
-  [K in keyof PrismaClient]: PrismaClient[K] extends (...args: any[]) => any ? never : K;
+  [K in keyof PrismaClient]: PrismaClient[K] extends (...args: any[]) => any
+    ? never
+    : K;
 }[keyof PrismaClient];
 
 type ModelOperations = {
@@ -59,6 +61,9 @@ export type MockAuthCoreAdapter = {
     saveRefreshToken: jest.Mock<Promise<void>, []>;
   };
   userRepository: {
-    findById: jest.Mock<Promise<{ id: string; email: string; tokenVersion: number }>, [string]>;
+    findById: jest.Mock<
+      Promise<{ id: string; email: string; tokenVersion: number }>,
+      [string]
+    >;
   };
 };

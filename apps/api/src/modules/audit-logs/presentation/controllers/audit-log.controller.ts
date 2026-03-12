@@ -9,28 +9,40 @@ import {
   DefaultValuePipe,
   Res,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiQuery,
-  ApiBearerAuth,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Response } from 'express';
 
 import { AuthGuard } from '../../../../shared/guards/auth.guard';
 import { TenantGuard } from '../../../../shared/guards/tenant.guard';
 import { PermissionGuard } from '../../../../shared/guards/permission.guard';
-import { RequirePermission } from "../../../../shared/decorators/require-permission.decorator';
+import { RequirePermission } from '../../../../shared/decorators/require-permission.decorator';
 
-import {
-  AuditAction,
-  AuditEntityType,
-  ActorType,
-  AuditSeverity,
-  AuditLogTypes,
-} from '../../domain';
+import { AuditLogTypes } from '../../domain';
 
 import { AuditLogQueryService } from '../../application/services/audit-log-query.service';
+
+// Type definition for request with user
+interface RequestWithUser extends Request {
+  user?: {
+    organizationId?: string;
+    [key: string]: any;
+  };
+}
+
+// Type definition for audit log query
+interface AuditLogQuery {
+  organizationId: string;
+  page: number;
+  limit: number;
+  startDate?: Date;
+  endDate?: Date;
+  action?: string;
+  entityType?: string;
+  actorEmail?: string;
+  severity?: string;
+  actorType?: string;
+  search?: string;
+}
 
 @ApiTags('Audit')
 @ApiBearerAuth()
@@ -43,7 +55,7 @@ export class AuditLogController {
   @ApiOperation({ summary: 'Get audit logs with filtering and pagination' })
   @RequirePermission('audit:read')
   async getAuditLogs(
-    @Request() req,
+    @Request() req: RequestWithUser,
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page = 1,
     @Query('limit', new DefaultValuePipe(25), ParseIntPipe) limit = 25,
     @Query('startDate') startDate?: string,
@@ -81,7 +93,7 @@ export class AuditLogController {
       throw new BadRequestException('Start date must be before end date');
     }
 
-    const query: any = {
+    const query: AuditLogQuery = {
       organizationId,
       page,
       limit,
@@ -91,13 +103,18 @@ export class AuditLogController {
       search,
     };
 
-    if (action && AuditLogTypes.isAuditAction(action)) query.action = action;
-    if (entityType && AuditLogTypes.isAuditEntityType(entityType))
+    if (action && AuditLogTypes.isAuditAction(action)) {
+      query.action = action;
+    }
+    if (entityType && AuditLogTypes.isAuditEntityType(entityType)) {
       query.entityType = entityType;
-    if (severity && AuditLogTypes.isAuditSeverity(severity))
+    }
+    if (severity && AuditLogTypes.isAuditSeverity(severity)) {
       query.severity = severity;
-    if (actorType && AuditLogTypes.isActorType(actorType))
+    }
+    if (actorType && AuditLogTypes.isActorType(actorType)) {
       query.actorType = actorType;
+    }
 
     return this.auditLogQueryService.getAuditLogs(query);
   }
@@ -105,7 +122,7 @@ export class AuditLogController {
   @Get('stats')
   @ApiOperation({ summary: 'Get audit log statistics' })
   @RequirePermission('audit:read')
-  async getStats(@Request() req) {
+  async getStats(@Request() req: RequestWithUser) {
     const organizationId = req.user?.organizationId;
     if (!organizationId) {
       throw new BadRequestException('Organization ID not found in request');
@@ -135,7 +152,7 @@ export class AuditLogController {
   @Get('export')
   @ApiOperation({ summary: 'Export audit logs as CSV' })
   @RequirePermission('audit:read')
-  async exportAuditLogs(@Request() req, @Res() res: Response) {
+  exportAuditLogs(@Request() req: RequestWithUser, @Res() res: Response) {
     const organizationId = req.user?.organizationId;
     if (!organizationId) {
       throw new BadRequestException('Organization ID not found in request');

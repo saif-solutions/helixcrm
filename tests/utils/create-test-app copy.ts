@@ -18,7 +18,8 @@ interface CreateTestAppOptions {
 }
 
 // Helper to create mock functions with proper typing
-export const MockFn = () => jest.fn().mockImplementation(() => Promise.resolve(undefined));
+export const MockFn = () =>
+  jest.fn().mockImplementation(() => Promise.resolve(undefined));
 
 export async function createTestApp({
   imports,
@@ -45,11 +46,21 @@ export async function createTestApp({
 
   // CRITICAL: Override AuditLogService to prevent real audit logs
   moduleBuilder.overrideProvider(AuditLogService).useValue({
-    logWithRequest: jest.fn().mockImplementation(() => Promise.resolve({ id: 'audit-test' })),
-    logEvent: jest.fn().mockImplementation(() => Promise.resolve({ id: 'audit-test' })),
-    logAuthEvent: jest.fn().mockImplementation(() => Promise.resolve({ id: 'audit-test' })),
-    logDirect: jest.fn().mockImplementation(() => Promise.resolve({ id: 'audit-test' })),
-    logWithRequestObject: jest.fn().mockImplementation(() => Promise.resolve({ id: 'audit-test' })),
+    logWithRequest: jest
+      .fn()
+      .mockImplementation(() => Promise.resolve({ id: 'audit-test' })),
+    logEvent: jest
+      .fn()
+      .mockImplementation(() => Promise.resolve({ id: 'audit-test' })),
+    logAuthEvent: jest
+      .fn()
+      .mockImplementation(() => Promise.resolve({ id: 'audit-test' })),
+    logDirect: jest
+      .fn()
+      .mockImplementation(() => Promise.resolve({ id: 'audit-test' })),
+    logWithRequestObject: jest
+      .fn()
+      .mockImplementation(() => Promise.resolve({ id: 'audit-test' })),
   });
   console.log('✅ AuditLogService overridden');
 
@@ -86,7 +97,8 @@ export async function createTestApp({
   return app;
 }
 
-export const testRequest = (app: INestApplication) => (supertest as any)(app.getHttpServer());
+export const testRequest = (app: INestApplication) =>
+  (supertest as any)(app.getHttpServer());
 
 export const closeApp = async (app?: INestApplication) => {
   if (app) {
