@@ -1,7 +1,22 @@
-﻿import { Injectable } from '@nestjs/common';
+﻿// apps/api/src/shared/guards/auth-throttler.guard.ts
+
+import { Injectable } from '@nestjs/common';
 import { ThrottlerGuard, ThrottlerStorage } from '@nestjs/throttler';
 import { Reflector } from '@nestjs/core';
 import type { ThrottlerModuleOptions } from '@nestjs/throttler';
+import type { Request } from 'express';
+
+// ==================== INTERFACES ====================
+
+interface RequestWithUser extends Request {
+  user?: {
+    id?: string;
+    sub?: string;
+    [key: string]: unknown;
+  };
+}
+
+// ==================== AUTH THROTTLER GUARD ====================
 
 @Injectable()
 export class AuthThrottlerGuard extends ThrottlerGuard {
@@ -13,12 +28,18 @@ export class AuthThrottlerGuard extends ThrottlerGuard {
     super(options, storageService, reflector);
   }
 
-  protected async getTracker(req: Record<string, any>): Promise<string> {
+  // eslint-disable-next-line @typescript-eslint/require-await
+  protected async getTracker(req: RequestWithUser): Promise<string> {
     // If there's a user, use their ID for tracking
     if (req.user) {
-      return `user:${req.user.id}`;
+      const userId = req.user.id ?? req.user.sub;
+      if (userId) {
+        return `user:${userId}`;
+      }
     }
+
     // Otherwise use IP address
-    return req.ip || req.connection?.remoteAddress || 'unknown';
+    const ip = req.ip ?? req.socket?.remoteAddress;
+    return ip ?? 'unknown';
   }
 }

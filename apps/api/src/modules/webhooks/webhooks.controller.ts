@@ -39,8 +39,15 @@ import {
   IsNumber,
   IsObject,
 } from 'class-validator';
-import { Type } from 'class-transformer';
 import { IsNotEmpty } from 'class-validator';
+import { CreateWebhookDto } from './dto/create-webhook.dto';
+import { UpdateWebhookDto } from './dto/update-webhook.dto';
+import { TriggerWebhookDto } from './dto/trigger-webhook.dto';
+import { PaginationQueryDto } from './dto/pagination-query.dto';
+import { WebhookResponseDto } from './dto/webhook-response.dto';
+interface CleanupResult {
+  count: number;
+}
 
 class CreateWebhookRequestDto implements CreateWebhookDto {
   @IsString()
@@ -77,13 +84,37 @@ class CreateWebhookRequestDto implements CreateWebhookDto {
 }
 
 class UpdateWebhookRequestDto implements UpdateWebhookDto {
+  @IsOptional()
+  @IsString()
   name?: string;
+
+  @IsOptional()
+  @IsUrl()
   url?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
   events?: string[];
+
+  @IsOptional()
+  @IsString()
   secret?: string;
+
+  @IsOptional()
+  @IsBoolean()
   isActive?: boolean;
+
+  @IsOptional()
+  @IsNumber()
   retryCount?: number;
+
+  @IsOptional()
+  @IsNumber()
   timeoutMs?: number;
+
+  @IsOptional()
+  @IsObject()
   headers?: Record<string, string>;
 }
 
@@ -297,7 +328,9 @@ export class WebhooksController {
     description: 'Number of days to keep delivery records (default: 90)',
   })
   @RequirePermission('system.admin')
-  async cleanupOldDeliveries(@Query('daysToKeep') daysToKeep: number = 90) {
+  async cleanupOldDeliveries(
+    @Query('daysToKeep') daysToKeep: number = 90,
+  ): Promise<CleanupResult> {
     return this.webhooksService.cleanupOldDeliveries(daysToKeep);
   }
 }

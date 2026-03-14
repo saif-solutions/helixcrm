@@ -254,29 +254,33 @@ export class WebhookRepository extends TenantAwareRepository {
     });
 
     const avgResponseTime = await this.prisma.$queryRaw`
-      SELECT AVG(
-        EXTRACT(EPOCH FROM ("completedAt" - "attemptedAt"))
-      ) as avg_seconds
-      FROM "WebhookDelivery"
-      WHERE "organizationId" = ${this.tenantId}
-        AND "status" = 'success'
-        AND "attemptedAt" IS NOT NULL
-        AND "completedAt" IS NOT NULL
-        AND "attemptedAt" >= ${startDate}
-    `;
+    SELECT AVG(
+      EXTRACT(EPOCH FROM ("completedAt" - "attemptedAt"))
+    ) as avg_seconds
+    FROM "WebhookDelivery"
+    WHERE "organizationId" = ${this.tenantId}
+      AND "status" = 'success'
+      AND "attemptedAt" IS NOT NULL
+      AND "completedAt" IS NOT NULL
+      AND "attemptedAt" >= ${startDate}
+  `;
+
+    // Type-safe accumulator
+    const byStatus = stats.reduce<Record<string, number>>((acc, stat) => {
+      if (!acc[stat.status]) acc[stat.status] = 0;
+      acc[stat.status] += stat._count.id;
+      return acc;
+    }, {});
+
+    // Type-safe access to avg_seconds
+    const avgResult = avgResponseTime as Array<{ avg_seconds: number | null }>;
+    const avgResponseTimeValue = avgResult[0]?.avg_seconds || 0;
 
     return {
       timeframe,
       total,
-      byStatus: stats.reduce(
-        (acc, stat) => {
-          if (!acc[stat.status]) acc[stat.status] = 0;
-          acc[stat.status] += stat._count.id;
-          return acc;
-        },
-        {} as Record<string, number>,
-      ),
-      avgResponseTime: avgResponseTime[0]?.avg_seconds || 0,
+      byStatus,
+      avgResponseTime: avgResponseTimeValue,
       successRate:
         total > 0
           ? ((stats.find((s) => s.status === 'success')?._count.id || 0) /

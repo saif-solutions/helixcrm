@@ -57,3 +57,12 @@ export function requireTenantId(): string {
   }
   return tenantId;
 }
+export function clearUserInfo(): void {
+  const store = als.getStore();
+  if (store) {
+    store.userId = undefined;
+    store.userEmail = undefined;
+    store.roles = undefined;
+    store.permissions = undefined;
+  }
+}

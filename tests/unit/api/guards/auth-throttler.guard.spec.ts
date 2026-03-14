@@ -1,19 +1,22 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthThrottlerGuard } from '@api/shared/guards/auth-throttler.guard';
-import { ThrottlerStorage, ThrottlerModuleOptions } from '@nestjs/throttler';
+import { ThrottlerStorage } from '@nestjs/throttler';
 import { Reflector } from '@nestjs/core';
-import { ExecutionContext } from '@nestjs/common';
 
 describe('AuthThrottlerGuard', () => {
   let guard: AuthThrottlerGuard;
   let mockStorageService: jest.Mocked<ThrottlerStorage>;
   let mockReflector: jest.Mocked<Reflector>;
-  let mockContext: ExecutionContext;
   let mockRequest: any;
 
-  const mockOptions: ThrottlerModuleOptions = {
-    ttl: 60,
-    limit: 10,
+  // Mock options for throttler
+  const mockOptions = {
+    throttlers: [
+      {
+        ttl: 60,
+        limit: 10,
+      },
+    ],
   };
 
   beforeEach(async () => {
@@ -34,14 +37,6 @@ describe('AuthThrottlerGuard', () => {
       headers: {},
     };
 
-    mockContext = {
-      switchToHttp: () => ({
-        getRequest: () => mockRequest,
-      }),
-      getHandler: () => ({}),
-      getClass: () => ({}),
-    } as ExecutionContext;
-
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         {
@@ -61,16 +56,40 @@ describe('AuthThrottlerGuard', () => {
   });
 
   describe('getTracker', () => {
-    it('should return IP address for tracking', () => {
-      // Access the protected method using any
-      const tracker = (guard as any).getTracker(mockRequest);
+    it('should return IP address for tracking', async () => {
+      const tracker = await (guard as any).getTracker(mockRequest);
       expect(tracker).toBe('127.0.0.1');
     });
 
-    it('should handle requests without IP', () => {
+    it('should handle requests without IP', async () => {
       mockRequest.ip = undefined;
-      const tracker = (guard as any).getTracker(mockRequest);
-      expect(tracker).toBeUndefined();
+      const tracker = await (guard as any).getTracker(mockRequest);
+      expect(tracker).toBe('unknown');
+    });
+
+    it('should use user ID when available', async () => {
+      mockRequest.user = { id: 'user-123' };
+      const tracker = await (guard as any).getTracker(mockRequest);
+      expect(tracker).toBe('user:user-123');
+    });
+
+    it('should use user sub when id not available', async () => {
+      mockRequest.user = { sub: 'user-123' };
+      const tracker = await (guard as any).getTracker(mockRequest);
+      expect(tracker).toBe('user:user-123');
+    });
+
+    it('should fall back to IP when user has no ID', async () => {
+      mockRequest.user = {};
+      const tracker = await (guard as any).getTracker(mockRequest);
+      expect(tracker).toBe('127.0.0.1');
+    });
+
+    it('should use socket remoteAddress when ip is not available', async () => {
+      mockRequest.ip = undefined;
+      mockRequest.socket = { remoteAddress: '192.168.1.1' };
+      const tracker = await (guard as any).getTracker(mockRequest);
+      expect(tracker).toBe('192.168.1.1');
     });
   });
 

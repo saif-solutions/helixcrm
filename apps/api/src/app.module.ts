@@ -50,9 +50,16 @@ import { CsrfMiddleware } from './shared/security/csrf.middleware';
 import { ConfigValidationService } from './config/config-validation.service';
 
 import { DebugController } from './modules/debug/debug.controller';
+import { ThrottlerModule } from '@nestjs/throttler';
 
 @Module({
   imports: [
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000, // 1 minute
+        limit: 100, // 100 requests per minute
+      },
+    ]),
     // ================= CONFIG =================
     ConfigModule.forRoot({
       isGlobal: true,
