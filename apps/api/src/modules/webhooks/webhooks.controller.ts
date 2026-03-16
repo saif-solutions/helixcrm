@@ -22,109 +22,39 @@ import {
   ApiQuery,
   ApiBody,
 } from '@nestjs/swagger';
-import {
-  WebhooksService,
-  CreateWebhookDto,
-  UpdateWebhookDto,
-  WebhookPayload,
-} from './webhooks.service';
+import { WebhooksService } from './webhooks.service';
 import { RequirePermission } from '../../shared/decorators/require-permission.decorator';
-
-import {
-  IsString,
-  IsUrl,
-  IsArray,
-  IsOptional,
-  IsBoolean,
-  IsNumber,
-  IsObject,
-} from 'class-validator';
-import { IsNotEmpty } from 'class-validator';
 import { CreateWebhookDto } from './dto/create-webhook.dto';
 import { UpdateWebhookDto } from './dto/update-webhook.dto';
-import { TriggerWebhookDto } from './dto/trigger-webhook.dto';
-import { PaginationQueryDto } from './dto/pagination-query.dto';
-import { WebhookResponseDto } from './dto/webhook-response.dto';
-interface CleanupResult {
-  count: number;
-}
+import { IsString, IsOptional, IsDate, IsObject } from 'class-validator';
+import { Type } from 'class-transformer';
 
-class CreateWebhookRequestDto implements CreateWebhookDto {
+// ==================== DTOs ====================
+
+class TriggerWebhookRequestDto {
   @IsString()
-  @IsNotEmpty()
-  name: string;
-
-  @IsString()
-  @IsUrl()
-  url: string;
-
-  @IsArray()
-  @IsString({ each: true })
-  events: string[];
-
-  @IsOptional()
-  @IsString()
-  secret?: string;
-
-  @IsOptional()
-  @IsBoolean()
-  isActive?: boolean;
-
-  @IsOptional()
-  @IsNumber()
-  retryCount?: number;
-
-  @IsOptional()
-  @IsNumber()
-  timeoutMs?: number;
-
-  @IsOptional()
-  @IsObject()
-  headers?: Record<string, string>;
-}
-
-class UpdateWebhookRequestDto implements UpdateWebhookDto {
-  @IsOptional()
-  @IsString()
-  name?: string;
-
-  @IsOptional()
-  @IsUrl()
-  url?: string;
-
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  events?: string[];
-
-  @IsOptional()
-  @IsString()
-  secret?: string;
-
-  @IsOptional()
-  @IsBoolean()
-  isActive?: boolean;
-
-  @IsOptional()
-  @IsNumber()
-  retryCount?: number;
-
-  @IsOptional()
-  @IsNumber()
-  timeoutMs?: number;
-
-  @IsOptional()
-  @IsObject()
-  headers?: Record<string, string>;
-}
-
-class TriggerWebhookRequestDto implements WebhookPayload {
   event: string;
-  data: any;
+
+  data: unknown;
+
+  @IsDate()
+  @Type(() => Date)
   timestamp: Date;
+
+  @IsOptional()
+  @IsString()
   userId?: string;
-  metadata?: Record<string, any>;
+
+  @IsOptional()
+  @IsObject()
+  metadata?: Record<string, unknown>;
 }
+
+interface CleanupResult {
+  deleted: number;
+}
+
+// ==================== CONTROLLER ====================
 
 @ApiTags('Webhooks')
 @ApiBearerAuth()
@@ -138,11 +68,11 @@ export class WebhooksController {
   @ApiResponse({ status: 400, description: 'Invalid request data' })
   @ApiResponse({ status: 403, description: 'Insufficient permissions' })
   @ApiResponse({ status: 409, description: 'Webhook name already exists' })
-  @ApiBody({ type: CreateWebhookRequestDto })
-  @RequirePermission('webhooks.manage')
+  @ApiBody({ type: CreateWebhookDto })
+  @RequirePermission('webhook:manage')
   async createWebhook(
     @Body(new ValidationPipe({ transform: true }))
-    createWebhookDto: CreateWebhookRequestDto,
+    createWebhookDto: CreateWebhookDto,
   ) {
     return this.webhooksService.createWebhook(createWebhookDto);
   }
@@ -151,7 +81,7 @@ export class WebhooksController {
   @ApiOperation({ summary: 'Get all webhooks for current organization' })
   @ApiResponse({ status: 200, description: 'List of webhooks' })
   @ApiResponse({ status: 403, description: 'Insufficient permissions' })
-  @RequirePermission('webhooks.read')
+  @RequirePermission('webhook:read')
   async getAllWebhooks() {
     return this.webhooksService.getAllWebhooks();
   }
@@ -162,7 +92,7 @@ export class WebhooksController {
   @ApiResponse({ status: 403, description: 'Access denied' })
   @ApiResponse({ status: 404, description: 'Webhook not found' })
   @ApiParam({ name: 'id', description: 'Webhook ID' })
-  @RequirePermission('webhooks.read')
+  @RequirePermission('webhook:read')
   async getWebhookById(@Param('id', ParseUUIDPipe) webhookId: string) {
     return this.webhooksService.getWebhookById(webhookId);
   }
@@ -178,12 +108,12 @@ export class WebhooksController {
   @ApiResponse({ status: 404, description: 'Webhook not found' })
   @ApiResponse({ status: 409, description: 'Webhook name already exists' })
   @ApiParam({ name: 'id', description: 'Webhook ID' })
-  @ApiBody({ type: UpdateWebhookRequestDto })
-  @RequirePermission('webhooks.manage')
+  @ApiBody({ type: UpdateWebhookDto })
+  @RequirePermission('webhook:manage')
   async updateWebhook(
     @Param('id', ParseUUIDPipe) webhookId: string,
     @Body(new ValidationPipe({ transform: true }))
-    updateWebhookDto: UpdateWebhookRequestDto,
+    updateWebhookDto: UpdateWebhookDto,
   ) {
     return this.webhooksService.updateWebhook(webhookId, updateWebhookDto);
   }
@@ -198,7 +128,7 @@ export class WebhooksController {
   })
   @ApiResponse({ status: 404, description: 'Webhook not found' })
   @ApiParam({ name: 'id', description: 'Webhook ID' })
-  @RequirePermission('webhooks.manage')
+  @RequirePermission('webhook:manage')
   async deleteWebhook(@Param('id', ParseUUIDPipe) webhookId: string) {
     return this.webhooksService.deleteWebhook(webhookId);
   }
@@ -218,7 +148,7 @@ export class WebhooksController {
   @ApiResponse({ status: 409, description: 'Webhook is not active' })
   @ApiParam({ name: 'id', description: 'Webhook ID' })
   @ApiBody({ type: TriggerWebhookRequestDto })
-  @RequirePermission('webhooks.trigger')
+  @RequirePermission('webhook:trigger')
   async triggerWebhook(
     @Param('id', ParseUUIDPipe) webhookId: string,
     @Body(new ValidationPipe({ transform: true }))
@@ -248,7 +178,7 @@ export class WebhooksController {
     type: Number,
     description: 'Items per page (default: 20, max: 100)',
   })
-  @RequirePermission('webhooks.read')
+  @RequirePermission('webhook:read')
   async getDeliveryHistory(
     @Param('id', ParseUUIDPipe) webhookId: string,
     @Query('page') page: number = 1,
@@ -274,7 +204,7 @@ export class WebhooksController {
   })
   @ApiResponse({ status: 404, description: 'Delivery not found' })
   @ApiParam({ name: 'deliveryId', description: 'Delivery ID' })
-  @RequirePermission('webhooks.read')
+  @RequirePermission('webhook:read')
   async getDeliveryStatus(
     @Param('deliveryId', ParseUUIDPipe) deliveryId: string,
   ) {
@@ -294,7 +224,7 @@ export class WebhooksController {
   @ApiResponse({ status: 404, description: 'Delivery not found' })
   @ApiResponse({ status: 409, description: 'Delivery cannot be retried' })
   @ApiParam({ name: 'deliveryId', description: 'Delivery ID' })
-  @RequirePermission('webhooks.manage')
+  @RequirePermission('webhook:manage')
   async retryDelivery(@Param('deliveryId', ParseUUIDPipe) deliveryId: string) {
     return this.webhooksService.retryDelivery(deliveryId);
   }
@@ -309,7 +239,7 @@ export class WebhooksController {
     enum: ['day', 'week', 'month'],
     description: 'Timeframe for statistics (default: week)',
   })
-  @RequirePermission('webhooks.read')
+  @RequirePermission('webhook:read')
   async getStatistics(
     @Query('timeframe') timeframe: 'day' | 'week' | 'month' = 'week',
   ) {
@@ -327,7 +257,7 @@ export class WebhooksController {
     type: Number,
     description: 'Number of days to keep delivery records (default: 90)',
   })
-  @RequirePermission('system.admin')
+  @RequirePermission('system:admin')
   async cleanupOldDeliveries(
     @Query('daysToKeep') daysToKeep: number = 90,
   ): Promise<CleanupResult> {

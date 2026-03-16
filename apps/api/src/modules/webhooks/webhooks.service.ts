@@ -1,4 +1,5 @@
 // src/modules/webhooks/webhooks.service.ts
+
 import {
   Injectable,
   Logger,
@@ -12,11 +13,16 @@ import { Queue, JobsOptions } from 'bullmq';
 import { WebhookRepository } from './repositories/webhook.repository';
 import { TenantContextService } from '../../shared/tenant/context/tenant-context.service';
 import { PermissionContextService } from '../../shared/permissions/context/permission-context.service';
-import { AuditLogService } from '../../shared/audit-log/audit-log.service';
+import {
+  AuditLogService,
+  AuditAction,
+  AuditEntityType,
+} from '../../shared/audit-log/audit-log.service';
 import { SeverityMapper } from '../../shared/audit-log/severity-mapper';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import * as crypto from 'crypto';
-
+import { StatisticsResult } from './repositories/webhook.repository';
+import { Webhook, WebhookDelivery } from '@helixcrm/prisma-types';
 // ==================== TYPE DEFINITIONS ====================
 
 export interface WebhookPayload {
@@ -75,7 +81,7 @@ export interface WebhookWithoutSecret {
 }
 
 export interface DeliveryHistoryResponse {
-  data: unknown[];
+  data: WebhookDelivery[];
   meta: {
     page: number;
     limit: number;
@@ -102,9 +108,11 @@ export interface TriggerWebhookResponse {
   estimatedDeliveryTime: string;
 }
 
-export interface WebhookDeliveryStatus {
+export interface DeliveryStatusResponse {
   id: string;
   webhookId: string;
+  event: string;
+  payload: unknown;
   status: 'pending' | 'processing' | 'success' | 'failed';
   statusCode?: number;
   response?: string;
@@ -115,11 +123,23 @@ export interface WebhookDeliveryStatus {
 }
 
 export interface WebhookStatistics {
+  timeframe: 'day' | 'week' | 'month';
   total: number;
   success: number;
   failed: number;
   pending: number;
+  avgResponseTime: number;
   successRate: number;
+}
+
+function hasErrorMessage(
+  delivery: unknown,
+): delivery is { errorMessage: string | null } {
+  return (
+    typeof delivery === 'object' &&
+    delivery !== null &&
+    'errorMessage' in delivery
+  );
 }
 
 // ==================== SERVICE IMPLEMENTATION ====================
@@ -127,6 +147,7 @@ export interface WebhookStatistics {
 @Injectable()
 export class WebhooksService {
   private readonly logger = new Logger(WebhooksService.name);
+  private readonly isProduction = process.env.NODE_ENV === 'production';
 
   constructor(
     @InjectQueue('webhook-queue') private readonly webhookQueue: Queue,
@@ -149,9 +170,10 @@ export class WebhooksService {
     this.logger.error(
       `${context} failed: ${errorMessage}`,
       errorStack,
-      metadata,
+      JSON.stringify(metadata),
     );
 
+    // Re-throw known HTTP exceptions
     if (
       error instanceof NotFoundException ||
       error instanceof ForbiddenException ||
@@ -164,13 +186,19 @@ export class WebhooksService {
     throw new BadRequestException(`Failed to ${context}`);
   }
 
-  private removeSecret(
-    webhook: { secret?: string } & Record<string, unknown>,
-  ): WebhookWithoutSecret {
-    const webhookWithoutSecret = { ...webhook };
-    delete webhookWithoutSecret.secret;
-
-    return webhookWithoutSecret as WebhookWithoutSecret;
+  private removeSecret(webhook: Webhook): WebhookWithoutSecret {
+    return {
+      id: webhook.id,
+      name: webhook.name,
+      url: webhook.url,
+      events: webhook.events,
+      isActive: webhook.isActive,
+      retryCount: webhook.retryCount,
+      timeoutMs: webhook.timeoutMs,
+      headers: webhook.headers as Record<string, string>,
+      createdAt: webhook.createdAt,
+      updatedAt: webhook.updatedAt,
+    };
   }
 
   /**
@@ -213,9 +241,9 @@ export class WebhooksService {
       });
 
       await this.auditLogService.logEvent({
-        action: 'WEBHOOK_CREATED',
+        action: AuditAction.WEBHOOK_CREATED,
         entityId: webhook.id,
-        entityType: 'WEBHOOK',
+        entityType: AuditEntityType.WEBHOOK,
         organizationId: tenantId,
         actorUserId: userId,
         actorEmail: await this.getUserEmail(userId),
@@ -232,7 +260,7 @@ export class WebhooksService {
       this.logger.log(`Webhook created successfully`, {
         webhookId: webhook.id,
         tenantId,
-        userId,
+        userId: this.maskUserId(userId),
         name: webhook.name,
         url: webhook.url,
         eventType: 'webhook_created',
@@ -243,7 +271,7 @@ export class WebhooksService {
     } catch (error) {
       this.handleError(error, 'create webhook', {
         tenantId,
-        userId,
+        userId: this.maskUserId(userId),
         data: createWebhookDto,
         method: 'createWebhook',
         processingTime: Date.now() - startTime,
@@ -298,9 +326,9 @@ export class WebhooksService {
       );
 
       await this.auditLogService.logEvent({
-        action: 'WEBHOOK_UPDATED',
+        action: AuditAction.WEBHOOK_UPDATED,
         entityId: webhookId,
-        entityType: 'WEBHOOK',
+        entityType: AuditEntityType.WEBHOOK,
         organizationId: tenantId,
         actorUserId: userId,
         actorEmail: await this.getUserEmail(userId),
@@ -317,7 +345,7 @@ export class WebhooksService {
       this.logger.log(`Webhook updated successfully`, {
         webhookId,
         tenantId,
-        userId,
+        userId: this.maskUserId(userId),
         updatedFields: Object.keys(updateWebhookDto),
         eventType: 'webhook_updated',
         processingTime: Date.now() - startTime,
@@ -327,7 +355,7 @@ export class WebhooksService {
     } catch (error) {
       this.handleError(error, 'update webhook', {
         tenantId,
-        userId,
+        userId: this.maskUserId(userId),
         webhookId,
         data: updateWebhookDto,
         method: 'updateWebhook',
@@ -359,9 +387,9 @@ export class WebhooksService {
       await this.webhookRepository.delete(webhookId);
 
       await this.auditLogService.logEvent({
-        action: 'WEBHOOK_DELETED',
+        action: AuditAction.WEBHOOK_DELETED,
         entityId: webhookId,
-        entityType: 'WEBHOOK',
+        entityType: AuditEntityType.WEBHOOK,
         organizationId: tenantId,
         actorUserId: userId,
         actorEmail: await this.getUserEmail(userId),
@@ -376,7 +404,7 @@ export class WebhooksService {
       this.logger.log(`Webhook deleted successfully`, {
         webhookId,
         tenantId,
-        userId,
+        userId: this.maskUserId(userId),
         name: existingWebhook.name,
         eventType: 'webhook_deleted',
         processingTime: Date.now() - startTime,
@@ -386,7 +414,7 @@ export class WebhooksService {
     } catch (error) {
       this.handleError(error, 'delete webhook', {
         tenantId,
-        userId,
+        userId: this.maskUserId(userId),
         webhookId,
         method: 'deleteWebhook',
         processingTime: Date.now() - startTime,
@@ -414,7 +442,7 @@ export class WebhooksService {
     } catch (error) {
       this.handleError(error, 'get all webhooks', {
         tenantId,
-        userId,
+        userId: this.maskUserId(userId),
         method: 'getAllWebhooks',
       });
     }
@@ -444,7 +472,7 @@ export class WebhooksService {
     } catch (error) {
       this.handleError(error, 'get webhook by ID', {
         tenantId,
-        userId,
+        userId: this.maskUserId(userId),
         webhookId,
         method: 'getWebhookById',
       });
@@ -505,7 +533,6 @@ export class WebhooksService {
         },
         removeOnComplete: 100,
         removeOnFail: 1000,
-        timeout: webhook.timeoutMs,
       };
 
       await this.webhookQueue.add(
@@ -524,9 +551,9 @@ export class WebhooksService {
       );
 
       await this.auditLogService.logEvent({
-        action: 'WEBHOOK_TRIGGERED',
-        entityId: delivery.id,
-        entityType: 'WEBHOOK_DELIVERY',
+        action: AuditAction.WEBHOOK_TRIGGERED,
+        entityId: webhookId,
+        entityType: AuditEntityType.WEBHOOK_DELIVERY,
         organizationId: tenantId,
         actorUserId: userId,
         actorEmail: await this.getUserEmail(userId),
@@ -544,7 +571,7 @@ export class WebhooksService {
         webhookId,
         deliveryId: delivery.id,
         tenantId,
-        userId,
+        userId: this.maskUserId(userId),
         event: payload.event,
         eventType: 'webhook_triggered',
         processingTime: Date.now() - startTime,
@@ -558,7 +585,7 @@ export class WebhooksService {
     } catch (error) {
       this.handleError(error, 'trigger webhook', {
         tenantId,
-        userId,
+        userId: this.maskUserId(userId),
         webhookId,
         payload,
         method: 'triggerWebhook',
@@ -608,7 +635,7 @@ export class WebhooksService {
     } catch (error) {
       this.handleError(error, 'get delivery history', {
         tenantId,
-        userId,
+        userId: this.maskUserId(userId),
         webhookId,
         page,
         limit,
@@ -620,8 +647,7 @@ export class WebhooksService {
   /**
    * Get delivery status
    */
-
-  async getDeliveryStatus(deliveryId: string): Promise<WebhookDeliveryStatus> {
+  async getDeliveryStatus(deliveryId: string): Promise<DeliveryStatusResponse> {
     if (!this.permissionContext.hasPermission('webhook:read')) {
       throw new ForbiddenException(
         'Insufficient permissions: webhook:read required',
@@ -634,15 +660,43 @@ export class WebhooksService {
     try {
       const delivery =
         await this.webhookRepository.findDeliveryById(deliveryId);
+
       if (!delivery) {
         throw new NotFoundException(`Delivery ${deliveryId} not found`);
       }
 
-      return delivery;
+      // Validate status
+      const validStatuses = [
+        'pending',
+        'processing',
+        'success',
+        'failed',
+      ] as const;
+      const status = delivery.status as (typeof validStatuses)[number];
+
+      if (!validStatuses.includes(status)) {
+        throw new Error(`Invalid delivery status: ${delivery.status}`);
+      }
+
+      return {
+        id: delivery.id,
+        webhookId: delivery.webhookId,
+        event: delivery.event,
+        payload: delivery.payload,
+        status,
+        statusCode: delivery.statusCode ?? undefined,
+        response: delivery.response ?? undefined,
+        error: hasErrorMessage(delivery)
+          ? (delivery.errorMessage ?? undefined)
+          : undefined,
+        attemptedAt: delivery.attemptedAt,
+        completedAt: delivery.completedAt ?? undefined,
+        retryCount: delivery.retryCount,
+      };
     } catch (error) {
       this.handleError(error, 'get delivery status', {
         tenantId,
-        userId,
+        userId: this.maskUserId(userId),
         deliveryId,
         method: 'getDeliveryStatus',
       });
@@ -666,6 +720,7 @@ export class WebhooksService {
     try {
       const delivery =
         await this.webhookRepository.findDeliveryById(deliveryId);
+
       if (!delivery) {
         throw new NotFoundException(`Delivery ${deliveryId} not found`);
       }
@@ -716,9 +771,9 @@ export class WebhooksService {
       );
 
       await this.auditLogService.logEvent({
-        action: 'WEBHOOK_RETRY',
+        action: AuditAction.WEBHOOK_RETRY,
         entityId: deliveryId,
-        entityType: 'WEBHOOK_DELIVERY',
+        entityType: AuditEntityType.WEBHOOK_DELIVERY,
         organizationId: tenantId,
         actorUserId: userId,
         actorEmail: await this.getUserEmail(userId),
@@ -735,7 +790,7 @@ export class WebhooksService {
       this.logger.log(`Delivery retry queued successfully`, {
         deliveryId,
         tenantId,
-        userId,
+        userId: this.maskUserId(userId),
         retryCount: updatedDelivery.retryCount,
         eventType: 'webhook_delivery_retry',
         processingTime: Date.now() - startTime,
@@ -749,10 +804,104 @@ export class WebhooksService {
     } catch (error) {
       this.handleError(error, 'retry delivery', {
         tenantId,
-        userId,
+        userId: this.maskUserId(userId),
         deliveryId,
         method: 'retryDelivery',
         processingTime: Date.now() - startTime,
+      });
+    }
+  }
+
+  /**
+   * Get webhook statistics
+   */
+  async getStatistics(
+    timeframe: 'day' | 'week' | 'month' = 'week',
+  ): Promise<WebhookStatistics> {
+    if (!this.permissionContext.hasPermission('webhook:read')) {
+      throw new ForbiddenException(
+        'Insufficient permissions: webhook:read required',
+      );
+    }
+
+    const tenantId = this.tenantContext.getTenantId();
+    const userId = this.tenantContext.getUserId();
+
+    try {
+      // Add explicit type annotation to fix unsafe assignment
+      const stats: StatisticsResult =
+        await this.webhookRepository.getStatistics(timeframe);
+
+      return {
+        timeframe: stats.timeframe,
+        total: stats.total,
+        success: stats.byStatus.success,
+        failed: stats.byStatus.failed,
+        pending: stats.byStatus.pending,
+        avgResponseTime: stats.avgResponseTime,
+        successRate: stats.successRate,
+      };
+    } catch (error) {
+      this.handleError(error, 'get statistics', {
+        tenantId,
+        userId: this.maskUserId(userId),
+        timeframe,
+        method: 'getStatistics',
+      });
+    }
+  }
+
+  /**
+   * Clean up old deliveries
+   */
+  async cleanupOldDeliveries(
+    daysToKeep: number = 90,
+  ): Promise<CleanupResponse> {
+    if (!this.permissionContext.hasPermission('system:admin')) {
+      throw new ForbiddenException(
+        'Insufficient permissions: system:admin required',
+      );
+    }
+
+    const tenantId = this.tenantContext.getTenantId();
+    const userId = this.tenantContext.getUserId();
+
+    try {
+      const result =
+        await this.webhookRepository.cleanupOldDeliveries(daysToKeep);
+
+      await this.auditLogService.logEvent({
+        action: AuditAction.WEBHOOK_CLEANUP,
+        entityType: AuditEntityType.WEBHOOK,
+        organizationId: tenantId,
+        actorUserId: userId,
+        actorEmail: await this.getUserEmail(userId),
+        metadata: {
+          daysToKeep,
+          deletedCount: result.count,
+          tenantId,
+        },
+        severity: SeverityMapper.forEventType('info'),
+      });
+
+      this.logger.log(`Old webhook deliveries cleaned up`, {
+        tenantId,
+        userId: this.maskUserId(userId),
+        deleted: result.count,
+        daysToKeep,
+        eventType: 'webhook_cleanup',
+      });
+
+      return {
+        deleted: result.count,
+        message: `Successfully deleted ${result.count} old webhook deliveries older than ${daysToKeep} days`,
+      };
+    } catch (error) {
+      this.handleError(error, 'cleanup old deliveries', {
+        tenantId,
+        userId: this.maskUserId(userId),
+        daysToKeep,
+        method: 'cleanupOldDeliveries',
       });
     }
   }
@@ -799,85 +948,14 @@ export class WebhooksService {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
       this.logger.warn(
-        `Failed to fetch email for user ${userId}: ${errorMessage}`,
+        `Failed to fetch email for user ${this.maskUserId(userId)}: ${errorMessage}`,
       );
       return `user-${userId}@error.example.com`;
     }
   }
 
-  async getStatistics(
-    timeframe: 'day' | 'week' | 'month' = 'week',
-  ): Promise<WebhookStatistics> {
-    if (!this.permissionContext.hasPermission('webhook:read')) {
-      throw new ForbiddenException(
-        'Insufficient permissions: webhook:read required',
-      );
-    }
-
-    const tenantId = this.tenantContext.getTenantId();
-    const userId = this.tenantContext.getUserId();
-
-    try {
-      return await this.webhookRepository.getStatistics(timeframe);
-    } catch (error) {
-      this.handleError(error, 'get statistics', {
-        tenantId,
-        userId,
-        timeframe,
-        method: 'getStatistics',
-      });
-    }
-  }
-
-  async cleanupOldDeliveries(
-    daysToKeep: number = 90,
-  ): Promise<CleanupResponse> {
-    if (!this.permissionContext.hasPermission('system:admin')) {
-      throw new ForbiddenException(
-        'Insufficient permissions: system:admin required',
-      );
-    }
-
-    const tenantId = this.tenantContext.getTenantId();
-    const userId = this.tenantContext.getUserId();
-
-    try {
-      const deleted =
-        await this.webhookRepository.cleanupOldDeliveries(daysToKeep);
-
-      await this.auditLogService.logEvent({
-        action: 'WEBHOOK_CLEANUP',
-        entityType: 'SYSTEM',
-        organizationId: tenantId,
-        actorUserId: userId,
-        actorEmail: await this.getUserEmail(userId),
-        metadata: {
-          daysToKeep,
-          deletedCount: deleted,
-          tenantId,
-        },
-        severity: SeverityMapper.forEventType('info'),
-      });
-
-      this.logger.log(`Old webhook deliveries cleaned up`, {
-        tenantId,
-        userId,
-        deleted,
-        daysToKeep,
-        eventType: 'webhook_cleanup',
-      });
-
-      return {
-        deleted,
-        message: `Successfully deleted ${deleted} old webhook deliveries older than ${daysToKeep} days`,
-      };
-    } catch (error) {
-      this.handleError(error, 'cleanup old deliveries', {
-        tenantId,
-        userId,
-        daysToKeep,
-        method: 'cleanupOldDeliveries',
-      });
-    }
+  private maskUserId(userId: string): string {
+    if (!userId || userId.length < 8) return '****';
+    return `${userId.slice(0, 4)}...${userId.slice(-4)}`;
   }
 }

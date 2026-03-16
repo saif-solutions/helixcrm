@@ -6,23 +6,66 @@ import {
   Optional,
   Inject,
 } from '@nestjs/common';
+import { Job } from 'bullmq';
 import { Request } from 'express';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditQueueService, AuditJobData } from './audit-queue.service';
 import { AuditIntegrityService } from '../audit-integrity/audit-integrity.service';
+import { Prisma } from '@prisma/client';
 
-// Import Prisma enums
-import { $Enums } from '.prisma/client';
+// Define enums locally
+export enum AuditAction {
+  USER_CREATED = 'USER_CREATED',
+  LOGIN_SUCCESS = 'LOGIN_SUCCESS',
+  LOGIN_FAILURE = 'LOGIN_FAILURE',
+  USER_DELETED = 'USER_DELETED',
+  PERMISSION_DENIED = 'PERMISSION_DENIED',
+  PASSWORD_CHANGE = 'PASSWORD_CHANGE',
+  RATE_LIMIT_TRIGGERED = 'RATE_LIMIT_TRIGGERED',
+  CSRF_FAILURE = 'CSRF_FAILURE',
+  SYSTEM_ERROR = 'SYSTEM_ERROR',
+  USER_UPDATED = 'USER_UPDATED',
+  PERMISSION_GRANTED = 'PERMISSION_GRANTED',
+  ROLE_ASSIGNED = 'ROLE_ASSIGNED',
+  ROLE_CREATED = 'ROLE_CREATED',
+  ROLE_UPDATED = 'ROLE_UPDATED',
+  ROLE_DELETED = 'ROLE_DELETED',
+  DEAL_CREATED = 'DEAL_CREATED',
+  DEAL_UPDATED = 'DEAL_UPDATED',
+  DEAL_DELETED = 'DEAL_DELETED',
+  CONTACT_CREATED = 'CONTACT_CREATED',
+  CONTACT_UPDATED = 'CONTACT_UPDATED',
+  CONTACT_DELETED = 'CONTACT_DELETED',
+  ANALYTICS_EXPORT_REQUESTED = 'ANALYTICS_EXPORT_REQUESTED',
+  ANALYTICS_EXPORT_DOWNLOADED = 'ANALYTICS_EXPORT_DOWNLOADED',
+  ANALYTICS_EXPORT_COMPLETED = 'ANALYTICS_EXPORT_COMPLETED',
+  ANALYTICS_EXPORT_FAILED = 'ANALYTICS_EXPORT_FAILED',
+  WEBHOOK_CREATED = 'WEBHOOK_CREATED',
+  WEBHOOK_UPDATED = 'WEBHOOK_UPDATED',
+  WEBHOOK_DELETED = 'WEBHOOK_DELETED',
+  WEBHOOK_TRIGGERED = 'WEBHOOK_TRIGGERED',
+  WEBHOOK_RETRY = 'WEBHOOK_RETRY',
+  WEBHOOK_CLEANUP = 'WEBHOOK_CLEANUP',
+}
 
-// Re-export Prisma enums for use in other modules
-export const AuditAction = $Enums.AuditAction;
-export const AuditEntityType = $Enums.AuditEntityType;
-export const AuditSeverity = $Enums.AuditSeverity;
+export enum AuditEntityType {
+  AUTH = 'AUTH',
+  USER = 'USER',
+  ROLE = 'ROLE',
+  PERMISSION = 'PERMISSION',
+  DEAL = 'DEAL',
+  CONTACT = 'CONTACT',
+  ANALYTICS = 'ANALYTICS',
+  WEBHOOK = 'WEBHOOK',
+  WEBHOOK_DELIVERY = 'WEBHOOK_DELIVERY',
+}
 
-// Create type aliases for convenience
-export type AuditAction = $Enums.AuditAction;
-export type AuditEntityType = $Enums.AuditEntityType;
-export type AuditSeverity = $Enums.AuditSeverity;
+export enum AuditSeverity {
+  LOW = 'LOW',
+  MEDIUM = 'MEDIUM',
+  HIGH = 'HIGH',
+  CRITICAL = 'CRITICAL',
+}
 
 interface AuditLogData {
   action: AuditAction;
@@ -38,10 +81,17 @@ interface AuditLogData {
   requestId?: string;
 }
 
+interface RequestWithUser extends Request {
+  user?: {
+    organizationId?: string;
+    id?: string;
+    [key: string]: any;
+  };
+  id?: string;
+}
+
 /**
  * LANE 1: Strict request-based logging for controllers
- * Context: HTTP request with user authentication
- * Usage: AuthController, REST controllers only
  */
 interface LogWithRequestParams {
   request: Request;
@@ -57,11 +107,9 @@ interface LogWithRequestParams {
 
 /**
  * LANE 2: Flexible logging for application services
- * Context: May or may not have HTTP request
- * Usage: Application services (Deals, RBAC, etc.)
  */
 interface LogEventParams {
-  request?: Request; // OPTIONAL
+  request?: Request;
   action: AuditAction;
   entityType: AuditEntityType;
   actorEmail: string;
@@ -74,11 +122,9 @@ interface LogEventParams {
 
 /**
  * LANE 3: Specialized auth event logging
- * Context: Auth-specific events with simplified interface
- * Usage: Auth service methods
  */
 interface LogAuthEventParams {
-  request?: Request; // OPTIONAL for auth service
+  request?: Request;
   action: AuditAction;
   actorEmail: string;
   actorUserId?: string;
@@ -87,54 +133,23 @@ interface LogAuthEventParams {
   organizationId?: string | null;
 }
 
-/**
- * MODES:
- * - SYNC_MODE: All audit writes are synchronous (default fallback)
- * - ASYNC_MODE: Non-critical writes go to queue, critical writes are sync
- * - QUEUE_DISABLED: Force synchronous mode even if queue is available
- */
 export enum AuditMode {
   SYNC_MODE = 'SYNC_MODE',
   ASYNC_MODE = 'ASYNC_MODE',
   QUEUE_DISABLED = 'QUEUE_DISABLED',
 }
 
-/**
- * CONTRACT:
- * - logWithRequest: REQUIRES request context, fail-fast on missing organizationId
- * - logEvent: OPTIONAL request, flexible for application services
- * - logAuthEvent: OPTIONAL request, simplified for auth events
- * - Login flows MUST explicitly pass organizationId
- * - Failed authentication events may lack organization context and are logged accordingly
- *
- * ASYNC ENHANCEMENTS:
- * - Critical events (security breaches, failures) are always synchronous
- * - Non-critical events (user actions, reads) go to async queue
- * - Queue unavailable → automatic fallback to synchronous mode
- *
- * INTEGRITY ENHANCEMENTS:
- * - All audit events are also added to append-only integrity chain
- * - Hash chaining ensures tamper detection
- */
 @Injectable()
 export class AuditLogService {
   private readonly logger = new Logger(AuditLogService.name);
   private auditMode: AuditMode = AuditMode.SYNC_MODE;
   private queueAvailable = false;
 
-  /**
-   * Actions that are allowed during system bootstrap (no organization context required)
-   * These represent special lifecycle events where organization may not be resolved yet
-   */
   private readonly BOOTSTRAP_ALLOWED_ACTIONS = new Set<AuditAction>([
     AuditAction.USER_CREATED,
     AuditAction.LOGIN_SUCCESS,
   ]);
 
-  /**
-   * Critical actions that must always be written synchronously
-   * These represent security events where immediate persistence is required
-   */
   private readonly CRITICAL_ACTIONS = new Set<AuditAction>([
     AuditAction.LOGIN_FAILURE,
     AuditAction.USER_DELETED,
@@ -150,7 +165,6 @@ export class AuditLogService {
     @Optional()
     @Inject(AuditQueueService)
     private readonly auditQueueService?: AuditQueueService,
-
     @Optional()
     @Inject(AuditIntegrityService)
     private readonly auditIntegrityService?: AuditIntegrityService,
@@ -158,10 +172,7 @@ export class AuditLogService {
     this.initializeAuditMode();
   }
 
-  /**
-   * Initialize audit mode based on queue availability
-   */
-  private initializeAuditMode() {
+  private initializeAuditMode(): void {
     if (this.auditQueueService) {
       this.auditMode = AuditMode.ASYNC_MODE;
       this.queueAvailable = true;
@@ -177,52 +188,43 @@ export class AuditLogService {
     }
   }
 
-  /**
-   * Check if an action requires organization context
-   * Certain bootstrap actions are exempt from this requirement
-   */
   private requiresOrganizationContext(action: AuditAction): boolean {
-    // Allow bootstrap actions to proceed without organization context
     if (this.BOOTSTRAP_ALLOWED_ACTIONS.has(action)) {
       return false;
     }
 
-    // All other actions require organization context
-    const actionsRequiringOrgContext = [
-      'USER_UPDATED',
-      'PERMISSION_GRANTED',
-      'ROLE_ASSIGNED',
-      'ROLE_CREATED',
-      'ROLE_UPDATED',
-      'ROLE_DELETED',
-      'DEAL_CREATED',
-      'DEAL_UPDATED',
-      'DEAL_DELETED',
-      'CONTACT_CREATED',
-      'CONTACT_UPDATED',
-      'CONTACT_DELETED',
-      'ANALYTICS_EXPORT_REQUESTED',
-      'ANALYTICS_EXPORT_DOWNLOADED',
-      'ANALYTICS_EXPORT_COMPLETED',
-      'ANALYTICS_EXPORT_FAILED',
+    const actionsRequiringOrgContext: AuditAction[] = [
+      AuditAction.USER_UPDATED,
+      AuditAction.PERMISSION_GRANTED,
+      AuditAction.ROLE_ASSIGNED,
+      AuditAction.ROLE_CREATED,
+      AuditAction.ROLE_UPDATED,
+      AuditAction.ROLE_DELETED,
+      AuditAction.DEAL_CREATED,
+      AuditAction.DEAL_UPDATED,
+      AuditAction.DEAL_DELETED,
+      AuditAction.CONTACT_CREATED,
+      AuditAction.CONTACT_UPDATED,
+      AuditAction.CONTACT_DELETED,
+      AuditAction.ANALYTICS_EXPORT_REQUESTED,
+      AuditAction.ANALYTICS_EXPORT_DOWNLOADED,
+      AuditAction.ANALYTICS_EXPORT_COMPLETED,
+      AuditAction.ANALYTICS_EXPORT_FAILED,
+      AuditAction.WEBHOOK_CREATED,
+      AuditAction.WEBHOOK_UPDATED,
+      AuditAction.WEBHOOK_DELETED,
+      AuditAction.WEBHOOK_TRIGGERED,
+      AuditAction.WEBHOOK_RETRY,
+      AuditAction.WEBHOOK_CLEANUP,
     ];
 
     return actionsRequiringOrgContext.includes(action);
   }
 
-  /**
-   * Determine if an action should be processed synchronously
-   */
   private isCriticalAction(action: AuditAction): boolean {
     return this.CRITICAL_ACTIONS.has(action);
   }
 
-  // ==================== CORE AUDIT LOGGING METHODS ====================
-
-  /**
-   * Strict audit logging for controllers with HTTP request context
-   * CONTRACT: Requires request, fail-fast on missing organization context
-   */
   async logWithRequest(
     request: Request,
     action: AuditAction,
@@ -233,21 +235,15 @@ export class AuditLogService {
     metadata?: Record<string, any>,
     severity: AuditSeverity = AuditSeverity.MEDIUM,
     organizationId?: string | null,
-  ) {
+  ): Promise<any> {
     try {
-      // Validate that we have organization context
-      // For actions that require organization context, fail fast if missing
-      // EXCEPTION: Bootstrap actions (USER_CREATED, LOGIN_SUCCESS) are allowed without org context
-
+      const typedRequest = request as RequestWithUser;
       let resolvedOrganizationId = organizationId;
 
-      // Try to get organizationId from request.user if not provided
-      if (!resolvedOrganizationId && (request as any).user?.organizationId) {
-        resolvedOrganizationId = (request as any).user.organizationId;
+      if (!resolvedOrganizationId && typedRequest.user?.organizationId) {
+        resolvedOrganizationId = typedRequest.user.organizationId;
       }
 
-      // For actions that require organization context, throw if missing
-      // BUT: Allow bootstrap actions to proceed without organization context
       if (this.requiresOrganizationContext(action) && !resolvedOrganizationId) {
         throw new InternalServerErrorException(
           `Audit log requires organization context for action: ${action}. ` +
@@ -255,18 +251,15 @@ export class AuditLogService {
         );
       }
 
-      // Log a warning for missing org context on bootstrap actions
       if (
         !resolvedOrganizationId &&
         this.BOOTSTRAP_ALLOWED_ACTIONS.has(action)
       ) {
         this.logger.warn(
           `Bootstrap audit action: ${action} recorded without organization context. ` +
-            `Actor: ${actorEmail}, Entity: ${entityType}. ` +
-            `This is acceptable during system bootstrap.`,
+            `Actor: ${actorEmail}, Entity: ${entityType}.`,
         );
 
-        // Add bootstrap metadata for traceability
         if (metadata) {
           metadata.bootstrap = true;
           metadata.bootstrapReason = 'organization_context_not_resolved_yet';
@@ -276,16 +269,16 @@ export class AuditLogService {
             bootstrapReason: 'organization_context_not_resolved_yet',
           };
         }
-      } else if (!resolvedOrganizationId && action !== 'LOGIN_FAILURE') {
-        // Log warning for other non-bootstrap actions missing org context
+      } else if (
+        !resolvedOrganizationId &&
+        action !== AuditAction.LOGIN_FAILURE
+      ) {
         this.logger.warn(
           `Audit log missing organization context for action: ${action}. ` +
-            `Actor: ${actorEmail}, Entity: ${entityType}. ` +
-            `This is acceptable for failed authentication attempts.`,
+            `Actor: ${actorEmail}, Entity: ${entityType}.`,
         );
       }
 
-      // Prepare audit data
       const auditData: AuditLogData = {
         action,
         entityType,
@@ -295,13 +288,14 @@ export class AuditLogService {
         metadata,
         severity,
         organizationId: resolvedOrganizationId,
-        ipAddress: request.ip,
-        userAgent: request.get('user-agent'),
+        ipAddress: typedRequest.ip,
+        userAgent: typedRequest.get('user-agent') || undefined,
         requestId:
-          (request as any).id || (request as any).headers['x-request-id'],
+          typedRequest.id ||
+          (typedRequest.headers['x-request-id'] as string) ||
+          undefined,
       };
 
-      // Determine if we should use async queue
       const isCritical = this.isCriticalAction(action);
 
       if (
@@ -309,10 +303,8 @@ export class AuditLogService {
         this.auditMode === AuditMode.ASYNC_MODE &&
         !isCritical
       ) {
-        // Use async queue for non-critical events
         return await this.logToQueue(auditData);
       } else {
-        // Use synchronous logging for critical events or when queue is unavailable
         if (isCritical) {
           this.logger.debug(
             `Critical action ${action} - using synchronous logging`,
@@ -331,10 +323,7 @@ export class AuditLogService {
     }
   }
 
-  /**
-   * Object-based version for cleaner controller usage
-   */
-  async logWithRequestObject(params: LogWithRequestParams) {
+  async logWithRequestObject(params: LogWithRequestParams): Promise<any> {
     return this.logWithRequest(
       params.request,
       params.action,
@@ -348,17 +337,9 @@ export class AuditLogService {
     );
   }
 
-  // ==================== LANE 2: Flexible Application Service Logging ====================
-
-  /**
-   * Flexible audit logging for application services
-   * CONTRACT: Optional request, auto-routes to appropriate lane
-   */
-  async logEvent(params: LogEventParams) {
+  async logEvent(params: LogEventParams): Promise<any> {
     try {
-      // Route to appropriate lane based on context
       if (params.request) {
-        // Has request context → use Lane 1
         return this.logWithRequest(
           params.request,
           params.action,
@@ -371,7 +352,6 @@ export class AuditLogService {
           params.organizationId,
         );
       } else {
-        // No request context → use Lane 3 (direct/system logging)
         return this.logDirect(
           params.action,
           params.entityType,
@@ -394,35 +374,27 @@ export class AuditLogService {
     }
   }
 
-  // ==================== LANE 3: Auth Service & Direct/System Logging ====================
-
-  /**
-   * Specialized method for auth events
-   * CONTRACT: Simplified interface, optional request
-   */
-  async logAuthEvent(params: LogAuthEventParams) {
+  async logAuthEvent(params: LogAuthEventParams): Promise<any> {
     try {
       if (params.request) {
-        // Has request context → use Lane 1
         return this.logWithRequest(
           params.request,
           params.action,
           AuditEntityType.AUTH,
           params.actorEmail,
           params.actorUserId,
-          undefined, // entityId
+          undefined,
           params.metadata,
           params.severity || AuditSeverity.MEDIUM,
           params.organizationId,
         );
       } else {
-        // No request context → use Lane 3 (direct/system logging)
         return this.logDirect(
           params.action,
           AuditEntityType.AUTH,
           params.actorEmail,
           params.actorUserId,
-          undefined, // entityId
+          undefined,
           params.metadata,
           params.severity || AuditSeverity.MEDIUM,
           params.organizationId,
@@ -439,10 +411,6 @@ export class AuditLogService {
     }
   }
 
-  /**
-   * Direct/system-level audit logging
-   * CONTRACT: No request context, for background jobs/system events
-   */
   async logDirect(
     action: AuditAction,
     entityType: AuditEntityType,
@@ -454,7 +422,7 @@ export class AuditLogService {
     organizationId?: string | null,
     ipAddress?: string,
     userAgent?: string,
-  ) {
+  ): Promise<any> {
     try {
       const auditData: AuditLogData = {
         action,
@@ -470,7 +438,6 @@ export class AuditLogService {
         requestId: `system-${Date.now()}`,
       };
 
-      // Determine if we should use async queue
       const isCritical = this.isCriticalAction(action);
 
       if (
@@ -478,10 +445,8 @@ export class AuditLogService {
         this.auditMode === AuditMode.ASYNC_MODE &&
         !isCritical
       ) {
-        // Use async queue for non-critical events
         return await this.logToQueue(auditData);
       } else {
-        // Use synchronous logging for critical events or when queue is unavailable
         return await this.createAuditLogEntrySync(auditData);
       }
     } catch (error) {
@@ -495,11 +460,6 @@ export class AuditLogService {
     }
   }
 
-  // ==================== ASYNC QUEUE METHODS ====================
-
-  /**
-   * Log audit event to async queue
-   */
   private async logToQueue(auditData: AuditLogData): Promise<any> {
     try {
       if (!this.auditQueueService) {
@@ -520,60 +480,44 @@ export class AuditLogService {
         requestId: auditData.requestId,
       };
 
-      const job = await this.auditQueueService.addAuditEvent(jobData);
+      const job = (await this.auditQueueService.addAuditEvent(jobData)) as Job;
+      const jobId = job?.id ? String(job.id) : 'unknown';
 
       this.logger.debug(`Audit event queued: ${auditData.action}`, {
-        jobId: job.id,
+        jobId,
         action: auditData.action,
         actorEmail: auditData.actorEmail,
       });
 
       return {
         queued: true,
-        jobId: job.id,
+        jobId,
         action: auditData.action,
         message: 'Audit event queued for async processing',
       };
     } catch (error) {
-      // If queue fails, fall back to synchronous logging
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
       this.logger.warn(
-        `Queue failed for audit ${auditData.action}, falling back to sync: ${error.message}`,
+        `Queue failed for audit ${auditData.action}, falling back to sync: ${errorMessage}`,
       );
       return await this.createAuditLogEntrySync(auditData);
     }
   }
 
-  // ==================== PRIVATE HELPER METHODS ====================
-
-  /**
-   * Synchronous audit log creation with integrity chain integration
-   */
-  private async createAuditLogEntrySync(auditData: AuditLogData) {
+  // In createAuditLogEntrySync method
+  private async createAuditLogEntrySync(auditData: AuditLogData): Promise<any> {
     try {
-      // Build the base data
-      const data: any = {
-        action: auditData.action,
-        entityType: auditData.entityType,
-        actorEmail: auditData.actorEmail,
-        actorUserId: auditData.actorUserId,
-        entityId: auditData.entityId,
-        metadata: auditData.metadata,
-        severity: auditData.severity,
-        ipAddress: auditData.ipAddress,
-        userAgent: auditData.userAgent,
-        requestId: auditData.requestId,
-      };
-
-      // Handle organizationId - try to resolve if missing for LOGIN_SUCCESS
+      // First, resolve organization ID
       let organizationId = auditData.organizationId;
 
+      // Try to resolve organization from user if this is a login success
       if (
         !organizationId &&
-        auditData.action === 'LOGIN_SUCCESS' &&
+        auditData.action === AuditAction.LOGIN_SUCCESS &&
         auditData.actorUserId
       ) {
         try {
-          // Try to fetch user's organization for login audit
           const user = await this.prisma.user.findUnique({
             where: { id: auditData.actorUserId },
             select: { organizationId: true },
@@ -585,33 +529,62 @@ export class AuditLogService {
             );
           }
         } catch (error) {
+          const errorMessage =
+            error instanceof Error ? error.message : 'Unknown error';
           this.logger.warn('Could not fetch user organization for audit log', {
             actorUserId: auditData.actorUserId,
-            error: error.message,
+            error: errorMessage,
           });
         }
       }
 
-      // Now set organizationId if we have it
-      if (organizationId) {
-        data.organizationId = organizationId;
-      } else {
-        // For bootstrap actions without organization, log warning and skip
-        if (auditData.action === 'LOGIN_SUCCESS') {
+      // For bootstrap actions without organization, log and return null
+      if (!organizationId) {
+        if (auditData.action === AuditAction.LOGIN_SUCCESS) {
           this.logger.warn(
             `Bootstrap audit action: LOGIN_SUCCESS recorded without organization context. ` +
-              `Actor: ${auditData.actorEmail}, Entity: ${auditData.entityType}. ` +
-              `This is acceptable during system bootstrap.`,
+              `Actor: ${auditData.actorEmail}, Entity: ${auditData.entityType}.`,
           );
-          return null; // Skip audit log creation
+          return null;
         }
+
+        // For all other actions, throw error (organization is required)
+        throw new InternalServerErrorException(
+          `Organization ID is required for audit log: ${auditData.action}`,
+        );
       }
+
+      // Build the data with both required relations
+      const data: Prisma.AuditLogCreateInput = {
+        action: auditData.action,
+        entityType: auditData.entityType,
+        entityId: auditData.entityId,
+        actorEmail: auditData.actorEmail,
+        severity: auditData.severity,
+        ipAddress: auditData.ipAddress,
+        userAgent: auditData.userAgent,
+        requestId: auditData.requestId,
+        metadata: auditData.metadata as Prisma.InputJsonValue,
+
+        // Required relations
+        organization: {
+          connect: { id: organizationId },
+        },
+        actor: auditData.actorUserId
+          ? {
+              connect: { id: auditData.actorUserId },
+            }
+          : undefined,
+      };
 
       const auditLog = await this.prisma.auditLog.create({
         data,
+        include: {
+          actor: true,
+          organization: true,
+        },
       });
 
-      // INTEGRITY: Add to append-only chain
       await this.appendToIntegrityChain(auditLog, auditData);
 
       this.logger.debug(
@@ -619,34 +592,33 @@ export class AuditLogService {
         {
           auditId: auditLog.id,
           actorEmail: auditData.actorEmail,
-          organizationId: organizationId || 'not-provided',
+          organizationId,
           mode: 'SYNC',
         },
       );
 
       return auditLog;
     } catch (error) {
-      // If creation fails due to organizationId constraint, try an alternative approach
-      if (error.message.includes('organization') && !auditData.organizationId) {
-        this.logger.warn(
-          `Audit log creation failed without organizationId for ${auditData.action}. ` +
-            `This is expected for bootstrap actions. Audit will be skipped.`,
-        );
-
-        // Return null to indicate audit was skipped
-        // The main operation should continue
-        return null;
+      // Handle expected errors gracefully with proper type checking
+      if (error instanceof InternalServerErrorException) {
+        throw error;
       }
 
-      // Re-throw other errors
-      throw error;
+      // Safe error logging with type guard
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      const errorStack = error instanceof Error ? error.stack : undefined;
+
+      this.logger.error(
+        `Failed to create audit log: ${errorMessage}`,
+        errorStack,
+      );
+      return null;
     }
   }
-  /**
-   * Add audit event to integrity chain
-   */
+
   private async appendToIntegrityChain(
-    auditLog: any,
+    auditLog: { id: string },
     auditData: AuditLogData,
   ): Promise<void> {
     try {
@@ -676,30 +648,27 @@ export class AuditLogService {
       };
 
       const hash = await this.auditIntegrityService.appendEvent(integrityEvent);
-
       this.logger.debug(
         `Audit event added to integrity chain: ${hash.substring(0, 16)}...`,
       );
     } catch (error) {
-      // Don't fail the main audit operation if integrity chain fails
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      const errorStack = error instanceof Error ? error.stack : undefined;
       this.logger.error(
-        `Failed to append to integrity chain: ${error.message}`,
-        error.stack,
+        `Failed to append to integrity chain: ${errorMessage}`,
+        errorStack,
       );
     }
   }
 
-  /**
-   * Handle audit logging errors gracefully
-   */
   private handleAuditError(
-    error: any,
+    error: unknown,
     action: AuditAction,
     entityType: AuditEntityType,
     actorEmail: string,
     organizationId?: string | null,
-  ) {
-    // If the error is that audit was skipped (returned null), just log debug
+  ): null {
     if (error === null) {
       this.logger.debug(`Audit log skipped for bootstrap action: ${action}`, {
         action,
@@ -708,21 +677,25 @@ export class AuditLogService {
       return null;
     }
 
-    // Log error but don't fail the main operation
-    this.logger.error(`Failed to create audit log: ${error.message}`, {
-      action,
-      entityType,
-      actorEmail,
-      organizationId,
-      error: error.stack,
-    });
+    const errorMessage =
+      error instanceof Error ? error.message : 'Unknown error';
+    const errorStack = error instanceof Error ? error.stack : undefined;
 
-    // Re-throw if it's our intentional validation error
+    this.logger.error(
+      `Failed to create audit log: ${errorMessage}`,
+      errorStack,
+      {
+        action,
+        entityType,
+        actorEmail,
+        organizationId,
+      },
+    );
+
     if (error instanceof InternalServerErrorException) {
       throw error;
     }
 
-    // For database errors, log but continue
     this.logger.warn(
       `Audit log creation failed (database error), but main operation continues. ` +
         `Action: ${action}, Actor: ${actorEmail}`,
@@ -731,35 +704,19 @@ export class AuditLogService {
     return null;
   }
 
-  // ==================== PUBLIC UTILITY METHODS ====================
-
-  /**
-   * Get current audit mode
-   */
   getAuditMode(): AuditMode {
     return this.auditMode;
   }
 
-  /**
-   * Check if async queue is available
-   */
   isQueueAvailable(): boolean {
     return this.queueAvailable;
   }
 
-  /**
-   * Force audit mode (for testing/debugging)
-   */
-  setAuditMode(mode: AuditMode) {
+  setAuditMode(mode: AuditMode): void {
     this.auditMode = mode;
     this.logger.log(`Audit mode changed to: ${mode}`);
   }
 
-  // ==================== QUERY & MAINTENANCE METHODS ====================
-
-  /**
-   * Query audit logs with filtering
-   */
   async queryLogs(filters: {
     organizationId?: string;
     actorUserId?: string;
@@ -770,69 +727,102 @@ export class AuditLogService {
     severity?: AuditSeverity;
     take?: number;
     skip?: number;
-  }) {
-    const where: any = {};
+  }): Promise<{
+    logs: any[];
+    total: number;
+    page: number;
+    totalPages: number;
+  }> {
+    const where: Prisma.AuditLogWhereInput = {};
 
-    if (filters.organizationId) {
+    if (filters.organizationId !== undefined) {
       where.organizationId = filters.organizationId;
     }
 
-    if (filters.actorUserId) {
-      where.actorUserId = filters.actorUserId;
+    // Use the relation field (actor) for filtering by user
+    if (filters.actorUserId !== undefined) {
+      where.actor = {
+        id: filters.actorUserId,
+      };
     }
 
-    if (filters.action) {
+    if (filters.action !== undefined) {
       where.action = filters.action;
     }
 
-    if (filters.entityType) {
+    if (filters.entityType !== undefined) {
       where.entityType = filters.entityType;
     }
 
-    if (filters.severity) {
+    if (filters.severity !== undefined) {
       where.severity = filters.severity;
     }
 
-    if (filters.startDate || filters.endDate) {
+    if (filters.startDate !== undefined || filters.endDate !== undefined) {
       where.createdAt = {};
-      if (filters.startDate) {
+      if (filters.startDate !== undefined) {
         where.createdAt.gte = filters.startDate;
       }
-      if (filters.endDate) {
+      if (filters.endDate !== undefined) {
         where.createdAt.lte = filters.endDate;
       }
     }
 
-    const [logs, total] = await Promise.all([
-      this.prisma.auditLog.findMany({
-        where,
-        orderBy: { createdAt: 'desc' },
-        take: filters.take || 100,
-        skip: filters.skip || 0,
-        include: {
-          organization: {
-            select: {
-              id: true,
-              name: true,
+    const take = filters.take ?? 100;
+    const skip = filters.skip ?? 0;
+
+    try {
+      const [logs, total] = await Promise.all([
+        this.prisma.auditLog.findMany({
+          where,
+          orderBy: { createdAt: 'desc' },
+          take,
+          skip,
+          include: {
+            organization: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+            actor: {
+              select: {
+                id: true,
+                email: true,
+                // Check your User model for the correct field names
+                // If your User model has 'firstName' and 'lastName', use those
+                // firstName: true,
+                // lastName: true,
+              },
             },
           },
-        },
-      }),
-      this.prisma.auditLog.count({ where }),
-    ]);
+        }),
+        this.prisma.auditLog.count({ where }),
+      ]);
 
-    return {
-      logs,
-      total,
-      page: Math.floor((filters.skip || 0) / (filters.take || 100)) + 1,
-      totalPages: Math.ceil(total / (filters.take || 100)),
-    };
+      return {
+        logs,
+        total,
+        page: Math.floor(skip / take) + 1,
+        totalPages: Math.ceil(total / take),
+      };
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      const errorStack = error instanceof Error ? error.stack : undefined;
+
+      this.logger.error(
+        `Failed to query audit logs: ${errorMessage}`,
+        errorStack,
+        { filters },
+      );
+      throw error;
+    }
   }
 
-  /**
-   * Clean up old audit logs (retention policy)
-   */
-  async cleanupOldLogs(retentionDays: number = 365) {
+  async cleanupOldLogs(
+    retentionDays: number = 365,
+  ): Promise<{ count: number }> {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
 
@@ -843,7 +833,7 @@ export class AuditLogService {
             lt: cutoffDate,
           },
           severity: {
-            in: ['LOW', 'MEDIUM'] as AuditSeverity[],
+            in: [AuditSeverity.LOW, AuditSeverity.MEDIUM],
           },
         },
       });
@@ -851,10 +841,11 @@ export class AuditLogService {
       this.logger.log(
         `Cleaned up ${result.count} old audit logs older than ${retentionDays} days`,
       );
-
       return result;
     } catch (error) {
-      this.logger.error(`Failed to cleanup old audit logs: ${error.message}`);
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(`Failed to cleanup old audit logs: ${errorMessage}`);
       throw error;
     }
   }
