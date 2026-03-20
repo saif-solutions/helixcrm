@@ -18,7 +18,7 @@ import { PermissionGuard } from '../../../../shared/guards/permission.guard';
 import { RequirePermission } from '../../../../shared/decorators/require-permission.decorator';
 
 import { AuditLogTypes } from '../../domain';
-
+import { AuditLogQuery as DomainAuditLogQuery } from '../../domain/audit-log.types';
 import { AuditLogQueryService } from '../../application/services/audit-log-query.service';
 
 // Type definition for request with user
@@ -27,21 +27,6 @@ interface RequestWithUser extends Request {
     organizationId?: string;
     [key: string]: any;
   };
-}
-
-// Type definition for audit log query
-interface AuditLogQuery {
-  organizationId: string;
-  page: number;
-  limit: number;
-  startDate?: Date;
-  endDate?: Date;
-  action?: string;
-  entityType?: string;
-  actorEmail?: string;
-  severity?: string;
-  actorType?: string;
-  search?: string;
 }
 
 @ApiTags('Audit')
@@ -93,7 +78,8 @@ export class AuditLogController {
       throw new BadRequestException('Start date must be before end date');
     }
 
-    const query: AuditLogQuery = {
+    // Build the query object with proper typing
+    const query: DomainAuditLogQuery = {
       organizationId,
       page,
       limit,
@@ -103,6 +89,7 @@ export class AuditLogController {
       search,
     };
 
+    // Add validated filters to the query (no assertions needed since type guard confirms type)
     if (action && AuditLogTypes.isAuditAction(action)) {
       query.action = action;
     }
@@ -158,6 +145,7 @@ export class AuditLogController {
       throw new BadRequestException('Organization ID not found in request');
     }
 
+    // You would typically fetch actual logs here
     const csv =
       'Timestamp,Action,Entity Type,Entity ID,Actor Email,Actor Type,Severity,IP Address,User Agent,Request ID,Correlation ID,Metadata\n';
 

@@ -1,4 +1,3 @@
-// Updated verification.spec.ts
 import { Test, TestingModule } from '@nestjs/testing';
 import { WebhooksService } from '@api/modules/webhooks/webhooks.service';
 import { WebhookRepository } from '@api/modules/webhooks/repositories/webhook.repository';
@@ -60,8 +59,16 @@ describe('Webhook Module Verification', () => {
             },
           },
         },
+        // Primary token format
         {
           provide: getQueueToken('webhook-queue'),
+          useValue: {
+            add: jest.fn(),
+          },
+        },
+        // Fallback token format (for backward compatibility)
+        {
+          provide: 'BullQueue_webhook-queue',
           useValue: {
             add: jest.fn(),
           },

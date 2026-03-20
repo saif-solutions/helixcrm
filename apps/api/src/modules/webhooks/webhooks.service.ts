@@ -13,11 +13,7 @@ import { Queue, JobsOptions } from 'bullmq';
 import { WebhookRepository } from './repositories/webhook.repository';
 import { TenantContextService } from '../../shared/tenant/context/tenant-context.service';
 import { PermissionContextService } from '../../shared/permissions/context/permission-context.service';
-import {
-  AuditLogService,
-  AuditAction,
-  AuditEntityType,
-} from '../../shared/audit-log/audit-log.service';
+import { AuditLogService } from '../../shared/audit-log/audit-log.service';
 import { SeverityMapper } from '../../shared/audit-log/severity-mapper';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import * as crypto from 'crypto';
@@ -241,9 +237,9 @@ export class WebhooksService {
       });
 
       await this.auditLogService.logEvent({
-        action: AuditAction.WEBHOOK_CREATED,
+        action: 'WEBHOOK_CREATED',
         entityId: webhook.id,
-        entityType: AuditEntityType.WEBHOOK,
+        entityType: 'WEBHOOK',
         organizationId: tenantId,
         actorUserId: userId,
         actorEmail: await this.getUserEmail(userId),
@@ -326,9 +322,9 @@ export class WebhooksService {
       );
 
       await this.auditLogService.logEvent({
-        action: AuditAction.WEBHOOK_UPDATED,
+        action: 'WEBHOOK_UPDATED',
         entityId: webhookId,
-        entityType: AuditEntityType.WEBHOOK,
+        entityType: 'WEBHOOK',
         organizationId: tenantId,
         actorUserId: userId,
         actorEmail: await this.getUserEmail(userId),
@@ -387,9 +383,9 @@ export class WebhooksService {
       await this.webhookRepository.delete(webhookId);
 
       await this.auditLogService.logEvent({
-        action: AuditAction.WEBHOOK_DELETED,
+        action: 'WEBHOOK_DELETED',
         entityId: webhookId,
-        entityType: AuditEntityType.WEBHOOK,
+        entityType: 'WEBHOOK',
         organizationId: tenantId,
         actorUserId: userId,
         actorEmail: await this.getUserEmail(userId),
@@ -551,9 +547,9 @@ export class WebhooksService {
       );
 
       await this.auditLogService.logEvent({
-        action: AuditAction.WEBHOOK_TRIGGERED,
+        action: 'WEBHOOK_TRIGGERED',
         entityId: webhookId,
-        entityType: AuditEntityType.WEBHOOK_DELIVERY,
+        entityType: 'WEBHOOK_DELIVERY',
         organizationId: tenantId,
         actorUserId: userId,
         actorEmail: await this.getUserEmail(userId),
@@ -771,9 +767,9 @@ export class WebhooksService {
       );
 
       await this.auditLogService.logEvent({
-        action: AuditAction.WEBHOOK_RETRY,
+        action: 'WEBHOOK_RETRY',
         entityId: deliveryId,
-        entityType: AuditEntityType.WEBHOOK_DELIVERY,
+        entityType: 'WEBHOOK_DELIVERY',
         organizationId: tenantId,
         actorUserId: userId,
         actorEmail: await this.getUserEmail(userId),
@@ -871,8 +867,8 @@ export class WebhooksService {
         await this.webhookRepository.cleanupOldDeliveries(daysToKeep);
 
       await this.auditLogService.logEvent({
-        action: AuditAction.WEBHOOK_CLEANUP,
-        entityType: AuditEntityType.WEBHOOK,
+        action: 'WEBHOOK_CLEANUP',
+        entityType: 'WEBHOOK',
         organizationId: tenantId,
         actorUserId: userId,
         actorEmail: await this.getUserEmail(userId),

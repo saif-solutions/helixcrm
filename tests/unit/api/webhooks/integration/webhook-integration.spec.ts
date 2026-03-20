@@ -1,32 +1,119 @@
-// src/modules/webhooks/__tests__/webhook-integration.spec.ts
+// Complete mock of @nestjs/bullmq at the top
+jest.mock('@nestjs/bullmq', () => {
+  const mockQueue = {
+    add: jest.fn().mockResolvedValue({ id: 'test-job-id' }),
+    process: jest.fn(),
+    on: jest.fn(),
+    close: jest.fn(),
+    removeAllListeners: jest.fn(),
+    removeListener: jest.fn(),
+    emit: jest.fn(),
+    addListener: jest.fn(),
+    once: jest.fn(),
+    prependListener: jest.fn(),
+    prependOnceListener: jest.fn(),
+    off: jest.fn(),
+    setMaxListeners: jest.fn(),
+    getMaxListeners: jest.fn(),
+    listeners: jest.fn(),
+    rawListeners: jest.fn(),
+    listenerCount: jest.fn(),
+    eventNames: jest.fn(),
+  };
+
+  return {
+    BullModule: {
+      registerQueue: jest.fn().mockReturnValue({
+        module: class {},
+        providers: [],
+        exports: [],
+      }),
+      registerFlowProducer: jest.fn().mockReturnValue({
+        module: class {},
+        providers: [],
+        exports: [],
+      }),
+    },
+    getQueueToken: jest.fn().mockImplementation((name: string) => `BullQueue_${name}`),
+    Processor: jest.fn().mockImplementation(() => (target: any) => target),
+    Process: jest.fn().mockImplementation(() => (_target: any, _key: string) => {}),
+    WorkerHost: class {},
+    InjectQueue: jest.fn(),
+    Queue: class {
+      constructor() {
+        return mockQueue;
+      }
+    },
+    BullQueue: class {
+      constructor() {
+        return mockQueue;
+      }
+    },
+  };
+});
+
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
-import { WebhooksModule } from '@api/modules/webhooks/webhooks.module';
+// import { ConflictException } from '@nestjs/common';
 import { WebhooksService } from '@api/modules/webhooks/webhooks.service';
 import { WebhookRepository } from '@api/modules/webhooks/repositories/webhook.repository';
 import { TenantContextService } from '@api/shared/tenant/context/tenant-context.service';
 import { PermissionContextService } from '@api/shared/permissions/context/permission-context.service';
 import { AuditLogService } from '@api/shared/audit-log/audit-log.service';
 import { PrismaService } from '@api/shared/prisma/prisma.service';
-import { BullModule } from '@nestjs/bullmq';
+import { getQueueToken } from '@nestjs/bullmq';
 import { JwtService } from '@nestjs/jwt';
+import { Queue } from 'bullmq';
+
+// Create a simple queue mock that can be used throughout the tests
+const mockQueue = {
+  add: jest.fn().mockResolvedValue({ id: 'test-job-id' }),
+  process: jest.fn(),
+  on: jest.fn(),
+  close: jest.fn(),
+  removeAllListeners: jest.fn(),
+  removeListener: jest.fn(),
+  emit: jest.fn(),
+  addListener: jest.fn(),
+  once: jest.fn(),
+  prependListener: jest.fn(),
+  prependOnceListener: jest.fn(),
+  off: jest.fn(),
+  setMaxListeners: jest.fn(),
+  getMaxListeners: jest.fn(),
+  listeners: jest.fn(),
+  rawListeners: jest.fn(),
+  listenerCount: jest.fn(),
+  eventNames: jest.fn(),
+};
 
 describe('Webhook Module Integration', () => {
-  let app: INestApplication;
   let webhooksService: WebhooksService;
   let webhookRepository: WebhookRepository;
-  let prismaService: PrismaService;
+  let webhookQueue: Queue;
+  let moduleFixture: TestingModule;
 
   beforeAll(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [
-        BullModule.registerQueue({
-          name: 'webhook-queue',
-        }),
-        WebhooksModule,
-      ],
+    moduleFixture = await Test.createTestingModule({
       providers: [
+        WebhooksService,
+        {
+          provide: WebhookRepository,
+          useValue: {
+            create: jest.fn(),
+            findById: jest.fn(),
+            findByName: jest.fn(),
+            findAll: jest.fn(),
+            update: jest.fn(),
+            delete: jest.fn(),
+            createDelivery: jest.fn(),
+            findDeliveryById: jest.fn(),
+            findDeliveries: jest.fn(),
+            countDeliveries: jest.fn(),
+            updateDelivery: jest.fn(),
+            getStatistics: jest.fn(),
+            cleanupOldDeliveries: jest.fn(),
+          },
+        },
         {
           provide: TenantContextService,
           useValue: {
@@ -38,12 +125,7 @@ describe('Webhook Module Integration', () => {
           provide: PermissionContextService,
           useValue: {
             hasPermission: (permission: string) => {
-              const allowed = [
-                'webhooks.manage',
-                'webhooks.read',
-                'webhooks.trigger',
-                'system.admin',
-              ];
+              const allowed = ['webhook:manage', 'webhook:read', 'webhook:trigger', 'system:admin'];
               return allowed.includes(permission);
             },
           },
@@ -51,28 +133,50 @@ describe('Webhook Module Integration', () => {
         {
           provide: AuditLogService,
           useValue: {
-            logEvent: jest.fn(),
+            logEvent: jest.fn().mockResolvedValue(undefined),
+          },
+        },
+        {
+          provide: PrismaService,
+          useValue: {
+            user: {
+              findUnique: jest.fn().mockResolvedValue({ email: 'test@example.com' }),
+            },
+            webhook: {
+              findUnique: jest.fn().mockResolvedValue({
+                id: 'webhook-id-1',
+                organizationId: 'test-tenant-id',
+              }),
+            },
+            $transaction: jest.fn().mockImplementation((callback) => callback()),
           },
         },
         {
           provide: JwtService,
           useValue: {
-            verify: jest.fn(),
+            verify: jest.fn().mockReturnValue({ sub: 'test-user-id' }),
+            sign: jest.fn().mockReturnValue('test-token'),
           },
+        },
+        {
+          provide: getQueueToken('webhook-queue'),
+          useValue: mockQueue,
         },
       ],
     }).compile();
 
-    app = moduleFixture.createNestApplication();
     webhooksService = moduleFixture.get<WebhooksService>(WebhooksService);
     webhookRepository = moduleFixture.get<WebhookRepository>(WebhookRepository);
-    prismaService = moduleFixture.get<PrismaService>(PrismaService);
-
-    await app.init();
+    webhookQueue = moduleFixture.get(getQueueToken('webhook-queue'));
   });
 
   afterAll(async () => {
-    await app.close();
+    jest.clearAllMocks();
+  });
+
+  // Reset mocks before each test
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
 
   describe('Webhook CRUD Operations', () => {
@@ -98,13 +202,11 @@ describe('Webhook Module Integration', () => {
         deletedBy: null,
       };
 
-      // Mock repository calls
       jest.spyOn(webhookRepository, 'findByName').mockResolvedValue(null);
-      jest.spyOn(webhookRepository, 'create').mockResolvedValue(mockWebhook);
+      jest.spyOn(webhookRepository, 'create').mockResolvedValue(mockWebhook as any);
 
       const result = await webhooksService.createWebhook(createDto);
 
-      // Verify repository was called
       expect(webhookRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({
           name: createDto.name,
@@ -112,8 +214,6 @@ describe('Webhook Module Integration', () => {
           events: createDto.events,
         }),
       );
-
-      // Verify secret is not returned
       expect(result).not.toHaveProperty('secret');
       expect(result).toMatchObject({
         id: 'webhook-id-1',
@@ -121,6 +221,60 @@ describe('Webhook Module Integration', () => {
         url: 'https://example.com/webhook',
         isActive: true,
       });
+    });
+
+    it('should handle duplicate webhook name conflict', async () => {
+      const createDto = {
+        name: 'existing-webhook',
+        url: 'https://example.com/webhook',
+        events: ['contact.created'],
+        isActive: true,
+        retryCount: 3,
+        timeoutMs: 10000,
+      };
+
+      const existingWebhook = {
+        id: 'webhook-id-2',
+        name: 'existing-webhook',
+        url: 'https://example.com/webhook',
+        events: ['contact.created'],
+        secret: 'secret-123',
+        isActive: true,
+        retryCount: 3,
+        timeoutMs: 10000,
+        headers: {},
+        organizationId: 'test-tenant-id',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deletedAt: null,
+        deletedBy: null,
+      };
+
+      jest.spyOn(webhookRepository, 'findByName').mockResolvedValue(existingWebhook as any);
+      jest.spyOn(webhookRepository, 'create').mockResolvedValue({} as any);
+
+      await expect(webhooksService.createWebhook(createDto)).rejects.toMatchObject({
+        name: 'ConflictException',
+        message: expect.stringContaining('already exists'),
+      });
+      expect(webhookRepository.create).not.toHaveBeenCalled();
+    });
+
+    it('should handle invalid webhook URL with special characters', async () => {
+      const createDto = {
+        name: 'test-webhook',
+        url: 'https://example.com/webhook?param=<script>alert("xss")</script>',
+        events: ['contact.created'],
+        isActive: true,
+        retryCount: 3,
+        timeoutMs: 10000,
+      };
+
+      jest.spyOn(webhookRepository, 'findByName').mockResolvedValue(null);
+
+      // The validateWebhookUrl method should still accept this URL (it's a valid URL)
+      // But we're testing that it doesn't throw an error
+      await expect(webhooksService.createWebhook(createDto)).resolves.toBeDefined();
     });
 
     it('should get all webhooks with tenant isolation', async () => {
@@ -159,54 +313,42 @@ describe('Webhook Module Integration', () => {
         },
       ];
 
-      jest.spyOn(webhookRepository, 'findAll').mockResolvedValue(mockWebhooks);
+      jest.spyOn(webhookRepository, 'findAll').mockResolvedValue(mockWebhooks as any);
 
       const result = await webhooksService.getAllWebhooks();
 
-      // Verify repository was called
       expect(webhookRepository.findAll).toHaveBeenCalled();
-
-      // Verify secrets are removed
       result.forEach((webhook) => {
         expect(webhook).not.toHaveProperty('secret');
       });
-
-      // Verify all webhooks are returned
       expect(result).toHaveLength(2);
       expect(result[0].name).toBe('test-webhook-1');
       expect(result[1].name).toBe('test-webhook-2');
     });
 
     it('should get webhook by ID with tenant isolation', async () => {
-      const createDto = {
-        name: 'test-webhook',
+      const mockWebhook = {
+        id: 'webhook-id-1',
+        name: 'test-webhook-1',
         url: 'https://example.com/webhook',
         events: ['contact.created'],
+        secret: 'generated-secret',
         isActive: true,
         retryCount: 3,
         timeoutMs: 10000,
-      };
-
-      const mockWebhook = {
-        id: 'webhook-id',
-        ...createDto,
-        secret: 'generated-secret',
         headers: {},
-        organizationId: 'test-tenant',
+        organizationId: 'test-tenant-id',
         createdAt: new Date(),
         updatedAt: new Date(),
         deletedAt: null,
         deletedBy: null,
       };
 
-      jest.spyOn(webhookRepository, 'findById').mockResolvedValue(mockWebhook);
+      jest.spyOn(webhookRepository, 'findById').mockResolvedValue(mockWebhook as any);
 
       const result = await webhooksService.getWebhookById('webhook-id-1');
 
-      // Verify repository was called
       expect(webhookRepository.findById).toHaveBeenCalledWith('webhook-id-1');
-
-      // Verify secret is not returned
       expect(result).not.toHaveProperty('secret');
       expect(result).toMatchObject({
         id: 'webhook-id-1',
@@ -248,17 +390,14 @@ describe('Webhook Module Integration', () => {
         isActive: false,
       };
 
-      jest.spyOn(webhookRepository, 'findById').mockResolvedValue(existingWebhook);
+      jest.spyOn(webhookRepository, 'findById').mockResolvedValue(existingWebhook as any);
       jest.spyOn(webhookRepository, 'findByName').mockResolvedValue(null);
-      jest.spyOn(webhookRepository, 'update').mockResolvedValue(updatedWebhook);
+      jest.spyOn(webhookRepository, 'update').mockResolvedValue(updatedWebhook as any);
 
       const result = await webhooksService.updateWebhook('webhook-id-1', updateDto);
 
-      // Verify repository methods were called
       expect(webhookRepository.findById).toHaveBeenCalledWith('webhook-id-1');
       expect(webhookRepository.update).toHaveBeenCalledWith('webhook-id-1', updateDto);
-
-      // Verify secret is not returned
       expect(result).not.toHaveProperty('secret');
       expect(result).toMatchObject({
         id: 'webhook-id-1',
@@ -286,16 +425,13 @@ describe('Webhook Module Integration', () => {
         deletedBy: null,
       };
 
-      jest.spyOn(webhookRepository, 'findById').mockResolvedValue(existingWebhook);
-      jest.spyOn(webhookRepository, 'delete').mockResolvedValue(existingWebhook);
+      jest.spyOn(webhookRepository, 'findById').mockResolvedValue(existingWebhook as any);
+      jest.spyOn(webhookRepository, 'delete').mockResolvedValue(existingWebhook as any);
 
       const result = await webhooksService.deleteWebhook('webhook-id-1');
 
-      // Verify repository methods were called
       expect(webhookRepository.findById).toHaveBeenCalledWith('webhook-id-1');
       expect(webhookRepository.delete).toHaveBeenCalledWith('webhook-id-1');
-
-      // Verify success response
       expect(result).toEqual({ message: 'Webhook deleted successfully' });
     });
   });
@@ -330,7 +466,7 @@ describe('Webhook Module Integration', () => {
         id: 'delivery-id-1',
         webhookId: 'webhook-id-1',
         event: 'contact.created',
-        payload: payload.data as any, // Cast to any to match JsonValue
+        payload: payload.data,
         status: 'pending',
         statusCode: null,
         response: null,
@@ -346,21 +482,75 @@ describe('Webhook Module Integration', () => {
         deliveredAt: null,
       };
 
-      jest.spyOn(webhookRepository, 'findById').mockResolvedValue(webhook);
-      jest.spyOn(webhookRepository, 'createDelivery').mockResolvedValue(mockDelivery);
-      jest.spyOn(app.get('BullQueue_webhook-queue'), 'add').mockResolvedValue({} as any);
+      jest.spyOn(webhookRepository, 'findById').mockResolvedValue(webhook as any);
+      jest.spyOn(webhookRepository, 'createDelivery').mockResolvedValue(mockDelivery as any);
+      jest.spyOn(webhookQueue, 'add').mockResolvedValue({ id: 'test-job-id' } as any);
 
       const result = await webhooksService.triggerWebhook('webhook-id-1', payload);
 
-      // Verify repository and queue calls
       expect(webhookRepository.findById).toHaveBeenCalledWith('webhook-id-1');
       expect(webhookRepository.createDelivery).toHaveBeenCalled();
-      expect(app.get('BullQueue_webhook-queue').add).toHaveBeenCalled();
-
-      // Verify response
+      expect(webhookQueue.add).toHaveBeenCalled();
       expect(result).toMatchObject({
         deliveryId: 'delivery-id-1',
         message: 'Webhook delivery queued successfully',
+      });
+    });
+
+    it('should handle webhook delivery timeout', async () => {
+      const webhook = {
+        id: 'webhook-id-1',
+        name: 'test-webhook',
+        url: 'https://slow-endpoint.example.com/webhook',
+        events: ['contact.created'],
+        secret: 'test-secret',
+        isActive: true,
+        retryCount: 3,
+        timeoutMs: 1000,
+        headers: {},
+        organizationId: 'test-tenant-id',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deletedAt: null,
+        deletedBy: null,
+      };
+
+      const payload = {
+        event: 'contact.created',
+        data: { contactId: 'contact-123', name: 'John Doe' },
+        timestamp: new Date(),
+        userId: 'user-123',
+      };
+
+      const mockDelivery = {
+        id: 'delivery-id-1',
+        webhookId: 'webhook-id-1',
+        event: 'contact.created',
+        payload: payload.data,
+        status: 'pending',
+        statusCode: null,
+        response: null,
+        errorMessage: null,
+        retryCount: 0,
+        attemptedAt: new Date(),
+        completedAt: null,
+        organizationId: 'test-tenant-id',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        attempts: 0,
+        nextAttemptAt: null,
+        deliveredAt: null,
+      };
+
+      jest.spyOn(webhookRepository, 'findById').mockResolvedValue(webhook as any);
+      jest.spyOn(webhookRepository, 'createDelivery').mockResolvedValue(mockDelivery as any);
+
+      // Mock the queue add to throw an error
+      jest.spyOn(webhookQueue, 'add').mockRejectedValue(new Error('Request timeout'));
+
+      await expect(webhooksService.triggerWebhook('webhook-id-1', payload)).rejects.toMatchObject({
+        name: 'BadRequestException',
+        message: expect.stringContaining('Failed to trigger webhook'),
       });
     });
 
@@ -411,16 +601,13 @@ describe('Webhook Module Integration', () => {
         name: 'test-webhook',
         organizationId: 'test-tenant-id',
       } as any);
-      jest.spyOn(webhookRepository, 'findDeliveries').mockResolvedValue(mockDeliveries);
+      jest.spyOn(webhookRepository, 'findDeliveries').mockResolvedValue(mockDeliveries as any);
       jest.spyOn(webhookRepository, 'countDeliveries').mockResolvedValue(2);
 
       const result = await webhooksService.getDeliveryHistory('webhook-id-1', 1, 20);
 
-      // Verify repository calls
       expect(webhookRepository.findDeliveries).toHaveBeenCalledWith('webhook-id-1', 1, 20);
       expect(webhookRepository.countDeliveries).toHaveBeenCalledWith('webhook-id-1');
-
-      // Verify pagination response
       expect(result).toMatchObject({
         data: mockDeliveries,
         meta: {
@@ -450,10 +637,14 @@ describe('Webhook Module Integration', () => {
         (service as any).validateWebhookUrl('https://example.com/webhook'),
       ).not.toThrow();
       expect(() => (service as any).validateWebhookUrl('http://example.com/webhook')).not.toThrow();
+      expect(() =>
+        (service as any).validateWebhookUrl('https://subdomain.example.com/api/webhook'),
+      ).not.toThrow();
 
       // Invalid URLs should throw
       expect(() => (service as any).validateWebhookUrl('invalid-url')).toThrow();
       expect(() => (service as any).validateWebhookUrl('ftp://example.com/webhook')).toThrow();
+      expect(() => (service as any).validateWebhookUrl('ws://example.com/webhook')).toThrow();
     });
 
     it('should generate secure secrets', () => {

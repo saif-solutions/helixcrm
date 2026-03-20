@@ -11,15 +11,15 @@ export class SeverityMapper {
   ): AuditSeverity {
     switch (eventType) {
       case 'info':
-        return AuditSeverity.LOW;
+        return 'LOW';
       case 'warning':
-        return AuditSeverity.MEDIUM;
+        return 'MEDIUM';
       case 'error':
-        return AuditSeverity.HIGH;
+        return 'HIGH';
       case 'security':
-        return AuditSeverity.CRITICAL;
+        return 'CRITICAL';
       default:
-        return AuditSeverity.LOW;
+        return 'LOW';
     }
   }
 
@@ -31,15 +31,15 @@ export class SeverityMapper {
   ): AuditSeverity {
     switch (level) {
       case 'info':
-        return AuditSeverity.LOW;
+        return 'LOW';
       case 'warn':
-        return AuditSeverity.MEDIUM;
+        return 'MEDIUM';
       case 'error':
-        return AuditSeverity.HIGH;
+        return 'HIGH';
       case 'fatal':
-        return AuditSeverity.CRITICAL;
+        return 'CRITICAL';
       default:
-        return AuditSeverity.LOW;
+        return 'LOW';
     }
   }
 }

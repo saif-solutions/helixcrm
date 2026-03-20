@@ -27,13 +27,13 @@ export class AuditQueueService implements OnModuleInit {
   private readonly logger = new Logger(AuditQueueService.name);
   private readonly MAX_RETRY_ATTEMPTS = 3;
   private readonly CRITICAL_ACTIONS = new Set<AuditAction>([
-    AuditAction.LOGIN_FAILURE,
-    AuditAction.USER_DELETED,
-    AuditAction.PERMISSION_DENIED,
-    AuditAction.PASSWORD_CHANGE,
-    AuditAction.RATE_LIMIT_TRIGGERED,
-    AuditAction.CSRF_FAILURE,
-    AuditAction.SYSTEM_ERROR,
+    'LOGIN_FAILURE',
+    'USER_DELETED',
+    'PERMISSION_DENIED',
+    'PASSWORD_CHANGE',
+    'RATE_LIMIT_TRIGGERED',
+    'CSRF_FAILURE',
+    'SYSTEM_ERROR',
   ]);
 
   constructor(

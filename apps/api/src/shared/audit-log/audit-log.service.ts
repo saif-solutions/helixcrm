@@ -13,59 +13,110 @@ import { AuditQueueService, AuditJobData } from './audit-queue.service';
 import { AuditIntegrityService } from '../audit-integrity/audit-integrity.service';
 import { Prisma } from '@prisma/client';
 
-// Define enums locally
-export enum AuditAction {
-  USER_CREATED = 'USER_CREATED',
-  LOGIN_SUCCESS = 'LOGIN_SUCCESS',
-  LOGIN_FAILURE = 'LOGIN_FAILURE',
-  USER_DELETED = 'USER_DELETED',
-  PERMISSION_DENIED = 'PERMISSION_DENIED',
-  PASSWORD_CHANGE = 'PASSWORD_CHANGE',
-  RATE_LIMIT_TRIGGERED = 'RATE_LIMIT_TRIGGERED',
-  CSRF_FAILURE = 'CSRF_FAILURE',
-  SYSTEM_ERROR = 'SYSTEM_ERROR',
-  USER_UPDATED = 'USER_UPDATED',
-  PERMISSION_GRANTED = 'PERMISSION_GRANTED',
-  ROLE_ASSIGNED = 'ROLE_ASSIGNED',
-  ROLE_CREATED = 'ROLE_CREATED',
-  ROLE_UPDATED = 'ROLE_UPDATED',
-  ROLE_DELETED = 'ROLE_DELETED',
-  DEAL_CREATED = 'DEAL_CREATED',
-  DEAL_UPDATED = 'DEAL_UPDATED',
-  DEAL_DELETED = 'DEAL_DELETED',
-  CONTACT_CREATED = 'CONTACT_CREATED',
-  CONTACT_UPDATED = 'CONTACT_UPDATED',
-  CONTACT_DELETED = 'CONTACT_DELETED',
-  ANALYTICS_EXPORT_REQUESTED = 'ANALYTICS_EXPORT_REQUESTED',
-  ANALYTICS_EXPORT_DOWNLOADED = 'ANALYTICS_EXPORT_DOWNLOADED',
-  ANALYTICS_EXPORT_COMPLETED = 'ANALYTICS_EXPORT_COMPLETED',
-  ANALYTICS_EXPORT_FAILED = 'ANALYTICS_EXPORT_FAILED',
-  WEBHOOK_CREATED = 'WEBHOOK_CREATED',
-  WEBHOOK_UPDATED = 'WEBHOOK_UPDATED',
-  WEBHOOK_DELETED = 'WEBHOOK_DELETED',
-  WEBHOOK_TRIGGERED = 'WEBHOOK_TRIGGERED',
-  WEBHOOK_RETRY = 'WEBHOOK_RETRY',
-  WEBHOOK_CLEANUP = 'WEBHOOK_CLEANUP',
-}
+// Use string literals for type definitions to match Prisma
+export type AuditAction =
+  | 'USER_CREATED'
+  | 'LOGIN_SUCCESS'
+  | 'LOGIN_FAILURE'
+  | 'USER_DELETED'
+  | 'PERMISSION_DENIED'
+  | 'PASSWORD_CHANGE'
+  | 'RATE_LIMIT_TRIGGERED'
+  | 'CSRF_FAILURE'
+  | 'SYSTEM_ERROR'
+  | 'USER_UPDATED'
+  | 'PERMISSION_GRANTED'
+  | 'ROLE_ASSIGNED'
+  | 'ROLE_CREATED'
+  | 'ROLE_UPDATED'
+  | 'ROLE_DELETED'
+  | 'DEAL_CREATED'
+  | 'DEAL_UPDATED'
+  | 'DEAL_DELETED'
+  | 'CONTACT_CREATED'
+  | 'CONTACT_UPDATED'
+  | 'CONTACT_DELETED'
+  | 'ANALYTICS_EXPORT_REQUESTED'
+  | 'ANALYTICS_EXPORT_DOWNLOADED'
+  | 'ANALYTICS_EXPORT_COMPLETED'
+  | 'ANALYTICS_EXPORT_FAILED'
+  | 'WEBHOOK_CREATED'
+  | 'WEBHOOK_UPDATED'
+  | 'WEBHOOK_DELETED'
+  | 'WEBHOOK_TRIGGERED'
+  | 'WEBHOOK_RETRY'
+  | 'WEBHOOK_CLEANUP'
+  | 'WEBHOOK_DELIVERED'
+  | 'WEBHOOK_DELIVERY_FAILED';
 
-export enum AuditEntityType {
-  AUTH = 'AUTH',
-  USER = 'USER',
-  ROLE = 'ROLE',
-  PERMISSION = 'PERMISSION',
-  DEAL = 'DEAL',
-  CONTACT = 'CONTACT',
-  ANALYTICS = 'ANALYTICS',
-  WEBHOOK = 'WEBHOOK',
-  WEBHOOK_DELIVERY = 'WEBHOOK_DELIVERY',
-}
+export type AuditEntityType =
+  | 'AUTH'
+  | 'USER'
+  | 'ROLE'
+  | 'PERMISSION'
+  | 'DEAL'
+  | 'CONTACT'
+  | 'ANALYTICS'
+  | 'WEBHOOK'
+  | 'WEBHOOK_DELIVERY';
 
-export enum AuditSeverity {
-  LOW = 'LOW',
-  MEDIUM = 'MEDIUM',
-  HIGH = 'HIGH',
-  CRITICAL = 'CRITICAL',
-}
+export type AuditSeverity = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+
+// Constants for reference (optional)
+export const AUDIT_ACTIONS: AuditAction[] = [
+  'USER_CREATED',
+  'LOGIN_SUCCESS',
+  'LOGIN_FAILURE',
+  'USER_DELETED',
+  'PERMISSION_DENIED',
+  'PASSWORD_CHANGE',
+  'RATE_LIMIT_TRIGGERED',
+  'CSRF_FAILURE',
+  'SYSTEM_ERROR',
+  'USER_UPDATED',
+  'PERMISSION_GRANTED',
+  'ROLE_ASSIGNED',
+  'ROLE_CREATED',
+  'ROLE_UPDATED',
+  'ROLE_DELETED',
+  'DEAL_CREATED',
+  'DEAL_UPDATED',
+  'DEAL_DELETED',
+  'CONTACT_CREATED',
+  'CONTACT_UPDATED',
+  'CONTACT_DELETED',
+  'ANALYTICS_EXPORT_REQUESTED',
+  'ANALYTICS_EXPORT_DOWNLOADED',
+  'ANALYTICS_EXPORT_COMPLETED',
+  'ANALYTICS_EXPORT_FAILED',
+  'WEBHOOK_CREATED',
+  'WEBHOOK_UPDATED',
+  'WEBHOOK_DELETED',
+  'WEBHOOK_TRIGGERED',
+  'WEBHOOK_RETRY',
+  'WEBHOOK_CLEANUP',
+  'WEBHOOK_DELIVERED',
+  'WEBHOOK_DELIVERY_FAILED',
+];
+
+export const AUDIT_ENTITY_TYPES: AuditEntityType[] = [
+  'AUTH',
+  'USER',
+  'ROLE',
+  'PERMISSION',
+  'DEAL',
+  'CONTACT',
+  'ANALYTICS',
+  'WEBHOOK',
+  'WEBHOOK_DELIVERY',
+];
+
+export const AUDIT_SEVERITIES: AuditSeverity[] = [
+  'LOW',
+  'MEDIUM',
+  'HIGH',
+  'CRITICAL',
+];
 
 interface AuditLogData {
   action: AuditAction;
@@ -146,18 +197,18 @@ export class AuditLogService {
   private queueAvailable = false;
 
   private readonly BOOTSTRAP_ALLOWED_ACTIONS = new Set<AuditAction>([
-    AuditAction.USER_CREATED,
-    AuditAction.LOGIN_SUCCESS,
+    'USER_CREATED',
+    'LOGIN_SUCCESS',
   ]);
 
   private readonly CRITICAL_ACTIONS = new Set<AuditAction>([
-    AuditAction.LOGIN_FAILURE,
-    AuditAction.USER_DELETED,
-    AuditAction.PERMISSION_DENIED,
-    AuditAction.PASSWORD_CHANGE,
-    AuditAction.RATE_LIMIT_TRIGGERED,
-    AuditAction.CSRF_FAILURE,
-    AuditAction.SYSTEM_ERROR,
+    'LOGIN_FAILURE',
+    'USER_DELETED',
+    'PERMISSION_DENIED',
+    'PASSWORD_CHANGE',
+    'RATE_LIMIT_TRIGGERED',
+    'CSRF_FAILURE',
+    'SYSTEM_ERROR',
   ]);
 
   constructor(
@@ -194,28 +245,28 @@ export class AuditLogService {
     }
 
     const actionsRequiringOrgContext: AuditAction[] = [
-      AuditAction.USER_UPDATED,
-      AuditAction.PERMISSION_GRANTED,
-      AuditAction.ROLE_ASSIGNED,
-      AuditAction.ROLE_CREATED,
-      AuditAction.ROLE_UPDATED,
-      AuditAction.ROLE_DELETED,
-      AuditAction.DEAL_CREATED,
-      AuditAction.DEAL_UPDATED,
-      AuditAction.DEAL_DELETED,
-      AuditAction.CONTACT_CREATED,
-      AuditAction.CONTACT_UPDATED,
-      AuditAction.CONTACT_DELETED,
-      AuditAction.ANALYTICS_EXPORT_REQUESTED,
-      AuditAction.ANALYTICS_EXPORT_DOWNLOADED,
-      AuditAction.ANALYTICS_EXPORT_COMPLETED,
-      AuditAction.ANALYTICS_EXPORT_FAILED,
-      AuditAction.WEBHOOK_CREATED,
-      AuditAction.WEBHOOK_UPDATED,
-      AuditAction.WEBHOOK_DELETED,
-      AuditAction.WEBHOOK_TRIGGERED,
-      AuditAction.WEBHOOK_RETRY,
-      AuditAction.WEBHOOK_CLEANUP,
+      'USER_UPDATED',
+      'PERMISSION_GRANTED',
+      'ROLE_ASSIGNED',
+      'ROLE_CREATED',
+      'ROLE_UPDATED',
+      'ROLE_DELETED',
+      'DEAL_CREATED',
+      'DEAL_UPDATED',
+      'DEAL_DELETED',
+      'CONTACT_CREATED',
+      'CONTACT_UPDATED',
+      'CONTACT_DELETED',
+      'ANALYTICS_EXPORT_REQUESTED',
+      'ANALYTICS_EXPORT_DOWNLOADED',
+      'ANALYTICS_EXPORT_COMPLETED',
+      'ANALYTICS_EXPORT_FAILED',
+      'WEBHOOK_CREATED',
+      'WEBHOOK_UPDATED',
+      'WEBHOOK_DELETED',
+      'WEBHOOK_TRIGGERED',
+      'WEBHOOK_RETRY',
+      'WEBHOOK_CLEANUP',
     ];
 
     return actionsRequiringOrgContext.includes(action);
@@ -233,7 +284,7 @@ export class AuditLogService {
     actorUserId?: string,
     entityId?: string,
     metadata?: Record<string, any>,
-    severity: AuditSeverity = AuditSeverity.MEDIUM,
+    severity: AuditSeverity = 'MEDIUM',
     organizationId?: string | null,
   ): Promise<any> {
     try {
@@ -269,10 +320,7 @@ export class AuditLogService {
             bootstrapReason: 'organization_context_not_resolved_yet',
           };
         }
-      } else if (
-        !resolvedOrganizationId &&
-        action !== AuditAction.LOGIN_FAILURE
-      ) {
+      } else if (!resolvedOrganizationId && action !== 'LOGIN_FAILURE') {
         this.logger.warn(
           `Audit log missing organization context for action: ${action}. ` +
             `Actor: ${actorEmail}, Entity: ${entityType}.`,
@@ -332,7 +380,7 @@ export class AuditLogService {
       params.actorUserId,
       params.entityId,
       params.metadata,
-      params.severity || AuditSeverity.MEDIUM,
+      params.severity || 'MEDIUM',
       params.organizationId,
     );
   }
@@ -348,7 +396,7 @@ export class AuditLogService {
           params.actorUserId,
           params.entityId,
           params.metadata,
-          params.severity || AuditSeverity.MEDIUM,
+          params.severity || 'MEDIUM',
           params.organizationId,
         );
       } else {
@@ -359,7 +407,7 @@ export class AuditLogService {
           params.actorUserId,
           params.entityId,
           params.metadata,
-          params.severity || AuditSeverity.MEDIUM,
+          params.severity || 'MEDIUM',
           params.organizationId,
         );
       }
@@ -380,23 +428,23 @@ export class AuditLogService {
         return this.logWithRequest(
           params.request,
           params.action,
-          AuditEntityType.AUTH,
+          'AUTH',
           params.actorEmail,
           params.actorUserId,
           undefined,
           params.metadata,
-          params.severity || AuditSeverity.MEDIUM,
+          params.severity || 'MEDIUM',
           params.organizationId,
         );
       } else {
         return this.logDirect(
           params.action,
-          AuditEntityType.AUTH,
+          'AUTH',
           params.actorEmail,
           params.actorUserId,
           undefined,
           params.metadata,
-          params.severity || AuditSeverity.MEDIUM,
+          params.severity || 'MEDIUM',
           params.organizationId,
         );
       }
@@ -404,7 +452,7 @@ export class AuditLogService {
       return this.handleAuditError(
         error,
         params.action,
-        AuditEntityType.AUTH,
+        'AUTH',
         params.actorEmail,
         params.organizationId,
       );
@@ -418,7 +466,7 @@ export class AuditLogService {
     actorUserId?: string,
     entityId?: string,
     metadata?: Record<string, any>,
-    severity: AuditSeverity = AuditSeverity.MEDIUM,
+    severity: AuditSeverity = 'MEDIUM',
     organizationId?: string | null,
     ipAddress?: string,
     userAgent?: string,
@@ -514,7 +562,7 @@ export class AuditLogService {
       // Try to resolve organization from user if this is a login success
       if (
         !organizationId &&
-        auditData.action === AuditAction.LOGIN_SUCCESS &&
+        auditData.action === 'LOGIN_SUCCESS' &&
         auditData.actorUserId
       ) {
         try {
@@ -540,7 +588,7 @@ export class AuditLogService {
 
       // For bootstrap actions without organization, log and return null
       if (!organizationId) {
-        if (auditData.action === AuditAction.LOGIN_SUCCESS) {
+        if (auditData.action === 'LOGIN_SUCCESS') {
           this.logger.warn(
             `Bootstrap audit action: LOGIN_SUCCESS recorded without organization context. ` +
               `Actor: ${auditData.actorEmail}, Entity: ${auditData.entityType}.`,
@@ -833,7 +881,7 @@ export class AuditLogService {
             lt: cutoffDate,
           },
           severity: {
-            in: [AuditSeverity.LOW, AuditSeverity.MEDIUM],
+            in: ['LOW', 'MEDIUM'],
           },
         },
       });

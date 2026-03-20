@@ -1,158 +1,115 @@
-import { Controller, Get, Post, Logger, Query } from '@nestjs/common';
+import { Controller, Get, Logger } from '@nestjs/common';
+import { AuditLogService } from './audit-log.service';
 import {
-  AuditLogService,
   AuditAction,
   AuditEntityType,
   AuditSeverity,
-  AuditMode,
-} from './audit-log.service';
-import { AuditQueueService } from './audit-queue.service';
+} from './audit-log.constants';
+
+// Define return type for the test methods
+interface AuditTestResponse {
+  mode: string;
+  queueAvailable: boolean;
+  result: unknown;
+  isCritical?: boolean;
+}
+
+// Define metadata type
+interface TestMetadata {
+  test: boolean;
+  timestamp: string;
+  reason?: string;
+}
 
 @Controller('audit-test')
-// Audit test endpoints for verifying async pipeline
 export class AuditTestController {
   private readonly logger = new Logger(AuditTestController.name);
 
-  constructor(
-    private readonly auditLogService: AuditLogService,
-    private readonly auditQueueService: AuditQueueService,
-  ) {}
+  constructor(private readonly auditLogService: AuditLogService) {}
 
-  @Get('sync')
-  async testSyncAudit(@Query('count') count = '1') {
-    const num = parseInt(count, 10) || 1;
-    const results = [];
+  @Get('sync-test')
+  async testSyncMode(): Promise<AuditTestResponse> {
+    this.logger.log('Testing synchronous audit mode...');
 
-    for (let i = 0; i < num; i++) {
-      const start = Date.now();
-      const result = await this.auditLogService.logDirect(
-        AuditAction.LOGIN_SUCCESS,
-        AuditEntityType.AUTH,
-        `test-user-${i}@example.com`,
-        `user-${i}`,
-        undefined,
-        { test: true, iteration: i, mode: 'sync' },
-        AuditSeverity.LOW,
-        `org-test-${i}`,
-        '127.0.0.1',
-        'AuditTest/1.0',
-      );
-      const duration = Date.now() - start;
-      results.push({ iteration: i, duration, result });
-    }
-
-    return {
-      message: `Created ${num} synchronous audit logs`,
-      mode: this.auditLogService.getAuditMode(),
-      queueAvailable: this.auditLogService.isQueueAvailable(),
-      results,
+    const metadata: TestMetadata = {
+      test: true,
+      timestamp: new Date().toISOString(),
     };
-  }
 
-  @Get('async')
-  async testAsyncAudit(@Query('count') count = '1') {
-    const num = parseInt(count, 10) || 1;
-    const results = [];
-
-    for (let i = 0; i < num; i++) {
-      const start = Date.now();
-      const result = await this.auditLogService.logDirect(
-        AuditAction.CONTACT_CREATED, // Non-critical action should go to queue
-        AuditEntityType.CONTACT,
-        `test-user-${i}@example.com`,
-        `user-${i}`,
-        `contact-${i}`,
-        { test: true, iteration: i, mode: 'async' },
-        AuditSeverity.LOW,
-        `org-test-${i}`,
-        '127.0.0.1',
-        'AuditTest/1.0',
-      );
-      const duration = Date.now() - start;
-      results.push({ iteration: i, duration, result });
-    }
-
-    return {
-      message: `Created ${num} audit logs (may be async if queue available)`,
-      mode: this.auditLogService.getAuditMode(),
-      queueAvailable: this.auditLogService.isQueueAvailable(),
-      results,
-    };
-  }
-
-  @Get('critical')
-  async testCriticalAudit() {
-    const start = Date.now();
-    const result = await this.auditLogService.logDirect(
-      AuditAction.LOGIN_FAILURE, // Critical action should always be synchronous
+    // Log a test event - should be synchronous
+    const result = (await this.auditLogService.logDirect(
+      AuditAction.LOGIN_SUCCESS,
       AuditEntityType.AUTH,
-      'attacker@example.com',
-      'user-attacker',
+      'test@example.com',
+      'test-user-id',
       undefined,
-      { test: true, critical: true, reason: 'failed_login_attempt' },
-      AuditSeverity.HIGH,
-      'org-security',
-      '192.168.1.100',
-      'MaliciousBot/1.0',
-    );
-    const duration = Date.now() - start;
+      metadata,
+      AuditSeverity.LOW,
+      'test-org-id',
+    )) as unknown;
 
     return {
-      message: 'Created critical audit log (should be synchronous)',
       mode: this.auditLogService.getAuditMode(),
       queueAvailable: this.auditLogService.isQueueAvailable(),
-      duration,
       result,
     };
   }
 
-  @Get('queue-metrics')
-  async getQueueMetrics() {
-    try {
-      const metrics = await this.auditQueueService.getQueueMetrics();
-      return {
-        message: 'Audit queue metrics',
-        metrics,
-        mode: this.auditLogService.getAuditMode(),
-        queueAvailable: this.auditLogService.isQueueAvailable(),
-      };
-    } catch (error) {
-      return {
-        message: 'Failed to get queue metrics',
-        error: error.message,
-        mode: this.auditLogService.getAuditMode(),
-        queueAvailable: this.auditLogService.isQueueAvailable(),
-      };
-    }
-  }
+  @Get('async-test')
+  async testAsyncMode(): Promise<AuditTestResponse> {
+    this.logger.log('Testing asynchronous audit mode...');
 
-  @Post('toggle-mode')
-  async toggleMode(
-    @Query('mode') mode: 'SYNC_MODE' | 'ASYNC_MODE' | 'QUEUE_DISABLED',
-  ) {
-    const validModes = ['SYNC_MODE', 'ASYNC_MODE', 'QUEUE_DISABLED'];
-    if (!validModes.includes(mode)) {
-      return {
-        error: `Invalid mode. Must be one of: ${validModes.join(', ')}`,
-      };
-    }
+    const metadata: TestMetadata = {
+      test: true,
+      timestamp: new Date().toISOString(),
+    };
 
-    this.auditLogService.setAuditMode(mode as AuditMode);
+    // Log a test event - should go to queue if available
+    const result = (await this.auditLogService.logDirect(
+      AuditAction.CONTACT_CREATED,
+      AuditEntityType.CONTACT,
+      'test@example.com',
+      'test-user-id',
+      undefined,
+      metadata,
+      AuditSeverity.LOW,
+      'test-org-id',
+    )) as unknown;
 
     return {
-      message: `Audit mode changed to ${mode}`,
-      currentMode: this.auditLogService.getAuditMode(),
+      mode: this.auditLogService.getAuditMode(),
       queueAvailable: this.auditLogService.isQueueAvailable(),
+      result,
     };
   }
 
-  @Get('status')
-  async getStatus() {
-    return {
-      auditMode: this.auditLogService.getAuditMode(),
-      queueAvailable: this.auditLogService.isQueueAvailable(),
+  @Get('critical-test')
+  async testCriticalAction(): Promise<AuditTestResponse> {
+    this.logger.log('Testing critical action audit (should bypass queue)...');
+
+    const metadata: TestMetadata = {
+      test: true,
       timestamp: new Date().toISOString(),
-      version: '1.0.0',
+      reason: 'test failure',
+    };
+
+    // Log a critical event - should always be synchronous
+    const result = (await this.auditLogService.logDirect(
+      AuditAction.LOGIN_FAILURE,
+      AuditEntityType.AUTH,
+      'test@example.com',
+      'test-user-id',
+      undefined,
+      metadata,
+      AuditSeverity.HIGH,
+      'test-org-id',
+    )) as unknown;
+
+    return {
+      mode: this.auditLogService.getAuditMode(),
+      queueAvailable: this.auditLogService.isQueueAvailable(),
+      isCritical: true,
+      result,
     };
   }
 }

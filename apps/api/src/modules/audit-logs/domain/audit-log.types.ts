@@ -1,3 +1,5 @@
+// apps/api/src/modules/audit-logs/domain/audit-log.types.ts
+
 // Domain enums - independent of database implementation
 // These are the canonical definitions used throughout the application
 
@@ -46,6 +48,16 @@ export enum AuditAction {
   ROLE_DELETED = 'ROLE_DELETED',
   ROLE_ASSIGNED = 'ROLE_ASSIGNED',
   ROLE_REMOVED = 'ROLE_REMOVED',
+
+  // Webhook events
+  WEBHOOK_CREATED = 'WEBHOOK_CREATED',
+  WEBHOOK_UPDATED = 'WEBHOOK_UPDATED',
+  WEBHOOK_DELETED = 'WEBHOOK_DELETED',
+  WEBHOOK_TRIGGERED = 'WEBHOOK_TRIGGERED',
+  WEBHOOK_RETRY = 'WEBHOOK_RETRY',
+  WEBHOOK_CLEANUP = 'WEBHOOK_CLEANUP',
+  WEBHOOK_DELIVERED = 'WEBHOOK_DELIVERED',
+  WEBHOOK_DELIVERY_FAILED = 'WEBHOOK_DELIVERY_FAILED',
 }
 
 export enum AuditEntityType {
@@ -58,6 +70,8 @@ export enum AuditEntityType {
   ACCOUNT = 'ACCOUNT',
   ACTIVITY = 'ACTIVITY',
   SYSTEM = 'SYSTEM',
+  WEBHOOK = 'WEBHOOK',
+  WEBHOOK_DELIVERY = 'WEBHOOK_DELIVERY',
 }
 
 export enum AuditSeverity {
@@ -179,6 +193,15 @@ export class AuditLogEnumMapper {
       [AuditAction.ROLE_DELETED]: 'USER_DELETED',
       [AuditAction.ROLE_ASSIGNED]: 'ROLE_CHANGED',
       [AuditAction.ROLE_REMOVED]: 'ROLE_CHANGED',
+      // Webhook actions - map to themselves since they exist in Prisma now
+      [AuditAction.WEBHOOK_CREATED]: 'WEBHOOK_CREATED',
+      [AuditAction.WEBHOOK_UPDATED]: 'WEBHOOK_UPDATED',
+      [AuditAction.WEBHOOK_DELETED]: 'WEBHOOK_DELETED',
+      [AuditAction.WEBHOOK_TRIGGERED]: 'WEBHOOK_TRIGGERED',
+      [AuditAction.WEBHOOK_RETRY]: 'WEBHOOK_RETRY',
+      [AuditAction.WEBHOOK_CLEANUP]: 'WEBHOOK_CLEANUP',
+      [AuditAction.WEBHOOK_DELIVERED]: 'WEBHOOK_DELIVERED',
+      [AuditAction.WEBHOOK_DELIVERY_FAILED]: 'WEBHOOK_DELIVERY_FAILED',
     };
 
     return actionMap[action] || action;
@@ -187,7 +210,7 @@ export class AuditLogEnumMapper {
   static fromDatabaseAction(action: string): AuditAction {
     // Check if it's a valid domain action
     if (isAuditAction(action)) {
-      return action;
+      return action; // Remove the 'as AuditAction' assertion
     }
 
     // Default fallback
