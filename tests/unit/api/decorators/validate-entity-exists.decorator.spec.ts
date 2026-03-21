@@ -1,30 +1,32 @@
-import { ValidateEntityExists } from '@api/shared/decorators/validate-entity-exists.decorator';
-import { SetMetadata } from '@nestjs/common';
+// tests/unit/api/decorators/validate-entity-exists.decorator.spec.ts
 
-// Mock SetMetadata to capture calls
-jest.mock('@nestjs/common', () => ({
-  ...jest.requireActual('@nestjs/common'),
-  SetMetadata: jest.fn().mockImplementation((key, value) => ({ key, value })),
-}));
+import { ValidateEntityExists } from '@api/shared/decorators/validate-entity-exists.decorator';
+import { Reflector } from '@nestjs/core';
 
 describe('ValidateEntityExists Decorator', () => {
+  let reflector: Reflector;
+
   beforeEach(() => {
-    jest.clearAllMocks();
+    reflector = new Reflector();
   });
 
   it('should be defined', () => {
     expect(ValidateEntityExists).toBeDefined();
   });
 
-  it('should call SetMetadata with the correct key and value', () => {
+  it('should set metadata with the correct entity type', () => {
     // Arrange
     const entityType = 'User';
 
     // Act
-    ValidateEntityExists(entityType);
+    class TestClass {
+      @ValidateEntityExists(entityType)
+      testMethod() {}
+    }
 
     // Assert
-    expect(SetMetadata).toHaveBeenCalledWith('validate-entity-exists', entityType);
+    const metadata = reflector.get('validate-entity-exists', TestClass.prototype.testMethod);
+    expect(metadata).toBe(entityType);
   });
 
   it('should handle different entity types', () => {
@@ -32,8 +34,13 @@ describe('ValidateEntityExists Decorator', () => {
     const entityTypes = ['Contact', 'Deal', 'Lead', 'Pipeline', 'Role', 'Permission'];
 
     entityTypes.forEach((entityType) => {
-      ValidateEntityExists(entityType);
-      expect(SetMetadata).toHaveBeenCalledWith('validate-entity-exists', entityType);
+      class TestClass {
+        @ValidateEntityExists(entityType)
+        testMethod() {}
+      }
+
+      const metadata = reflector.get('validate-entity-exists', TestClass.prototype.testMethod);
+      expect(metadata).toBe(entityType);
     });
   });
 
@@ -42,40 +49,108 @@ describe('ValidateEntityExists Decorator', () => {
     const entityType = 'Payment Method';
 
     // Act
-    ValidateEntityExists(entityType);
+    class TestClass {
+      @ValidateEntityExists(entityType)
+      testMethod() {}
+    }
 
     // Assert
-    expect(SetMetadata).toHaveBeenCalledWith('validate-entity-exists', entityType);
+    const metadata = reflector.get('validate-entity-exists', TestClass.prototype.testMethod);
+    expect(metadata).toBe(entityType);
   });
 
   it('should handle empty string entity type', () => {
     // Act
-    ValidateEntityExists('');
+    class TestClass {
+      @ValidateEntityExists('')
+      testMethod() {}
+    }
 
     // Assert
-    expect(SetMetadata).toHaveBeenCalledWith('validate-entity-exists', '');
+    const metadata = reflector.get('validate-entity-exists', TestClass.prototype.testMethod);
+    expect(metadata).toBe('');
   });
 
-  it('should return the result of SetMetadata', () => {
+  it('should work with multiple methods having different entity types', () => {
+    // Act
+    class TestClass {
+      @ValidateEntityExists('User')
+      getUser() {}
+
+      @ValidateEntityExists('Contact')
+      getContact() {}
+
+      @ValidateEntityExists('Deal')
+      getDeal() {}
+    }
+
+    // Assert
+    const userMetadata = reflector.get('validate-entity-exists', TestClass.prototype.getUser);
+    const contactMetadata = reflector.get('validate-entity-exists', TestClass.prototype.getContact);
+    const dealMetadata = reflector.get('validate-entity-exists', TestClass.prototype.getDeal);
+    
+    expect(userMetadata).toBe('User');
+    expect(contactMetadata).toBe('Contact');
+    expect(dealMetadata).toBe('Deal');
+  });
+
+  it('should work with class-level entity validation', () => {
     // Arrange
-    const expectedResult = { key: 'validate-entity-exists', value: 'User' };
-    (SetMetadata as jest.Mock).mockReturnValue(expectedResult);
+    const entityType = 'User';
 
     // Act
-    const result = ValidateEntityExists('User');
+    @ValidateEntityExists(entityType)
+    class TestClass {
+      method1() {}
+      method2() {}
+    }
 
     // Assert
-    expect(result).toBe(expectedResult);
+    const classMetadata = reflector.get('validate-entity-exists', TestClass);
+    expect(classMetadata).toBe(entityType);
   });
 
-  it('should work with common entity types', () => {
+  it('should combine class-level and method-level validation', () => {
+    // Arrange
+    const classEntity = 'User';
+    const methodEntity = 'UserProfile';
+
+    // Act
+    @ValidateEntityExists(classEntity)
+    class TestClass {
+      @ValidateEntityExists(methodEntity)
+      getUserProfile() {}
+    }
+
+    // Assert
+    const classMetadata = reflector.get('validate-entity-exists', TestClass);
+    const methodMetadata = reflector.get('validate-entity-exists', TestClass.prototype.getUserProfile);
+    
+    expect(classMetadata).toBe(classEntity);
+    expect(methodMetadata).toBe(methodEntity);
+  });
+
+  it('should work with common entity types without throwing', () => {
     // Just verify that calling with common types doesn't throw
     expect(() => {
-      ValidateEntityExists('User');
-      ValidateEntityExists('Contact');
-      ValidateEntityExists('Deal');
-      ValidateEntityExists('Lead');
-      ValidateEntityExists('Pipeline');
+      class TestClass {
+        @ValidateEntityExists('User')
+        test1() {}
+
+        @ValidateEntityExists('Contact')
+        test2() {}
+
+        @ValidateEntityExists('Deal')
+        test3() {}
+
+        @ValidateEntityExists('Lead')
+        test4() {}
+
+        @ValidateEntityExists('Pipeline')
+        test5() {}
+      }
+      // Use the class to avoid unused variable warning
+      const _testClass = TestClass;
     }).not.toThrow();
   });
 });

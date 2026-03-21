@@ -1,16 +1,20 @@
-import { ApiPaginatedResponse } from '@api/shared/decorators/api-paginated-response.decorator';
-import { applyDecorators } from '@nestjs/common';
-import { ApiOkResponse } from '@nestjs/swagger';
-
-// Mock the decorators
-jest.mock('@nestjs/common', () => ({
-  applyDecorators: jest.fn().mockImplementation((...decorators) => decorators),
-}));
-
+// Mock @nestjs/swagger using jest.mock with factory and module name
 jest.mock('@nestjs/swagger', () => ({
   ApiOkResponse: jest.fn().mockImplementation((options) => ({ type: 'ApiOkResponse', options })),
-  getSchemaPath: jest.fn().mockReturnValue('#/components/schemas/TestModel'),
-}));
+  getSchemaPath: jest.fn().mockImplementation((model) => `#/components/schemas/${model.name}`),
+}), { virtual: true });
+
+// Mock @nestjs/common
+jest.mock('@nestjs/common', () => ({
+  applyDecorators: jest.fn().mockImplementation((...decorators) => decorators),
+}), { virtual: true });
+
+// Now import the decorator
+import { ApiPaginatedResponse } from '@api/shared/decorators/api-paginated-response.decorator';
+
+// Get references to the mocked functions
+const { ApiOkResponse, getSchemaPath } = require('@nestjs/swagger');
+const { applyDecorators } = require('@nestjs/common');
 
 describe('ApiPaginatedResponse', () => {
   beforeEach(() => {
@@ -22,24 +26,18 @@ describe('ApiPaginatedResponse', () => {
   });
 
   it('should call applyDecorators', () => {
-    // Arrange
     class TestModel {}
 
-    // Act
     ApiPaginatedResponse(TestModel);
 
-    // Assert
     expect(applyDecorators).toHaveBeenCalled();
   });
 
   it('should create ApiOkResponse with correct schema', () => {
-    // Arrange
     class TestModel {}
 
-    // Act
     ApiPaginatedResponse(TestModel);
 
-    // Assert
     expect(ApiOkResponse).toHaveBeenCalledWith({
       schema: expect.objectContaining({
         title: 'PaginatedResponseOfTestModel',
@@ -49,13 +47,10 @@ describe('ApiPaginatedResponse', () => {
   });
 
   it('should create schema with data array property', () => {
-    // Arrange
     class TestModel {}
 
-    // Act
     ApiPaginatedResponse(TestModel);
 
-    // Assert
     const apiOkResponseCall = (ApiOkResponse as jest.Mock).mock.calls[0][0];
     const schema = apiOkResponseCall.schema;
     const properties = schema.allOf[0].properties;
@@ -68,13 +63,10 @@ describe('ApiPaginatedResponse', () => {
   });
 
   it('should create schema with pagination metadata properties', () => {
-    // Arrange
     class TestModel {}
 
-    // Act
     ApiPaginatedResponse(TestModel);
 
-    // Assert
     const apiOkResponseCall = (ApiOkResponse as jest.Mock).mock.calls[0][0];
     const schema = apiOkResponseCall.schema;
     const properties = schema.allOf[0].properties;
@@ -105,15 +97,12 @@ describe('ApiPaginatedResponse', () => {
   });
 
   it('should handle different model names correctly', () => {
-    // Arrange
     class UserModel {}
     class DealModel {}
 
-    // Act
     ApiPaginatedResponse(UserModel);
     ApiPaginatedResponse(DealModel);
 
-    // Assert
     const firstCall = (ApiOkResponse as jest.Mock).mock.calls[0][0];
     const secondCall = (ApiOkResponse as jest.Mock).mock.calls[1][0];
 
@@ -121,16 +110,53 @@ describe('ApiPaginatedResponse', () => {
     expect(secondCall.schema.title).toBe('PaginatedResponseOfDealModel');
   });
 
+  it('should use getSchemaPath to generate item reference', () => {
+    class TestModel {}
+
+    ApiPaginatedResponse(TestModel);
+
+    expect(getSchemaPath).toHaveBeenCalledWith(TestModel);
+  });
+
   it('should return result of applyDecorators', () => {
-    // Arrange
     class TestModel {}
     const expectedResult = ['decorator1', 'decorator2'];
     (applyDecorators as jest.Mock).mockReturnValue(expectedResult);
 
-    // Act
     const result = ApiPaginatedResponse(TestModel);
 
-    // Assert
     expect(result).toBe(expectedResult);
+  });
+
+  it('should create schema with correct allOf structure', () => {
+    class TestModel {}
+
+    ApiPaginatedResponse(TestModel);
+
+    const apiOkResponseCall = (ApiOkResponse as jest.Mock).mock.calls[0][0];
+    const schema = apiOkResponseCall.schema;
+    
+    expect(schema.allOf).toBeInstanceOf(Array);
+    expect(schema.allOf.length).toBe(1);
+    expect(schema.allOf[0]).toHaveProperty('properties');
+    expect(schema.allOf[0].properties).toHaveProperty('data');
+    expect(schema.allOf[0].properties).toHaveProperty('page');
+    expect(schema.allOf[0].properties).toHaveProperty('limit');
+    expect(schema.allOf[0].properties).toHaveProperty('total');
+    expect(schema.allOf[0].properties).toHaveProperty('pages');
+  });
+
+  it('should include all pagination fields with correct types', () => {
+    class TestModel {}
+
+    ApiPaginatedResponse(TestModel);
+
+    const apiOkResponseCall = (ApiOkResponse as jest.Mock).mock.calls[0][0];
+    const properties = apiOkResponseCall.schema.allOf[0].properties;
+
+    expect(properties.page.type).toBe('number');
+    expect(properties.limit.type).toBe('number');
+    expect(properties.total.type).toBe('number');
+    expect(properties.pages.type).toBe('number');
   });
 });

@@ -1,15 +1,13 @@
-import { RateLimit } from '@api/shared/decorators/rate-limit.decorator';
-import { SetMetadata } from '@nestjs/common';
+// tests/unit/api/decorators/rate-limit.decorator.spec.ts
 
-// Mock SetMetadata to capture calls
-jest.mock('@nestjs/common', () => ({
-  ...jest.requireActual('@nestjs/common'),
-  SetMetadata: jest.fn().mockImplementation((key, value) => ({ key, value })),
-}));
+import { RateLimit } from '@api/shared/decorators/rate-limit.decorator';
+import { Reflector } from '@nestjs/core';
 
 describe('RateLimit Decorator', () => {
+  let reflector: Reflector;
+
   beforeEach(() => {
-    jest.clearAllMocks();
+    reflector = new Reflector();
   });
 
   it('should be defined', () => {
@@ -24,11 +22,14 @@ describe('RateLimit Decorator', () => {
     };
 
     // Act
-    const result = RateLimit(options);
+    class TestClass {
+      @RateLimit(options)
+      testMethod() {}
+    }
 
     // Assert
-    expect(SetMetadata).toHaveBeenCalledWith('rate-limit', options);
-    expect(result).toEqual({ key: 'rate-limit', value: options });
+    const metadata = reflector.get('rate-limit', TestClass.prototype.testMethod);
+    expect(metadata).toEqual(options);
   });
 
   it('should handle different points values', () => {
@@ -39,11 +40,14 @@ describe('RateLimit Decorator', () => {
     };
 
     // Act
-    const result = RateLimit(options);
+    class TestClass {
+      @RateLimit(options)
+      testMethod() {}
+    }
 
     // Assert
-    expect(SetMetadata).toHaveBeenCalledWith('rate-limit', options);
-    expect(result).toEqual({ key: 'rate-limit', value: options });
+    const metadata = reflector.get('rate-limit', TestClass.prototype.testMethod);
+    expect(metadata).toEqual(options);
   });
 
   it('should handle zero points', () => {
@@ -54,11 +58,14 @@ describe('RateLimit Decorator', () => {
     };
 
     // Act
-    const result = RateLimit(options);
+    class TestClass {
+      @RateLimit(options)
+      testMethod() {}
+    }
 
     // Assert
-    expect(SetMetadata).toHaveBeenCalledWith('rate-limit', options);
-    expect(result).toEqual({ key: 'rate-limit', value: options });
+    const metadata = reflector.get('rate-limit', TestClass.prototype.testMethod);
+    expect(metadata).toEqual(options);
   });
 
   it('should handle zero duration', () => {
@@ -69,11 +76,14 @@ describe('RateLimit Decorator', () => {
     };
 
     // Act
-    const result = RateLimit(options);
+    class TestClass {
+      @RateLimit(options)
+      testMethod() {}
+    }
 
     // Assert
-    expect(SetMetadata).toHaveBeenCalledWith('rate-limit', options);
-    expect(result).toEqual({ key: 'rate-limit', value: options });
+    const metadata = reflector.get('rate-limit', TestClass.prototype.testMethod);
+    expect(metadata).toEqual(options);
   });
 
   it('should handle large numbers', () => {
@@ -84,10 +94,52 @@ describe('RateLimit Decorator', () => {
     };
 
     // Act
-    const result = RateLimit(options);
+    class TestClass {
+      @RateLimit(options)
+      testMethod() {}
+    }
 
     // Assert
-    expect(SetMetadata).toHaveBeenCalledWith('rate-limit', options);
-    expect(result).toEqual({ key: 'rate-limit', value: options });
+    const metadata = reflector.get('rate-limit', TestClass.prototype.testMethod);
+    expect(metadata).toEqual(options);
+  });
+
+  it('should work with multiple methods having different rate limits', () => {
+    // Arrange
+    const options1 = { points: 10, duration: 60 };
+    const options2 = { points: 100, duration: 3600 };
+
+    // Act
+    class TestClass {
+      @RateLimit(options1)
+      method1() {}
+
+      @RateLimit(options2)
+      method2() {}
+    }
+
+    // Assert
+    const metadata1 = reflector.get('rate-limit', TestClass.prototype.method1);
+    const metadata2 = reflector.get('rate-limit', TestClass.prototype.method2);
+    
+    expect(metadata1).toEqual(options1);
+    expect(metadata2).toEqual(options2);
+  });
+
+  it('should work with class-level rate limit', () => {
+    // Arrange
+    const options = { points: 50, duration: 300 };
+
+    // Act
+    @RateLimit(options)
+    class TestClass {
+      method1() {}
+      method2() {}
+    }
+
+    // Assert - Class-level metadata is stored on the class itself, not on methods
+    const classMetadata = reflector.get('rate-limit', TestClass);
+    
+    expect(classMetadata).toEqual(options);
   });
 });
