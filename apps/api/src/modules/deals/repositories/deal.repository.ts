@@ -2,29 +2,49 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
 import { TenantAwareRepository } from '../../../shared/database/tenant-aware.repository';
-import { Deal, Prisma, DealStatus } from '@prisma/client';
-// ✅ REMOVED: TenantContextService import - not needed
+import { Deal, Prisma } from '@prisma/client';
+
+// Define types for better type safety
+interface DealWhereInput extends Prisma.DealWhereInput {
+  organizationId?: string;
+  deletedAt?: Date | null;
+}
+
+interface StageStats {
+  id: string;
+  name: string;
+  order: number;
+  probability: number;
+  dealCount: number;
+  totalValue: number;
+}
+
+// Helper function for safe error message extraction
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === 'string') {
+    return error;
+  }
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return 'Unknown error occurred';
+  }
+}
 
 @Injectable()
 export class DealRepository extends TenantAwareRepository {
   private readonly logger = new Logger(DealRepository.name);
 
-  constructor(
-    prisma: PrismaService,
-    // ✅ REMOVED: private tenantContext: TenantContextService
-  ) {
+  constructor(prisma: PrismaService) {
     super(prisma);
   }
 
-  // All methods can now use this.tenantId from parent class
-  // The parent class (TenantAwareRepository) provides:
-  // - this.tenantId - gets current tenant ID
-  // - this.withTenantFilter() - adds tenant filter to queries
-  // - this.prisma - Prisma client
-
   async findById(id: string, includeDeleted = false): Promise<Deal | null> {
     try {
-      const where: any = this.withTenantFilter({ id });
+      const where: DealWhereInput = this.withTenantFilter({ id });
 
       if (!includeDeleted) {
         where.deletedAt = null;
@@ -52,18 +72,16 @@ export class DealRepository extends TenantAwareRepository {
       }
 
       return deal;
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       this.logger.error(
-        `Failed to find deal ${id}: ${error.message}`,
-        error.stack,
+        `Failed to find deal ${id}: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
       );
       throw error;
     }
   }
 
-  /**
-   * PRODUCTION READY: Find deal by ID or throw NotFoundException
-   */
   async findByIdOrThrow(id: string, includeDeleted = false): Promise<Deal> {
     const deal = await this.findById(id, includeDeleted);
     if (!deal) {
@@ -72,16 +90,12 @@ export class DealRepository extends TenantAwareRepository {
     return deal;
   }
 
-  /**
-   * PRODUCTION READY: Create deal with transaction safety
-   */
   async create(
     data: Omit<Prisma.DealCreateInput, 'organization'>,
   ): Promise<Deal> {
     try {
-      const tenantId = this.tenantId; // ✅ From parent class
+      const tenantId = this.tenantId;
 
-      // Manually add organization connection
       const tenantData: Prisma.DealCreateInput = {
         ...data,
         organization: {
@@ -102,30 +116,30 @@ export class DealRepository extends TenantAwareRepository {
 
       this.logger.log(`Deal created: ${deal.id} in tenant: ${tenantId}`);
       return deal;
-    } catch (error) {
-      this.logger.error(`Failed to create deal: ${error.message}`, error.stack);
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
+      this.logger.error(
+        `Failed to create deal: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
+      );
       throw error;
     }
   }
 
-  /**
-   * PRODUCTION READY: Update deal with tenant validation
-   */
   async update(params: {
     id: string;
     data: Prisma.DealUpdateInput;
   }): Promise<Deal> {
     try {
-      // First verify the deal belongs to current tenant
       await this.findByIdOrThrow(params.id);
 
-      const tenantWhere = {
+      const where: DealWhereInput = {
         id: params.id,
-        organizationId: this.tenantId, // ✅ From parent class
+        organizationId: this.tenantId,
       };
 
       const deal = await this.prisma.deal.update({
-        where: tenantWhere,
+        where,
         data: params.data,
         include: {
           contact: true,
@@ -138,29 +152,27 @@ export class DealRepository extends TenantAwareRepository {
 
       this.logger.log(`Deal updated: ${deal.id}`);
       return deal;
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       this.logger.error(
-        `Failed to update deal ${params.id}: ${error.message}`,
-        error.stack,
+        `Failed to update deal ${params.id}: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
       );
       throw error;
     }
   }
 
-  /**
-   * PRODUCTION READY: Soft delete with validation
-   */
   async softDelete(id: string): Promise<Deal> {
     try {
       await this.findByIdOrThrow(id);
 
-      const tenantWhere = {
+      const where: DealWhereInput = {
         id,
-        organizationId: this.tenantId, // ✅ From parent class
+        organizationId: this.tenantId,
       };
 
       const deal = await this.prisma.deal.update({
-        where: tenantWhere,
+        where,
         data: { deletedAt: new Date() },
         include: {
           contact: true,
@@ -173,29 +185,26 @@ export class DealRepository extends TenantAwareRepository {
 
       this.logger.log(`Deal soft deleted: ${id}`);
       return deal;
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       this.logger.error(
-        `Failed to soft delete deal ${id}: ${error.message}`,
-        error.stack,
+        `Failed to soft delete deal ${id}: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
       );
       throw error;
     }
   }
 
-  /**
-   * PRODUCTION READY: Find all with pagination and filtering
-   */
   async findAll(params: {
     skip?: number;
     take?: number;
-    where?: any;
-    orderBy?: any;
+    where?: Prisma.DealWhereInput;
+    orderBy?: Prisma.DealOrderByWithRelationInput;
     includeDeleted?: boolean;
-  }) {
-    const { skip, take, where, orderBy, includeDeleted } = params;
+  }): Promise<Deal[]> {
+    const { skip, take, where = {}, orderBy, includeDeleted } = params;
 
-    // Add tenant filter using parent class method
-    const whereWithTenant = this.withTenantFilter({
+    const whereWithTenant: DealWhereInput = this.withTenantFilter({
       ...where,
       ...(includeDeleted ? {} : { deletedAt: null }),
     });
@@ -215,30 +224,28 @@ export class DealRepository extends TenantAwareRepository {
     });
   }
 
-  /**
-   * PRODUCTION READY: Count with filtering
-   */
   async count(
     where?: Prisma.DealWhereInput,
     includeDeleted = false,
   ): Promise<number> {
     try {
-      const tenantWhere = this.withTenantFilter(where || {});
+      const tenantWhere: DealWhereInput = this.withTenantFilter(where || {});
 
       if (!includeDeleted) {
-        (tenantWhere as any).deletedAt = null;
+        tenantWhere.deletedAt = null;
       }
 
       return this.prisma.deal.count({ where: tenantWhere });
-    } catch (error) {
-      this.logger.error(`Failed to count deals: ${error.message}`, error.stack);
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
+      this.logger.error(
+        `Failed to count deals: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
+      );
       throw error;
     }
   }
 
-  /**
-   * PRODUCTION READY: Move deal stage with history tracking
-   */
   async moveStage(
     dealId: string,
     stageId: string,
@@ -247,7 +254,6 @@ export class DealRepository extends TenantAwareRepository {
     try {
       const existingDeal = await this.findByIdOrThrow(dealId);
 
-      // Create stage history record
       await this.prisma.dealStageHistory.create({
         data: {
           deal: { connect: { id: dealId } },
@@ -259,14 +265,13 @@ export class DealRepository extends TenantAwareRepository {
         },
       });
 
-      // Update deal stage
-      const tenantWhere = {
+      const where: DealWhereInput = {
         id: dealId,
-        organizationId: this.tenantId, // ✅ From parent class
+        organizationId: this.tenantId,
       };
 
       const deal = await this.prisma.deal.update({
-        where: tenantWhere,
+        where,
         data: {
           stage: { connect: { id: stageId } },
         },
@@ -281,18 +286,16 @@ export class DealRepository extends TenantAwareRepository {
 
       this.logger.log(`Deal stage moved: ${dealId} to ${stageId}`);
       return deal;
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       this.logger.error(
-        `Failed to move deal stage ${dealId}: ${error.message}`,
-        error.stack,
+        `Failed to move deal stage ${dealId}: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
       );
       throw error;
     }
   }
 
-  /**
-   * PRODUCTION READY: Get deal statistics
-   */
   async getDealStats(pipelineId?: string): Promise<{
     totalCount: number;
     totalValue: number;
@@ -304,34 +307,37 @@ export class DealRepository extends TenantAwareRepository {
     winRate: number;
   }> {
     try {
-      const where: any = this.withTenantFilter({ deletedAt: null });
+      const where: DealWhereInput = this.withTenantFilter({ deletedAt: null });
 
       if (pipelineId) {
         where.pipelineId = pipelineId;
       }
 
-      const [totalCount, totalValue, wonCount, wonValue, lostCount, openCount] =
-        await Promise.all([
-          this.prisma.deal.count({ where }),
-          this.prisma.deal.aggregate({
-            where,
-            _sum: { amount: true },
-          }),
-          this.prisma.deal.count({ where: { ...where, status: 'won' } }),
-          this.prisma.deal.aggregate({
-            where: { ...where, status: 'won' },
-            _sum: { amount: true },
-          }),
-          this.prisma.deal.count({ where: { ...where, status: 'lost' } }),
-          this.prisma.deal.count({ where: { ...where, status: 'open' } }),
-        ]);
+      const [
+        totalCount,
+        totalValueAgg,
+        wonCount,
+        wonValueAgg,
+        lostCount,
+        openCount,
+      ] = await Promise.all([
+        this.prisma.deal.count({ where }),
+        this.prisma.deal.aggregate({ where, _sum: { amount: true } }),
+        this.prisma.deal.count({ where: { ...where, status: 'won' } }),
+        this.prisma.deal.aggregate({
+          where: { ...where, status: 'won' },
+          _sum: { amount: true },
+        }),
+        this.prisma.deal.count({ where: { ...where, status: 'lost' } }),
+        this.prisma.deal.count({ where: { ...where, status: 'open' } }),
+      ]);
 
-      // Convert Decimal to number
-      const totalAmount = totalValue._sum.amount
-        ? Number(totalValue._sum.amount)
+      const totalAmount = totalValueAgg._sum.amount
+        ? Number(totalValueAgg._sum.amount)
         : 0;
-      const wonAmount = wonValue._sum.amount ? Number(wonValue._sum.amount) : 0;
-
+      const wonAmount = wonValueAgg._sum.amount
+        ? Number(wonValueAgg._sum.amount)
+        : 0;
       const averageDealValue = totalCount > 0 ? totalAmount / totalCount : 0;
       const winRate = totalCount > 0 ? (wonCount / totalCount) * 100 : 0;
 
@@ -345,27 +351,24 @@ export class DealRepository extends TenantAwareRepository {
         averageDealValue,
         winRate,
       };
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       this.logger.error(
-        `Failed to get deal stats: ${error.message}`,
-        error.stack,
+        `Failed to get deal stats: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
       );
       throw error;
     }
   }
 
-  /**
-   * PRODUCTION READY: Get pipeline performance
-   */
-  async getPipelinePerformance(pipelineId?: string): Promise<any[]> {
+  async getPipelinePerformance(pipelineId?: string): Promise<StageStats[]> {
     try {
-      const where: any = this.withTenantFilter({ deletedAt: null });
+      const where: DealWhereInput = this.withTenantFilter({ deletedAt: null });
 
       if (pipelineId) {
         where.pipelineId = pipelineId;
       }
 
-      // Get deals grouped by stage
       const stageStats = await this.prisma.deal.groupBy({
         by: ['stageId'],
         where,
@@ -373,8 +376,12 @@ export class DealRepository extends TenantAwareRepository {
         _sum: { amount: true },
       });
 
-      // Get stage details
-      const stageWhere: any = { pipeline: this.withTenantFilter({}) };
+      const stageWhere: {
+        pipelineId?: string;
+        pipeline?: { organizationId: string };
+      } = {
+        pipeline: this.withTenantFilter({}),
+      };
       if (pipelineId) {
         stageWhere.pipelineId = pipelineId;
       }
@@ -390,7 +397,6 @@ export class DealRepository extends TenantAwareRepository {
         orderBy: { order: 'asc' },
       });
 
-      // Map stats to stages
       return stageDetails.map((stage) => {
         const stat = stageStats.find((s) => s.stageId === stage.id);
         const totalValue = stat?._sum.amount ? Number(stat._sum.amount) : 0;
@@ -400,25 +406,23 @@ export class DealRepository extends TenantAwareRepository {
           name: stage.name,
           order: stage.order,
           probability: stage.probability,
-          dealCount: stat?._count.id || 0,
+          dealCount: stat?._count.id ?? 0,
           totalValue,
         };
       });
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       this.logger.error(
-        `Failed to get pipeline performance: ${error.message}`,
-        error.stack,
+        `Failed to get pipeline performance: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
       );
       throw error;
     }
   }
 
-  /**
-   * PRODUCTION READY: Get stage history
-   */
   async getStageHistory(dealId: string): Promise<any[]> {
     try {
-      await this.findByIdOrThrow(dealId); // Verify access
+      await this.findByIdOrThrow(dealId);
 
       return this.prisma.dealStageHistory.findMany({
         where: { dealId },
@@ -435,25 +439,25 @@ export class DealRepository extends TenantAwareRepository {
         },
         orderBy: { changedAt: 'desc' },
       });
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       this.logger.error(
-        `Failed to get stage history ${dealId}: ${error.message}`,
-        error.stack,
+        `Failed to get stage history ${dealId}: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
       );
       throw error;
     }
   }
 
-  /**
-   * PRODUCTION READY: Search deals
-   */
   async search(searchTerm: string, limit = 20): Promise<Deal[]> {
     try {
+      const where: DealWhereInput = this.withTenantFilter({
+        deletedAt: null,
+        OR: [{ name: { contains: searchTerm, mode: 'insensitive' } }],
+      });
+
       return this.prisma.deal.findMany({
-        where: this.withTenantFilter({
-          deletedAt: null,
-          OR: [{ name: { contains: searchTerm, mode: 'insensitive' } }],
-        }),
+        where,
         include: {
           contact: {
             select: { id: true, firstName: true, lastName: true, email: true },
@@ -469,10 +473,11 @@ export class DealRepository extends TenantAwareRepository {
         },
         take: Math.min(limit, 100),
       });
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       this.logger.error(
-        `Failed to search deals: ${error.message}`,
-        error.stack,
+        `Failed to search deals: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
       );
       throw error;
     }

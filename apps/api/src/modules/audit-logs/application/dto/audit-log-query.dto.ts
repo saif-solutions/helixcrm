@@ -233,20 +233,37 @@ export class AuditLogQueryDto {
   validateEnums(): { isValid: boolean; errors: string[] } {
     const errors: string[] = [];
 
-    if (this.action && !AuditLogTypes.isAuditAction(this.action)) {
-      errors.push(`Invalid action: ${this.action}`);
+    // Use string conversion to safely handle enum values in template literals
+    if (
+      this.action !== undefined &&
+      !AuditLogTypes.isAuditAction(this.action)
+    ) {
+      const actionValue = String(this.action);
+      errors.push(`Invalid action: ${actionValue}`);
     }
 
-    if (this.entityType && !AuditLogTypes.isAuditEntityType(this.entityType)) {
-      errors.push(`Invalid entity type: ${this.entityType}`);
+    if (
+      this.entityType !== undefined &&
+      !AuditLogTypes.isAuditEntityType(this.entityType)
+    ) {
+      const entityTypeValue = String(this.entityType);
+      errors.push(`Invalid entity type: ${entityTypeValue}`);
     }
 
-    if (this.severity && !AuditLogTypes.isAuditSeverity(this.severity)) {
-      errors.push(`Invalid severity: ${this.severity}`);
+    if (
+      this.severity !== undefined &&
+      !AuditLogTypes.isAuditSeverity(this.severity)
+    ) {
+      const severityValue = String(this.severity);
+      errors.push(`Invalid severity: ${severityValue}`);
     }
 
-    if (this.actorType && !AuditLogTypes.isActorType(this.actorType)) {
-      errors.push(`Invalid actor type: ${this.actorType}`);
+    if (
+      this.actorType !== undefined &&
+      !AuditLogTypes.isActorType(this.actorType)
+    ) {
+      const actorTypeValue = String(this.actorType);
+      errors.push(`Invalid actor type: ${actorTypeValue}`);
     }
 
     return {

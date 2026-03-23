@@ -11,8 +11,6 @@ import {
   Req,
   Request,
   Query,
-  ParseIntPipe,
-  DefaultValuePipe,
   HttpCode,
   HttpStatus,
   UsePipes,
@@ -32,6 +30,21 @@ import { DealQueryDto } from './dto/deal-query.dto';
 import { CreateDealSimpleDto } from './dto/create-deal-simple.dto';
 import { PermissionContextService } from '../../shared/permissions/context/permission-context.service';
 
+// Define interface for authenticated request user
+interface AuthenticatedUser {
+  sub: string;
+  organizationId?: string;
+  org?: string;
+  email?: string;
+  roles?: string[];
+  permissions?: string[];
+}
+
+// Define extended Request type with user property
+interface AuthenticatedRequest extends Request {
+  user: AuthenticatedUser;
+}
+
 @Controller('deals')
 @UseGuards(AuthGuard, TenantGuard, PermissionGuard)
 export class DealsController {
@@ -40,15 +53,36 @@ export class DealsController {
     private readonly permissionContext: PermissionContextService,
   ) {}
 
+  private validatePermissionContext(): void {
+    if (!this.permissionContext.isInitialized()) {
+      throw new ForbiddenException('Permission context not initialized');
+    }
+  }
+
+  private extractUserFromRequest(req: AuthenticatedRequest): AuthenticatedUser {
+    return req.user;
+  }
+
+  private extractTenantId(user: AuthenticatedUser): string {
+    const tenantId = user.organizationId ?? user.org;
+    if (!tenantId) {
+      throw new ForbiddenException(
+        'Tenant context missing - cannot process request',
+      );
+    }
+    return tenantId;
+  }
+
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @UsePipes(ValidationPipe)
   @RequirePermission('deal:write')
-  create(@Body() createDealDto: CreateDealDto, @Req() req: Request) {
-    if (!this.permissionContext.isInitialized()) {
-      throw new ForbiddenException('Permission context not initialized');
-    }
-    const user = (req as any).user;
+  create(
+    @Body() createDealDto: CreateDealDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    this.validatePermissionContext();
+    const user = this.extractUserFromRequest(req);
     return this.dealsService.create({
       ...createDealDto,
       userId: user.sub,
@@ -57,20 +91,15 @@ export class DealsController {
 
   @Get()
   @RequirePermission('deal:read')
-  async findAll(@Query() query: DealQueryDto, @Req() req: Request) {
-    if (!this.permissionContext.isInitialized()) {
-      throw new ForbiddenException('Permission context not initialized');
-    }
+  async findAll(
+    @Query() query: DealQueryDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    this.validatePermissionContext();
+    const user = this.extractUserFromRequest(req);
+    this.extractTenantId(user); // Validate tenant exists
 
-    const user = (req as any).user;
-    const tenantId = user?.organizationId || user?.org;
-
-    if (!tenantId) {
-      throw new ForbiddenException(
-        'Tenant context missing - cannot process request',
-      );
-    }
-
+    // Convert skip/take to page/limit if provided
     if (query.skip !== undefined && query.take !== undefined) {
       query.page = Math.floor(query.skip / query.take) + 1;
       query.limit = query.take;
@@ -81,22 +110,23 @@ export class DealsController {
 
   @Get('stats')
   @RequirePermission('report:read')
-  getStats(@Req() req: Request, @Query('pipelineId') pipelineId?: string) {
-    if (!this.permissionContext.isInitialized()) {
-      throw new ForbiddenException('Permission context not initialized');
-    }
+  getStats(
+    @Req() req: AuthenticatedRequest,
+    @Query('pipelineId') pipelineId?: string,
+  ) {
+    this.validatePermissionContext();
+    this.extractUserFromRequest(req);
     return this.dealsService.getDealStats(pipelineId);
   }
 
   @Get('pipeline-performance')
   @RequirePermission('report:read')
   getPipelinePerformance(
-    @Req() req: Request,
+    @Req() req: AuthenticatedRequest,
     @Query('pipelineId') pipelineId?: string,
   ) {
-    if (!this.permissionContext.isInitialized()) {
-      throw new ForbiddenException('Permission context not initialized');
-    }
+    this.validatePermissionContext();
+    this.extractUserFromRequest(req);
     return this.dealsService.getPipelinePerformance(pipelineId);
   }
 
@@ -104,21 +134,22 @@ export class DealsController {
   @RequirePermission('deal:read')
   findOne(
     @Param('id', ParseUUIDPipe) id: string,
-    @Req() req: Request,
+    @Req() req: AuthenticatedRequest,
     @Query('includeDeleted') includeDeleted?: boolean,
   ) {
-    if (!this.permissionContext.isInitialized()) {
-      throw new ForbiddenException('Permission context not initialized');
-    }
+    this.validatePermissionContext();
+    this.extractUserFromRequest(req);
     return this.dealsService.findOne(id, includeDeleted);
   }
 
   @Get(':id/stage-history')
   @RequirePermission('deal:read')
-  getStageHistory(@Param('id', ParseUUIDPipe) id: string, @Req() req: Request) {
-    if (!this.permissionContext.isInitialized()) {
-      throw new ForbiddenException('Permission context not initialized');
-    }
+  getStageHistory(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    this.validatePermissionContext();
+    this.extractUserFromRequest(req);
     return this.dealsService.getStageHistory(id);
   }
 
@@ -130,23 +161,22 @@ export class DealsController {
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateDealDto: UpdateDealDto,
-    @Req() req: Request,
+    @Req() req: AuthenticatedRequest,
   ) {
-    if (!this.permissionContext.isInitialized()) {
-      throw new ForbiddenException('Permission context not initialized');
-    }
-    const user = (req as any).user;
+    this.validatePermissionContext();
+    const user = this.extractUserFromRequest(req);
     return this.dealsService.update(id, updateDealDto, user.sub);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @RequirePermission('deal:delete')
-  remove(@Param('id', ParseUUIDPipe) id: string, @Req() req: Request) {
-    if (!this.permissionContext.isInitialized()) {
-      throw new ForbiddenException('Permission context not initialized');
-    }
-    const user = (req as any).user;
+  remove(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    this.validatePermissionContext();
+    const user = this.extractUserFromRequest(req);
     return this.dealsService.remove(id, user.sub);
   }
 
@@ -162,12 +192,10 @@ export class DealsController {
   @RequirePermission('deal:write')
   createSimple(
     @Body() createDealSimpleDto: CreateDealSimpleDto,
-    @Req() req: Request,
+    @Req() req: AuthenticatedRequest,
   ) {
-    if (!this.permissionContext.isInitialized()) {
-      throw new ForbiddenException('Permission context not initialized');
-    }
-    const user = (req as any).user;
+    this.validatePermissionContext();
+    const user = this.extractUserFromRequest(req);
     return this.dealsService.createSimple({
       ...createDealSimpleDto,
       userId: user.sub,
@@ -181,12 +209,10 @@ export class DealsController {
   moveStage(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() moveDealStageDto: MoveDealStageDto,
-    @Req() req: Request,
+    @Req() req: AuthenticatedRequest,
   ) {
-    if (!this.permissionContext.isInitialized()) {
-      throw new ForbiddenException('Permission context not initialized');
-    }
-    const user = (req as any).user;
+    this.validatePermissionContext();
+    const user = this.extractUserFromRequest(req);
     return this.dealsService.moveStage(id, moveDealStageDto, user.sub);
   }
 
@@ -194,14 +220,12 @@ export class DealsController {
   @HttpCode(HttpStatus.OK)
   @UsePipes(ValidationPipe)
   @RequirePermission('deal:write')
-  bulkMoveStage(
+  async bulkMoveStage(
     @Body() body: { dealIds: string[]; stageId: string },
-    @Req() req: Request,
+    @Req() req: AuthenticatedRequest,
   ) {
-    if (!this.permissionContext.isInitialized()) {
-      throw new ForbiddenException('Permission context not initialized');
-    }
-    const user = (req as any).user;
+    this.validatePermissionContext();
+    const user = this.extractUserFromRequest(req);
     const { dealIds, stageId } = body;
 
     const movePromises = dealIds.map((dealId) =>
@@ -214,17 +238,19 @@ export class DealsController {
   @Delete('bulk')
   @HttpCode(HttpStatus.NO_CONTENT)
   @RequirePermission('deal:delete')
-  bulkRemove(@Body() body: { dealIds: string[] }, @Req() req: Request) {
-    if (!this.permissionContext.isInitialized()) {
-      throw new ForbiddenException('Permission context not initialized');
-    }
-    const user = (req as any).user;
+  async bulkRemove(
+    @Body() body: { dealIds: string[] },
+    @Req() req: AuthenticatedRequest,
+  ) {
+    this.validatePermissionContext();
+    const user = this.extractUserFromRequest(req);
     const { dealIds } = body;
 
     const deletePromises = dealIds.map((dealId) =>
       this.dealsService.remove(dealId, user.sub),
     );
 
-    return Promise.all(deletePromises);
+    await Promise.all(deletePromises);
+    return;
   }
 }

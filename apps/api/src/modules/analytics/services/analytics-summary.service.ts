@@ -1,6 +1,99 @@
+// apps/api/src/modules/analytics/services/analytics-summary.service.ts
+
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
+import { toSafeNumber, isArray } from '../../../shared/utils/type-guards';
+
+// Define types for statistics results
+interface DealStatsResult {
+  total_deals: number | string;
+  won_deals: number | string;
+  lost_deals: number | string;
+  open_deals: number | string;
+  total_amount: number | string;
+  won_amount: number | string;
+  average_deal_size: number | string;
+  win_rate: number | string;
+}
+
+interface RevenueStatsResult {
+  won_revenue: number | string;
+  forecast_revenue: number | string;
+  total_revenue: number | string;
+  total_deals: number | string;
+  won_deals: number | string;
+  average_deal_size: number | string;
+}
+
+interface StageStatsResult {
+  deal_count: number | string;
+  total_amount: number | string;
+  average_amount: number | string;
+  avg_duration_days: number | string;
+  max_duration_days: number | string;
+}
+
+interface ActivityStatsResult {
+  login_count: number | string;
+  deal_created: number | string;
+  deal_updated: number | string;
+  deal_won: number | string;
+  deal_lost: number | string;
+  contact_created: number | string;
+  contact_updated: number | string;
+  lead_created: number | string;
+  lead_converted: number | string;
+  active_users: number | string;
+  total_actions: number | string;
+}
+
+// Define types for summary data
+interface DealSummaryData {
+  id?: string;
+  organizationId: string;
+  date: Date;
+  totalDeals: number;
+  wonDeals: number;
+  lostDeals: number;
+  openDeals: number;
+  totalAmount: number;
+  wonAmount: number;
+  averageDealSize: number;
+  winRate: number;
+  currency: string;
+  pipelineId: string | null;
+  stageId: string | null;
+  summarizedAt: Date;
+}
+
+interface RevenueSummaryData {
+  id?: string;
+  organizationId: string;
+  date: Date;
+  totalRevenue: number;
+  wonRevenue: number;
+  forecastRevenue: number;
+  totalDeals: number;
+  wonDeals: number;
+  averageDealSize: number;
+  currency: string;
+  summarizedAt: Date;
+}
+
+interface AggregatedData {
+  period: string;
+  totalDeals: number;
+  wonDeals: number;
+  lostDeals: number;
+  openDeals: number;
+  totalAmount: number;
+  wonAmount: number;
+  totalRevenue: number;
+  wonRevenue: number;
+  forecastRevenue: number;
+  count: number;
+}
 
 @Injectable()
 export class AnalyticsSummaryService implements OnModuleInit {
@@ -18,19 +111,14 @@ export class AnalyticsSummaryService implements OnModuleInit {
   async onModuleInit() {
     if (this.isEnabled) {
       this.logger.log('Analytics summary service initialized');
-      // Optionally run an initial summary on startup
       await this.updateAllSummariesIfStale();
     } else {
       this.logger.warn('Analytics summary service disabled via config');
     }
   }
 
-  /**
-   * Update all summary tables if they're stale (older than 1 hour)
-   */
   private async updateAllSummariesIfStale() {
     try {
-      // Check when the last summary was updated
       const latestSummary = await this.prisma.dealSummaryDaily.findFirst({
         orderBy: { summarizedAt: 'desc' },
         select: { summarizedAt: true },
@@ -43,17 +131,16 @@ export class AnalyticsSummaryService implements OnModuleInit {
         await this.updateAllSummaries();
       } else {
         this.logger.log(
-          `Summary tables are fresh (last updated: ${latestSummary.summarizedAt})`,
+          `Summary tables are fresh (last updated: ${latestSummary.summarizedAt.toISOString()})`,
         );
       }
-    } catch (error) {
-      this.logger.error('Error checking summary staleness:', error);
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(`Error checking summary staleness: ${errorMessage}`);
     }
   }
 
-  /**
-   * Update all summary tables
-   */
   async updateAllSummaries(): Promise<void> {
     if (!this.isEnabled) {
       this.logger.debug('Summary updates disabled');
@@ -64,7 +151,6 @@ export class AnalyticsSummaryService implements OnModuleInit {
     const startTime = Date.now();
 
     try {
-      // Update in sequence to avoid overloading the database
       await this.updateDealDailySummaries();
       await this.updateRevenueDailySummaries();
       await this.updatePipelineStageSummaries();
@@ -74,19 +160,17 @@ export class AnalyticsSummaryService implements OnModuleInit {
       this.logger.log(
         `Completed update of all analytics summary tables in ${duration}ms`,
       );
-    } catch (error) {
-      this.logger.error('Error updating analytics summaries:', error);
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(`Error updating analytics summaries: ${errorMessage}`);
       throw error;
     }
   }
 
-  /**
-   * Update deal daily summaries
-   */
   async updateDealDailySummaries(): Promise<void> {
     this.logger.debug('Updating deal daily summaries...');
 
-    // Get all organizations
     const organizations = await this.prisma.organization.findMany({
       select: { id: true },
     });
@@ -96,8 +180,7 @@ export class AnalyticsSummaryService implements OnModuleInit {
 
     for (const org of organizations) {
       try {
-        // Get deal statistics for today
-        const dealStats = await this.prisma.$queryRaw`
+        const dealStatsResult = await this.prisma.$queryRaw<DealStatsResult[]>`
           SELECT 
             COUNT(*) as total_deals,
             COUNT(CASE WHEN status = 'won' THEN 1 END) as won_deals,
@@ -117,13 +200,16 @@ export class AnalyticsSummaryService implements OnModuleInit {
             AND created_at >= ${today}
         `;
 
-        const stats = dealStats[0] as any;
+        const stats =
+          isArray(dealStatsResult) && dealStatsResult.length > 0
+            ? dealStatsResult[0]
+            : null;
 
-        // For DealDailySummary: @@unique([organizationId, date, pipelineId, stageId, currency])
-        // Since pipelineId and stageId can be null, we need to handle this differently
-        // Let's use a simpler approach for now - find and update
+        if (!stats) {
+          this.logger.warn(`No deal stats returned for organization ${org.id}`);
+          continue;
+        }
 
-        // First, try to find existing summary
         const existing = await this.prisma.dealSummaryDaily.findFirst({
           where: {
             organizationId: org.id,
@@ -131,17 +217,17 @@ export class AnalyticsSummaryService implements OnModuleInit {
           },
         });
 
-        const summaryData = {
+        const summaryData: DealSummaryData = {
           organizationId: org.id,
           date: today,
-          totalDeals: parseInt(stats.total_deals) || 0,
-          wonDeals: parseInt(stats.won_deals) || 0,
-          lostDeals: parseInt(stats.lost_deals) || 0,
-          openDeals: parseInt(stats.open_deals) || 0,
-          totalAmount: parseFloat(stats.total_amount) || 0,
-          wonAmount: parseFloat(stats.won_amount) || 0,
-          averageDealSize: parseFloat(stats.average_deal_size) || 0,
-          winRate: parseFloat(stats.win_rate) || 0,
+          totalDeals: toSafeNumber(stats.total_deals, 0),
+          wonDeals: toSafeNumber(stats.won_deals, 0),
+          lostDeals: toSafeNumber(stats.lost_deals, 0),
+          openDeals: toSafeNumber(stats.open_deals, 0),
+          totalAmount: toSafeNumber(stats.total_amount, 0),
+          wonAmount: toSafeNumber(stats.won_amount, 0),
+          averageDealSize: toSafeNumber(stats.average_deal_size, 0),
+          winRate: toSafeNumber(stats.win_rate, 0),
           currency: 'USD',
           pipelineId: null,
           stageId: null,
@@ -158,18 +244,16 @@ export class AnalyticsSummaryService implements OnModuleInit {
             data: summaryData,
           });
         }
-      } catch (error) {
+      } catch (error: unknown) {
+        const errorMessage =
+          error instanceof Error ? error.message : 'Unknown error';
         this.logger.error(
-          `Error updating deal summaries for organization ${org.id}:`,
-          error,
+          `Error updating deal summaries for organization ${org.id}: ${errorMessage}`,
         );
       }
     }
   }
 
-  /**
-   * Update revenue daily summaries
-   */
   async updateRevenueDailySummaries(): Promise<void> {
     this.logger.debug('Updating revenue daily summaries...');
 
@@ -182,8 +266,9 @@ export class AnalyticsSummaryService implements OnModuleInit {
 
     for (const org of organizations) {
       try {
-        // Get revenue statistics
-        const revenueStats = await this.prisma.$queryRaw`
+        const revenueStatsResult = await this.prisma.$queryRaw<
+          RevenueStatsResult[]
+        >`
           SELECT 
             COALESCE(SUM(CASE WHEN status = 'won' THEN amount ELSE 0 END), 0) as won_revenue,
             COALESCE(SUM(CASE WHEN status = 'open' THEN amount * (probability::decimal / 100) ELSE 0 END), 0) as forecast_revenue,
@@ -200,10 +285,18 @@ export class AnalyticsSummaryService implements OnModuleInit {
             AND created_at >= ${today}
         `;
 
-        const stats = revenueStats[0] as any;
+        const stats =
+          isArray(revenueStatsResult) && revenueStatsResult.length > 0
+            ? revenueStatsResult[0]
+            : null;
 
-        // For RevenueDailySummary: @@unique([organizationId, date, currency])
-        // Find existing or create new
+        if (!stats) {
+          this.logger.warn(
+            `No revenue stats returned for organization ${org.id}`,
+          );
+          continue;
+        }
+
         const existing = await this.prisma.revenueDailySummary.findFirst({
           where: {
             organizationId: org.id,
@@ -212,15 +305,15 @@ export class AnalyticsSummaryService implements OnModuleInit {
           },
         });
 
-        const summaryData = {
+        const summaryData: RevenueSummaryData = {
           organizationId: org.id,
           date: today,
-          totalRevenue: parseFloat(stats.total_revenue) || 0,
-          wonRevenue: parseFloat(stats.won_revenue) || 0,
-          forecastRevenue: parseFloat(stats.forecast_revenue) || 0,
-          totalDeals: parseInt(stats.total_deals) || 0,
-          wonDeals: parseInt(stats.won_deals) || 0,
-          averageDealSize: parseFloat(stats.average_deal_size) || 0,
+          totalRevenue: toSafeNumber(stats.total_revenue, 0),
+          wonRevenue: toSafeNumber(stats.won_revenue, 0),
+          forecastRevenue: toSafeNumber(stats.forecast_revenue, 0),
+          totalDeals: toSafeNumber(stats.total_deals, 0),
+          wonDeals: toSafeNumber(stats.won_deals, 0),
+          averageDealSize: toSafeNumber(stats.average_deal_size, 0),
           currency: 'USD',
           summarizedAt: new Date(),
         };
@@ -235,22 +328,19 @@ export class AnalyticsSummaryService implements OnModuleInit {
             data: summaryData,
           });
         }
-      } catch (error) {
+      } catch (error: unknown) {
+        const errorMessage =
+          error instanceof Error ? error.message : 'Unknown error';
         this.logger.error(
-          `Error updating revenue summaries for organization ${org.id}:`,
-          error,
+          `Error updating revenue summaries for organization ${org.id}: ${errorMessage}`,
         );
       }
     }
   }
 
-  /**
-   * Update pipeline stage summaries
-   */
   async updatePipelineStageSummaries(): Promise<void> {
     this.logger.debug('Updating pipeline stage summaries...');
 
-    // Get all pipelines with their stages
     const pipelines = await this.prisma.pipeline.findMany({
       include: {
         stages: true,
@@ -263,8 +353,9 @@ export class AnalyticsSummaryService implements OnModuleInit {
     for (const pipeline of pipelines) {
       for (const stage of pipeline.stages) {
         try {
-          // Get stage statistics
-          const stageStats = await this.prisma.$queryRaw`
+          const stageStatsResult = await this.prisma.$queryRaw<
+            StageStatsResult[]
+          >`
             SELECT 
               COUNT(*) as deal_count,
               COALESCE(SUM(amount), 0) as total_amount,
@@ -279,14 +370,19 @@ export class AnalyticsSummaryService implements OnModuleInit {
               AND deleted_at IS NULL
           `;
 
-          const stats = stageStats[0] as any;
-          const dealCount = parseInt(stats.deal_count) || 0;
+          const stats =
+            isArray(stageStatsResult) && stageStatsResult.length > 0
+              ? stageStatsResult[0]
+              : null;
 
-          // Simple bottleneck detection: stage has more than 10 deals or average duration > 30 days
-          const isBottleneck =
-            dealCount > 10 || parseFloat(stats.avg_duration_days) > 30;
+          if (!stats) {
+            continue;
+          }
 
-          // For PipelineStageSummary: @@unique([organizationId, pipelineId, stageId, date])
+          const dealCount = toSafeNumber(stats.deal_count, 0);
+          const avgDurationDays = toSafeNumber(stats.avg_duration_days, 0);
+          const isBottleneck = dealCount > 10 || avgDurationDays > 30;
+
           const existing = await this.prisma.pipelineStageSummary.findFirst({
             where: {
               organizationId: pipeline.organizationId,
@@ -302,13 +398,11 @@ export class AnalyticsSummaryService implements OnModuleInit {
             stageId: stage.id,
             date: today,
             dealCount,
-            totalAmount: parseFloat(stats.total_amount) || 0,
-            averageAmount: parseFloat(stats.average_amount) || 0,
-            avgStageDuration: Math.round(
-              parseFloat(stats.avg_duration_days) || 0,
-            ),
+            totalAmount: toSafeNumber(stats.total_amount, 0),
+            averageAmount: toSafeNumber(stats.average_amount, 0),
+            avgStageDuration: Math.round(avgDurationDays),
             maxStageDuration: Math.round(
-              parseFloat(stats.max_duration_days) || 0,
+              toSafeNumber(stats.max_duration_days, 0),
             ),
             isBottleneck,
             summarizedAt: new Date(),
@@ -324,19 +418,17 @@ export class AnalyticsSummaryService implements OnModuleInit {
               data: summaryData,
             });
           }
-        } catch (error) {
+        } catch (error: unknown) {
+          const errorMessage =
+            error instanceof Error ? error.message : 'Unknown error';
           this.logger.error(
-            `Error updating pipeline stage summary for stage ${stage.id}:`,
-            error,
+            `Error updating pipeline stage summary for stage ${stage.id}: ${errorMessage}`,
           );
         }
       }
     }
   }
 
-  /**
-   * Update activity daily summaries
-   */
   async updateActivityDailySummaries(): Promise<void> {
     this.logger.debug('Updating activity daily summaries...');
 
@@ -351,8 +443,9 @@ export class AnalyticsSummaryService implements OnModuleInit {
 
     for (const org of organizations) {
       try {
-        // Get activity counts from audit logs
-        const activityStats = await this.prisma.$queryRaw`
+        const activityStatsResult = await this.prisma.$queryRaw<
+          ActivityStatsResult[]
+        >`
           SELECT 
             COUNT(CASE WHEN action = 'USER_LOGIN' THEN 1 END) as login_count,
             COUNT(CASE WHEN entity_type = 'DEAL' AND action = 'CREATED' THEN 1 END) as deal_created,
@@ -371,9 +464,18 @@ export class AnalyticsSummaryService implements OnModuleInit {
             AND created_at < ${tomorrow}
         `;
 
-        const stats = activityStats[0] as any;
+        const stats =
+          isArray(activityStatsResult) && activityStatsResult.length > 0
+            ? activityStatsResult[0]
+            : null;
 
-        // For ActivityDailySummary: @@unique([organizationId, date])
+        if (!stats) {
+          this.logger.warn(
+            `No activity stats returned for organization ${org.id}`,
+          );
+          continue;
+        }
+
         const existing = await this.prisma.activityDailySummary.findFirst({
           where: {
             organizationId: org.id,
@@ -384,17 +486,17 @@ export class AnalyticsSummaryService implements OnModuleInit {
         const summaryData = {
           organizationId: org.id,
           date: today,
-          loginCount: parseInt(stats.login_count) || 0,
-          dealCreated: parseInt(stats.deal_created) || 0,
-          dealUpdated: parseInt(stats.deal_updated) || 0,
-          dealWon: parseInt(stats.deal_won) || 0,
-          dealLost: parseInt(stats.deal_lost) || 0,
-          contactCreated: parseInt(stats.contact_created) || 0,
-          contactUpdated: parseInt(stats.contact_updated) || 0,
-          leadCreated: parseInt(stats.lead_created) || 0,
-          leadConverted: parseInt(stats.lead_converted) || 0,
-          activeUsers: parseInt(stats.active_users) || 0,
-          totalActions: parseInt(stats.total_actions) || 0,
+          loginCount: toSafeNumber(stats.login_count, 0),
+          dealCreated: toSafeNumber(stats.deal_created, 0),
+          dealUpdated: toSafeNumber(stats.deal_updated, 0),
+          dealWon: toSafeNumber(stats.deal_won, 0),
+          dealLost: toSafeNumber(stats.deal_lost, 0),
+          contactCreated: toSafeNumber(stats.contact_created, 0),
+          contactUpdated: toSafeNumber(stats.contact_updated, 0),
+          leadCreated: toSafeNumber(stats.lead_created, 0),
+          leadConverted: toSafeNumber(stats.lead_converted, 0),
+          activeUsers: toSafeNumber(stats.active_users, 0),
+          totalActions: toSafeNumber(stats.total_actions, 0),
           summarizedAt: new Date(),
         };
 
@@ -408,91 +510,158 @@ export class AnalyticsSummaryService implements OnModuleInit {
             data: summaryData,
           });
         }
-      } catch (error) {
+      } catch (error: unknown) {
+        const errorMessage =
+          error instanceof Error ? error.message : 'Unknown error';
         this.logger.error(
-          `Error updating activity summaries for organization ${org.id}:`,
-          error,
+          `Error updating activity summaries for organization ${org.id}: ${errorMessage}`,
         );
       }
     }
   }
 
-  /**
-   * Get deal analytics from summary tables
-   */
-  async getDealAnalyticsFromSummary(organizationId: string, query: any) {
+  async getDealAnalyticsFromSummary(
+    organizationId: string,
+    query: {
+      startDate?: Date | string;
+      endDate?: Date | string;
+      groupBy?: string;
+    },
+  ) {
     if (!this.isEnabled) {
       throw new Error('Analytics summary service is disabled');
     }
 
     const { startDate, endDate, groupBy = 'day' } = query;
 
-    // Use summary tables for faster queries
+    const whereConditions: {
+      organizationId: string;
+      date?: {
+        gte?: Date;
+        lte?: Date;
+      };
+    } = {
+      organizationId,
+    };
+
+    if (startDate) {
+      whereConditions.date = {
+        ...whereConditions.date,
+        gte: new Date(startDate),
+      };
+    }
+    if (endDate) {
+      whereConditions.date = {
+        ...whereConditions.date,
+        lte: new Date(endDate),
+      };
+    }
+
     const summaries = await this.prisma.dealSummaryDaily.findMany({
-      where: {
-        organizationId,
-        date: {
-          gte: startDate ? new Date(startDate) : undefined,
-          lte: endDate ? new Date(endDate) : undefined,
-        },
-      },
+      where: whereConditions,
       orderBy: { date: 'asc' },
     });
 
-    // Aggregate based on groupBy
-    return this.aggregateSummaries(summaries, groupBy, 'deal');
+    return this.aggregateSummaries(summaries, groupBy);
   }
 
-  /**
-   * Get revenue analytics from summary tables
-   */
-  async getRevenueAnalyticsFromSummary(organizationId: string, query: any) {
+  async getRevenueAnalyticsFromSummary(
+    organizationId: string,
+    query: {
+      startDate?: Date | string;
+      endDate?: Date | string;
+      groupBy?: string;
+      currency?: string;
+    },
+  ) {
     if (!this.isEnabled) {
       throw new Error('Analytics summary service is disabled');
     }
 
-    const { startDate, endDate, groupBy = 'day' } = query;
+    const { startDate, endDate, groupBy = 'day', currency = 'USD' } = query;
+
+    const whereConditions: {
+      organizationId: string;
+      currency: string;
+      date?: {
+        gte?: Date;
+        lte?: Date;
+      };
+    } = {
+      organizationId,
+      currency,
+    };
+
+    if (startDate) {
+      whereConditions.date = {
+        ...whereConditions.date,
+        gte: new Date(startDate),
+      };
+    }
+    if (endDate) {
+      whereConditions.date = {
+        ...whereConditions.date,
+        lte: new Date(endDate),
+      };
+    }
 
     const summaries = await this.prisma.revenueDailySummary.findMany({
-      where: {
-        organizationId,
-        date: {
-          gte: startDate ? new Date(startDate) : undefined,
-          lte: endDate ? new Date(endDate) : undefined,
-        },
-        currency: query.currency || 'USD',
-      },
+      where: whereConditions,
       orderBy: { date: 'asc' },
     });
 
-    return this.aggregateSummaries(summaries, groupBy, 'revenue');
+    return this.aggregateSummaries(summaries, groupBy);
   }
 
-  /**
-   * Helper method to aggregate summaries by time period
-   */
   private aggregateSummaries(
-    summaries: any[],
+    summaries: Array<{
+      date: Date;
+      totalDeals?: number | null;
+      wonDeals?: number | null;
+      lostDeals?: number | null;
+      openDeals?: number | null;
+      totalAmount?: number | null;
+      wonAmount?: number | null;
+      totalRevenue?: number | null;
+      wonRevenue?: number | null;
+      forecastRevenue?: number | null;
+    }>,
     groupBy: string,
-    type: 'deal' | 'revenue',
-  ): any {
+  ): {
+    data: AggregatedData[];
+    source: string;
+    period: string;
+  } {
     if (groupBy === 'day') {
+      const formattedData = summaries.map((summary) => ({
+        period: summary.date.toISOString().split('T')[0],
+        totalDeals: toSafeNumber(summary.totalDeals, 0),
+        wonDeals: toSafeNumber(summary.wonDeals, 0),
+        lostDeals: toSafeNumber(summary.lostDeals, 0),
+        openDeals: toSafeNumber(summary.openDeals, 0),
+        totalAmount: toSafeNumber(summary.totalAmount, 0),
+        wonAmount: toSafeNumber(summary.wonAmount, 0),
+        totalRevenue: toSafeNumber(summary.totalRevenue, 0),
+        wonRevenue: toSafeNumber(summary.wonRevenue, 0),
+        forecastRevenue: toSafeNumber(summary.forecastRevenue, 0),
+        count: 1,
+      }));
+
       return {
-        data: summaries,
+        data: formattedData,
         source: 'summary-tables',
         period: 'day',
       };
     }
 
     // Group by week, month, etc.
-    const aggregated: any = {};
+    const aggregated: Record<string, AggregatedData> = {};
 
-    summaries.forEach((summary) => {
+    for (const summary of summaries) {
       const date = new Date(summary.date);
       let key: string;
 
       if (groupBy === 'week') {
-        // Get week number
         const week = this.getWeekNumber(date);
         key = `${date.getFullYear()}-W${week}`;
       } else if (groupBy === 'month') {
@@ -500,7 +669,7 @@ export class AnalyticsSummaryService implements OnModuleInit {
       } else if (groupBy === 'year') {
         key = date.getFullYear().toString();
       } else {
-        key = date.toISOString().split('T')[0]; // Default to day
+        key = date.toISOString().split('T')[0];
       }
 
       if (!aggregated[key]) {
@@ -520,17 +689,17 @@ export class AnalyticsSummaryService implements OnModuleInit {
       }
 
       const agg = aggregated[key];
-      agg.totalDeals += summary.totalDeals || 0;
-      agg.wonDeals += summary.wonDeals || 0;
-      agg.lostDeals += summary.lostDeals || 0;
-      agg.openDeals += summary.openDeals || 0;
-      agg.totalAmount += parseFloat(summary.totalAmount || 0);
-      agg.wonAmount += parseFloat(summary.wonAmount || 0);
-      agg.totalRevenue += parseFloat(summary.totalRevenue || 0);
-      agg.wonRevenue += parseFloat(summary.wonRevenue || 0);
-      agg.forecastRevenue += parseFloat(summary.forecastRevenue || 0);
+      agg.totalDeals += toSafeNumber(summary.totalDeals, 0);
+      agg.wonDeals += toSafeNumber(summary.wonDeals, 0);
+      agg.lostDeals += toSafeNumber(summary.lostDeals, 0);
+      agg.openDeals += toSafeNumber(summary.openDeals, 0);
+      agg.totalAmount += toSafeNumber(summary.totalAmount, 0);
+      agg.wonAmount += toSafeNumber(summary.wonAmount, 0);
+      agg.totalRevenue += toSafeNumber(summary.totalRevenue, 0);
+      agg.wonRevenue += toSafeNumber(summary.wonRevenue, 0);
+      agg.forecastRevenue += toSafeNumber(summary.forecastRevenue, 0);
       agg.count += 1;
-    });
+    }
 
     return {
       data: Object.values(aggregated),
@@ -539,9 +708,6 @@ export class AnalyticsSummaryService implements OnModuleInit {
     };
   }
 
-  /**
-   * Get week number from date
-   */
   private getWeekNumber(date: Date): number {
     const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
     const pastDaysOfYear =

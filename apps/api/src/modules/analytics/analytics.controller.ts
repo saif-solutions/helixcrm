@@ -1,3 +1,5 @@
+// apps/api/src/modules/analytics/analytics.controller.ts
+
 import {
   Controller,
   Get,
@@ -53,6 +55,10 @@ export class AnalyticsController {
     @Query() query: DealAnalyticsQueryDto,
     @Request() req: any,
   ) {
+    // Request parameter is available for future use (e.g., user context)
+    // Currently unused but kept for consistency with other controllers
+    void req;
+
     // Apply defaults
     const processedQuery = {
       ...query,
@@ -63,8 +69,6 @@ export class AnalyticsController {
       includeVelocity: query.includeVelocity || false,
     };
 
-    // ✅ UPDATED: Remove organizationId parameter
-    // Tenant context is handled by the service layer
     return this.analyticsService.getDealAnalytics(processedQuery);
   }
 
@@ -84,6 +88,10 @@ export class AnalyticsController {
     @Query() query: RevenueAnalyticsQueryDto,
     @Request() req: any,
   ) {
+    // Request parameter is available for future use (e.g., user context)
+    // Currently unused but kept for consistency with other controllers
+    void req;
+
     // Apply defaults
     const processedQuery = {
       ...query,
@@ -95,7 +103,6 @@ export class AnalyticsController {
       currency: query.currency || 'USD',
     };
 
-    // ✅ UPDATED: Remove organizationId parameter
     return this.analyticsService.getRevenueAnalytics(processedQuery);
   }
 
@@ -115,6 +122,10 @@ export class AnalyticsController {
     @Query() query: PipelineAnalyticsQueryDto,
     @Request() req: any,
   ) {
+    // Request parameter is available for future use (e.g., user context)
+    // Currently unused but kept for consistency with other controllers
+    void req;
+
     // Apply defaults
     const processedQuery = {
       ...query,
@@ -123,7 +134,6 @@ export class AnalyticsController {
       durationDays: query.durationDays || 90,
     };
 
-    // ✅ UPDATED: Remove organizationId parameter
     return this.analyticsService.getPipelineAnalytics(processedQuery);
   }
 
@@ -143,6 +153,10 @@ export class AnalyticsController {
     @Query() query: ActivityAnalyticsQueryDto,
     @Request() req: any,
   ) {
+    // Request parameter is available for future use (e.g., user context)
+    // Currently unused but kept for consistency with other controllers
+    void req;
+
     // Apply defaults
     const processedQuery = {
       ...query,
@@ -150,7 +164,6 @@ export class AnalyticsController {
       page: query.page || 1,
     };
 
-    // ✅ UPDATED: Remove organizationId parameter
     return this.analyticsService.getActivityAnalytics(processedQuery);
   }
 
@@ -170,6 +183,10 @@ export class AnalyticsController {
     @Query() query: AnalyticsExportQueryDto,
     @Request() req: any,
   ) {
+    // Request parameter is available for future use (e.g., user context)
+    // Currently unused but kept for consistency with other controllers
+    void req;
+
     // Apply defaults
     const processedQuery = {
       ...query,
@@ -177,7 +194,6 @@ export class AnalyticsController {
       include: query.include || [AnalyticsExportInclude.DEALS],
     };
 
-    // ✅ UPDATED: Use new method
     return this.analyticsService.getAvailableExports(processedQuery);
   }
 
@@ -191,7 +207,10 @@ export class AnalyticsController {
   })
   @RequirePermission('analytics.read')
   async getExportStatus(@Param('jobId') jobId: string, @Request() req: any) {
-    // ✅ UPDATED: Use new method - no organizationId parameter
+    // Request parameter is available for future use (e.g., user context)
+    // Currently unused but kept for consistency with other controllers
+    void req;
+
     return this.analyticsService.getExportStatus(jobId);
   }
 
@@ -212,6 +231,10 @@ export class AnalyticsController {
     @Request() req: any,
     @Res() res: Response,
   ) {
+    // Request parameter is available for future use (e.g., user context)
+    // Currently unused but kept for consistency with other controllers
+    void req;
+
     // Apply defaults
     const processedQuery = {
       ...query,
@@ -219,7 +242,6 @@ export class AnalyticsController {
       include: query.include || [AnalyticsExportInclude.DEALS],
     };
 
-    // ✅ UPDATED: Use new method - no organizationId or userId parameters
     const result =
       await this.analyticsService.createAnalyticsExport(processedQuery);
 
@@ -250,10 +272,13 @@ export class AnalyticsController {
     @Request() req: any,
     @Res() res: Response,
   ) {
+    // Request parameter is available for future use (e.g., user context)
+    // Currently unused but kept for consistency with other controllers
+    void req;
+
     // Extract jobId from token (token format: token-{jobId})
     const jobId = token.replace('token-', '');
 
-    // ✅ UPDATED: Use new method - no organizationId or userId parameters
     const exportData = await this.analyticsService.downloadExport(jobId, token);
 
     // Set appropriate headers based on content type

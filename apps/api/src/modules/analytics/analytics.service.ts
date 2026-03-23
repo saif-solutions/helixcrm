@@ -1,3 +1,5 @@
+// apps/api/src/modules/analytics/analytics.service.ts
+
 import {
   Injectable,
   Logger,
@@ -31,11 +33,64 @@ import {
   PipelineAnalyticsQueryDto,
   ActivityAnalyticsQueryDto,
   AnalyticsExportQueryDto,
-  AnalyticsGroupBy,
   ExportFormat,
-  AnalyticsExportInclude,
-  ActivityType,
 } from './dto/analytics-query.dto';
+import * as crypto from 'crypto';
+
+// Define interfaces for better type safety
+interface AnalyticsResult<T = Record<string, unknown>> {
+  data: T;
+  source: 'summary-tables' | 'operational-tables';
+}
+
+interface ExportJob {
+  id: string;
+  type: string;
+  status: string;
+  format: ExportFormat;
+  createdAt: Date;
+  createdBy: string;
+  tenantId: string;
+}
+
+interface JobStatus {
+  id: string;
+  status: string;
+  progress: number;
+  createdAt: Date;
+  completedAt?: Date;
+  result?: {
+    filename: string;
+    size: string;
+  };
+}
+
+interface ExportData {
+  format: ExportFormat;
+  filename: string;
+  contentType: string;
+  data: string;
+}
+
+// Helper function for safe error message extraction
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === 'string') {
+    return error;
+  }
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return 'Unknown error occurred';
+  }
+}
+
+// Type guard to check if value is a record
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
 
 @Injectable()
 export class AnalyticsService {
@@ -48,10 +103,8 @@ export class AnalyticsService {
     private readonly appLogger: AppLogger,
     private readonly configService: ConfigService,
     private readonly analyticsSummaryService: AnalyticsSummaryService,
-    // Context Services
     private readonly tenantContext: TenantContextService,
     private readonly permissionContext: PermissionContextService,
-    // Repositories
     private readonly analyticsRepository: AnalyticsRepository,
     private readonly analyticsSummaryRepository: AnalyticsSummaryRepository,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
@@ -70,18 +123,27 @@ export class AnalyticsService {
         where: { id: userId },
         select: { email: true },
       });
-      return user?.email || 'system@unknown';
-    } catch (error) {
+      return user?.email ?? 'system@unknown';
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       this.logger.warn(
-        `Failed to fetch user email for ${userId}: ${error.message}`,
+        `Failed to fetch user email for ${userId}: ${errorMessage}`,
       );
       return 'system@unknown';
     }
   }
 
+  private buildCacheKey(prefix: string, query: unknown): string {
+    const tenantId = this.tenantContext.getTenantId();
+    const queryStr = JSON.stringify(query);
+    const hash = crypto.createHash('md5').update(queryStr).digest('hex');
+    return `analytics:${prefix}:${tenantId}:${hash}`;
+  }
+
   // ==================== DEAL ANALYTICS ====================
-  async getDealAnalytics(query: DealAnalyticsQueryDto) {
-    // 1. PERMISSION CHECK - FIXED: 'analytics.read' → 'report:read'
+  async getDealAnalytics(
+    query: DealAnalyticsQueryDto,
+  ): Promise<AnalyticsResult> {
     if (!this.permissionContext.hasPermission('report:read')) {
       throw new ForbiddenException(
         'Insufficient permissions: report:read required',
@@ -93,7 +155,6 @@ export class AnalyticsService {
     const userId = this.tenantContext.getUserId();
 
     try {
-      // 2. BUSINESS LOGIC WITH SUMMARY FALLBACK PATTERN
       if (this.useSummaryTables && !query.includeVelocity) {
         try {
           this.logger.debug(
@@ -104,41 +165,41 @@ export class AnalyticsService {
               query,
             );
 
-          // Add source indicator
-          const finalResult = {
-            ...result,
+          // Safe type conversion with runtime check
+          const safeData = isRecord(result) ? result : {};
+
+          return {
+            data: safeData,
             source: 'summary-tables',
           };
-
-          return finalResult;
-        } catch (summaryError) {
+        } catch (summaryError: unknown) {
+          const errorMessage = getErrorMessage(summaryError);
           this.logger.warn(
             'Summary table query failed, falling back to operational tables',
             {
               tenantId,
-              error: summaryError.message,
+              error: errorMessage,
               query,
             },
           );
-          // Fall through to operational query
         }
       }
 
-      // 3. OPERATIONAL PATH
       const result =
         await this.analyticsRepository.getDealAnalyticsFromOperational(query);
 
-      const finalResult = {
-        ...result,
+      // Safe type conversion with runtime check
+      const safeData = isRecord(result) ? result : {};
+
+      return {
+        data: safeData,
         source: 'operational-tables',
       };
-
-      return finalResult;
-    } catch (error: any) {
-      // 4. ENTERPRISE ERROR HANDLING
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       this.logger.error(
-        `getDealAnalytics failed: ${error.message}`,
-        error.stack,
+        `getDealAnalytics failed: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
         {
           tenantId,
           userId,
@@ -147,7 +208,6 @@ export class AnalyticsService {
         },
       );
 
-      // Preserve existing error types
       if (
         error instanceof NotFoundException ||
         error instanceof ForbiddenException ||
@@ -158,7 +218,6 @@ export class AnalyticsService {
 
       throw new BadRequestException('Failed to retrieve deal analytics');
     } finally {
-      // 5. PERFORMANCE MONITORING
       const duration = Date.now() - startTime;
       const performance =
         duration > 2000 ? 'slow' : duration > 1000 ? 'warning' : 'normal';
@@ -173,8 +232,9 @@ export class AnalyticsService {
   }
 
   // ==================== REVENUE ANALYTICS ====================
-  async getRevenueAnalytics(query: RevenueAnalyticsQueryDto) {
-    // 1. PERMISSION CHECK - FIXED: 'analytics.read' → 'report:read'
+  async getRevenueAnalytics(
+    query: RevenueAnalyticsQueryDto,
+  ): Promise<AnalyticsResult> {
     if (!this.permissionContext.hasPermission('report:read')) {
       throw new ForbiddenException(
         'Insufficient permissions: report:read required',
@@ -186,7 +246,6 @@ export class AnalyticsService {
     const userId = this.tenantContext.getUserId();
 
     try {
-      // 2. BUSINESS LOGIC WITH SUMMARY FALLBACK
       if (this.useSummaryTables) {
         try {
           this.logger.debug(
@@ -197,38 +256,40 @@ export class AnalyticsService {
               query,
             );
 
-          const finalResult = {
-            ...result,
+          // Safe type conversion with runtime check
+          const safeData = isRecord(result) ? result : {};
+
+          return {
+            data: safeData,
             source: 'summary-tables',
           };
-
-          return finalResult;
-        } catch (summaryError) {
+        } catch (summaryError: unknown) {
+          const errorMessage = getErrorMessage(summaryError);
           this.logger.warn('Revenue summary table query failed', {
             tenantId,
-            error: summaryError.message,
+            error: errorMessage,
             query,
           });
         }
       }
 
-      // 3. OPERATIONAL PATH
       const result =
         await this.analyticsRepository.getRevenueAnalyticsFromOperational(
           query,
         );
 
-      const finalResult = {
-        ...result,
+      // Safe type conversion with runtime check
+      const safeData = isRecord(result) ? result : {};
+
+      return {
+        data: safeData,
         source: 'operational-tables',
       };
-
-      return finalResult;
-    } catch (error: any) {
-      // 4. ERROR HANDLING
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       this.logger.error(
-        `getRevenueAnalytics failed: ${error.message}`,
-        error.stack,
+        `getRevenueAnalytics failed: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
         {
           tenantId,
           userId,
@@ -247,7 +308,6 @@ export class AnalyticsService {
 
       throw new BadRequestException('Failed to retrieve revenue analytics');
     } finally {
-      // 5. PERFORMANCE MONITORING
       const duration = Date.now() - startTime;
       const performance =
         duration > 2000 ? 'slow' : duration > 1000 ? 'warning' : 'normal';
@@ -262,8 +322,9 @@ export class AnalyticsService {
   }
 
   // ==================== PIPELINE ANALYTICS ====================
-  async getPipelineAnalytics(query: PipelineAnalyticsQueryDto) {
-    // 1. PERMISSION CHECK - FIXED: 'analytics.read' → 'report:read'
+  async getPipelineAnalytics(
+    query: PipelineAnalyticsQueryDto,
+  ): Promise<AnalyticsResult> {
     if (!this.permissionContext.hasPermission('report:read')) {
       throw new ForbiddenException(
         'Insufficient permissions: report:read required',
@@ -275,52 +336,50 @@ export class AnalyticsService {
     const userId = this.tenantContext.getUserId();
 
     try {
-      // 2. TRY SUMMARY TABLES FIRST
       if (this.useSummaryTables) {
         try {
           this.logger.debug(
             'Attempting to use summary tables for pipeline analytics',
           );
-
-          // Note: The summary repository should handle this
-          // If there's no dedicated summary method, we'll use operational
           const result =
             await this.analyticsRepository.getPipelineAnalyticsFromOperational(
               query,
             );
 
-          const finalResult = {
-            ...result,
+          // Safe type conversion with runtime check
+          const safeData = isRecord(result) ? result : {};
+
+          return {
+            data: safeData,
             source: 'operational-tables',
           };
-
-          return finalResult;
-        } catch (summaryError) {
+        } catch (summaryError: unknown) {
+          const errorMessage = getErrorMessage(summaryError);
           this.logger.warn('Pipeline summary table query failed:', {
             tenantId,
-            error: summaryError.message,
+            error: errorMessage,
             query,
           });
         }
       }
 
-      // 3. FALLBACK TO OPERATIONAL
       const result =
         await this.analyticsRepository.getPipelineAnalyticsFromOperational(
           query,
         );
 
-      const finalResult = {
-        ...result,
+      // Safe type conversion with runtime check
+      const safeData = isRecord(result) ? result : {};
+
+      return {
+        data: safeData,
         source: 'operational-tables',
       };
-
-      return finalResult;
-    } catch (error: any) {
-      // 4. ERROR HANDLING
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       this.logger.error(
-        `getPipelineAnalytics failed: ${error.message}`,
-        error.stack,
+        `getPipelineAnalytics failed: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
         {
           tenantId,
           userId,
@@ -339,7 +398,6 @@ export class AnalyticsService {
 
       throw new BadRequestException('Failed to retrieve pipeline analytics');
     } finally {
-      // 5. PERFORMANCE MONITORING
       const duration = Date.now() - startTime;
       const performance =
         duration > 2000 ? 'slow' : duration > 1000 ? 'warning' : 'normal';
@@ -354,8 +412,9 @@ export class AnalyticsService {
   }
 
   // ==================== ACTIVITY ANALYTICS ====================
-  async getActivityAnalytics(query: ActivityAnalyticsQueryDto) {
-    // 1. PERMISSION CHECK - FIXED: 'analytics.read' → 'report:read'
+  async getActivityAnalytics(
+    query: ActivityAnalyticsQueryDto,
+  ): Promise<AnalyticsResult> {
     if (!this.permissionContext.hasPermission('report:read')) {
       throw new ForbiddenException(
         'Insufficient permissions: report:read required',
@@ -367,7 +426,6 @@ export class AnalyticsService {
     const userId = this.tenantContext.getUserId();
 
     try {
-      // 2. TRY SUMMARY TABLES FIRST
       if (this.useSummaryTables) {
         try {
           this.logger.debug(
@@ -378,38 +436,40 @@ export class AnalyticsService {
               query,
             );
 
-          const finalResult = {
-            ...result,
+          // Safe type conversion with runtime check
+          const safeData = isRecord(result) ? result : {};
+
+          return {
+            data: safeData,
             source: 'operational-tables',
           };
-
-          return finalResult;
-        } catch (summaryError) {
+        } catch (summaryError: unknown) {
+          const errorMessage = getErrorMessage(summaryError);
           this.logger.warn('Activity summary table query failed:', {
             tenantId,
-            error: summaryError.message,
+            error: errorMessage,
             query,
           });
         }
       }
 
-      // 3. FALLBACK TO OPERATIONAL
       const result =
         await this.analyticsRepository.getActivityAnalyticsFromOperational(
           query,
         );
 
-      const finalResult = {
-        ...result,
+      // Safe type conversion with runtime check
+      const safeData = isRecord(result) ? result : {};
+
+      return {
+        data: safeData,
         source: 'operational-tables',
       };
-
-      return finalResult;
-    } catch (error: any) {
-      // 4. ERROR HANDLING
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       this.logger.error(
-        `getActivityAnalytics failed: ${error.message}`,
-        error.stack,
+        `getActivityAnalytics failed: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
         {
           tenantId,
           userId,
@@ -428,7 +488,6 @@ export class AnalyticsService {
 
       throw new BadRequestException('Failed to retrieve activity analytics');
     } finally {
-      // 5. PERFORMANCE MONITORING
       const duration = Date.now() - startTime;
       const performance =
         duration > 2000 ? 'slow' : duration > 1000 ? 'warning' : 'normal';
@@ -444,8 +503,13 @@ export class AnalyticsService {
 
   // ==================== EXPORT FUNCTIONS ====================
 
-  async createAnalyticsExport(query: AnalyticsExportQueryDto) {
-    // 1. PERMISSION CHECK - FIXED: 'analytics.export' → 'report:export'
+  async createAnalyticsExport(query: AnalyticsExportQueryDto): Promise<{
+    jobId: string;
+    status: string;
+    message: string;
+    estimatedCompletion: string;
+    downloadToken: string;
+  }> {
     if (!this.permissionContext.hasPermission('report:export')) {
       throw new ForbiddenException(
         'Insufficient permissions: report:export required',
@@ -457,33 +521,29 @@ export class AnalyticsService {
     const userId = this.tenantContext.getUserId();
 
     try {
-      // 2. VALIDATE EXPORT QUEUE AVAILABILITY
       if (!this.exportQueue) {
         throw new BadRequestException('Export functionality is not available');
       }
 
-      // 3. GET AVAILABLE EXPORTS FROM REPOSITORY
-      const availableExports =
-        await this.analyticsRepository.getAvailableExports(
-          query,
-          tenantId,
-          userId,
-        );
+      // This validates the query but we don't need the result
+      await this.analyticsRepository.getAvailableExports(
+        query,
+        tenantId,
+        userId,
+      );
 
-      // 4. BUSINESS LOGIC (Simplified - in production this would queue a job)
-      const exportJob = {
-        id: `export-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      const exportJob: ExportJob = {
+        id: `export-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
         type: 'analytics',
         status: 'pending',
-        format: query.format || ExportFormat.CSV,
+        format: query.format ?? ExportFormat.CSV,
         createdAt: new Date(),
         createdBy: userId,
         tenantId,
       };
 
-      // 5. AUDIT LOG
       await this.auditLogService.logEvent({
-        action: 'ANALYTICS_EXPORT_REQUESTED', // or appropriate action from AuditAction enum
+        action: 'ANALYTICS_EXPORT_REQUESTED' as AuditAction,
         entityType: 'ExportJob' as AuditEntityType,
         actorEmail: await this.getUserEmail(userId),
         actorUserId: userId,
@@ -504,11 +564,11 @@ export class AnalyticsService {
         estimatedCompletion: '2 minutes',
         downloadToken: `token-${exportJob.id}`,
       };
-    } catch (error: any) {
-      // 6. ERROR HANDLING
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       this.logger.error(
-        `createAnalyticsExport failed: ${error.message}`,
-        error.stack,
+        `createAnalyticsExport failed: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
         {
           tenantId,
           userId,
@@ -527,7 +587,6 @@ export class AnalyticsService {
 
       throw new BadRequestException('Failed to create export job');
     } finally {
-      // 7. PERFORMANCE MONITORING
       const duration = Date.now() - startTime;
       const performance =
         duration > 2000 ? 'slow' : duration > 1000 ? 'warning' : 'normal';
@@ -540,8 +599,7 @@ export class AnalyticsService {
     }
   }
 
-  async getExportStatus(jobId: string) {
-    // 1. PERMISSION CHECK - FIXED: 'analytics.read' → 'report:read'
+  async getExportStatus(jobId: string): Promise<JobStatus> {
     if (!this.permissionContext.hasPermission('report:read')) {
       throw new ForbiddenException(
         'Insufficient permissions: report:read required',
@@ -553,17 +611,16 @@ export class AnalyticsService {
     const userId = this.tenantContext.getUserId();
 
     try {
-      // 2. VALIDATE EXPORT QUEUE
       if (!this.exportQueue) {
         throw new BadRequestException('Export functionality is not available');
       }
 
-      // 3. SIMULATED JOB STATUS (In production, fetch from BullMQ)
-      const jobStatus = {
+      // Simulate async operation - in production, this would fetch from BullMQ or database
+      const jobStatus: JobStatus = {
         id: jobId,
         status: 'completed',
         progress: 100,
-        createdAt: new Date(Date.now() - 60000), // 1 minute ago
+        createdAt: new Date(Date.now() - 60000),
         completedAt: new Date(),
         result: {
           filename: `analytics-export-${jobId}.csv`,
@@ -571,23 +628,15 @@ export class AnalyticsService {
         },
       };
 
-      if (!jobStatus) {
-        throw new NotFoundException('Export job not found');
-      }
+      // Simulate async delay for realistic behavior
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
-      return {
-        jobId: jobStatus.id,
-        status: jobStatus.status,
-        progress: jobStatus.progress,
-        createdAt: jobStatus.createdAt,
-        completedAt: jobStatus.completedAt,
-        result: jobStatus.result,
-      };
-    } catch (error: any) {
-      // 4. ERROR HANDLING
+      return jobStatus;
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       this.logger.error(
-        `getExportStatus failed: ${error.message}`,
-        error.stack,
+        `getExportStatus failed: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
         {
           tenantId,
           userId,
@@ -596,17 +645,18 @@ export class AnalyticsService {
         },
       );
 
-      if (
-        error instanceof NotFoundException ||
-        error instanceof ForbiddenException ||
-        error instanceof BadRequestException
-      ) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      if (error instanceof ForbiddenException) {
+        throw error;
+      }
+      if (error instanceof BadRequestException) {
         throw error;
       }
 
       throw new BadRequestException('Failed to retrieve export status');
     } finally {
-      // 5. PERFORMANCE MONITORING
       const duration = Date.now() - startTime;
       const performance =
         duration > 2000 ? 'slow' : duration > 1000 ? 'warning' : 'normal';
@@ -619,8 +669,7 @@ export class AnalyticsService {
     }
   }
 
-  async downloadExport(jobId: string, token: string) {
-    // 1. PERMISSION CHECK - FIXED: 'analytics.export' → 'report:export'
+  async downloadExport(jobId: string, token: string): Promise<ExportData> {
     if (!this.permissionContext.hasPermission('report:export')) {
       throw new ForbiddenException(
         'Insufficient permissions: report:export required',
@@ -632,27 +681,23 @@ export class AnalyticsService {
     const userId = this.tenantContext.getUserId();
 
     try {
-      // 2. VALIDATE EXPORT QUEUE
       if (!this.exportQueue) {
         throw new BadRequestException('Export functionality is not available');
       }
 
-      // 3. VALIDATE TOKEN (In production, implement proper token validation)
-      if (!token || !token.startsWith('token-')) {
+      if (!token?.startsWith('token-')) {
         throw new ForbiddenException('Invalid or expired download token');
       }
 
-      // 4. GET EXPORT DATA (Simplified)
-      const exportData = {
+      const exportData: ExportData = {
         format: ExportFormat.CSV,
         filename: `analytics-export-${jobId}.csv`,
         contentType: 'text/csv',
         data: 'deal_id,amount,status,created_at\n1,10000,won,2024-01-01\n2,5000,open,2024-01-02',
       };
 
-      // 5. AUDIT LOG
       await this.auditLogService.logEvent({
-        action: 'ANALYTICS_EXPORT_DOWNLOADED', // or appropriate action from AuditAction enum
+        action: 'ANALYTICS_EXPORT_DOWNLOADED' as AuditAction,
         entityType: 'ExportJob' as AuditEntityType,
         actorEmail: await this.getUserEmail(userId),
         actorUserId: userId,
@@ -665,16 +710,12 @@ export class AnalyticsService {
         organizationId: tenantId,
       });
 
-      return {
-        filename: exportData.filename,
-        contentType: exportData.contentType,
-        data: exportData.data,
-      };
-    } catch (error: any) {
-      // 6. ERROR HANDLING
+      return exportData;
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       this.logger.error(
-        `downloadExport failed: ${error.message}`,
-        error.stack,
+        `downloadExport failed: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
         {
           tenantId,
           userId,
@@ -693,7 +734,6 @@ export class AnalyticsService {
 
       throw new BadRequestException('Failed to download export');
     } finally {
-      // 7. PERFORMANCE MONITORING
       const duration = Date.now() - startTime;
       const performance =
         duration > 2000 ? 'slow' : duration > 1000 ? 'warning' : 'normal';
@@ -706,8 +746,7 @@ export class AnalyticsService {
     }
   }
 
-  async getAvailableExports(query: AnalyticsExportQueryDto) {
-    // 1. PERMISSION CHECK - FIXED: 'analytics.read' → 'report:read'
+  async getAvailableExports(query: AnalyticsExportQueryDto): Promise<unknown> {
     if (!this.permissionContext.hasPermission('report:read')) {
       throw new ForbiddenException(
         'Insufficient permissions: report:read required',
@@ -719,24 +758,20 @@ export class AnalyticsService {
     const userId = this.tenantContext.getUserId();
 
     try {
-      // 2. VALIDATE EXPORT QUEUE
       if (!this.exportQueue) {
         throw new BadRequestException('Export functionality is not available');
       }
 
-      // 3. GET EXPORTS FROM REPOSITORY
-      const exports = await this.analyticsRepository.getAvailableExports(
+      return await this.analyticsRepository.getAvailableExports(
         query,
         tenantId,
         userId,
       );
-
-      return exports;
-    } catch (error: any) {
-      // 4. ERROR HANDLING
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       this.logger.error(
-        `getAvailableExports failed: ${error.message}`,
-        error.stack,
+        `getAvailableExports failed: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
         {
           tenantId,
           userId,
@@ -755,7 +790,6 @@ export class AnalyticsService {
 
       throw new BadRequestException('Failed to retrieve available exports');
     } finally {
-      // 5. PERFORMANCE MONITORING
       const duration = Date.now() - startTime;
       const performance =
         duration > 2000 ? 'slow' : duration > 1000 ? 'warning' : 'normal';
@@ -768,110 +802,35 @@ export class AnalyticsService {
     }
   }
 
-  // ==================== HELPER METHODS ====================
+  // ==================== LEGACY METHODS FOR BACKWARD COMPATIBILITY ====================
 
-  private buildCacheKey(prefix: string, query: any): string {
-    // USE TENANT ID FROM CONTEXT, NOT PARAMETER
-    const tenantId = this.tenantContext.getTenantId();
-    const queryStr = JSON.stringify(query);
-    const hash = require('crypto')
-      .createHash('md5')
-      .update(queryStr)
-      .digest('hex');
-    return `analytics:${prefix}:${tenantId}:${hash}`;
-  }
-
-  // NOTE: The following private methods are DEPRECATED and should be removed
-  // They should be handled by the repositories instead
-  // Keeping them temporarily for backward compatibility
-
-  private async getDealAnalyticsFromSummary(
-    organizationId: string,
-    query: any,
-  ): Promise<any> {
-    this.logger.warn(
-      'DEPRECATED: getDealAnalyticsFromSummary called - use repository instead',
-    );
-    throw new Error(
-      'Method deprecated - use analyticsSummaryRepository.getDealAnalyticsFromSummary',
-    );
-  }
-
-  private async getDealAnalyticsFromOperational(
-    organizationId: string,
-    query: any,
-  ): Promise<any> {
-    this.logger.warn(
-      'DEPRECATED: getDealAnalyticsFromOperational called - use repository instead',
-    );
-    throw new Error(
-      'Method deprecated - use analyticsRepository.getDealAnalyticsFromOperational',
-    );
-  }
-
-  private async getRevenueAnalyticsFromSummary(
-    organizationId: string,
-    query: any,
-  ): Promise<any> {
-    this.logger.warn(
-      'DEPRECATED: getRevenueAnalyticsFromSummary called - use repository instead',
-    );
-    throw new Error(
-      'Method deprecated - use analyticsSummaryRepository.getRevenueAnalyticsFromSummary',
-    );
-  }
-
-  private buildDealWhereClause(organizationId: string, query: any) {
-    this.logger.warn(
-      'DEPRECATED: buildDealWhereClause called - repository handles filtering',
-    );
-    return {};
-  }
-
-  private async getPipelineDataFromSummary(
-    organizationId: string,
-    query: any,
-  ): Promise<any> {
-    this.logger.warn(
-      'DEPRECATED: getPipelineDataFromSummary called - use repository instead',
-    );
-    throw new Error('Method deprecated - repository handles this');
-  }
-
-  private async getActivityAnalyticsFromSummary(
-    organizationId: string,
-    query: any,
-  ): Promise<any> {
-    this.logger.warn(
-      'DEPRECATED: getActivityAnalyticsFromSummary called - use repository instead',
-    );
-    throw new Error(
-      'Method deprecated - use analyticsRepository.getActivityAnalyticsFromOperational',
-    );
-  }
-
-  private async getActivityAnalyticsFromOperational(
-    organizationId: string,
-    query: any,
-  ): Promise<any> {
-    this.logger.warn(
-      'DEPRECATED: getActivityAnalyticsFromOperational called - use repository instead',
-    );
-    throw new Error(
-      'Method deprecated - use analyticsRepository.getActivityAnalyticsFromOperational',
-    );
-  }
-
-  // Legacy methods for backward compatibility
+  /**
+   * @deprecated Use createAnalyticsExport instead
+   */
   async queueExportJob(
     organizationId: string,
     userId: string,
-    query: any,
-  ): Promise<any> {
+    query: {
+      format?: ExportFormat;
+      include?: string[];
+      startDate?: Date;
+      endDate?: Date;
+    },
+  ): Promise<{
+    jobId: string;
+    status: string;
+    message: string;
+    estimatedCompletion: string;
+    downloadToken: string;
+  }> {
     this.logger.warn(
-      'DEPRECATED: queueExportJob called with organizationId parameter',
+      'DEPRECATED: queueExportJob called - use createAnalyticsExport instead',
     );
-    // Convert to new format
+    // These parameters are intentionally unused in the deprecated method
+    // They are kept for backward compatibility but not used in the implementation
+    void organizationId;
+    void userId;
+
     const exportQuery: AnalyticsExportQueryDto = {
       format: query.format,
       include: query.include,
@@ -881,15 +840,26 @@ export class AnalyticsService {
     return this.createAnalyticsExport(exportQuery);
   }
 
+  /**
+   * @deprecated Use downloadExport instead
+   */
   async getExportData(
     token: string,
     organizationId: string,
     userId: string,
-  ): Promise<any> {
+  ): Promise<{
+    format: ExportFormat;
+    exportId: string;
+    data: string;
+  }> {
     this.logger.warn(
-      'DEPRECATED: getExportData called with organizationId parameter',
+      'DEPRECATED: getExportData called - use downloadExport instead',
     );
-    // Extract jobId from token
+    // These parameters are intentionally unused in the deprecated method
+    // They are kept for backward compatibility but not used in the implementation
+    void organizationId;
+    void userId;
+
     const jobId = token.replace('token-', '');
     const result = await this.downloadExport(jobId, token);
     return {

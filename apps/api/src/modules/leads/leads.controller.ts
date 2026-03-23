@@ -18,64 +18,91 @@ import {
   HttpStatus,
   UsePipes,
   ValidationPipe,
+  ParseUUIDPipe,
   ForbiddenException,
 } from '@nestjs/common';
 import { AuthGuard } from '../../shared/guards/auth.guard';
 import { TenantGuard } from '../../shared/guards/tenant.guard';
-import { PermissionGuard } from '../../shared/guards/permission.guard'; // ✅ ADD THIS
+import { PermissionGuard } from '../../shared/guards/permission.guard';
 import { RequirePermission } from '../../shared/decorators/require-permission.decorator';
 import { LeadsService } from './leads.service';
-import { CreateLeadDto, LeadStatus } from './dto/create-lead.dto';
+import { CreateLeadDto } from './dto/create-lead.dto';
 import { UpdateLeadDto } from './dto/update-lead.dto';
 import { LeadStatus as PrismaLeadStatus } from '@prisma/client';
-import { PermissionContextService } from '../../shared/permissions/context/permission-context.service'; // ✅ ADD THIS
+import { PermissionContextService } from '../../shared/permissions/context/permission-context.service';
+
+// Define interface for authenticated request user
+interface AuthenticatedUser {
+  sub: string;
+  organizationId?: string;
+  org?: string;
+  email?: string;
+  roles?: string[];
+  permissions?: string[];
+}
+
+// Define extended Request type with user property
+interface AuthenticatedRequest extends Request {
+  user: AuthenticatedUser;
+}
 
 @Controller('leads')
-@UseGuards(AuthGuard, TenantGuard, PermissionGuard) // ✅ ADD PermissionGuard here
+@UseGuards(AuthGuard, TenantGuard, PermissionGuard)
 export class LeadsController {
   constructor(
     private readonly leadsService: LeadsService,
-    private readonly permissionContext: PermissionContextService, // ✅ ADD THIS
+    private readonly permissionContext: PermissionContextService,
   ) {}
+
+  private validatePermissionContext(): void {
+    if (!this.permissionContext.isInitialized()) {
+      throw new ForbiddenException('Permission context not initialized');
+    }
+  }
+
+  private extractUserFromRequest(req: AuthenticatedRequest): AuthenticatedUser {
+    return req.user;
+  }
+
+  private extractTenantId(user: AuthenticatedUser): string {
+    const tenantId = user.organizationId ?? user.org;
+    if (!tenantId) {
+      throw new ForbiddenException(
+        'Tenant context missing - cannot process request',
+      );
+    }
+    return tenantId;
+  }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @UsePipes(ValidationPipe)
   @RequirePermission('lead:write')
-  create(@Body() createLeadDto: CreateLeadDto, @Req() req: Request) {
-    // ✅ Force PermissionGuard to run
-    if (!this.permissionContext.isInitialized()) {
-      throw new ForbiddenException('Permission context not initialized');
-    }
-    const user = (req as any).user;
+  create(
+    @Body() createLeadDto: CreateLeadDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    this.validatePermissionContext();
+    const user = this.extractUserFromRequest(req);
     return this.leadsService.create(createLeadDto, user.sub);
   }
 
   @Get()
   @RequirePermission('lead:read')
   async findAll(
-    @Req() req: Request,
+    @Req() req: AuthenticatedRequest,
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
     @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
     @Query('status') status?: string,
     @Query('search') search?: string,
   ) {
-    if (!this.permissionContext.isInitialized()) {
-      throw new ForbiddenException('Permission context not initialized');
-    }
+    this.validatePermissionContext();
+    const user = this.extractUserFromRequest(req);
+    this.extractTenantId(user); // Validate tenant exists
 
-    const user = (req as any).user;
-    const tenantId = user?.organizationId || user?.org;
+    const sanitizedLimit = Math.min(limit, 100);
 
-    if (!tenantId) {
-      throw new ForbiddenException(
-        'Tenant context missing - cannot process request',
-      );
-    }
-
-    limit = Math.min(limit, 100);
-
-    let statusEnum: PrismaLeadStatus | undefined = undefined;
+    let statusEnum: PrismaLeadStatus | undefined;
     if (status) {
       const validStatuses = Object.values(PrismaLeadStatus);
       if (validStatuses.includes(status as PrismaLeadStatus)) {
@@ -85,7 +112,7 @@ export class LeadsController {
 
     return this.leadsService.findAll({
       page,
-      limit,
+      limit: sanitizedLimit,
       status: statusEnum,
       search,
     });
@@ -93,19 +120,20 @@ export class LeadsController {
 
   @Get('stats')
   @RequirePermission('report:read')
-  getStats() {
-    if (!this.permissionContext.isInitialized()) {
-      throw new ForbiddenException('Permission context not initialized');
-    }
+  getStats(@Req() req: AuthenticatedRequest) {
+    this.validatePermissionContext();
+    this.extractUserFromRequest(req);
     return this.leadsService.getStats();
   }
 
   @Get(':id')
   @RequirePermission('lead:read')
-  findOne(@Param('id') id: string) {
-    if (!this.permissionContext.isInitialized()) {
-      throw new ForbiddenException('Permission context not initialized');
-    }
+  findOne(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    this.validatePermissionContext();
+    this.extractUserFromRequest(req);
     return this.leadsService.findOne(id);
   }
 
@@ -115,25 +143,24 @@ export class LeadsController {
   )
   @RequirePermission('lead:write')
   update(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() updateLeadDto: UpdateLeadDto,
-    @Req() req: Request,
+    @Req() req: AuthenticatedRequest,
   ) {
-    if (!this.permissionContext.isInitialized()) {
-      throw new ForbiddenException('Permission context not initialized');
-    }
-    const user = (req as any).user;
+    this.validatePermissionContext();
+    const user = this.extractUserFromRequest(req);
     return this.leadsService.update(id, updateLeadDto, user.sub);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @RequirePermission('lead:delete')
-  remove(@Param('id') id: string, @Req() req: Request) {
-    if (!this.permissionContext.isInitialized()) {
-      throw new ForbiddenException('Permission context not initialized');
-    }
-    const user = (req as any).user;
+  remove(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    this.validatePermissionContext();
+    const user = this.extractUserFromRequest(req);
     return this.leadsService.remove(id, user.sub);
   }
 }

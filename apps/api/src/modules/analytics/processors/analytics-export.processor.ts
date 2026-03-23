@@ -1,3 +1,5 @@
+// apps/api/src/modules/analytics/processors/analytics-export.processor.ts
+
 import { Processor, WorkerHost, OnWorkerEvent } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { Injectable, Logger } from '@nestjs/common';
@@ -9,14 +11,37 @@ import {
   AuditEntityType,
 } from '../../../shared/audit-log/audit-log.service';
 
+// Define types for export job data
 export interface AnalyticsExportJobData {
   exportId: string;
   organizationId: string;
   userId: string;
   format: 'csv' | 'json';
-  queryParams: any;
+  queryParams: Record<string, unknown>;
   downloadToken: string;
   requestedAt: string;
+}
+
+// Define types for export data result
+interface ExportDataResult {
+  data: string;
+  fileSize: number;
+  recordCount: number;
+}
+
+// Helper function for safe error message extraction
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === 'string') {
+    return error;
+  }
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return 'Unknown error occurred';
+  }
 }
 
 @Processor('analytics-export')
@@ -31,15 +56,10 @@ export class AnalyticsExportProcessor extends WorkerHost {
     super();
   }
 
-  async process(job: Job<AnalyticsExportJobData>): Promise<any> {
-    const {
-      exportId,
-      organizationId,
-      userId,
-      format,
-      queryParams,
-      downloadToken,
-    } = job.data;
+  async process(
+    job: Job<AnalyticsExportJobData>,
+  ): Promise<Record<string, unknown>> {
+    const { exportId, organizationId, userId, format, queryParams } = job.data;
 
     this.logger.log(
       `Processing export job ${job.id} for organization ${organizationId}`,
@@ -52,24 +72,28 @@ export class AnalyticsExportProcessor extends WorkerHost {
       // 2. Update export status to processing
       await this.updateExportStatus(exportId, 'processing');
 
-      // 3. Fetch analytics data based on queryParams
-      const exportData = await this.generateExportData(
+      // 3. Fetch analytics data based on queryParams (synchronous)
+      const exportData = this.generateExportData(
         organizationId,
         queryParams,
         format,
       );
 
       // 4. Store export result (in Phase 3.4 - in-memory; Phase 3.6+ - S3/filesystem)
-      const filePath = await this.storeExport(exportId, exportData, format);
+      const filePath = await this.storeExport(
+        exportId,
+        exportData.data,
+        format,
+      );
 
       // 5. Update export record with completion details
       await this.completeExport(exportId, filePath, exportData.recordCount);
 
-      // 6. Log completion
+      // 6. Log completion - use enum values directly
       await this.auditLogService.logEvent({
-        action: AuditAction.ANALYTICS_EXPORT_COMPLETED,
+        action: 'ANALYTICS_EXPORT_COMPLETED' as AuditAction,
         entityId: exportId,
-        entityType: AuditEntityType.SYSTEM,
+        entityType: 'SYSTEM' as AuditEntityType,
         organizationId,
         actorUserId: userId,
         actorEmail,
@@ -79,7 +103,7 @@ export class AnalyticsExportProcessor extends WorkerHost {
           fileSize: exportData.fileSize,
           recordCount: exportData.recordCount,
         },
-        severity: AuditSeverity.LOW,
+        severity: 'LOW' as AuditSeverity,
       });
 
       this.logger.log(
@@ -92,30 +116,33 @@ export class AnalyticsExportProcessor extends WorkerHost {
         fileSize: exportData.fileSize,
         recordCount: exportData.recordCount,
       };
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
+      const errorStack = error instanceof Error ? error.stack : undefined;
+
       this.logger.error(
-        `Export job ${job.id} failed: ${error.message}`,
-        error.stack,
+        `Export job ${job.id} failed: ${errorMessage}`,
+        errorStack,
       );
 
       // Get user email for error logging
       const actorEmail = await this.getUserEmail(userId);
 
       // Update export status to failed
-      await this.updateExportStatus(exportId, 'failed', error.message);
+      await this.updateExportStatus(exportId, 'failed', errorMessage);
 
       await this.auditLogService.logEvent({
-        action: AuditAction.ANALYTICS_EXPORT_FAILED,
+        action: 'ANALYTICS_EXPORT_FAILED' as AuditAction,
         entityId: exportId,
-        entityType: AuditEntityType.SYSTEM,
+        entityType: 'SYSTEM' as AuditEntityType,
         organizationId,
         actorUserId: userId,
         actorEmail,
         metadata: {
           jobId: job.id,
-          error: error.message,
+          error: errorMessage,
         },
-        severity: AuditSeverity.HIGH,
+        severity: 'HIGH' as AuditSeverity,
       });
 
       throw error; // Will trigger retry based on job configuration
@@ -123,12 +150,12 @@ export class AnalyticsExportProcessor extends WorkerHost {
   }
 
   @OnWorkerEvent('completed')
-  onJobCompleted(job: Job) {
+  onJobCompleted(job: Job): void {
     this.logger.debug(`Job ${job.id} completed successfully`);
   }
 
   @OnWorkerEvent('failed')
-  onJobFailed(job: Job, error: Error) {
+  onJobFailed(job: Job, error: Error): void {
     this.logger.error(`Job ${job.id} failed: ${error.message}`);
   }
 
@@ -141,9 +168,10 @@ export class AnalyticsExportProcessor extends WorkerHost {
         select: { email: true },
       });
       return user?.email || `user-${userId}@unknown.example.com`;
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       this.logger.warn(
-        `Failed to fetch email for user ${userId}: ${error.message}`,
+        `Failed to fetch email for user ${userId}: ${errorMessage}`,
       );
       return `user-${userId}@error.example.com`;
     }
@@ -156,14 +184,24 @@ export class AnalyticsExportProcessor extends WorkerHost {
   ): Promise<void> {
     // In Phase 3.4: In-memory tracking
     // In Phase 3.6+: Database update
+    // Mark errorMessage as intentionally unused for now
+    void errorMessage;
+
     this.logger.debug(`Export ${exportId} status updated to: ${status}`);
+
+    // Simulate async operation for consistency
+    return Promise.resolve();
   }
 
-  private async generateExportData(
+  private generateExportData(
     organizationId: string,
-    queryParams: any,
+    queryParams: Record<string, unknown>,
     format: 'csv' | 'json',
-  ): Promise<{ data: any; fileSize: number; recordCount: number }> {
+  ): ExportDataResult {
+    // Mark parameters as intentionally unused for now
+    void organizationId;
+    void queryParams;
+
     // TODO: Implement actual data fetching based on queryParams
     // For Phase 3.4: Return mock data
     // For Phase 3.6+: Query database with proper filters
@@ -173,6 +211,7 @@ export class AnalyticsExportProcessor extends WorkerHost {
         ? 'deal_id,name,amount,status,created_at\n1,Test Deal 1,10000,open,2024-01-01\n2,Test Deal 2,25000,won,2024-01-02'
         : JSON.stringify([
             { deal_id: 1, name: 'Test Deal 1', amount: 10000, status: 'open' },
+            { deal_id: 2, name: 'Test Deal 2', amount: 25000, status: 'won' },
           ]);
 
     return {
@@ -184,7 +223,7 @@ export class AnalyticsExportProcessor extends WorkerHost {
 
   private async storeExport(
     exportId: string,
-    data: any,
+    data: string,
     format: 'csv' | 'json',
   ): Promise<string> {
     // In Phase 3.4: Store in memory/filesystem
@@ -194,7 +233,9 @@ export class AnalyticsExportProcessor extends WorkerHost {
     const filePath = `/tmp/exports/${fileName}`; // Temporary storage
 
     this.logger.debug(`Export stored at: ${filePath}`);
-    return filePath;
+
+    // Simulate async operation for consistency
+    return Promise.resolve(filePath);
   }
 
   private async completeExport(
@@ -204,7 +245,10 @@ export class AnalyticsExportProcessor extends WorkerHost {
   ): Promise<void> {
     // Update export record with completion details
     this.logger.debug(
-      `Export ${exportId} completed with ${recordCount} records`,
+      `Export ${exportId} completed with ${recordCount} records at ${filePath}`,
     );
+
+    // Simulate async operation for consistency
+    return Promise.resolve();
   }
 }

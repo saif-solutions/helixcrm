@@ -1,3 +1,5 @@
+// apps/api/src/modules/analytics/analytics.module.ts
+
 import { Module, DynamicModule } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -17,26 +19,43 @@ import { PermissionsModule } from '../../shared/permissions/permissions.module';
 import { DateRangeConstraint } from '../../shared/validators/date-range.validator';
 import { CurrencyCodeConstraint } from '../../shared/validators/currency-code.validator';
 
+// Define Redis configuration interface
+interface RedisConfig {
+  host: string;
+  port: number;
+  password?: string;
+  tls?: Record<string, unknown>;
+}
+
+// Define BullMQ connection interface
+interface BullMQConnection {
+  connection: RedisConfig;
+  defaultJobOptions: {
+    removeOnComplete: boolean;
+    removeOnFail: boolean;
+    attempts: number;
+    timeout: number;
+  };
+}
+
 @Module({})
 export class AnalyticsModule {
   static register(): DynamicModule {
     return {
       module: AnalyticsModule,
       imports: [
-        // Core infrastructure - always required
         ConfigModule,
         PrismaModule,
         AuditLogModule,
         LoggingModule,
-        TenantModule, // ADDED: For TenantContextService
-        PermissionsModule, // ADDED: For PermissionContextService
-        ScheduleModule.forRoot(), // Add scheduling for background jobs
+        TenantModule,
+        PermissionsModule,
+        ScheduleModule.forRoot(),
 
-        // Caching with namespace isolation
         CacheModule.registerAsync({
           imports: [ConfigModule],
           inject: [ConfigService],
-          useFactory: async (configService: ConfigService) => {
+          useFactory: (configService: ConfigService) => {
             const ttl = configService.get<number>('ANALYTICS_CACHE_TTL', 300);
             const max = configService.get<number>('ANALYTICS_CACHE_MAX', 100);
 
@@ -45,7 +64,7 @@ export class AnalyticsModule {
             );
 
             return {
-              ttl: ttl * 1000, // Convert seconds to milliseconds
+              ttl: ttl * 1000,
               max,
               store: 'memory',
             };
@@ -56,10 +75,8 @@ export class AnalyticsModule {
       providers: [
         AnalyticsService,
         AnalyticsSummaryService,
-        // ADD REPOSITORIES:
         AnalyticsRepository,
         AnalyticsSummaryRepository,
-        // Register validators for dependency injection
         DateRangeConstraint,
         CurrencyCodeConstraint,
       ],
@@ -70,7 +87,6 @@ export class AnalyticsModule {
   static registerWithExports(): DynamicModule {
     const baseModule = this.register();
 
-    // Check if exports are enabled via environment
     const exportsEnabled = process.env.ANALYTICS_EXPORT_ENABLED !== 'false';
     const redisHost = process.env.REDIS_HOST || 'localhost';
 
@@ -83,17 +99,21 @@ export class AnalyticsModule {
 
     console.log(`✅ Analytics exports enabled, Redis host: ${redisHost}`);
 
-    // Add BullMQ export queue with enterprise Redis configuration
     const bullImports = [
       BullModule.registerQueueAsync({
         name: 'analytics-export',
         imports: [ConfigModule],
         inject: [ConfigService],
-        useFactory: async (configService: ConfigService) => {
-          const redisHost = configService.get('REDIS_HOST', 'localhost');
+        useFactory: (configService: ConfigService): BullMQConnection => {
+          // Type-safe config extraction
+          const redisHost = configService.get<string>(
+            'REDIS_HOST',
+            'localhost',
+          );
           const redisPort = configService.get<number>('REDIS_PORT', 6379);
-          const redisPassword = configService.get('REDIS_PASSWORD');
-          const useTls = configService.get('REDIS_TLS', 'false') === 'true';
+          const redisPassword = configService.get<string>('REDIS_PASSWORD');
+          const useTls =
+            configService.get<string>('REDIS_TLS', 'false') === 'true';
           const jobAttempts = configService.get<number>(
             'EXPORT_JOB_ATTEMPTS',
             3,
@@ -103,13 +123,14 @@ export class AnalyticsModule {
             300000,
           );
 
-          const redisConfig: any = {
+          // Build Redis config with proper typing
+          const redisConfig: RedisConfig = {
             host: redisHost,
             port: redisPort,
           };
 
-          // Add Redis password if configured
-          if (redisPassword) {
+          // Add Redis password if configured (type-safe)
+          if (redisPassword !== undefined && redisPassword !== null) {
             redisConfig.password = redisPassword;
             console.log(
               '✅ Redis password configured (TLS:',

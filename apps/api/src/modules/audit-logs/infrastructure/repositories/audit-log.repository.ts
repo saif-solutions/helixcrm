@@ -1,4 +1,6 @@
-import { Injectable } from '@nestjs/common';
+// apps/api/src/modules/audit-logs/infrastructure/repositories/audit-log.repository.ts
+
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from '../../../../shared/prisma/prisma.service';
 import { IAuditLogRepository } from './audit-log.repository.interface';
 import {
@@ -6,14 +8,14 @@ import {
   AuditLogQuery,
   PaginatedAuditLogs,
   AuditStatistics,
-  AuditAction,
-  AuditEntityType,
-  ActorType,
-  AuditSeverity,
   AuditLogEnumMapper,
   AuditLogTypes,
   fromPrismaAction,
 } from '../../domain';
+import { Prisma } from '@prisma/client';
+
+// Define the where clause type for Prisma queries
+type AuditLogWhereInput = Prisma.AuditLogWhereInput;
 
 @Injectable()
 export class AuditLogRepository implements IAuditLogRepository {
@@ -23,36 +25,50 @@ export class AuditLogRepository implements IAuditLogRepository {
     data: Omit<AuditLog, 'id' | 'createdAt' | 'updatedAt'>,
   ): Promise<void> {
     try {
-      // Map domain enums to database enums - need to cast to Prisma enum type
-      const dbAction = AuditLogEnumMapper.toDatabaseAction(data.action) as any;
+      // Map domain enums to database enums
+      const dbAction = AuditLogEnumMapper.toDatabaseAction(data.action);
+
+      // Build metadata with extended action support
+      const metadata: Record<string, unknown> = {
+        ...data.metadata,
+      };
+
+      // Store extended action in metadata for retrieval
+      if (!AuditLogTypes.isAuditAction(data.action)) {
+        metadata._extendedAction = data.action;
+        metadata._originalAction = data.action;
+      }
 
       await this.prisma.auditLog.create({
         data: {
           organizationId: data.organizationId,
           actorUserId: data.actorUserId,
           actorEmail: data.actorEmail,
-          actorType: data.actorType as any, // Cast to Prisma enum
+          actorType: data.actorType,
           action: dbAction,
-          entityType: data.entityType as any, // Cast to Prisma enum
+          entityType: data.entityType,
           entityId: data.entityId,
-          metadata: {
-            ...data.metadata,
-            // Store extended action in metadata for retrieval
-            ...(!AuditLogTypes.isAuditAction(data.action) && {
-              _extendedAction: data.action,
-              _originalAction: data.action,
-            }),
-          } as any, // Cast to Prisma Json type
+          metadata: metadata as Prisma.JsonValue,
           ipAddress: data.ipAddress,
           userAgent: data.userAgent,
           correlationId: data.correlationId,
           requestId: data.requestId,
-          severity: data.severity as any, // Cast to Prisma enum
+          severity: data.severity,
         },
       });
-    } catch (error) {
-      console.error('Failed to create audit log:', error);
-      throw error;
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      console.error('Failed to create audit log:', errorMessage);
+
+      // Use NestJS exception with proper cause preservation
+      throw new InternalServerErrorException(
+        `Failed to create audit log: ${errorMessage}`,
+        {
+          cause: error instanceof Error ? error : undefined,
+          description: 'Audit log creation failed',
+        },
+      );
     }
   }
 
@@ -61,7 +77,7 @@ export class AuditLogRepository implements IAuditLogRepository {
     const limit = Math.min(Math.max(1, query.limit || 25), 100);
     const skip = (page - 1) * limit;
 
-    const where: any = {
+    const where: AuditLogWhereInput = {
       organizationId: query.organizationId,
     };
 
@@ -74,27 +90,29 @@ export class AuditLogRepository implements IAuditLogRepository {
 
     // Apply action filter (handle extended actions)
     if (query.action) {
-      const dbAction = AuditLogEnumMapper.toDatabaseAction(query.action) as any;
+      const dbAction = AuditLogEnumMapper.toDatabaseAction(query.action);
       where.action = dbAction;
 
       // For extended actions, also filter by metadata
       if (!AuditLogTypes.isAuditAction(query.action)) {
-        where.AND = where.AND || [];
-        where.AND.push({
-          metadata: {
-            path: ['_extendedAction'],
-            equals: query.action,
+        where.AND = [
+          {
+            metadata: {
+              path: ['_extendedAction'],
+              equals: query.action,
+            },
           },
-        });
+        ];
       }
     }
 
     // Apply other filters
-    if (query.entityType) where.entityType = query.entityType as any;
-    if (query.actorEmail)
+    if (query.entityType) where.entityType = query.entityType;
+    if (query.actorEmail) {
       where.actorEmail = { contains: query.actorEmail, mode: 'insensitive' };
-    if (query.severity) where.severity = query.severity as any;
-    if (query.actorType) where.actorType = query.actorType as any;
+    }
+    if (query.severity) where.severity = query.severity;
+    if (query.actorType) where.actorType = query.actorType;
 
     // Apply search filter
     if (query.search) {
@@ -113,7 +131,7 @@ export class AuditLogRepository implements IAuditLogRepository {
           orderBy: { createdAt: 'desc' },
           select: {
             id: true,
-            organizationId: true, // Added missing field
+            organizationId: true,
             action: true,
             entityType: true,
             entityId: true,
@@ -135,11 +153,13 @@ export class AuditLogRepository implements IAuditLogRepository {
 
       // Transform logs to use domain actions
       const transformedLogs = logs.map((log) => {
-        const metadata = log.metadata as any;
+        const metadata = log.metadata as Record<string, unknown> | null;
+        const extendedAction = metadata?._extendedAction;
+
         return {
           ...log,
           // Use extended action from metadata if available
-          action: metadata?._extendedAction || log.action,
+          action: (extendedAction as string) || log.action,
         } as AuditLog;
       });
 
@@ -153,9 +173,19 @@ export class AuditLogRepository implements IAuditLogRepository {
           hasMore: page * limit < total,
         },
       };
-    } catch (error) {
-      console.error('Failed to fetch audit logs:', error);
-      throw new Error('Unable to retrieve audit logs. Please try again.');
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      console.error('Failed to fetch audit logs:', errorMessage);
+
+      // Use NestJS exception with proper cause preservation
+      throw new InternalServerErrorException(
+        `Unable to retrieve audit logs: ${errorMessage}`,
+        {
+          cause: error instanceof Error ? error : undefined,
+          description: 'Audit log query failed',
+        },
+      );
     }
   }
 
@@ -208,7 +238,7 @@ export class AuditLogRepository implements IAuditLogRepository {
       return {
         totalLogs,
         logsBySeverity: logsBySeverity.map((item) => ({
-          severity: item.severity as AuditSeverity,
+          severity: item.severity,
           count: item._count,
         })),
         topActions: transformedActions,
@@ -218,8 +248,12 @@ export class AuditLogRepository implements IAuditLogRepository {
           days,
         },
       };
-    } catch (error) {
-      console.error('Failed to fetch audit statistics:', error);
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      console.error('Failed to fetch audit statistics:', errorMessage);
+
+      // Return empty statistics instead of throwing to preserve functionality
       return {
         totalLogs: 0,
         logsBySeverity: [],
@@ -232,57 +266,77 @@ export class AuditLogRepository implements IAuditLogRepository {
   async getAvailableActions(): Promise<
     Array<{ value: string; count: number }>
   > {
-    const actions = await this.prisma.auditLog.groupBy({
-      by: ['action'],
-      _count: true,
-    });
+    try {
+      const actions = await this.prisma.auditLog.groupBy({
+        by: ['action'],
+        _count: true,
+      });
 
-    return actions.map((item) => ({
-      value: item.action,
-      count: item._count,
-    }));
+      return actions.map((item) => ({
+        value: item.action,
+        count: item._count,
+      }));
+    } catch (error: unknown) {
+      console.error('Failed to get available actions:', error);
+      return [];
+    }
   }
 
   async getAvailableEntityTypes(): Promise<
     Array<{ value: string; count: number }>
   > {
-    const entityTypes = await this.prisma.auditLog.groupBy({
-      by: ['entityType'],
-      _count: true,
-    });
+    try {
+      const entityTypes = await this.prisma.auditLog.groupBy({
+        by: ['entityType'],
+        _count: true,
+      });
 
-    return entityTypes.map((item) => ({
-      value: item.entityType,
-      count: item._count,
-    }));
+      return entityTypes.map((item) => ({
+        value: item.entityType,
+        count: item._count,
+      }));
+    } catch (error: unknown) {
+      console.error('Failed to get available entity types:', error);
+      return [];
+    }
   }
 
   async getAvailableSeverityLevels(): Promise<
     Array<{ value: string; count: number }>
   > {
-    const severityLevels = await this.prisma.auditLog.groupBy({
-      by: ['severity'],
-      _count: true,
-    });
+    try {
+      const severityLevels = await this.prisma.auditLog.groupBy({
+        by: ['severity'],
+        _count: true,
+      });
 
-    return severityLevels.map((item) => ({
-      value: item.severity,
-      count: item._count,
-    }));
+      return severityLevels.map((item) => ({
+        value: item.severity,
+        count: item._count,
+      }));
+    } catch (error: unknown) {
+      console.error('Failed to get available severity levels:', error);
+      return [];
+    }
   }
 
   async getAvailableActorTypes(): Promise<
     Array<{ value: string; count: number }>
   > {
-    const actorTypes = await this.prisma.auditLog.groupBy({
-      by: ['actorType'],
-      _count: true,
-    });
+    try {
+      const actorTypes = await this.prisma.auditLog.groupBy({
+        by: ['actorType'],
+        _count: true,
+      });
 
-    return actorTypes.map((item) => ({
-      value: item.actorType,
-      count: item._count,
-    }));
+      return actorTypes.map((item) => ({
+        value: item.actorType,
+        count: item._count,
+      }));
+    } catch (error: unknown) {
+      console.error('Failed to get available actor types:', error);
+      return [];
+    }
   }
 
   async cleanupOldLogs(
@@ -299,8 +353,10 @@ export class AuditLogRepository implements IAuditLogRepository {
       });
 
       return { deletedCount: result.count };
-    } catch (error) {
-      console.error('Failed to cleanup old audit logs:', error);
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      console.error('Failed to cleanup old audit logs:', errorMessage);
       return { deletedCount: 0 };
     }
   }

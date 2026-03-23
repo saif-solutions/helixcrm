@@ -5,6 +5,39 @@ import { PrismaService } from '../../../shared/prisma/prisma.service';
 import { TenantAwareRepository } from '../../../shared/database/tenant-aware.repository';
 import { Lead, Prisma, LeadStatus } from '@prisma/client';
 
+// Define types for better type safety
+interface LeadWhereInput extends Prisma.LeadWhereInput {
+  organizationId?: string;
+  deletedAt?: Date | null;
+  OR?: Array<{
+    name?: { contains: string; mode: 'insensitive' };
+    email?: { contains: string; mode: 'insensitive' };
+    phone?: { contains: string; mode: 'insensitive' };
+  }>;
+}
+
+interface FindAllParams {
+  page?: number;
+  limit?: number;
+  status?: LeadStatus;
+  search?: string;
+}
+
+// Helper function for safe error message extraction
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === 'string') {
+    return error;
+  }
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return 'Unknown error occurred';
+  }
+}
+
 @Injectable()
 export class LeadRepository extends TenantAwareRepository {
   private readonly logger = new Logger(LeadRepository.name);
@@ -13,15 +46,9 @@ export class LeadRepository extends TenantAwareRepository {
     super(prisma);
   }
 
-  /**
-   * Find lead by ID
-   */
   async findById(id: string, includeDeleted = false): Promise<Lead | null> {
     try {
-      // Initialize tenant context at the start of each method
-      this.initTenantContext();
-
-      const where: any = this.withTenantFilter({ id });
+      const where: LeadWhereInput = this.withTenantFilter({ id });
 
       if (!includeDeleted) {
         where.deletedAt = null;
@@ -36,18 +63,16 @@ export class LeadRepository extends TenantAwareRepository {
       }
 
       return lead;
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       this.logger.error(
-        `Failed to find lead ${id}: ${error.message}`,
-        error.stack,
+        `Failed to find lead ${id}: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
       );
       throw error;
     }
   }
 
-  /**
-   * Find lead by ID or throw NotFoundException
-   */
   async findByIdOrThrow(id: string, includeDeleted = false): Promise<Lead> {
     const lead = await this.findById(id, includeDeleted);
     if (!lead) {
@@ -58,19 +83,12 @@ export class LeadRepository extends TenantAwareRepository {
     return lead;
   }
 
-  /**
-   * Create lead with tenant isolation
-   */
   async create(
     data: Omit<Prisma.LeadCreateInput, 'organization'>,
   ): Promise<Lead> {
     try {
-      // Initialize tenant context at the start of each method
-      this.initTenantContext();
-
       const tenantId = this.tenantId;
 
-      // Manually add organization connection
       const tenantData: Prisma.LeadCreateInput = {
         ...data,
         organization: {
@@ -84,24 +102,21 @@ export class LeadRepository extends TenantAwareRepository {
 
       this.logger.log(`Lead created: ${lead.id} in tenant: ${tenantId}`);
       return lead;
-    } catch (error: any) {
-      this.logger.error(`Failed to create lead: ${error.message}`, error.stack);
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
+      this.logger.error(
+        `Failed to create lead: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
+      );
       throw error;
     }
   }
 
-  /**
-   * Update lead with tenant validation
-   */
   async update(params: {
     id: string;
     data: Prisma.LeadUpdateInput;
   }): Promise<Lead> {
     try {
-      // Initialize tenant context at the start of each method
-      this.initTenantContext();
-
-      // First verify lead belongs to tenant
       await this.findByIdOrThrow(params.id);
 
       const lead = await this.prisma.lead.update({
@@ -111,24 +126,18 @@ export class LeadRepository extends TenantAwareRepository {
 
       this.logger.log(`Lead updated: ${params.id} in tenant: ${this.tenantId}`);
       return lead;
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       this.logger.error(
-        `Failed to update lead ${params.id}: ${error.message}`,
-        error.stack,
+        `Failed to update lead ${params.id}: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
       );
       throw error;
     }
   }
 
-  /**
-   * Soft delete lead
-   */
   async softDelete(id: string, deletedBy?: string): Promise<Lead> {
     try {
-      // Initialize tenant context at the start of each method
-      this.initTenantContext();
-
-      // First verify lead belongs to tenant
       await this.findByIdOrThrow(id);
 
       const lead = await this.prisma.lead.update({
@@ -141,25 +150,19 @@ export class LeadRepository extends TenantAwareRepository {
 
       this.logger.log(`Lead soft deleted: ${id} in tenant: ${this.tenantId}`);
       return lead;
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       this.logger.error(
-        `Failed to soft delete lead ${id}: ${error.message}`,
-        error.stack,
+        `Failed to soft delete lead ${id}: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
       );
       throw error;
     }
   }
 
-  /**
-   * Hard delete lead
-   */
   async hardDelete(id: string): Promise<Lead> {
     try {
-      // Initialize tenant context at the start of each method
-      this.initTenantContext();
-
-      // First verify lead belongs to tenant
-      await this.findByIdOrThrow(id, true); // Include deleted
+      await this.findByIdOrThrow(id, true);
 
       const lead = await this.prisma.lead.delete({
         where: { id },
@@ -167,40 +170,29 @@ export class LeadRepository extends TenantAwareRepository {
 
       this.logger.log(`Lead hard deleted: ${id} in tenant: ${this.tenantId}`);
       return lead;
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       this.logger.error(
-        `Failed to hard delete lead ${id}: ${error.message}`,
-        error.stack,
+        `Failed to hard delete lead ${id}: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
       );
       throw error;
     }
   }
 
-  /**
-   * Find all leads with pagination and filtering
-   */
-  async findAll(params: {
-    page?: number;
-    limit?: number;
-    status?: LeadStatus;
-    search?: string;
-  }): Promise<{ data: Lead[]; total: number }> {
+  async findAll(
+    params: FindAllParams,
+  ): Promise<{ data: Lead[]; total: number }> {
     try {
-      // Initialize tenant context at the start of each method
-      this.initTenantContext();
-
       const { page = 1, limit = 20, status, search } = params;
       const skip = (page - 1) * limit;
 
-      // Build where clause with tenant isolation
-      const where: any = this.withTenantFilter();
+      const where: LeadWhereInput = this.withTenantFilter({ deletedAt: null });
 
-      // Add status filter if provided
       if (status) {
         where.status = status;
       }
 
-      // Add search filter if provided
       if (search) {
         where.OR = [
           { name: { contains: search, mode: 'insensitive' } },
@@ -208,9 +200,6 @@ export class LeadRepository extends TenantAwareRepository {
           { phone: { contains: search, mode: 'insensitive' } },
         ];
       }
-
-      // Exclude soft deleted records
-      where.deletedAt = null;
 
       const [data, total] = await Promise.all([
         this.prisma.lead.findMany({
@@ -223,20 +212,18 @@ export class LeadRepository extends TenantAwareRepository {
       ]);
 
       return { data, total };
-    } catch (error: any) {
-      this.logger.error(`Failed to find leads: ${error.message}`, error.stack);
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
+      this.logger.error(
+        `Failed to find leads: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
+      );
       throw error;
     }
   }
 
-  /**
-   * Count leads by status
-   */
   async countByStatus(): Promise<Record<LeadStatus, number>> {
     try {
-      // Initialize tenant context at the start of each method
-      this.initTenantContext();
-
       const stats = await this.prisma.lead.groupBy({
         by: ['status'],
         where: this.withTenantFilter({ deletedAt: null }),
@@ -245,7 +232,6 @@ export class LeadRepository extends TenantAwareRepository {
         },
       });
 
-      // Convert to Record<LeadStatus, number> with enum values as keys
       return stats.reduce(
         (acc, curr) => {
           acc[curr.status] = curr._count.id;
@@ -253,24 +239,19 @@ export class LeadRepository extends TenantAwareRepository {
         },
         {} as Record<LeadStatus, number>,
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       this.logger.error(
-        `Failed to count leads by status: ${error.message}`,
-        error.stack,
+        `Failed to count leads by status: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
       );
       throw error;
     }
   }
 
-  /**
-   * Check if email exists in tenant
-   */
   async emailExists(email: string, excludeId?: string): Promise<boolean> {
     try {
-      // Initialize tenant context at the start of each method
-      this.initTenantContext();
-
-      const where: any = this.withTenantFilter({ email });
+      const where: LeadWhereInput = this.withTenantFilter({ email });
 
       if (excludeId) {
         where.id = { not: excludeId };
@@ -281,10 +262,11 @@ export class LeadRepository extends TenantAwareRepository {
       });
 
       return count > 0;
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       this.logger.error(
-        `Failed to check email existence: ${error.message}`,
-        error.stack,
+        `Failed to check email existence: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
       );
       throw error;
     }

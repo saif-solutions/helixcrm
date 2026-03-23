@@ -1,9 +1,10 @@
+// apps/api/src/modules/audit-logs/infrastructure/repositories/audit-log.repository.interface.ts
+
 import {
   AuditLog,
   AuditLogQuery,
   PaginatedAuditLogs,
   AuditStatistics,
-  FilterOption,
 } from '../../domain';
 
 // Export a symbol token that can be used for dependency injection

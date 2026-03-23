@@ -1,4 +1,6 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+// apps/api/src/modules/analytics/dto/analytics-query.dto.ts
+
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import {
   IsOptional,
@@ -15,6 +17,46 @@ import {
 } from 'class-validator';
 import { ValidateDateRange } from '../../../shared/validators/date-range.validator';
 import { IsValidCurrencyCode } from '../../../shared/validators/currency-code.validator';
+
+// Helper function for safe boolean transformation
+function transformToBoolean(value: unknown): boolean {
+  if (value === 'true' || value === true || value === '1') {
+    return true;
+  }
+  return false;
+}
+
+// Helper function for safe string transformation (uppercase)
+function transformToUpperCase(value: unknown): string {
+  // Handle string values
+  if (typeof value === 'string') {
+    return value.toUpperCase();
+  }
+  // Handle numbers (convert to string)
+  if (typeof value === 'number') {
+    return String(value).toUpperCase();
+  }
+  // Handle boolean (convert to string)
+  if (typeof value === 'boolean') {
+    return String(value).toUpperCase();
+  }
+  // Handle null/undefined
+  if (value === null || value === undefined) {
+    return '';
+  }
+  // For any other type, return empty string to avoid [object Object]
+  // This prevents unsafe toString() calls on objects
+  return '';
+}
+
+// Helper function for safe array transformation
+function transformToArray(value: unknown): unknown[] {
+  if (!value) return [];
+  if (typeof value === 'string') return [value];
+  if (Array.isArray(value)) return value;
+  // For single value that's not an array, wrap it
+  return [value];
+}
 
 // ==================== ENUMS ====================
 export enum AnalyticsGroupBy {
@@ -105,13 +147,13 @@ export class AnalyticsQueryDto {
   })
   @IsOptional()
   @IsBoolean()
-  @Transform(({ value }) => value === 'true' || value === true || value === '1')
+  @Transform(({ value }) => transformToBoolean(value))
   includeDeleted?: boolean;
 
   @ApiPropertyOptional({
     description: 'Limit results (for pagination)',
     minimum: 1,
-    maximum: 500, // Server-side hard cap for analytics queries
+    maximum: 500,
     default: 100,
   })
   @IsOptional()
@@ -141,7 +183,7 @@ export class DealAnalyticsQueryDto extends AnalyticsQueryDto {
   })
   @IsOptional()
   @IsBoolean()
-  @Transform(({ value }) => value === 'true' || value === true || value === '1')
+  @Transform(({ value }) => transformToBoolean(value))
   includeVelocity?: boolean;
 }
 
@@ -153,7 +195,7 @@ export class RevenueAnalyticsQueryDto extends AnalyticsQueryDto {
   })
   @IsOptional()
   @IsBoolean()
-  @Transform(({ value }) => value === 'true' || value === true || value === '1')
+  @Transform(({ value }) => transformToBoolean(value))
   includeForecast?: boolean;
 
   @ApiPropertyOptional({
@@ -164,7 +206,7 @@ export class RevenueAnalyticsQueryDto extends AnalyticsQueryDto {
   @IsOptional()
   @IsString()
   @IsValidCurrencyCode()
-  @Transform(({ value }) => value?.toUpperCase())
+  @Transform(({ value }) => transformToUpperCase(value))
   currency?: string;
 }
 
@@ -184,7 +226,7 @@ export class PipelineAnalyticsQueryDto {
   })
   @IsOptional()
   @IsBoolean()
-  @Transform(({ value }) => value === 'true' || value === true || value === '1')
+  @Transform(({ value }) => transformToBoolean(value))
   includeBottlenecks?: boolean;
 
   @ApiPropertyOptional({
@@ -193,7 +235,7 @@ export class PipelineAnalyticsQueryDto {
   })
   @IsOptional()
   @IsBoolean()
-  @Transform(({ value }) => value === 'true' || value === true || value === '1')
+  @Transform(({ value }) => transformToBoolean(value))
   includeDuration?: boolean;
 
   @ApiPropertyOptional({
@@ -290,7 +332,6 @@ export class AnalyticsExportQueryDto {
   @ValidateDateRange()
   endDate?: string;
 
-  // ADD THIS STATUS PROPERTY:
   @ApiPropertyOptional({
     description: 'Filter by export status',
     enum: ['pending', 'processing', 'completed', 'failed'],
@@ -319,11 +360,7 @@ export class AnalyticsExportQueryDto {
   @IsArray()
   @ArrayNotEmpty()
   @IsEnum(AnalyticsExportInclude, { each: true })
-  @Transform(({ value }) => {
-    if (!value) return undefined;
-    if (typeof value === 'string') return [value];
-    return Array.isArray(value) ? value : [value];
-  })
+  @Transform(({ value }) => transformToArray(value))
   include?: AnalyticsExportInclude[];
 
   @ApiPropertyOptional({

@@ -5,6 +5,48 @@ import { PrismaService } from '../../../shared/prisma/prisma.service';
 import { TenantAwareRepository } from '../../../shared/database/tenant-aware.repository';
 import { Pipeline, PipelineStage, Prisma } from '@prisma/client';
 
+// Define types for better type safety
+interface PipelineWhereInput extends Prisma.PipelineWhereInput {
+  organizationId?: string;
+  deletedAt?: Date | null;
+}
+
+interface FindManyParams {
+  where?: Prisma.PipelineWhereInput;
+  skip?: number;
+  take?: number;
+  includeStages?: boolean;
+  includeDealCount?: boolean;
+}
+
+interface CreatePipelineData {
+  name: string;
+  description?: string;
+  isDefault?: boolean;
+}
+
+interface CreateStageData {
+  name: string;
+  order: number;
+  probability?: number;
+  pipelineId: string;
+}
+
+// Helper function for safe error message extraction
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === 'string') {
+    return error;
+  }
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return 'Unknown error occurred';
+  }
+}
+
 @Injectable()
 export class PipelineRepository extends TenantAwareRepository {
   private readonly logger = new Logger(PipelineRepository.name);
@@ -13,12 +55,9 @@ export class PipelineRepository extends TenantAwareRepository {
     super(prisma);
   }
 
-  /**
-   * Find pipeline by ID
-   */
   async findById(id: string, includeDeleted = false): Promise<Pipeline | null> {
     try {
-      const where: any = this.withTenantFilter({ id });
+      const where: PipelineWhereInput = this.withTenantFilter({ id });
 
       if (!includeDeleted) {
         where.deletedAt = null;
@@ -38,59 +77,49 @@ export class PipelineRepository extends TenantAwareRepository {
       });
 
       return pipeline;
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       this.logger.error(
-        `Failed to find pipeline ${id}: ${error.message}`,
-        error.stack,
+        `Failed to find pipeline ${id}: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
       );
       throw error;
     }
   }
 
-  /**
-   * Find first pipeline matching criteria
-   */
-  async findFirst(where: any): Promise<Pipeline | null> {
+  async findFirst(where: Prisma.PipelineWhereInput): Promise<Pipeline | null> {
     try {
-      const tenantWhere = this.withTenantFilter(where);
+      const tenantWhere: PipelineWhereInput = this.withTenantFilter(where);
 
       return await this.prisma.pipeline.findFirst({
         where: tenantWhere,
       });
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       this.logger.error(
-        `Failed to find pipeline: ${error.message}`,
-        error.stack,
+        `Failed to find pipeline: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
       );
       throw error;
     }
   }
 
-  /**
-   * Find many pipelines with filters
-   */
-  async findMany(params: {
-    where?: any;
-    skip?: number;
-    take?: number;
-    includeStages?: boolean;
-    includeDealCount?: boolean;
-  }): Promise<any[]> {
+  async findMany(params: FindManyParams): Promise<Pipeline[]> {
     try {
       const {
-        where,
+        where = {},
         skip,
         take,
         includeStages = false,
         includeDealCount = false,
       } = params;
 
-      const tenantWhere = this.withTenantFilter({
+      const tenantWhere: PipelineWhereInput = this.withTenantFilter({
         ...where,
         deletedAt: null,
       });
 
-      const include: any = {};
+      const include: Prisma.PipelineInclude = {};
 
       if (includeStages) {
         include.stages = {
@@ -114,21 +143,19 @@ export class PipelineRepository extends TenantAwareRepository {
       });
 
       return pipelines;
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       this.logger.error(
-        `Failed to find pipelines: ${error.message}`,
-        error.stack,
+        `Failed to find pipelines: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
       );
       throw error;
     }
   }
 
-  /**
-   * Count pipelines matching criteria
-   */
-  async count(where?: any): Promise<number> {
+  async count(where?: Prisma.PipelineWhereInput): Promise<number> {
     try {
-      const tenantWhere = this.withTenantFilter({
+      const tenantWhere: PipelineWhereInput = this.withTenantFilter({
         ...where,
         deletedAt: null,
       });
@@ -136,29 +163,25 @@ export class PipelineRepository extends TenantAwareRepository {
       return await this.prisma.pipeline.count({
         where: tenantWhere,
       });
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       this.logger.error(
-        `Failed to count pipelines: ${error.message}`,
-        error.stack,
+        `Failed to count pipelines: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
       );
       throw error;
     }
   }
 
-  /**
-   * Create a new pipeline
-   */
-  async create(data: {
-    name: string;
-    description?: string;
-    isDefault?: boolean;
-  }): Promise<Pipeline> {
+  async create(data: CreatePipelineData): Promise<Pipeline> {
     try {
       const tenantId = this.tenantId;
 
       const pipeline = await this.prisma.pipeline.create({
         data: {
-          ...data,
+          name: data.name,
+          description: data.description,
+          isDefault: data.isDefault,
           organization: {
             connect: { id: tenantId },
           },
@@ -167,19 +190,20 @@ export class PipelineRepository extends TenantAwareRepository {
 
       this.logger.log(`Pipeline created: ${pipeline.id}`);
       return pipeline;
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       this.logger.error(
-        `Failed to create pipeline: ${error.message}`,
-        error.stack,
+        `Failed to create pipeline: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
       );
       throw error;
     }
   }
 
-  /**
-   * Update a pipeline
-   */
-  async update(id: string, data: any): Promise<Pipeline> {
+  async update(
+    id: string,
+    data: Prisma.PipelineUpdateInput,
+  ): Promise<Pipeline> {
     try {
       const tenantWhere = {
         id,
@@ -193,38 +217,37 @@ export class PipelineRepository extends TenantAwareRepository {
 
       this.logger.log(`Pipeline updated: ${id}`);
       return pipeline;
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       this.logger.error(
-        `Failed to update pipeline ${id}: ${error.message}`,
-        error.stack,
+        `Failed to update pipeline ${id}: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
       );
       throw error;
     }
   }
 
-  /**
-   * Update many pipelines
-   */
-  async updateMany(where: any, data: any): Promise<void> {
+  async updateMany(
+    where: Prisma.PipelineWhereInput,
+    data: Prisma.PipelineUpdateInput,
+  ): Promise<void> {
     try {
-      const tenantWhere = this.withTenantFilter(where);
+      const tenantWhere: PipelineWhereInput = this.withTenantFilter(where);
 
       await this.prisma.pipeline.updateMany({
         where: tenantWhere,
         data,
       });
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       this.logger.error(
-        `Failed to update pipelines: ${error.message}`,
-        error.stack,
+        `Failed to update pipelines: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
       );
       throw error;
     }
   }
 
-  /**
-   * Delete a pipeline (soft delete)
-   */
   async delete(id: string): Promise<void> {
     try {
       const tenantWhere = {
@@ -238,21 +261,19 @@ export class PipelineRepository extends TenantAwareRepository {
       });
 
       this.logger.log(`Pipeline deleted: ${id}`);
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       this.logger.error(
-        `Failed to delete pipeline ${id}: ${error.message}`,
-        error.stack,
+        `Failed to delete pipeline ${id}: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
       );
       throw error;
     }
   }
 
-  /**
-   * Get default pipeline
-   */
   async getDefaultPipeline(): Promise<Pipeline | null> {
     try {
-      const tenantWhere = this.withTenantFilter({
+      const tenantWhere: PipelineWhereInput = this.withTenantFilter({
         isDefault: true,
         deletedAt: null,
       });
@@ -269,10 +290,11 @@ export class PipelineRepository extends TenantAwareRepository {
           },
         },
       });
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       this.logger.error(
-        `Failed to get default pipeline: ${error.message}`,
-        error.stack,
+        `Failed to get default pipeline: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
       );
       throw error;
     }
@@ -280,15 +302,12 @@ export class PipelineRepository extends TenantAwareRepository {
 
   // ==================== STAGE METHODS ====================
 
-  /**
-   * Find stage by ID
-   */
   async findStageById(
     id: string,
     includePipeline = false,
   ): Promise<PipelineStage | null> {
     try {
-      const include: any = {};
+      const include: Prisma.PipelineStageInclude = {};
       if (includePipeline) {
         include.pipeline = true;
       }
@@ -299,18 +318,16 @@ export class PipelineRepository extends TenantAwareRepository {
       });
 
       return stage;
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       this.logger.error(
-        `Failed to find stage ${id}: ${error.message}`,
-        error.stack,
+        `Failed to find stage ${id}: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
       );
       throw error;
     }
   }
 
-  /**
-   * Find stage by order in pipeline
-   */
   async findStageByOrder(
     pipelineId: string,
     order: number,
@@ -323,18 +340,16 @@ export class PipelineRepository extends TenantAwareRepository {
           deletedAt: null,
         },
       });
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       this.logger.error(
-        `Failed to find stage by order: ${error.message}`,
-        error.stack,
+        `Failed to find stage by order: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
       );
       throw error;
     }
   }
 
-  /**
-   * Find stages by pipeline
-   */
   async findStagesByPipeline(pipelineId: string): Promise<PipelineStage[]> {
     try {
       return await this.prisma.pipelineStage.findMany({
@@ -344,24 +359,17 @@ export class PipelineRepository extends TenantAwareRepository {
         },
         orderBy: { order: 'asc' },
       });
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       this.logger.error(
-        `Failed to find stages for pipeline ${pipelineId}: ${error.message}`,
-        error.stack,
+        `Failed to find stages for pipeline ${pipelineId}: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
       );
       throw error;
     }
   }
 
-  /**
-   * Create a new stage
-   */
-  async createStage(data: {
-    name: string;
-    order: number;
-    probability?: number;
-    pipelineId: string;
-  }): Promise<PipelineStage> {
+  async createStage(data: CreateStageData): Promise<PipelineStage> {
     try {
       const stage = await this.prisma.pipelineStage.create({
         data,
@@ -369,19 +377,20 @@ export class PipelineRepository extends TenantAwareRepository {
 
       this.logger.log(`Stage created: ${stage.id}`);
       return stage;
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       this.logger.error(
-        `Failed to create stage: ${error.message}`,
-        error.stack,
+        `Failed to create stage: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
       );
       throw error;
     }
   }
 
-  /**
-   * Update a stage
-   */
-  async updateStage(id: string, data: any): Promise<PipelineStage> {
+  async updateStage(
+    id: string,
+    data: Prisma.PipelineStageUpdateInput,
+  ): Promise<PipelineStage> {
     try {
       const stage = await this.prisma.pipelineStage.update({
         where: { id },
@@ -390,18 +399,16 @@ export class PipelineRepository extends TenantAwareRepository {
 
       this.logger.log(`Stage updated: ${id}`);
       return stage;
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       this.logger.error(
-        `Failed to update stage ${id}: ${error.message}`,
-        error.stack,
+        `Failed to update stage ${id}: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
       );
       throw error;
     }
   }
 
-  /**
-   * Delete a stage (soft delete)
-   */
   async deleteStage(id: string): Promise<void> {
     try {
       await this.prisma.pipelineStage.update({
@@ -410,19 +417,17 @@ export class PipelineRepository extends TenantAwareRepository {
       });
 
       this.logger.log(`Stage deleted: ${id}`);
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       this.logger.error(
-        `Failed to delete stage ${id}: ${error.message}`,
-        error.stack,
+        `Failed to delete stage ${id}: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
       );
       throw error;
     }
   }
 
-  /**
-   * Execute operations in a transaction
-   */
-  async transaction<T>(fn: (prisma: any) => Promise<T>): Promise<T> {
+  async transaction<T>(fn: (prisma: PrismaService) => Promise<T>): Promise<T> {
     return this.prisma.$transaction(fn);
   }
 }

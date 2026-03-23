@@ -1,4 +1,5 @@
-// File: src/modules/analytics/repositories/analytics.repository.ts
+// apps/api/src/modules/analytics/repositories/analytics.repository.ts
+
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
 import { TenantAwareRepository } from '../../../shared/database/tenant-aware.repository';
@@ -8,7 +9,7 @@ import {
   PipelineAnalyticsQueryDto,
   ActivityAnalyticsQueryDto,
   AnalyticsGroupBy,
-  AnalyticsExportQueryDto, // ✅ CORRECT - This is the actual export name
+  AnalyticsExportQueryDto,
 } from '../dto/analytics-query.dto';
 import {
   DealAnalyticsResponse,
@@ -21,22 +22,80 @@ import {
   ActivityRecord,
   ExportJob,
 } from '../types/analytics.types';
+import {
+  toSafeNumber,
+  toSafeString,
+  isRecord,
+} from '../../../shared/utils/type-guards';
+
+// Define constants for deal statuses to avoid magic strings
+const DEAL_STATUS = {
+  WON: 'WON',
+  LOST: 'LOST',
+  OPEN: 'OPEN',
+  ACTIVE: 'ACTIVE',
+  NEW: 'NEW',
+  QUALIFIED: 'QUALIFIED',
+  PROPOSAL: 'PROPOSAL',
+  NEGOTIATION: 'NEGOTIATION',
+} as const;
+
+type DealStatus = (typeof DEAL_STATUS)[keyof typeof DEAL_STATUS];
+
+// Define types for processed query
+interface ProcessedQuery {
+  startDate: Date;
+  endDate: Date;
+  pipelineId?: string;
+  stageId?: string;
+  ownerUserId?: string;
+  includeBottlenecks?: boolean;
+  includeDuration?: boolean;
+  durationDays?: number;
+  limit?: number;
+  page?: number;
+  currency?: string;
+  [key: string]: unknown;
+}
+
+// Define types for deal statistics
+interface DealStats {
+  totalDeals: number;
+  wonDeals: number;
+  lostDeals: number;
+  openDeals: number;
+  salesVelocity: number;
+}
+
+// Define types for recurring revenue stats
+interface RecurringRevenueStats {
+  mrr: number;
+  arr: number;
+}
+
+// Define bottleneck type
+interface Bottleneck {
+  stageId: string;
+  stageName: string;
+  averageDuration: number;
+  stuckDeals: number;
+  recommendation: string;
+}
 
 @Injectable()
 export class AnalyticsRepository extends TenantAwareRepository {
   private readonly logger = new Logger(AnalyticsRepository.name);
   private readonly defaultDateRangeDays = 30;
 
-  private readonly ACTIVE_DEAL_STATUSES = [
-    'NEW',
-    'QUALIFIED',
-    'PROPOSAL',
-    'NEGOTIATION',
+  private readonly ACTIVE_DEAL_STATUSES: readonly DealStatus[] = [
+    DEAL_STATUS.NEW,
+    DEAL_STATUS.QUALIFIED,
+    DEAL_STATUS.PROPOSAL,
+    DEAL_STATUS.NEGOTIATION,
   ];
 
-  // FIX: Change from private to protected AND pass to super()
   constructor(protected readonly prisma: PrismaService) {
-    super(prisma); // PASS prisma to parent constructor
+    super(prisma);
   }
 
   /**
@@ -60,19 +119,21 @@ export class AnalyticsRepository extends TenantAwareRepository {
             _count: true,
           }),
           this.prisma.deal.aggregate({
-            where: { ...where, status: 'WON' },
+            where: { ...where, status: DEAL_STATUS.WON },
             _sum: { amount: true },
             _count: true,
           }),
           this.getDealStatistics(tenantId, processedQuery),
         ]);
 
+      // Mark unused variables as intentionally unused
+      void stageMetrics;
+
       const totalDeals = dealStats.totalDeals;
       const wonDeals = dealStats.wonDeals;
       const lostDeals = dealStats.lostDeals;
       const openDeals = dealStats.openDeals;
-      const totalRevenue = Number(totalValue._sum.amount || 0);
-      const wonRevenue = Number(wonValue._sum.amount || 0);
+      const totalRevenue = toSafeNumber(totalValue._sum.amount, 0);
       const averageDealValue = totalDeals > 0 ? totalRevenue / totalDeals : 0;
       const winRate = totalDeals > 0 ? (wonDeals / totalDeals) * 100 : 0;
 
@@ -80,7 +141,7 @@ export class AnalyticsRepository extends TenantAwareRepository {
       const data: DealAnalyticsData[] = dealsOverTime.map((item) => ({
         period: item.date,
         totalDeals: item.count,
-        wonDeals: 0, // Would need additional query for won deals by period
+        wonDeals: 0,
         lostDeals: 0,
         openDeals: 0,
         averageDealValue: 0,
@@ -101,14 +162,16 @@ export class AnalyticsRepository extends TenantAwareRepository {
           startDate: processedQuery.startDate.toISOString(),
           endDate: processedQuery.endDate.toISOString(),
           totalValue: totalRevenue,
-          wonValue: wonRevenue,
+          wonValue: toSafeNumber(wonValue._sum.amount, 0),
           pipelineId: query.pipelineId,
         },
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
       this.logger.error(
-        `Failed to get deal analytics: ${error.message}`,
-        error.stack,
+        `Failed to get deal analytics: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
         {
           tenantId: this.tenantId,
           query,
@@ -129,28 +192,22 @@ export class AnalyticsRepository extends TenantAwareRepository {
       const processedQuery = this.processDateRange(query);
       const where = this.buildDealWhereClause(tenantId, processedQuery);
 
-      const [
-        revenueOverTime,
-        forecastRevenue,
-        totalRevenue,
-        wonRevenue,
-        recurringStats,
-      ] = await Promise.all([
-        this.getRevenueOverTime(tenantId, processedQuery),
-        this.calculateForecastRevenue(tenantId, processedQuery),
-        this.prisma.deal.aggregate({
-          where,
-          _sum: { amount: true },
-        }),
-        this.prisma.deal.aggregate({
-          where: { ...where, status: 'WON' },
-          _sum: { amount: true },
-        }),
-        this.getRecurringRevenueStats(tenantId, processedQuery),
-      ]);
+      const [revenueOverTime, forecastRevenue, totalRevenue] =
+        await Promise.all([
+          this.getRevenueOverTime(tenantId, processedQuery),
+          this.calculateForecastRevenue(tenantId, processedQuery),
+          this.prisma.deal.aggregate({
+            where,
+            _sum: { amount: true },
+          }),
+        ]);
 
-      const totalRevenueAmount = Number(totalRevenue._sum.amount || 0);
-      const wonRevenueAmount = Number(wonRevenue._sum.amount || 0);
+      const recurringStats = await this.getRecurringRevenueStats(
+        tenantId,
+        processedQuery,
+      );
+
+      const totalRevenueAmount = toSafeNumber(totalRevenue._sum.amount, 0);
       const forecastRevenueAmount = forecastRevenue || 0;
       const mrr = recurringStats.mrr;
       const arr = recurringStats.arr;
@@ -159,8 +216,8 @@ export class AnalyticsRepository extends TenantAwareRepository {
       const data: RevenueDataPoint[] = revenueOverTime.map((item) => ({
         period: item.date,
         revenue: item.revenue,
-        forecastRevenue: 0, // Would need separate forecast by period
-        dealCount: 0, // Would need additional query
+        forecastRevenue: 0,
+        dealCount: 0,
         averageDealSize: 0,
       }));
 
@@ -183,10 +240,12 @@ export class AnalyticsRepository extends TenantAwareRepository {
           topPerformer: await this.getTopPerformer(tenantId, processedQuery),
         },
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
       this.logger.error(
-        `Failed to get revenue analytics: ${error.message}`,
-        error.stack,
+        `Failed to get revenue analytics: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
         {
           tenantId: this.tenantId,
           query,
@@ -210,7 +269,7 @@ export class AnalyticsRepository extends TenantAwareRepository {
         this.getPipelineDataFromOperational(tenantId, processedQuery),
         query.includeBottlenecks
           ? this.getPipelineBottlenecks(tenantId, processedQuery)
-          : Promise.resolve([]),
+          : Promise.resolve([] as Bottleneck[]),
         this.getPipelineStatistics(tenantId, processedQuery),
       ]);
 
@@ -242,10 +301,12 @@ export class AnalyticsRepository extends TenantAwareRepository {
           updatedAt: new Date().toISOString(),
         },
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
       this.logger.error(
-        `Failed to get pipeline analytics: ${error.message}`,
-        error.stack,
+        `Failed to get pipeline analytics: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
         {
           tenantId: this.tenantId,
           query,
@@ -267,21 +328,12 @@ export class AnalyticsRepository extends TenantAwareRepository {
       const { limit = 20, page = 1 } = processedQuery;
       const skip = (page - 1) * limit;
 
-      const where = {
-        organizationId: tenantId,
-        createdAt: {
-          ...(processedQuery.startDate
-            ? { gte: processedQuery.startDate }
-            : {}),
-          ...(processedQuery.endDate ? { lte: processedQuery.endDate } : {}),
-        },
-      };
+      const where = this.buildActivityWhereClause(tenantId, processedQuery);
 
       const [activities, total, byType, userActivity] = await Promise.all([
         this.prisma.auditLog.findMany({
           where,
           include: {
-            // KEEP AS include SINCE actor RELATION EXISTS
             actor: {
               select: {
                 id: true,
@@ -306,9 +358,9 @@ export class AnalyticsRepository extends TenantAwareRepository {
 
       const recentActivities: ActivityRecord[] = activities.map((log) => ({
         id: log.id,
-        type: log.action as any,
+        type: log.action,
         userId: log.actorUserId || '',
-        userEmail: log.actor?.email || log.actorEmail || '', // Use actor relation if available
+        userEmail: log.actor?.email || log.actorEmail || '',
         userName:
           log.actor?.firstName && log.actor?.lastName
             ? `${log.actor.firstName} ${log.actor.lastName}`
@@ -316,15 +368,16 @@ export class AnalyticsRepository extends TenantAwareRepository {
         entityType: log.entityType,
         entityId: log.entityId || '',
         timestamp: log.createdAt.toISOString(),
-        metadata: log.metadata as Record<string, any>, // Use metadata field
+        metadata: isRecord(log.metadata) ? log.metadata : {},
       }));
 
-      const activityByType = byType.reduce(
+      const activityByType = byType.reduce<Record<string, number>>(
         (acc, item) => {
-          acc[item.entityType as any] = item._count;
+          const key = `${item.entityType}:${item.action}`;
+          acc[key] = item._count;
           return acc;
         },
-        {} as Record<string, number>,
+        {},
       );
 
       return {
@@ -339,10 +392,12 @@ export class AnalyticsRepository extends TenantAwareRepository {
           totalPages: Math.ceil(total / limit),
         },
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
       this.logger.error(
-        `Failed to get activity analytics: ${error.message}`,
-        error.stack,
+        `Failed to get activity analytics: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
         {
           tenantId: this.tenantId,
           query,
@@ -355,50 +410,64 @@ export class AnalyticsRepository extends TenantAwareRepository {
   /**
    * Get available exports for user/tenant
    */
-  async getAvailableExports(
+  getAvailableExports(
     query: AnalyticsExportQueryDto,
     tenantId: string,
     userId: string,
   ): Promise<ExportJob[]> {
     try {
-      const where = {
+      // Build where clause
+      const where: Record<string, unknown> = {
         organizationId: tenantId,
         userId,
-        ...(query.status ? { status: query.status } : {}),
-        ...(query.startDate
-          ? { createdAt: { gte: new Date(query.startDate) } }
-          : {}),
-        ...(query.endDate
-          ? { createdAt: { lte: new Date(query.endDate) } }
-          : {}),
       };
 
+      if (query.status) {
+        where.status = query.status;
+      }
+      if (query.startDate) {
+        where.createdAt = { gte: new Date(query.startDate) };
+      }
+      if (query.endDate) {
+        where.createdAt = {
+          ...(where.createdAt as object),
+          lte: new Date(query.endDate),
+        };
+      }
+
+      // TODO: Uncomment when prisma.analyticsExport is available
       // const exports = await this.prisma.analyticsExport.findMany({
       //   where,
       //   orderBy: { createdAt: 'desc' },
       //   take: query.limit || 50,
       //   skip: query.page && query.limit ? (query.page - 1) * query.limit : 0
       // });
+      //
+      // return exports.map((exp) => ({
+      //   exportId: exp.id,
+      //   organizationId: exp.organizationId,
+      //   userId: exp.userId,
+      //   format: exp.format,
+      //   include: exp.include as string[],
+      //   status: exp.status,
+      //   downloadToken: exp.downloadToken,
+      //   downloadUrl: exp.downloadUrl || undefined,
+      //   fileSize: exp.fileSize || undefined,
+      //   recordCount: exp.recordCount || undefined,
+      //   createdAt: exp.createdAt.toISOString(),
+      //   completedAt: exp.completedAt?.toISOString(),
+      //   expiresAt: exp.expiresAt.toISOString(),
+      // }));
 
-      return exports.map((exp) => ({
-        exportId: exp.id,
-        organizationId: exp.organizationId,
-        userId: exp.userId,
-        format: exp.format,
-        include: exp.include as any[],
-        status: exp.status,
-        downloadToken: exp.downloadToken,
-        downloadUrl: exp.downloadUrl || undefined,
-        fileSize: exp.fileSize || undefined,
-        recordCount: exp.recordCount || undefined,
-        createdAt: exp.createdAt.toISOString(),
-        completedAt: exp.completedAt?.toISOString(),
-        expiresAt: exp.expiresAt.toISOString(),
-      }));
-    } catch (error: any) {
+      // Return empty array for now until export functionality is implemented
+      // Explicitly type as ExportJob[] to satisfy TypeScript
+      return Promise.resolve<ExportJob[]>([]);
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
       this.logger.error(
-        `Failed to get available exports: ${error.message}`,
-        error.stack,
+        `Failed to get available exports: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
         {
           tenantId,
           userId,
@@ -409,75 +478,49 @@ export class AnalyticsRepository extends TenantAwareRepository {
     }
   }
 
-  /**
-   * Get export file path for download
-   */
-  // async getExportFilePath(jobId: string, tenantId: string): Promise<string | null> {
-  //   try {
-  //     const exportRecord = await this.prisma.analyticsExport.findFirst({
-  //       where: {
-  //         id: jobId,
-  //         organizationId: tenantId,
-  //         status: 'COMPLETED',
-  //         expiresAt: { gt: new Date() }
-  //       },
-  //       select: { filePath: true }
-  //     });
-
-  //     return exportRecord?.filePath || null;
-  //   } catch (error: any) {
-  //     this.logger.error(`Failed to get export file path: ${error.message}`, error.stack, {
-  //       jobId,
-  //       tenantId
-  //     });
-  //     return null;
-  //   }
-  // }
-
   // ========== PRIVATE HELPER METHODS ==========
 
-  private processDateRange(query: any): any {
-    const { startDate, endDate, ...rest } = query;
+  private processDateRange(query: unknown): ProcessedQuery {
+    const typedQuery = isRecord(query) ? query : {};
+    const { startDate, endDate, ...rest } = typedQuery;
 
     return {
       ...rest,
       startDate: startDate
-        ? new Date(startDate)
+        ? new Date(toSafeString(startDate))
         : new Date(
             Date.now() - this.defaultDateRangeDays * 24 * 60 * 60 * 1000,
           ),
-      endDate: endDate ? new Date(endDate) : new Date(),
-    };
+      endDate: endDate ? new Date(toSafeString(endDate)) : new Date(),
+    } as ProcessedQuery;
   }
 
-  private buildDealWhereClause(tenantId: string, query: any): any {
-    const where: any = {
+  private buildDealWhereClause(
+    tenantId: string,
+    query: ProcessedQuery,
+  ): Record<string, unknown> {
+    const where: Record<string, unknown> = {
       organizationId: tenantId,
       deletedAt: null,
     };
 
-    // Add date range filter
-    if (query.startDate || query.endDate) {
-      where.createdAt = {};
-      if (query.startDate) {
-        where.createdAt.gte = query.startDate;
-      }
-      if (query.endDate) {
-        where.createdAt.lte = query.endDate;
-      }
+    // Build createdAt filter without mutation
+    const createdAt: Record<string, Date> = {};
+    if (query.startDate) createdAt.gte = query.startDate;
+    if (query.endDate) createdAt.lte = query.endDate;
+
+    if (Object.keys(createdAt).length > 0) {
+      where.createdAt = createdAt;
     }
 
-    // Add pipeline filter if provided
     if (query.pipelineId) {
       where.pipelineId = query.pipelineId;
     }
 
-    // Add stage filter if provided
     if (query.stageId) {
       where.stageId = query.stageId;
     }
 
-    // Add owner filter if provided
     if (query.ownerUserId) {
       where.ownerUserId = query.ownerUserId;
     }
@@ -485,30 +528,46 @@ export class AnalyticsRepository extends TenantAwareRepository {
     return where;
   }
 
+  private buildActivityWhereClause(
+    tenantId: string,
+    query: ProcessedQuery,
+  ): Record<string, unknown> {
+    const where: Record<string, unknown> = {
+      organizationId: tenantId,
+    };
+
+    const createdAt: Record<string, Date> = {};
+    if (query.startDate) createdAt.gte = query.startDate;
+    if (query.endDate) createdAt.lte = query.endDate;
+
+    if (Object.keys(createdAt).length > 0) {
+      where.createdAt = createdAt;
+    }
+
+    return where;
+  }
+
   private async getDealsOverTime(
     tenantId: string,
-    query: any,
+    query: ProcessedQuery,
   ): Promise<Array<{ date: string; count: number }>> {
     const deals = await this.prisma.deal.findMany({
       where: this.buildDealWhereClause(tenantId, query),
       select: { createdAt: true },
     });
 
-    const grouped = deals.reduce(
-      (acc, deal) => {
-        const date = deal.createdAt.toISOString().split('T')[0];
-        acc[date] = (acc[date] || 0) + 1;
-        return acc;
-      },
-      {} as Record<string, number>,
-    );
+    const grouped = deals.reduce<Record<string, number>>((acc, deal) => {
+      const date = deal.createdAt.toISOString().split('T')[0];
+      acc[date] = (acc[date] || 0) + 1;
+      return acc;
+    }, {});
 
     return Object.entries(grouped).map(([date, count]) => ({ date, count }));
   }
 
   private async getStageMetrics(
     tenantId: string,
-    query: any,
+    query: ProcessedQuery,
   ): Promise<Array<{ stage: string; count: number; value: number }>> {
     const deals = await this.prisma.deal.findMany({
       where: this.buildDealWhereClause(tenantId, query),
@@ -518,18 +577,17 @@ export class AnalyticsRepository extends TenantAwareRepository {
       },
     });
 
-    const grouped = deals.reduce(
-      (acc, deal) => {
-        const stage = deal.status;
-        if (!acc[stage]) {
-          acc[stage] = { count: 0, value: 0 };
-        }
-        acc[stage].count += 1;
-        acc[stage].value += Number(deal.amount || 0);
-        return acc;
-      },
-      {} as Record<string, { count: number; value: number }>,
-    );
+    const grouped = deals.reduce<
+      Record<string, { count: number; value: number }>
+    >((acc, deal) => {
+      const stage = deal.status;
+      if (!acc[stage]) {
+        acc[stage] = { count: 0, value: 0 };
+      }
+      acc[stage].count += 1;
+      acc[stage].value += toSafeNumber(deal.amount, 0);
+      return acc;
+    }, {});
 
     return Object.entries(grouped).map(([stage, metrics]) => ({
       stage,
@@ -538,14 +596,17 @@ export class AnalyticsRepository extends TenantAwareRepository {
     }));
   }
 
-  private async getDealStatistics(tenantId: string, query: any) {
+  private async getDealStatistics(
+    tenantId: string,
+    query: ProcessedQuery,
+  ): Promise<DealStats> {
     const where = this.buildDealWhereClause(tenantId, query);
 
     const [total, won, lost, open, velocity] = await Promise.all([
       this.prisma.deal.count({ where }),
-      this.prisma.deal.count({ where: { ...where, status: 'WON' } }),
-      this.prisma.deal.count({ where: { ...where, status: 'LOST' } }),
-      this.prisma.deal.count({ where: { ...where, status: 'OPEN' } }),
+      this.prisma.deal.count({ where: { ...where, status: DEAL_STATUS.WON } }),
+      this.prisma.deal.count({ where: { ...where, status: DEAL_STATUS.LOST } }),
+      this.prisma.deal.count({ where: { ...where, status: DEAL_STATUS.OPEN } }),
       this.calculateSalesVelocity(tenantId, query),
     ]);
 
@@ -560,13 +621,12 @@ export class AnalyticsRepository extends TenantAwareRepository {
 
   private async calculateSalesVelocity(
     tenantId: string,
-    query: any,
+    query: ProcessedQuery,
   ): Promise<number> {
-    // Simplified sales velocity calculation
     const deals = await this.prisma.deal.findMany({
       where: {
         ...this.buildDealWhereClause(tenantId, query),
-        status: 'WON',
+        status: DEAL_STATUS.WON,
         createdAt: { not: null },
         closedAt: { not: null },
       },
@@ -592,13 +652,15 @@ export class AnalyticsRepository extends TenantAwareRepository {
 
   private async calculateForecastRevenue(
     tenantId: string,
-    query: any,
+    query: ProcessedQuery,
   ): Promise<number> {
     const deals = await this.prisma.deal.findMany({
       where: {
         ...this.buildDealWhereClause(tenantId, query),
         expectedCloseDate: { not: null },
-        status: { in: ['OPEN', 'ACTIVE', 'NEGOTIATION'] },
+        status: {
+          in: [DEAL_STATUS.OPEN, DEAL_STATUS.ACTIVE, DEAL_STATUS.NEGOTIATION],
+        },
       },
       select: {
         amount: true,
@@ -608,18 +670,18 @@ export class AnalyticsRepository extends TenantAwareRepository {
 
     return deals.reduce((sum, deal) => {
       const probability = deal.probability || 50;
-      return sum + (Number(deal.amount) || 0) * (probability / 100);
+      return sum + (toSafeNumber(deal.amount, 0) * probability) / 100;
     }, 0);
   }
 
   private async getRevenueOverTime(
     tenantId: string,
-    query: any,
+    query: ProcessedQuery,
   ): Promise<Array<{ date: string; revenue: number }>> {
     const deals = await this.prisma.deal.findMany({
       where: {
         ...this.buildDealWhereClause(tenantId, query),
-        status: 'WON',
+        status: DEAL_STATUS.WON,
       },
       select: {
         closedAt: true,
@@ -627,16 +689,13 @@ export class AnalyticsRepository extends TenantAwareRepository {
       },
     });
 
-    const grouped = deals.reduce(
-      (acc, deal) => {
-        if (deal.closedAt) {
-          const date = deal.closedAt.toISOString().split('T')[0];
-          acc[date] = (acc[date] || 0) + Number(deal.amount || 0);
-        }
-        return acc;
-      },
-      {} as Record<string, number>,
-    );
+    const grouped = deals.reduce<Record<string, number>>((acc, deal) => {
+      if (deal.closedAt) {
+        const date = deal.closedAt.toISOString().split('T')[0];
+        acc[date] = (acc[date] || 0) + toSafeNumber(deal.amount, 0);
+      }
+      return acc;
+    }, {});
 
     return Object.entries(grouped).map(([date, revenue]) => ({
       date,
@@ -660,18 +719,31 @@ export class AnalyticsRepository extends TenantAwareRepository {
     return ((lastPeriod - firstPeriod) / firstPeriod) * 100;
   }
 
-  private async getRecurringRevenueStats(tenantId: string, query: any) {
+  /**
+   * Get recurring revenue statistics
+   * Note: This is a synchronous method that returns a Promise for consistency with repository pattern
+   * In production, this would query subscription/recurring revenue data
+   */
+  private async getRecurringRevenueStats(
+    tenantId: string,
+    query: ProcessedQuery,
+  ): Promise<RecurringRevenueStats> {
+    // Mark parameters as intentionally unused for now
+    void tenantId;
+    void query;
+
     // Simplified MRR/ARR calculation
     // In production, this would query subscription/recurring revenue data
-    return {
+    // For now, return mock data synchronously
+    return Promise.resolve({
       mrr: 0,
       arr: 0,
-    };
+    });
   }
 
   private async getBestPerformingPipeline(
     tenantId: string,
-    query: any,
+    query: ProcessedQuery,
   ): Promise<string | undefined> {
     const pipelineStats = await this.prisma.deal.groupBy({
       by: ['pipelineId'],
@@ -682,7 +754,8 @@ export class AnalyticsRepository extends TenantAwareRepository {
       take: 1,
     });
 
-    if (pipelineStats.length === 0) return undefined;
+    if (pipelineStats.length === 0 || !pipelineStats[0].pipelineId)
+      return undefined;
 
     const pipeline = await this.prisma.pipeline.findUnique({
       where: { id: pipelineStats[0].pipelineId },
@@ -694,7 +767,7 @@ export class AnalyticsRepository extends TenantAwareRepository {
 
   private async getTopPerformer(
     tenantId: string,
-    query: any,
+    query: ProcessedQuery,
   ): Promise<string | undefined> {
     const userStats = await this.prisma.deal.groupBy({
       by: ['ownerUserId'],
@@ -715,7 +788,27 @@ export class AnalyticsRepository extends TenantAwareRepository {
     return user?.email;
   }
 
-  private async getPipelineDataFromOperational(tenantId: string, query: any) {
+  private async getPipelineDataFromOperational(
+    tenantId: string,
+    query: ProcessedQuery,
+  ): Promise<
+    Array<{
+      id: string;
+      name: string;
+      stages: Array<{
+        id: string;
+        name: string;
+        order: number;
+        dealCount: number;
+        totalValue: number;
+        avgStageDuration: number;
+        conversionRate: number;
+        probability: number;
+      }>;
+      activeDeals: number;
+      totalValue: number;
+    }>
+  > {
     const pipelines = await this.prisma.pipeline.findMany({
       where: {
         organizationId: tenantId,
@@ -751,7 +844,7 @@ export class AnalyticsRepository extends TenantAwareRepository {
     return pipelines.map((pipeline) => {
       const allDeals = pipeline.stages.flatMap((stage) => stage.deals);
       const activeDeals = allDeals.filter((d) =>
-        this.ACTIVE_DEAL_STATUSES.includes(d.status),
+        this.ACTIVE_DEAL_STATUSES.includes(d.status as DealStatus),
       );
 
       return {
@@ -763,33 +856,37 @@ export class AnalyticsRepository extends TenantAwareRepository {
           order: stage.order,
           dealCount: stage.deals.length,
           totalValue: stage.deals.reduce(
-            (sum, deal) => sum + Number(deal.amount || 0),
+            (sum, deal) => sum + toSafeNumber(deal.amount, 0),
             0,
           ),
           avgStageDuration: this.calculateAverageStageDuration(stage.deals),
-          conversionRate: 0, // Would need stage transition data
+          conversionRate: 0,
           probability: stage.probability || 0,
         })),
         activeDeals: activeDeals.length,
         totalValue: allDeals.reduce(
-          (sum, deal) => sum + Number(deal.amount || 0),
+          (sum, deal) => sum + toSafeNumber(deal.amount, 0),
           0,
         ),
       };
     });
   }
 
-  private calculateAverageStageDuration(deals: any[]): number {
+  private calculateAverageStageDuration(
+    deals: Array<{ createdAt: Date; closedAt: Date | null }>,
+  ): number {
     if (deals.length === 0) return 0;
 
     const durations = deals
       .filter((deal) => deal.createdAt && deal.closedAt)
-      .map((deal) =>
-        Math.ceil(
-          (deal.closedAt.getTime() - deal.createdAt.getTime()) /
-            (1000 * 60 * 60 * 24),
-        ),
-      );
+      .map((deal) => {
+        // No type assertion needed - TypeScript knows closedAt is Date after filter
+        const closed = new Date(deal.closedAt);
+        const created = new Date(deal.createdAt);
+        return Math.ceil(
+          (closed.getTime() - created.getTime()) / (1000 * 60 * 60 * 24),
+        );
+      });
 
     if (durations.length === 0) return 0;
 
@@ -798,17 +895,19 @@ export class AnalyticsRepository extends TenantAwareRepository {
     );
   }
 
-  private async getPipelineBottlenecks(tenantId: string, query: any) {
+  private async getPipelineBottlenecks(
+    tenantId: string,
+    query: ProcessedQuery,
+  ): Promise<Bottleneck[]> {
     const pipelineData = await this.getPipelineDataFromOperational(
       tenantId,
       query,
     );
+    const bottlenecks: Bottleneck[] = [];
 
-    const bottlenecks = [];
     for (const pipeline of pipelineData) {
       for (const stage of pipeline.stages) {
         if (stage.avgStageDuration > 30) {
-          // More than 30 days is a bottleneck
           bottlenecks.push({
             stageId: stage.id,
             stageName: stage.name,
@@ -823,18 +922,29 @@ export class AnalyticsRepository extends TenantAwareRepository {
     return bottlenecks;
   }
 
-  private async getPipelineStatistics(tenantId: string, query: any) {
+  private async getPipelineStatistics(
+    tenantId: string,
+    query: ProcessedQuery,
+  ): Promise<{
+    totalDeals: number;
+    totalValue: number;
+    averageWinRate: number;
+    averageSalesCycle: number;
+    averageDealDuration: number;
+  }> {
     const where = this.buildDealWhereClause(tenantId, query);
 
     const [totalDeals, totalValue, wonDeals, dealDurations] = await Promise.all(
       [
         this.prisma.deal.count({ where }),
         this.prisma.deal.aggregate({ where, _sum: { amount: true } }),
-        this.prisma.deal.count({ where: { ...where, status: 'WON' } }),
+        this.prisma.deal.count({
+          where: { ...where, status: DEAL_STATUS.WON },
+        }),
         this.prisma.deal.findMany({
           where: {
             ...where,
-            status: 'WON',
+            status: DEAL_STATUS.WON,
             createdAt: { not: null },
             closedAt: { not: null },
           },
@@ -860,19 +970,30 @@ export class AnalyticsRepository extends TenantAwareRepository {
         );
       }, 0);
       averageSalesCycle = totalDays / dealDurations.length;
-      averageDealDuration = averageSalesCycle; // For now, use same value
+      averageDealDuration = averageSalesCycle;
     }
 
     return {
       totalDeals,
-      totalValue: Number(totalValue._sum.amount || 0),
+      totalValue: toSafeNumber(totalValue._sum.amount, 0),
       averageWinRate,
       averageSalesCycle,
-      averageDealDuration, // Add this
+      averageDealDuration,
     };
   }
 
-  private async getUserActivityStats(tenantId: string, query: any) {
+  private async getUserActivityStats(
+    tenantId: string,
+    query: ProcessedQuery,
+  ): Promise<
+    Array<{
+      userId: string;
+      userEmail: string;
+      userName: string;
+      activityCount: number;
+      lastActive: string;
+    }>
+  > {
     const userActivity = await this.prisma.auditLog.groupBy({
       by: ['actorUserId'],
       where: {
@@ -891,7 +1012,7 @@ export class AnalyticsRepository extends TenantAwareRepository {
 
     const userIds = userActivity
       .map((item) => item.actorUserId)
-      .filter(Boolean);
+      .filter((id): id is string => id !== null);
     const users = await this.prisma.user.findMany({
       where: { id: { in: userIds }, organizationId: tenantId },
       select: { id: true, email: true, firstName: true, lastName: true },
@@ -899,17 +1020,21 @@ export class AnalyticsRepository extends TenantAwareRepository {
 
     const userMap = new Map(users.map((user) => [user.id, user]));
 
-    return userActivity.map((item) => ({
-      userId: item.actorUserId,
-      userEmail: userMap.get(item.actorUserId)?.email || '',
-      userName:
-        userMap.get(item.actorUserId)?.firstName &&
-        userMap.get(item.actorUserId)?.lastName
-          ? `${userMap.get(item.actorUserId)?.firstName} ${userMap.get(item.actorUserId)?.lastName}`
-          : userMap.get(item.actorUserId)?.email || 'Unknown',
-      activityCount: item._count,
-      lastActive:
-        item._max.createdAt?.toISOString() || new Date().toISOString(),
-    }));
+    return userActivity.map((item) => {
+      const userId = item.actorUserId || '';
+      const user = userMap.get(userId);
+
+      return {
+        userId,
+        userEmail: user?.email || '',
+        userName:
+          user?.firstName && user?.lastName
+            ? `${user.firstName} ${user.lastName}`
+            : user?.email || 'Unknown',
+        activityCount: item._count,
+        lastActive:
+          item._max.createdAt?.toISOString() || new Date().toISOString(),
+      };
+    });
   }
 }

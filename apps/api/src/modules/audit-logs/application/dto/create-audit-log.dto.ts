@@ -215,20 +215,25 @@ export class CreateAuditLogDto {
   validate(): { isValid: boolean; errors: string[] } {
     const errors: string[] = [];
 
+    // Safely convert enum values to strings for error messages
     if (!AuditLogTypes.isAuditAction(this.action)) {
-      errors.push(`Invalid action: ${this.action}`);
+      const actionValue = String(this.action);
+      errors.push(`Invalid action: ${actionValue}`);
     }
 
     if (!AuditLogTypes.isAuditEntityType(this.entityType)) {
-      errors.push(`Invalid entity type: ${this.entityType}`);
+      const entityTypeValue = String(this.entityType);
+      errors.push(`Invalid entity type: ${entityTypeValue}`);
     }
 
     if (!AuditLogTypes.isAuditSeverity(this.severity)) {
-      errors.push(`Invalid severity: ${this.severity}`);
+      const severityValue = String(this.severity);
+      errors.push(`Invalid severity: ${severityValue}`);
     }
 
     if (!AuditLogTypes.isActorType(this.actorType)) {
-      errors.push(`Invalid actor type: ${this.actorType}`);
+      const actorTypeValue = String(this.actorType);
+      errors.push(`Invalid actor type: ${actorTypeValue}`);
     }
 
     return {

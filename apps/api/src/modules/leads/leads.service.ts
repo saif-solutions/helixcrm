@@ -21,6 +21,37 @@ interface FindAllOptions {
   search?: string;
 }
 
+// Helper function for safe error message extraction
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === 'string') {
+    return error;
+  }
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return 'Unknown error occurred';
+  }
+}
+
+// Helper function to check for Prisma error codes
+interface PrismaError {
+  code?: string;
+  message?: string;
+  stack?: string;
+}
+
+function isPrismaError(error: unknown): error is PrismaError {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    typeof (error as PrismaError).code === 'string'
+  );
+}
+
 @Injectable()
 export class LeadsService {
   constructor(
@@ -30,8 +61,6 @@ export class LeadsService {
   ) {}
 
   async create(createLeadDto: CreateLeadDto, userId: string) {
-    // ✅ REMOVED permission check - handled in controller
-
     const startTime = Date.now();
     try {
       const { source, ...leadData } = createLeadDto;
@@ -52,26 +81,31 @@ export class LeadsService {
       });
 
       return lead;
-    } catch (error: any) {
-      if (error.code === 'P2002') {
+    } catch (error: unknown) {
+      if (isPrismaError(error) && error.code === 'P2002') {
         throw new ConflictException(
           'Lead with this email or phone already exists',
         );
       }
-      if (error.code === 'P2025') {
+      if (isPrismaError(error) && error.code === 'P2025') {
         throw new NotFoundException('Referenced entity not found');
       }
 
-      this.logger.error(`Lead creation failed: ${error.message}`, error.stack, {
-        tenantId: this.tenantContext.getTenantId(),
-        userId,
-        errorCode: error.code,
-      });
+      const errorMessage = getErrorMessage(error);
+      this.logger.error(
+        `Lead creation failed: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
+        {
+          tenantId: this.tenantContext.getTenantId(),
+          userId,
+          errorCode: isPrismaError(error) ? error.code : undefined,
+        },
+      );
 
       throw new BadRequestException(
         process.env.NODE_ENV === 'production'
           ? 'Lead creation failed. Contact support.'
-          : error.message,
+          : errorMessage,
       );
     } finally {
       const duration = Date.now() - startTime;
@@ -100,10 +134,11 @@ export class LeadsService {
           pages: Math.ceil(total / (params.limit || 20)),
         },
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       this.logger.error(
-        `Failed to fetch leads: ${error.message}`,
-        error.stack,
+        `Failed to fetch leads: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
         {
           tenantId,
           params,
@@ -122,8 +157,6 @@ export class LeadsService {
   }
 
   async findOne(id: string) {
-    // ✅ REMOVED permission check - handled in controller
-
     const startTime = Date.now();
     try {
       const lead = await this.leadRepository.findByIdOrThrow(id);
@@ -135,13 +168,14 @@ export class LeadsService {
       }
 
       return lead;
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof NotFoundException) {
         throw error;
       }
+      const errorMessage = getErrorMessage(error);
       this.logger.error(
-        `Failed to fetch lead ${id}: ${error.message}`,
-        error.stack,
+        `Failed to fetch lead ${id}: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
         {
           leadId: id,
           tenantId: this.tenantContext.getTenantId(),
@@ -160,8 +194,6 @@ export class LeadsService {
   }
 
   async update(id: string, updateLeadDto: UpdateLeadDto, userId: string) {
-    // ✅ REMOVED permission check - handled in controller
-
     const startTime = Date.now();
     try {
       // First verify lead belongs to tenant
@@ -181,15 +213,16 @@ export class LeadsService {
       });
 
       return lead;
-    } catch (error: any) {
-      if (error.code === 'P2002') {
+    } catch (error: unknown) {
+      if (isPrismaError(error) && error.code === 'P2002') {
         throw new ConflictException(
           'Lead with this email or phone already exists',
         );
       }
+      const errorMessage = getErrorMessage(error);
       this.logger.error(
-        `Failed to update lead ${id}: ${error.message}`,
-        error.stack,
+        `Failed to update lead ${id}: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
         {
           leadId: id,
           tenantId: this.tenantContext.getTenantId(),
@@ -209,8 +242,6 @@ export class LeadsService {
   }
 
   async remove(id: string, userId: string) {
-    // ✅ REMOVED permission check - handled in controller
-
     const startTime = Date.now();
     try {
       // First verify lead belongs to tenant
@@ -226,10 +257,11 @@ export class LeadsService {
       });
 
       return lead;
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       this.logger.error(
-        `Failed to delete lead ${id}: ${error.message}`,
-        error.stack,
+        `Failed to delete lead ${id}: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
         {
           leadId: id,
           tenantId: this.tenantContext.getTenantId(),
@@ -249,16 +281,15 @@ export class LeadsService {
   }
 
   async getStats() {
-    // ✅ REMOVED permission check - handled in controller
-
     const startTime = Date.now();
     try {
       const stats = await this.leadRepository.countByStatus();
       return stats;
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       this.logger.error(
-        `Failed to fetch lead stats: ${error.message}`,
-        error.stack,
+        `Failed to fetch lead stats: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
         {
           tenantId: this.tenantContext.getTenantId(),
         },
