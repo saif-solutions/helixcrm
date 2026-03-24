@@ -1,8 +1,35 @@
+// apps/api/src/modules/auth/adapters/PrismaTokenRepositoryBridge.ts
+
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import SecurityConfig from '../../../config/security.config';
 import { TokenRepository, RefreshToken } from '@helixcrm/auth-core';
+
+// Helper function to safely get token value
+function safeTokenValue(token: unknown): string {
+  if (typeof token === 'string') {
+    return token.substring(0, 30) + '...';
+  }
+  // For objects, use JSON.stringify to avoid [object Object]
+  if (token && typeof token === 'object') {
+    try {
+      const jsonString = JSON.stringify(token);
+      if (jsonString && jsonString !== '{}') {
+        return jsonString.substring(0, 30) + '...';
+      }
+    } catch {
+      // Fall through to default
+    }
+    return '[COMPLEX_OBJECT]';
+  }
+  // For other types, use String() but only for primitives
+  if (token === null) return 'null';
+  if (token === undefined) return 'undefined';
+  if (typeof token === 'number') return String(token).substring(0, 30) + '...';
+  if (typeof token === 'boolean') return String(token);
+  return 'UNKNOWN_TYPE';
+}
 
 @Injectable()
 export class PrismaTokenRepositoryBridge implements TokenRepository {
@@ -28,14 +55,15 @@ export class PrismaTokenRepositoryBridge implements TokenRepository {
       hasIdField: 'id' in token,
       hasUserIdField: 'userId' in token,
       tokenValue:
-        'token' in token
-          ? (token.token as any).substring(0, 30) + '...'
-          : 'NOT PRESENT',
+        'token' in token ? safeTokenValue(token.token) : 'NOT_PRESENT',
       tokenHashValue:
-        'tokenHash' in token
-          ? (token.tokenHash as any).substring(0, 30) + '...'
-          : 'NOT PRESENT',
-      idValue: 'id' in token ? token.id.substring(0, 20) : 'NOT PRESENT',
+        'tokenHash' in token ? safeTokenValue(token.tokenHash) : 'NOT_PRESENT',
+      idValue:
+        'id' in token && token.id
+          ? typeof token.id === 'string'
+            ? token.id.substring(0, 20)
+            : 'NOT_STRING'
+          : 'NOT_PRESENT',
     });
 
     // Validate required fields
@@ -63,12 +91,19 @@ export class PrismaTokenRepositoryBridge implements TokenRepository {
     }
 
     // Hash the token for secure storage
-    // TEMPORARY DEBUG: Let me see what token contains
-    console.log('TOKEN OBJECT KEYS:', Object.keys(token));
-    console.log('TOKEN OBJECT:', token);
+    // Ensure token.tokenHash exists and is a string
+    const tokenHash = token.tokenHash;
+    if (typeof tokenHash !== 'string') {
+      this.logger.error('[SECURITY] token.tokenHash is not a string', {
+        userId: token.userId,
+        tokenId: token.id,
+        tokenHashType: typeof tokenHash,
+      });
+      throw new Error('Invalid token hash format');
+    }
 
     const hashedToken = await bcrypt.hash(
-      token.tokenHash, // Keep this for now but add debugging
+      tokenHash,
       SecurityConfig.refreshToken.bcryptRounds || 10,
     );
 

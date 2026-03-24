@@ -1,3 +1,5 @@
+// apps/api/src/modules/auth/auth.service.ts
+
 import {
   Injectable,
   UnauthorizedException,
@@ -7,16 +9,37 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
-import {
-  AuditLogService,
-  AuditAction,
-  AuditEntityType,
-  AuditSeverity,
-} from '../../shared/audit-log/audit-log.service';
+import { AuditLogService } from '../../shared/audit-log/audit-log.service';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import SecurityConfig from '../../config/security.config';
 import { AccountLockoutService } from './services/account-lockout.service';
 import { AuthCoreAdapter } from './adapters/AuthCoreAdapter';
+
+// Define audit constants to avoid enum resolution issues
+const AUDIT_ACTIONS = {
+  LOGIN_FAILURE: 'LOGIN_FAILURE',
+  LOGIN_SUCCESS: 'LOGIN_SUCCESS',
+  LOGOUT: 'LOGOUT',
+  TOKEN_REFRESH: 'TOKEN_REFRESH',
+  USER_CREATED: 'USER_CREATED',
+  PASSWORD_CHANGE: 'PASSWORD_CHANGE',
+} as const;
+
+const AUDIT_ENTITY_TYPES = {
+  AUTH: 'AUTH',
+  USER: 'USER',
+} as const;
+
+const AUDIT_SEVERITIES = {
+  LOW: 'LOW',
+  MEDIUM: 'MEDIUM',
+  HIGH: 'HIGH',
+} as const;
+
+type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS];
+type AuditEntityType =
+  (typeof AUDIT_ENTITY_TYPES)[keyof typeof AUDIT_ENTITY_TYPES];
+type AuditSeverity = (typeof AUDIT_SEVERITIES)[keyof typeof AUDIT_SEVERITIES];
 
 // ==================== TYPE DEFINITIONS ====================
 
@@ -130,13 +153,13 @@ export class AuthService {
       if (request) {
         await this.auditLogService.logAuthEvent({
           request,
-          action: AuditAction.LOGIN_FAILURE,
+          action: AUDIT_ACTIONS.LOGIN_FAILURE as AuditAction,
           actorEmail: normalizedEmail,
           metadata: {
             reason: 'Account locked',
             lockedUntil: lockStatus.lockedUntil?.toISOString(),
           },
-          severity: AuditSeverity.HIGH,
+          severity: AUDIT_SEVERITIES.HIGH as AuditSeverity,
         });
       }
 
@@ -167,18 +190,16 @@ export class AuthService {
       if (request) {
         await this.auditLogService.logAuthEvent({
           request,
-          action: AuditAction.LOGIN_FAILURE,
+          action: AUDIT_ACTIONS.LOGIN_FAILURE as AuditAction,
           actorEmail: normalizedEmail,
           metadata: { reason: 'Invalid credentials or inactive account' },
-          severity: AuditSeverity.MEDIUM,
+          severity: AUDIT_SEVERITIES.MEDIUM as AuditSeverity,
         });
       }
 
       return null;
     }
 
-    // FIX 1: Remove await if password.verify is synchronous
-    // Check the actual implementation - if it's async, keep await
     const isValid = await this.authCoreAdapter.password.verify(
       password,
       user.passwordHash,
@@ -192,12 +213,12 @@ export class AuthService {
       if (request) {
         await this.auditLogService.logAuthEvent({
           request,
-          action: AuditAction.LOGIN_FAILURE,
+          action: AUDIT_ACTIONS.LOGIN_FAILURE as AuditAction,
           actorEmail: normalizedEmail,
           actorUserId: user.id,
           metadata: { reason: 'Invalid password' },
           organizationId: user.organizationId,
-          severity: AuditSeverity.MEDIUM,
+          severity: AUDIT_SEVERITIES.MEDIUM as AuditSeverity,
         });
       }
 
@@ -346,7 +367,7 @@ export class AuthService {
       if (request) {
         await this.auditLogService.logAuthEvent({
           request,
-          action: AuditAction.LOGIN_SUCCESS,
+          action: AUDIT_ACTIONS.LOGIN_SUCCESS as AuditAction,
           actorEmail: user.email,
           actorUserId: user.id,
           metadata: {
@@ -355,7 +376,7 @@ export class AuthService {
             tokenVersion: user.tokenVersion,
           },
           organizationId: user.organizationId,
-          severity: AuditSeverity.MEDIUM,
+          severity: AUDIT_SEVERITIES.MEDIUM as AuditSeverity,
         });
       }
 
@@ -385,7 +406,7 @@ export class AuthService {
       if (request && user?.email) {
         await this.auditLogService.logAuthEvent({
           request,
-          action: AuditAction.LOGIN_FAILURE,
+          action: AUDIT_ACTIONS.LOGIN_FAILURE as AuditAction,
           actorEmail: user.email,
           actorUserId: user.id,
           metadata: {
@@ -393,7 +414,7 @@ export class AuthService {
             errorType: errorName,
           },
           organizationId: user.organizationId,
-          severity: AuditSeverity.HIGH,
+          severity: AUDIT_SEVERITIES.HIGH as AuditSeverity,
         });
       }
 
@@ -447,12 +468,12 @@ export class AuthService {
     if (request) {
       await this.auditLogService.logAuthEvent({
         request,
-        action: AuditAction.LOGOUT,
+        action: AUDIT_ACTIONS.LOGOUT as AuditAction,
         actorEmail: user.email,
         actorUserId: userId,
         metadata: {},
         organizationId: user.organizationId,
-        severity: AuditSeverity.MEDIUM,
+        severity: AUDIT_SEVERITIES.MEDIUM as AuditSeverity,
       });
     }
 
@@ -489,13 +510,13 @@ export class AuthService {
         const tokenRepository = this.authCoreAdapter.tokenRepository;
         const userRepository = this.authCoreAdapter.userRepository;
 
-        // Find user using auth-core repository - FIX 2: Remove unnecessary type assertion
+        // Find user using auth-core repository
         const authCoreUser = await userRepository.findById(payload.sub);
         if (!authCoreUser) {
           throw new UnauthorizedException('User not found');
         }
 
-        // Fetch full user from database - FIX 3: Remove unnecessary type assertion
+        // Fetch full user from database
         const fullUser = await this.prisma.user.findUnique({
           where: { id: payload.sub },
           include: {
@@ -537,7 +558,6 @@ export class AuthService {
           .update(oldRefreshToken)
           .digest('hex');
 
-        // FIX 4: Remove await if password.verify is synchronous
         const isTokenValid = await this.authCoreAdapter.password.verify(
           jwtHash,
           userWithOrg.refreshTokenHash,
@@ -570,7 +590,7 @@ export class AuthService {
           roles,
         });
 
-        // Hash the new token - FIX 5: Remove await if hash is synchronous
+        // Hash the new token
         const newRefreshTokenHash =
           this.authCoreAdapter.password.hash(newRefreshToken);
 
@@ -601,7 +621,7 @@ export class AuthService {
         if (request) {
           await this.auditLogService.logAuthEvent({
             request,
-            action: AuditAction.TOKEN_REFRESH,
+            action: AUDIT_ACTIONS.TOKEN_REFRESH as AuditAction,
             actorEmail: userWithOrg.email,
             actorUserId: userWithOrg.id,
             metadata: {
@@ -609,7 +629,7 @@ export class AuthService {
               newTokenVersion: userWithOrg.tokenVersion + 1,
             },
             organizationId: userWithOrg.organizationId,
-            severity: AuditSeverity.MEDIUM,
+            severity: AUDIT_SEVERITIES.MEDIUM as AuditSeverity,
           });
         }
 
@@ -719,8 +739,8 @@ export class AuthService {
     if (request) {
       await this.auditLogService.logWithRequest(
         request,
-        AuditAction.USER_CREATED,
-        AuditEntityType.USER,
+        AUDIT_ACTIONS.USER_CREATED as AuditAction,
+        AUDIT_ENTITY_TYPES.USER as AuditEntityType,
         user.email,
         user.id,
         user.id,
@@ -730,7 +750,7 @@ export class AuthService {
           organizationName: organization.name,
           roles: ['SystemAdmin'],
         },
-        AuditSeverity.LOW,
+        AUDIT_SEVERITIES.LOW as AuditSeverity,
         user.organizationId,
       );
     }
@@ -784,12 +804,12 @@ export class AuthService {
     if (request) {
       await this.auditLogService.logAuthEvent({
         request,
-        action: AuditAction.TOKEN_REFRESH,
+        action: AUDIT_ACTIONS.TOKEN_REFRESH as AuditAction,
         actorEmail: user.email,
         actorUserId: userId,
         metadata: { action: 'invalidate_all_tokens' },
         organizationId: user.organizationId,
-        severity: AuditSeverity.MEDIUM,
+        severity: AUDIT_SEVERITIES.MEDIUM as AuditSeverity,
       });
     }
   }
@@ -887,12 +907,12 @@ export class AuthService {
     if (request) {
       await this.auditLogService.logAuthEvent({
         request,
-        action: AuditAction.TOKEN_REFRESH,
+        action: AUDIT_ACTIONS.TOKEN_REFRESH as AuditAction,
         actorEmail: user.email,
         actorUserId: userId,
         metadata: { action: 'invalidate_other_sessions', keepCurrent },
         organizationId: user.organizationId,
-        severity: AuditSeverity.MEDIUM,
+        severity: AUDIT_SEVERITIES.MEDIUM as AuditSeverity,
       });
     }
 
@@ -963,12 +983,12 @@ export class AuthService {
     if (request) {
       await this.auditLogService.logAuthEvent({
         request,
-        action: AuditAction.PASSWORD_CHANGE,
+        action: AUDIT_ACTIONS.PASSWORD_CHANGE as AuditAction,
         actorEmail: user.email,
         actorUserId: userId,
         metadata: {},
         organizationId: user.organizationId,
-        severity: AuditSeverity.MEDIUM,
+        severity: AUDIT_SEVERITIES.MEDIUM as AuditSeverity,
       });
     }
 

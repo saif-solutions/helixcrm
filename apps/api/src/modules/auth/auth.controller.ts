@@ -20,12 +20,7 @@ import { AuthService } from './auth.service';
 import { AuthGuard } from '../../shared/guards/auth.guard';
 import { Public } from '../../shared/decorators/require-permission.decorator';
 import SecurityConfig from '../../config/security.config';
-import {
-  AuditLogService,
-  AuditAction,
-  AuditEntityType,
-  AuditSeverity,
-} from '../../shared/audit-log/audit-log.service';
+import { AuditLogService } from '../../shared/audit-log/audit-log.service';
 import {
   AuthenticatedRequest,
   RegisterResult,
@@ -34,6 +29,39 @@ import {
   LoginResponse,
   UserSessionResponse,
 } from './types/request.types';
+
+// Define audit constants to avoid enum resolution issues
+const AUDIT_ACTIONS = {
+  LOGIN_FAILURE: 'LOGIN_FAILURE',
+  LOGIN_SUCCESS: 'LOGIN_SUCCESS',
+  LOGOUT: 'LOGOUT',
+  USER_CREATED: 'USER_CREATED',
+} as const;
+
+const AUDIT_ENTITY_TYPES = {
+  AUTH: 'AUTH',
+  USER: 'USER',
+} as const;
+
+const AUDIT_SEVERITIES = {
+  LOW: 'LOW',
+  MEDIUM: 'MEDIUM',
+  HIGH: 'HIGH',
+} as const;
+
+type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS];
+type AuditEntityType =
+  (typeof AUDIT_ENTITY_TYPES)[keyof typeof AUDIT_ENTITY_TYPES];
+type AuditSeverity = (typeof AUDIT_SEVERITIES)[keyof typeof AUDIT_SEVERITIES];
+
+// Extend Request type to include cookies
+interface RequestWithCookies extends Request {
+  cookies: {
+    refresh_token?: string;
+    test_cookie?: string;
+    [key: string]: string | undefined;
+  };
+}
 
 @Controller('auth')
 export class AuthController {
@@ -63,13 +91,13 @@ export class AuthController {
       // Log failed login attempt
       await this.auditLogService.logWithRequest(
         req,
-        AuditAction.LOGIN_FAILURE,
-        AuditEntityType.AUTH,
+        AUDIT_ACTIONS.LOGIN_FAILURE as AuditAction,
+        AUDIT_ENTITY_TYPES.AUTH as AuditEntityType,
         loginDto.email,
         undefined,
         undefined,
         { reason: 'Invalid credentials' },
-        AuditSeverity.MEDIUM,
+        AUDIT_SEVERITIES.MEDIUM as AuditSeverity,
       );
 
       throw new UnauthorizedException('Invalid credentials');
@@ -78,13 +106,13 @@ export class AuthController {
     // Log successful login
     await this.auditLogService.logWithRequest(
       req,
-      AuditAction.LOGIN_SUCCESS,
-      AuditEntityType.AUTH,
+      AUDIT_ACTIONS.LOGIN_SUCCESS as AuditAction,
+      AUDIT_ENTITY_TYPES.AUTH as AuditEntityType,
       user.email,
       user.id,
       undefined,
       { method: 'password' },
-      AuditSeverity.MEDIUM,
+      AUDIT_SEVERITIES.MEDIUM as AuditSeverity,
     );
 
     const loginResult = await this.authService.login(user, res, req);
@@ -103,13 +131,13 @@ export class AuthController {
     // Log logout event
     await this.auditLogService.logWithRequest(
       req,
-      AuditAction.LOGOUT,
-      AuditEntityType.AUTH,
+      AUDIT_ACTIONS.LOGOUT as AuditAction,
+      AUDIT_ENTITY_TYPES.AUTH as AuditEntityType,
       req.user.email,
       userId,
       undefined,
       { method: 'manual' },
-      AuditSeverity.MEDIUM,
+      AUDIT_SEVERITIES.MEDIUM as AuditSeverity,
     );
 
     return this.authService.logout(userId, res, req);
@@ -122,12 +150,10 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): Promise<LoginResponse> {
-    const refreshToken: string | undefined =
-      typeof req.cookies?.refresh_token === 'string'
-        ? req.cookies.refresh_token
-        : undefined;
+    const typedReq = req as RequestWithCookies;
+    const refreshToken = typedReq.cookies?.refresh_token;
 
-    if (!refreshToken) {
+    if (!refreshToken || typeof refreshToken !== 'string') {
       throw new UnauthorizedException('No refresh token provided');
     }
 
@@ -176,8 +202,8 @@ export class AuthController {
 
     await this.auditLogService.logWithRequest(
       req,
-      AuditAction.USER_CREATED,
-      AuditEntityType.USER,
+      AUDIT_ACTIONS.USER_CREATED as AuditAction,
+      AUDIT_ENTITY_TYPES.USER as AuditEntityType,
       userEmail,
       userId,
       userId,
@@ -186,7 +212,7 @@ export class AuthController {
         lastName: registerDto.lastName,
         organizationName: registerDto.organizationName,
       },
-      AuditSeverity.LOW,
+      AUDIT_SEVERITIES.LOW as AuditSeverity,
     );
 
     return result;
@@ -222,13 +248,13 @@ export class AuthController {
     // Log logout from all devices
     await this.auditLogService.logWithRequest(
       req,
-      AuditAction.LOGOUT,
-      AuditEntityType.AUTH,
+      AUDIT_ACTIONS.LOGOUT as AuditAction,
+      AUDIT_ENTITY_TYPES.AUTH as AuditEntityType,
       req.user.email,
       userId,
       undefined,
       { scope: 'all_devices' },
-      AuditSeverity.MEDIUM,
+      AUDIT_SEVERITIES.MEDIUM as AuditSeverity,
     );
 
     return { message: 'Logged out from all devices' };
@@ -255,8 +281,8 @@ export class AuthController {
 
     await this.auditLogService.logWithRequest(
       req,
-      AuditAction.LOGOUT,
-      AuditEntityType.AUTH,
+      AUDIT_ACTIONS.LOGOUT as AuditAction,
+      AUDIT_ENTITY_TYPES.AUTH as AuditEntityType,
       req.user.email,
       userId,
       undefined,
@@ -265,7 +291,7 @@ export class AuthController {
         keepCurrent: shouldKeepCurrent,
         invalidatedCount,
       },
-      AuditSeverity.MEDIUM,
+      AUDIT_SEVERITIES.MEDIUM as AuditSeverity,
     );
 
     return result;
@@ -278,6 +304,7 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ): DebugCookieResponse {
     this.logger.log('🔍 Debug cookie endpoint called');
+    const typedReq = req as RequestWithCookies;
 
     // Set a test cookie
     res.cookie('test_cookie', 'hello123', {
@@ -290,8 +317,8 @@ export class AuthController {
     // Return info about existing cookies
     const response: DebugCookieResponse = {
       message: 'Test cookie set',
-      cookies: req.cookies,
-      hasTestCookie: !!req.cookies?.test_cookie,
+      cookies: typedReq.cookies,
+      hasTestCookie: !!typedReq.cookies?.test_cookie,
       timestamp: new Date().toISOString(),
     };
     return response;

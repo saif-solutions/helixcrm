@@ -3,7 +3,31 @@
 
 import { PrismaClient } from '@prisma/client';
 
-async function verifyTransactionBoundary() {
+// Helper function for safe error message extraction
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === 'string') {
+    return error;
+  }
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return 'Unknown error occurred';
+  }
+}
+
+// Define types for query results
+interface TableExistsResult {
+  exists: boolean;
+}
+
+interface ColumnResult {
+  column_name: string;
+}
+
+async function verifyTransactionBoundary(): Promise<void> {
   const prisma = new PrismaClient();
 
   try {
@@ -11,7 +35,7 @@ async function verifyTransactionBoundary() {
     console.log('✅ Connected to database');
 
     // Test 1: Verify RefreshToken table exists (PM Recommendation #2)
-    console.log('\n��� Test 1: Database Schema Verification');
+    console.log('\n📦 Test 1: Database Schema Verification');
 
     const refreshTokenTableExists = await verifyTableExists(
       prisma,
@@ -27,7 +51,7 @@ async function verifyTransactionBoundary() {
     );
 
     // Test 2: Verify Token ID vs Hash Mapping (PM Recommendation #2)
-    console.log('\n��� Test 2: Token ID vs Hash Mapping');
+    console.log('\n🔒 Test 2: Token ID vs Hash Mapping');
 
     const crypto = await import('crypto');
     const bcrypt = await import('bcrypt');
@@ -36,8 +60,8 @@ async function verifyTransactionBoundary() {
     const tokenValue = crypto.randomBytes(32).toString('hex');
     const tokenHash = await bcrypt.hash(tokenValue, 10);
 
-    console.log(`   ��� Token ID (UUID): ${tokenId}`);
-    console.log(`   ��� Token Hash: ${tokenHash.substring(0, 25)}...`);
+    console.log(`   📝 Token ID (UUID): ${tokenId}`);
+    console.log(`   📝 Token Hash: ${tokenHash.substring(0, 25)}...`);
 
     const isUuid =
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
@@ -54,7 +78,7 @@ async function verifyTransactionBoundary() {
     );
 
     // Test 3: Verify withTransaction Pattern (PM Recommendation #1)
-    console.log('\n��� Test 3: Transaction Rollback Scenario');
+    console.log('\n🔄 Test 3: Transaction Rollback Scenario');
 
     // First create or get an organization
     const orgSlug = `test-org-${Date.now()}`;
@@ -70,7 +94,7 @@ async function verifyTransactionBoundary() {
           status: 'active',
         },
       });
-      console.log(`   ��� Created test organization: ${organization.name}`);
+      console.log(`   📝 Created test organization: ${organization.name}`);
     }
 
     // Create a test user for transaction test
@@ -86,8 +110,8 @@ async function verifyTransactionBoundary() {
       },
     });
 
-    console.log(`   ��� Created test user: ${testEmail}`);
-    console.log(`   ��� Initial token version: ${testUser.tokenVersion}`);
+    console.log(`   📝 Created test user: ${testEmail}`);
+    console.log(`   📝 Initial token version: ${testUser.tokenVersion}`);
 
     let rollbackVerified = false;
 
@@ -100,15 +124,14 @@ async function verifyTransactionBoundary() {
           data: { tokenVersion: { increment: 1 } },
         });
 
-        console.log('   ��� Step 1: Token version incremented');
+        console.log('   ✅ Step 1: Token version incremented');
 
         // Step 2: Try to save new token hash (simulate failure)
         console.log('   ❌ Step 2: Simulating database failure...');
         throw new Error('Simulated token save failure');
-
-        // If we reach here, transaction should roll back
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       // Verify rollback occurred
       const finalUser = await prisma.user.findUnique({
         where: { id: testUser.id },
@@ -125,23 +148,23 @@ async function verifyTransactionBoundary() {
         );
       }
 
-      console.log(`   ✅ Transaction error caught: ${error.message}`);
+      console.log(`   ✅ Transaction error caught: ${errorMessage}`);
     }
 
     // Clean up test user
     await prisma.user.delete({
       where: { id: testUser.id },
     });
-    console.log(`   ��� Test user cleaned up`);
+    console.log(`   🧹 Test user cleaned up`);
 
     // Clean up test organization
     await prisma.organization.delete({
       where: { id: organization.id },
     });
-    console.log(`   ��� Test organization cleaned up`);
+    console.log(`   🧹 Test organization cleaned up`);
 
     // Test 4: Logging Expectations (PM Recommendation #3)
-    console.log('\n��� Test 4: Logging Expectations Check');
+    console.log('\n📝 Test 4: Logging Expectations Check');
     const loggingExpectations = [
       '✅ No raw tokens in logs (only token IDs)',
       '✅ User ID + org ID always present',
@@ -155,7 +178,7 @@ async function verifyTransactionBoundary() {
     );
 
     // Test 5: Bridge Implementation Check
-    console.log('\n��� Test 5: Bridge Implementation Check');
+    console.log('\n🌉 Test 5: Bridge Implementation Check');
     const bridgeChecks = [
       {
         name: 'TokenRepository.saveRefreshToken',
@@ -211,7 +234,7 @@ async function verifyTransactionBoundary() {
     });
 
     // Test 6: Phase 3C Readiness (PM Recommendation #5)
-    console.log('\n��� Test 6: Phase 3C Readiness Checklist');
+    console.log('\n🚀 Test 6: Phase 3C Readiness Checklist');
     const readinessChecklist = [
       {
         item: 'Auth-core version pinned',
@@ -249,7 +272,7 @@ async function verifyTransactionBoundary() {
 
     // Summary
     console.log('\n' + '='.repeat(60));
-    console.log('��� PHASE 3B TEST SUMMARY');
+    console.log('📊 PHASE 3B TEST SUMMARY');
     console.log(
       `   ${refreshTokenTableExists ? '✅' : '❌'} Database schema ready`,
     );
@@ -270,17 +293,21 @@ async function verifyTransactionBoundary() {
     );
 
     if (refreshTokenTableExists && rollbackVerified && isUuid && isBcrypt) {
-      console.log('\n��� ALL CRITICAL PM RECOMMENDATIONS VERIFIED!');
+      console.log('\n🎉 ALL CRITICAL PM RECOMMENDATIONS VERIFIED!');
       console.log('✅ Phase 3B testing can proceed with confidence.');
     } else {
       console.log('\n⚠️  SOME ISSUES FOUND - Review before proceeding.');
     }
-  } catch (error: any) {
-    console.error('❌ Verification failed:', error.message);
-    console.error(error.stack);
+  } catch (error: unknown) {
+    const errorMessage = getErrorMessage(error);
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    console.error('❌ Verification failed:', errorMessage);
+    if (errorStack) {
+      console.error(errorStack);
+    }
   } finally {
     await prisma.$disconnect();
-    console.log('\n��� Database connection closed');
+    console.log('\n🔌 Database connection closed');
   }
 }
 
@@ -290,25 +317,26 @@ async function verifyTableExists(
 ): Promise<boolean> {
   try {
     // Try to query the table
-    const result = await prisma.$queryRaw`
+    const result = await prisma.$queryRaw<TableExistsResult[]>`
       SELECT EXISTS (
         SELECT FROM information_schema.tables 
         WHERE table_schema = 'public' 
         AND table_name = ${tableName}
-      );
+      ) as exists;
     `;
 
     // Result is an array with a single object
-    return (result as any)[0]?.exists === true;
-  } catch (error) {
-    console.error(`   Error checking table ${tableName}:`, error.message);
+    return result[0]?.exists === true;
+  } catch (error: unknown) {
+    const errorMessage = getErrorMessage(error);
+    console.error(`   Error checking table ${tableName}:`, errorMessage);
     return false;
   }
 }
 
 async function verifyUserTableFields(prisma: PrismaClient): Promise<string[]> {
   try {
-    const result = await prisma.$queryRaw`
+    const result = await prisma.$queryRaw<ColumnResult[]>`
       SELECT column_name
       FROM information_schema.columns 
       WHERE table_schema = 'public' 
@@ -322,10 +350,11 @@ async function verifyUserTableFields(prisma: PrismaClient): Promise<string[]> {
       );
     `;
 
-    const fields = (result as any[]).map((row) => row.column_name);
+    const fields = result.map((row) => row.column_name);
     return fields;
-  } catch (error) {
-    console.error('   Error checking user table fields:', error.message);
+  } catch (error: unknown) {
+    const errorMessage = getErrorMessage(error);
+    console.error('   Error checking user table fields:', errorMessage);
     return [];
   }
 }
@@ -333,38 +362,23 @@ async function verifyUserTableFields(prisma: PrismaClient): Promise<string[]> {
 // Run verification
 verifyTransactionBoundary()
   .then(() => {
-    console.log('\n��� NEXT STEPS FOR QA TEAM:');
+    console.log('\n📋 NEXT STEPS FOR QA TEAM:');
     console.log('   1. Run auth flow regression tests (Category 1)');
     console.log('   2. Execute security tests (Category 2)');
     console.log('   3. Verify business logic (Category 3)');
     console.log('   4. Test error handling (Category 4)');
     console.log(
-      '\n��� Remember: Transaction safety is critical for refresh token operations.',
+      '\n💡 Remember: Transaction safety is critical for refresh token operations.',
     );
-    console.log('\n��� TECHNICAL NOTES:');
+    console.log('\n🔧 TECHNICAL NOTES:');
     console.log('   - Bridge repositories implement auth-core contracts');
     console.log(
       '   - Transaction rollback verified for refresh token operations',
     );
     console.log('   - Token ID ≠ Token hash ensures security separation');
   })
-  .catch((error) => {
-    console.error('❌ Verification script failed:', error);
+  .catch((error: unknown) => {
+    const errorMessage = getErrorMessage(error);
+    console.error('❌ Verification script failed:', errorMessage);
     process.exit(1);
   });
-
-// ======================================================
-// PHASE 3B VALIDATION COMPLETE - READY FOR QA
-// ======================================================
-// Date: $(date +%Y-%m-%d)
-// Status: ✅ All PM recommendations verified
-//
-// Validation Results:
-// - Transaction rollback: ✅ Verified
-// - Token ID/Hash mapping: ✅ Verified
-// - Bridge implementations: ✅ 9/9 methods
-// - Database schema: ✅ Ready
-// - Phase 3C readiness: ✅ Complete
-//
-// QA can proceed with testing categories 1-4
-// ======================================================

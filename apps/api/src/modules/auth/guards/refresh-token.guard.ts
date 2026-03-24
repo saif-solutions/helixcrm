@@ -8,6 +8,15 @@ import {
 import { Request } from 'express';
 import { JwtRefreshStrategy } from '../strategies/jwt-refresh.strategy';
 
+// Define the user type that the refresh token strategy returns
+interface RefreshTokenUser {
+  id: string;
+  email: string;
+  organizationId: string;
+  tokenVersion: number;
+  refreshTokenVersion?: string;
+}
+
 @Injectable()
 export class RefreshTokenGuard implements CanActivate {
   constructor(private jwtRefreshStrategy: JwtRefreshStrategy) {}
@@ -17,18 +26,21 @@ export class RefreshTokenGuard implements CanActivate {
 
     try {
       // Validate the refresh token using our strategy
-      const user = await this.jwtRefreshStrategy.validate(request);
+      const user = (await this.jwtRefreshStrategy.validate(
+        request,
+      )) as RefreshTokenUser;
 
       // Attach user to request
       request.user = user;
 
       return true;
-    } catch (error) {
-      throw new UnauthorizedException(
+    } catch (error: unknown) {
+      const errorMessage =
         error instanceof UnauthorizedException
           ? error.message
-          : 'Invalid refresh token',
-      );
+          : 'Invalid refresh token';
+
+      throw new UnauthorizedException(errorMessage);
     }
   }
 }

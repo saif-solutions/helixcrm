@@ -10,8 +10,23 @@ interface ValidationResult {
   critical: boolean;
 }
 
-async function runPhase3BValidation() {
-  console.log('��� PHASE 3B COMPREHENSIVE VALIDATION');
+// Helper function for safe error message extraction
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === 'string') {
+    return error;
+  }
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return 'Unknown error occurred';
+  }
+}
+
+async function runPhase3BValidation(): Promise<void> {
+  console.log('🔐 PHASE 3B COMPREHENSIVE VALIDATION');
   console.log('='.repeat(60));
 
   const results: ValidationResult[] = [];
@@ -21,7 +36,7 @@ async function runPhase3BValidation() {
     await prisma.$connect();
 
     // ===== PM RECOMMENDATION #1: Transaction Boundary Tests =====
-    console.log('\n��� 1. Transaction Boundary Tests (CRITICAL)');
+    console.log('\n📦 1. Transaction Boundary Tests (CRITICAL)');
 
     // Create test data
     const org = await prisma.organization.create({
@@ -55,8 +70,9 @@ async function runPhase3BValidation() {
         // Simulate failure
         throw new Error('Simulated database failure');
       });
-    } catch (error: any) {
-      // Verify rollback
+    } catch {
+      // We expect this to throw, so we don't need the error variable
+      // Verify rollback happened correctly
       const finalUser = await prisma.user.findUnique({
         where: { id: user.id },
       });
@@ -80,7 +96,7 @@ async function runPhase3BValidation() {
     await prisma.organization.delete({ where: { id: org.id } });
 
     // ===== PM RECOMMENDATION #2: Token ID vs Hash Mapping =====
-    console.log('\n��� 2. Token Security Verification');
+    console.log('\n🔒 2. Token Security Verification');
 
     const crypto = await import('crypto');
     const bcrypt = await import('bcrypt');
@@ -133,7 +149,7 @@ async function runPhase3BValidation() {
     );
 
     // ===== PM RECOMMENDATION #3: Logging Expectations =====
-    console.log('\n��� 3. Logging Expectations');
+    console.log('\n📝 3. Logging Expectations');
 
     const loggingChecks = [
       'No raw tokens in logs (only token IDs)',
@@ -154,7 +170,7 @@ async function runPhase3BValidation() {
     });
 
     // ===== PM RECOMMENDATION #5: Phase 3C Readiness =====
-    console.log('\n��� 4. Phase 3C Readiness');
+    console.log('\n🚀 4. Phase 3C Readiness');
 
     const readinessChecks = [
       {
@@ -198,24 +214,22 @@ async function runPhase3BValidation() {
 
     // ===== SUMMARY =====
     console.log('\n' + '='.repeat(60));
-    console.log('��� VALIDATION SUMMARY');
+    console.log('📊 VALIDATION SUMMARY');
 
     const totalTests = results.length;
     const passedTests = results.filter((r) => r.passed).length;
     const criticalTests = results.filter((r) => r.critical);
     const passedCritical = criticalTests.filter((r) => r.passed).length;
 
+    console.log(`\n✅ Test Results: ${passedTests}/${totalTests} tests passed`);
     console.log(
-      `\n��� Test Results: ${passedTests}/${totalTests} tests passed`,
-    );
-    console.log(
-      `��� Critical Security: ${passedCritical}/${criticalTests.length} passed`,
+      `🔒 Critical Security: ${passedCritical}/${criticalTests.length} passed`,
     );
 
     // Show critical failures first
     const criticalFailures = results.filter((r) => r.critical && !r.passed);
     if (criticalFailures.length > 0) {
-      console.log('\n��� CRITICAL FAILURES:');
+      console.log('\n❌ CRITICAL FAILURES:');
       criticalFailures.forEach((failure) => {
         console.log(`   ❌ ${failure.test}: ${failure.details}`);
       });
@@ -233,20 +247,24 @@ async function runPhase3BValidation() {
     // Final recommendation
     console.log('\n' + '='.repeat(60));
     if (criticalFailures.length === 0) {
-      console.log('��� ALL CRITICAL PM RECOMMENDATIONS VERIFIED!');
+      console.log('🎉 ALL CRITICAL PM RECOMMENDATIONS VERIFIED!');
       console.log('✅ Phase 3B testing can proceed immediately.');
-      console.log('\n��� QA TEAM CAN BEGIN TESTING:');
+      console.log('\n📋 QA TEAM CAN BEGIN TESTING:');
       console.log('   1. Auth Flow Regression Tests (Category 1)');
       console.log('   2. Security & Transaction Safety (Category 2)');
       console.log('   3. Business Logic Preservation (Category 3)');
       console.log('   4. Error Handling & Edge Cases (Category 4)');
     } else {
-      console.log('��� CRITICAL ISSUES FOUND');
+      console.log('⚠️  CRITICAL ISSUES FOUND');
       console.log('❌ Do not proceed to QA testing until fixed.');
     }
-  } catch (error: any) {
-    console.error('❌ Validation script failed:', error.message);
-    console.error(error.stack);
+  } catch (error: unknown) {
+    const errorMessage = getErrorMessage(error);
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    console.error('❌ Validation script failed:', errorMessage);
+    if (errorStack) {
+      console.error(errorStack);
+    }
   } finally {
     await prisma.$disconnect();
   }
@@ -255,10 +273,11 @@ async function runPhase3BValidation() {
 // Run validation
 runPhase3BValidation()
   .then(() => {
-    console.log('\n��� Validation script completed.');
+    console.log('\n✨ Validation script completed.');
     process.exit(0);
   })
-  .catch((error) => {
-    console.error('❌ Validation failed:', error);
+  .catch((error: unknown) => {
+    const errorMessage = getErrorMessage(error);
+    console.error('❌ Validation failed:', errorMessage);
     process.exit(1);
   });

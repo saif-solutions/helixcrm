@@ -1,3 +1,5 @@
+// apps/api/src/modules/auth/adapters/AuthCoreAdapter.ts
+
 import { OnModuleInit, Injectable, Logger } from '@nestjs/common';
 import {
   createAuthCore,
@@ -15,16 +17,17 @@ import { PrismaTokenRepositoryBridge } from './PrismaTokenRepositoryBridge';
 @Injectable()
 export class AuthCoreAdapter implements OnModuleInit {
   private readonly logger = new Logger(AuthCoreAdapter.name);
+  private isInitialized = false;
 
   // Public services for direct access
-  public readonly password: PasswordService;
-  public readonly jwt: JwtService;
-  public readonly tokenManager: TokenManager;
-  public readonly authCore: AuthCoreContract;
+  public password!: PasswordService;
+  public jwt!: JwtService;
+  public tokenManager!: TokenManager;
+  public authCore!: AuthCoreContract;
 
   // Public repositories for transaction use
-  public readonly tokenRepository: TokenRepository;
-  public readonly userRepository: UserRepository;
+  public tokenRepository!: TokenRepository;
+  public userRepository!: UserRepository;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -32,31 +35,39 @@ export class AuthCoreAdapter implements OnModuleInit {
     private readonly tokenRepositoryBridge: PrismaTokenRepositoryBridge,
   ) {}
 
-  async initialize(config: {
+  initialize(config: {
     jwtSecret: string;
     jwtRefreshSecret: string;
     jwtExpiration?: string;
     jwtRefreshExpiration?: string;
-  }): Promise<void> {
+  }): void {
     try {
       this.logger.log('Initializing AuthCore adapter...');
 
+      // Validate required config
+      if (!config.jwtSecret) {
+        throw new Error('JWT_ACCESS_SECRET is required');
+      }
+      if (!config.jwtRefreshSecret) {
+        throw new Error('JWT_REFRESH_SECRET is required');
+      }
+
       // Create individual services
-      const jwtService = new JwtService({
+      this.jwt = new JwtService({
         secret: config.jwtSecret,
         expiresIn: config.jwtExpiration || '15m',
       });
 
-      const passwordService = new PasswordService();
+      this.password = new PasswordService();
 
-      const tokenManager = new TokenManager({
+      this.tokenManager = new TokenManager({
         refreshTokenSecret: config.jwtRefreshSecret,
         refreshTokenExpiresIn: config.jwtRefreshExpiration || '7d',
         tokenRepository: this.tokenRepositoryBridge,
       });
 
       // Create the auth core contract
-      const authCore = createAuthCore(
+      this.authCore = createAuthCore(
         {
           jwtSecret: config.jwtSecret,
           refreshTokenSecret: config.jwtRefreshSecret,
@@ -69,17 +80,19 @@ export class AuthCoreAdapter implements OnModuleInit {
         },
       );
 
-      // Assign to public readonly properties
-      (this as any).jwt = jwtService;
-      (this as any).password = passwordService;
-      (this as any).tokenManager = tokenManager;
-      (this as any).authCore = authCore;
-      (this as any).tokenRepository = this.tokenRepositoryBridge;
-      (this as any).userRepository = this.userRepositoryBridge;
+      // Assign repositories
+      this.tokenRepository = this.tokenRepositoryBridge;
+      this.userRepository = this.userRepositoryBridge;
 
+      this.isInitialized = true;
       this.logger.log('✅ AuthCore adapter initialized successfully');
-    } catch (error) {
-      this.logger.error('❌ Failed to initialize AuthCore adapter', error);
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(
+        `❌ Failed to initialize AuthCore adapter: ${errorMessage}`,
+        error,
+      );
       throw error;
     }
   }
@@ -89,12 +102,31 @@ export class AuthCoreAdapter implements OnModuleInit {
     return this.prisma.$transaction(callback);
   }
 
-  async onModuleInit() {
-    await this.initialize({
-      jwtSecret: process.env.JWT_ACCESS_SECRET,
-      jwtRefreshSecret: process.env.JWT_REFRESH_SECRET,
+  // Synchronous module initialization (no async needed)
+  onModuleInit(): void {
+    this.initialize({
+      jwtSecret: process.env.JWT_ACCESS_SECRET ?? '',
+      jwtRefreshSecret: process.env.JWT_REFRESH_SECRET ?? '',
       jwtExpiration: process.env.JWT_ACCESS_EXPIRATION || '15m',
       jwtRefreshExpiration: process.env.JWT_REFRESH_EXPIRATION || '7d',
     });
+  }
+
+  // Helper method to check if adapter is initialized
+  isReady(): boolean {
+    return this.isInitialized;
+  }
+
+  // Helper method to get health status
+  getHealthStatus(): {
+    initialized: boolean;
+    hasJwt: boolean;
+    hasRefresh: boolean;
+  } {
+    return {
+      initialized: this.isInitialized,
+      hasJwt: !!this.jwt,
+      hasRefresh: !!this.tokenManager,
+    };
   }
 }

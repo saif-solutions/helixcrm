@@ -1,3 +1,5 @@
+// apps/api/src/modules/auth/adapters/PrismaTokenRepository.ts
+
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
@@ -95,6 +97,10 @@ export class PrismaTokenRepository implements TokenRepository {
   }
 
   async revokeAllUserTokens(userId: string, reason?: string): Promise<void> {
+    // Mark reason as intentionally unused for now
+    // This parameter is kept for future logging/audit capabilities
+    void reason;
+
     await this.prisma.user.update({
       where: { id: userId },
       data: {

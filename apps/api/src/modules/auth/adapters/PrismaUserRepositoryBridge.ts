@@ -1,6 +1,45 @@
+// apps/api/src/modules/auth/adapters/PrismaUserRepositoryBridge.ts
+
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
 import { UserRepository, User as AuthCoreUser } from '@helixcrm/auth-core';
+
+// Define types for user with permissions
+interface UserWithPermissions {
+  id: string;
+  email: string;
+  passwordHash: string;
+  firstName: string | null;
+  lastName: string | null;
+  organizationId: string;
+  isActive: boolean;
+  tokenVersion: number;
+  refreshTokenHash: string | null;
+  refreshTokenVersion: string | null;
+  refreshTokenIssuedAt: Date | null;
+  lastLoginAt: Date | null;
+  lastPasswordChange: Date | null;
+  failedLoginAttempts: number | null;
+  lockedUntil: Date | null;
+  permissions: string[];
+  roles: string[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Define type for update user params
+interface UpdateUserParams {
+  userId: string;
+  passwordHash?: string;
+  tokenVersion?: number;
+  refreshTokenHash?: string | null;
+  refreshTokenVersion?: string | null;
+  refreshTokenIssuedAt?: Date | null;
+  lastLoginAt?: Date | null;
+  isActive?: boolean;
+  failedLoginAttempts?: number;
+  lockedUntil?: Date | null;
+}
 
 @Injectable()
 export class PrismaUserRepositoryBridge implements UserRepository {
@@ -31,8 +70,8 @@ export class PrismaUserRepositoryBridge implements UserRepository {
       id: user.id,
       email: user.email,
       passwordHash: user.passwordHash,
-      failedLoginAttempts: user.failedLoginAttempts,
-      accountLockedUntil: user.lockedUntil || undefined,
+      failedLoginAttempts: user.failedLoginAttempts ?? 0,
+      accountLockedUntil: user.lockedUntil ?? undefined,
       organizationId: user.organizationId,
     };
   }
@@ -94,7 +133,7 @@ export class PrismaUserRepositoryBridge implements UserRepository {
 
     if (!user) return;
 
-    const newAttempts = (user.failedLoginAttempts || 0) + 1;
+    const newAttempts = (user.failedLoginAttempts ?? 0) + 1;
 
     // Update failed attempts
     await this.prisma.user.update({
@@ -132,7 +171,7 @@ export class PrismaUserRepositoryBridge implements UserRepository {
   async findByEmailWithPermissions(
     email: string,
     organizationId: string,
-  ): Promise<any> {
+  ): Promise<UserWithPermissions | null> {
     const normalizedEmail = email.toLowerCase().trim();
 
     const user = await this.prisma.user.findUnique({
@@ -165,19 +204,19 @@ export class PrismaUserRepositoryBridge implements UserRepository {
     const permissions = new Set<string>();
     const roles = new Set<string>();
 
-    user.UserRoles.forEach((userRole) => {
+    for (const userRole of user.UserRoles) {
       if (userRole.role) {
         roles.add(userRole.role.name);
 
         if (userRole.role.permissions) {
-          userRole.role.permissions.forEach((rolePermission) => {
+          for (const rolePermission of userRole.role.permissions) {
             if (rolePermission.permission) {
               permissions.add(rolePermission.permission.code);
             }
-          });
+          }
         }
       }
-    });
+    }
 
     return {
       id: user.id,
@@ -205,8 +244,8 @@ export class PrismaUserRepositoryBridge implements UserRepository {
   /**
    * Update user (API business logic)
    */
-  async updateUser(params: any): Promise<any> {
-    const updateData: any = {};
+  async updateUser(params: UpdateUserParams): Promise<unknown> {
+    const updateData: Record<string, unknown> = {};
 
     if (params.passwordHash !== undefined) {
       updateData.passwordHash = params.passwordHash;

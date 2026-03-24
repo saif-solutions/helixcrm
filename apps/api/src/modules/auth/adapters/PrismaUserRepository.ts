@@ -1,3 +1,5 @@
+// apps/api/src/modules/auth/adapters/PrismaUserRepository.ts
+
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
 import {
@@ -8,6 +10,88 @@ import {
   FindUserByEmailParams,
   FindUserByIdParams,
 } from './auth-core.interfaces';
+
+// Type for Prisma user with relations
+interface PrismaUserWithRelations {
+  id: string;
+  email: string;
+  passwordHash: string;
+  firstName: string | null;
+  lastName: string | null;
+  organizationId: string;
+  isActive: boolean;
+  tokenVersion: number;
+  refreshTokenHash: string | null;
+  refreshTokenVersion: string | null;
+  refreshTokenIssuedAt: Date | null;
+  lastLoginAt: Date | null;
+  lastPasswordChange: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+  UserRoles: Array<{
+    role: {
+      name: string;
+      permissions: Array<{
+        permission: {
+          code: string;
+        } | null;
+      }>;
+    } | null;
+  }>;
+}
+
+// Helper function to extract permissions and roles from user
+function extractUserPermissions(user: PrismaUserWithRelations): {
+  permissions: string[];
+  roles: string[];
+} {
+  const permissions = new Set<string>();
+  const roles = new Set<string>();
+
+  user.UserRoles.forEach((userRole) => {
+    if (userRole.role) {
+      roles.add(userRole.role.name);
+
+      if (userRole.role.permissions) {
+        userRole.role.permissions.forEach((rolePermission) => {
+          if (rolePermission.permission) {
+            permissions.add(rolePermission.permission.code);
+          }
+        });
+      }
+    }
+  });
+
+  return {
+    permissions: Array.from(permissions),
+    roles: Array.from(roles),
+  };
+}
+
+// Helper function to map Prisma user to domain User
+function mapToDomainUser(user: PrismaUserWithRelations): User {
+  const { permissions, roles } = extractUserPermissions(user);
+
+  return {
+    id: user.id,
+    email: user.email,
+    passwordHash: user.passwordHash,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    organizationId: user.organizationId,
+    isActive: user.isActive,
+    tokenVersion: user.tokenVersion,
+    refreshTokenHash: user.refreshTokenHash,
+    refreshTokenVersion: user.refreshTokenVersion,
+    refreshTokenIssuedAt: user.refreshTokenIssuedAt,
+    lastLoginAt: user.lastLoginAt,
+    lastPasswordChange: user.lastPasswordChange,
+    permissions,
+    roles,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
+  };
+}
 
 @Injectable()
 export class PrismaUserRepository implements UserRepository {
@@ -42,43 +126,7 @@ export class PrismaUserRepository implements UserRepository {
       return null;
     }
 
-    // Extract permissions from UserRoles (matching existing pattern)
-    const permissions = new Set<string>();
-    const roles = new Set<string>();
-
-    user.UserRoles.forEach((userRole) => {
-      if (userRole.role) {
-        roles.add(userRole.role.name);
-
-        if (userRole.role.permissions) {
-          userRole.role.permissions.forEach((rolePermission) => {
-            if (rolePermission.permission) {
-              permissions.add(rolePermission.permission.code);
-            }
-          });
-        }
-      }
-    });
-
-    return {
-      id: user.id,
-      email: user.email,
-      passwordHash: user.passwordHash,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      organizationId: user.organizationId,
-      isActive: user.isActive,
-      tokenVersion: user.tokenVersion,
-      refreshTokenHash: user.refreshTokenHash,
-      refreshTokenVersion: user.refreshTokenVersion,
-      refreshTokenIssuedAt: user.refreshTokenIssuedAt,
-      lastLoginAt: user.lastLoginAt,
-      lastPasswordChange: user.lastPasswordChange,
-      permissions: Array.from(permissions),
-      roles: Array.from(roles),
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-    };
+    return mapToDomainUser(user as PrismaUserWithRelations);
   }
 
   async findById(params: FindUserByIdParams): Promise<User | null> {
@@ -108,43 +156,7 @@ export class PrismaUserRepository implements UserRepository {
       return null;
     }
 
-    // Extract permissions (same pattern as findByEmail)
-    const permissions = new Set<string>();
-    const roles = new Set<string>();
-
-    user.UserRoles.forEach((userRole) => {
-      if (userRole.role) {
-        roles.add(userRole.role.name);
-
-        if (userRole.role.permissions) {
-          userRole.role.permissions.forEach((rolePermission) => {
-            if (rolePermission.permission) {
-              permissions.add(rolePermission.permission.code);
-            }
-          });
-        }
-      }
-    });
-
-    return {
-      id: user.id,
-      email: user.email,
-      passwordHash: user.passwordHash,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      organizationId: user.organizationId,
-      isActive: user.isActive,
-      tokenVersion: user.tokenVersion,
-      refreshTokenHash: user.refreshTokenHash,
-      refreshTokenVersion: user.refreshTokenVersion,
-      refreshTokenIssuedAt: user.refreshTokenIssuedAt,
-      lastLoginAt: user.lastLoginAt,
-      lastPasswordChange: user.lastPasswordChange,
-      permissions: Array.from(permissions),
-      roles: Array.from(roles),
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-    };
+    return mapToDomainUser(user as PrismaUserWithRelations);
   }
 
   async create(params: CreateUserParams): Promise<User> {
@@ -184,7 +196,7 @@ export class PrismaUserRepository implements UserRepository {
   }
 
   async update(params: UpdateUserParams): Promise<User> {
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
 
     if (params.passwordHash !== undefined) {
       updateData.passwordHash = params.passwordHash;
@@ -226,27 +238,30 @@ export class PrismaUserRepository implements UserRepository {
       organizationId: user.organizationId,
     });
 
-    return (
-      userWithPermissions || {
-        id: user.id,
-        email: user.email,
-        passwordHash: user.passwordHash,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        organizationId: user.organizationId,
-        isActive: user.isActive,
-        tokenVersion: user.tokenVersion,
-        refreshTokenHash: user.refreshTokenHash,
-        refreshTokenVersion: user.refreshTokenVersion,
-        refreshTokenIssuedAt: user.refreshTokenIssuedAt,
-        lastLoginAt: user.lastLoginAt,
-        lastPasswordChange: user.lastPasswordChange,
-        permissions: [],
-        roles: [],
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-      }
-    );
+    if (userWithPermissions) {
+      return userWithPermissions;
+    }
+
+    // Fallback if permissions fetch fails
+    return {
+      id: user.id,
+      email: user.email,
+      passwordHash: user.passwordHash,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      organizationId: user.organizationId,
+      isActive: user.isActive,
+      tokenVersion: user.tokenVersion,
+      refreshTokenHash: user.refreshTokenHash,
+      refreshTokenVersion: user.refreshTokenVersion,
+      refreshTokenIssuedAt: user.refreshTokenIssuedAt,
+      lastLoginAt: user.lastLoginAt,
+      lastPasswordChange: user.lastPasswordChange,
+      permissions: [],
+      roles: [],
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    };
   }
 
   async updateTokenVersion(
