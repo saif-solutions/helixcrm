@@ -37,6 +37,18 @@ import {
 } from './dto/analytics-query.dto';
 import * as crypto from 'crypto';
 
+// Performance thresholds
+const PERFORMANCE_THRESHOLDS = {
+  WARNING_MS: 1000,
+  SLOW_MS: 2000,
+} as const;
+
+// Export constants
+const EXPORT_CONFIG = {
+  ESTIMATED_COMPLETION: '2 minutes',
+  TOKEN_PREFIX: 'token-',
+} as const;
+
 // Define interfaces for better type safety
 interface AnalyticsResult<T = Record<string, unknown>> {
   data: T;
@@ -96,6 +108,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 export class AnalyticsService {
   private readonly logger = new Logger(AnalyticsService.name);
   private readonly useSummaryTables: boolean;
+  private readonly userEmailCache = new Map<
+    string,
+    { email: string; timestamp: number }
+  >();
+  private readonly USER_EMAIL_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
   constructor(
     private readonly prisma: PrismaService,
@@ -118,12 +135,26 @@ export class AnalyticsService {
   }
 
   private async getUserEmail(userId: string): Promise<string> {
+    // Check cache first
+    const cached = this.userEmailCache.get(userId);
+    if (
+      cached &&
+      Date.now() - cached.timestamp < this.USER_EMAIL_CACHE_TTL_MS
+    ) {
+      return cached.email;
+    }
+
     try {
       const user = await this.prisma.user.findUnique({
         where: { id: userId },
         select: { email: true },
       });
-      return user?.email ?? 'system@unknown';
+      const email = user?.email ?? 'system@unknown';
+
+      // Update cache
+      this.userEmailCache.set(userId, { email, timestamp: Date.now() });
+
+      return email;
     } catch (error: unknown) {
       const errorMessage = getErrorMessage(error);
       this.logger.warn(
@@ -138,6 +169,20 @@ export class AnalyticsService {
     const queryStr = JSON.stringify(query);
     const hash = crypto.createHash('md5').update(queryStr).digest('hex');
     return `analytics:${prefix}:${tenantId}:${hash}`;
+  }
+
+  private logPerformance(method: string, duration: number): void {
+    const performance =
+      duration > PERFORMANCE_THRESHOLDS.SLOW_MS
+        ? 'slow'
+        : duration > PERFORMANCE_THRESHOLDS.WARNING_MS
+          ? 'warning'
+          : 'normal';
+
+    this.logger.log(`${method} completed in ${duration}ms`, {
+      duration,
+      performance,
+    });
   }
 
   // ==================== DEAL ANALYTICS ====================
@@ -165,7 +210,6 @@ export class AnalyticsService {
               query,
             );
 
-          // Safe type conversion with runtime check
           const safeData = isRecord(result) ? result : {};
 
           return {
@@ -188,7 +232,6 @@ export class AnalyticsService {
       const result =
         await this.analyticsRepository.getDealAnalyticsFromOperational(query);
 
-      // Safe type conversion with runtime check
       const safeData = isRecord(result) ? result : {};
 
       return {
@@ -218,16 +261,7 @@ export class AnalyticsService {
 
       throw new BadRequestException('Failed to retrieve deal analytics');
     } finally {
-      const duration = Date.now() - startTime;
-      const performance =
-        duration > 2000 ? 'slow' : duration > 1000 ? 'warning' : 'normal';
-
-      this.logger.log(`getDealAnalytics completed in ${duration}ms`, {
-        duration,
-        tenantId,
-        performance,
-        summaryTablesUsed: this.useSummaryTables && !query.includeVelocity,
-      });
+      this.logPerformance('getDealAnalytics', Date.now() - startTime);
     }
   }
 
@@ -256,7 +290,6 @@ export class AnalyticsService {
               query,
             );
 
-          // Safe type conversion with runtime check
           const safeData = isRecord(result) ? result : {};
 
           return {
@@ -278,7 +311,6 @@ export class AnalyticsService {
           query,
         );
 
-      // Safe type conversion with runtime check
       const safeData = isRecord(result) ? result : {};
 
       return {
@@ -308,16 +340,7 @@ export class AnalyticsService {
 
       throw new BadRequestException('Failed to retrieve revenue analytics');
     } finally {
-      const duration = Date.now() - startTime;
-      const performance =
-        duration > 2000 ? 'slow' : duration > 1000 ? 'warning' : 'normal';
-
-      this.logger.log(`getRevenueAnalytics completed in ${duration}ms`, {
-        duration,
-        tenantId,
-        performance,
-        summaryTablesUsed: this.useSummaryTables,
-      });
+      this.logPerformance('getRevenueAnalytics', Date.now() - startTime);
     }
   }
 
@@ -346,7 +369,6 @@ export class AnalyticsService {
               query,
             );
 
-          // Safe type conversion with runtime check
           const safeData = isRecord(result) ? result : {};
 
           return {
@@ -368,7 +390,6 @@ export class AnalyticsService {
           query,
         );
 
-      // Safe type conversion with runtime check
       const safeData = isRecord(result) ? result : {};
 
       return {
@@ -398,16 +419,7 @@ export class AnalyticsService {
 
       throw new BadRequestException('Failed to retrieve pipeline analytics');
     } finally {
-      const duration = Date.now() - startTime;
-      const performance =
-        duration > 2000 ? 'slow' : duration > 1000 ? 'warning' : 'normal';
-
-      this.logger.log(`getPipelineAnalytics completed in ${duration}ms`, {
-        duration,
-        tenantId,
-        performance,
-        summaryTablesUsed: this.useSummaryTables,
-      });
+      this.logPerformance('getPipelineAnalytics', Date.now() - startTime);
     }
   }
 
@@ -436,7 +448,6 @@ export class AnalyticsService {
               query,
             );
 
-          // Safe type conversion with runtime check
           const safeData = isRecord(result) ? result : {};
 
           return {
@@ -458,7 +469,6 @@ export class AnalyticsService {
           query,
         );
 
-      // Safe type conversion with runtime check
       const safeData = isRecord(result) ? result : {};
 
       return {
@@ -488,16 +498,7 @@ export class AnalyticsService {
 
       throw new BadRequestException('Failed to retrieve activity analytics');
     } finally {
-      const duration = Date.now() - startTime;
-      const performance =
-        duration > 2000 ? 'slow' : duration > 1000 ? 'warning' : 'normal';
-
-      this.logger.log(`getActivityAnalytics completed in ${duration}ms`, {
-        duration,
-        tenantId,
-        performance,
-        summaryTablesUsed: this.useSummaryTables,
-      });
+      this.logPerformance('getActivityAnalytics', Date.now() - startTime);
     }
   }
 
@@ -525,7 +526,6 @@ export class AnalyticsService {
         throw new BadRequestException('Export functionality is not available');
       }
 
-      // This validates the query but we don't need the result
       await this.analyticsRepository.getAvailableExports(
         query,
         tenantId,
@@ -561,8 +561,8 @@ export class AnalyticsService {
         jobId: exportJob.id,
         status: 'queued',
         message: 'Export job has been queued for processing',
-        estimatedCompletion: '2 minutes',
-        downloadToken: `token-${exportJob.id}`,
+        estimatedCompletion: EXPORT_CONFIG.ESTIMATED_COMPLETION,
+        downloadToken: `${EXPORT_CONFIG.TOKEN_PREFIX}${exportJob.id}`,
       };
     } catch (error: unknown) {
       const errorMessage = getErrorMessage(error);
@@ -587,15 +587,7 @@ export class AnalyticsService {
 
       throw new BadRequestException('Failed to create export job');
     } finally {
-      const duration = Date.now() - startTime;
-      const performance =
-        duration > 2000 ? 'slow' : duration > 1000 ? 'warning' : 'normal';
-
-      this.logger.log(`createAnalyticsExport completed in ${duration}ms`, {
-        duration,
-        tenantId,
-        performance,
-      });
+      this.logPerformance('createAnalyticsExport', Date.now() - startTime);
     }
   }
 
@@ -608,14 +600,12 @@ export class AnalyticsService {
 
     const startTime = Date.now();
     const tenantId = this.tenantContext.getTenantId();
-    const userId = this.tenantContext.getUserId();
 
     try {
       if (!this.exportQueue) {
         throw new BadRequestException('Export functionality is not available');
       }
 
-      // Simulate async operation - in production, this would fetch from BullMQ or database
       const jobStatus: JobStatus = {
         id: jobId,
         status: 'completed',
@@ -628,7 +618,6 @@ export class AnalyticsService {
         },
       };
 
-      // Simulate async delay for realistic behavior
       await new Promise((resolve) => setTimeout(resolve, 0));
 
       return jobStatus;
@@ -639,7 +628,6 @@ export class AnalyticsService {
         error instanceof Error ? error.stack : undefined,
         {
           tenantId,
-          userId,
           method: 'getExportStatus',
           jobId,
         },
@@ -657,15 +645,7 @@ export class AnalyticsService {
 
       throw new BadRequestException('Failed to retrieve export status');
     } finally {
-      const duration = Date.now() - startTime;
-      const performance =
-        duration > 2000 ? 'slow' : duration > 1000 ? 'warning' : 'normal';
-
-      this.logger.log(`getExportStatus completed in ${duration}ms`, {
-        duration,
-        tenantId,
-        performance,
-      });
+      this.logPerformance('getExportStatus', Date.now() - startTime);
     }
   }
 
@@ -685,7 +665,7 @@ export class AnalyticsService {
         throw new BadRequestException('Export functionality is not available');
       }
 
-      if (!token?.startsWith('token-')) {
+      if (!token?.startsWith(EXPORT_CONFIG.TOKEN_PREFIX)) {
         throw new ForbiddenException('Invalid or expired download token');
       }
 
@@ -734,15 +714,7 @@ export class AnalyticsService {
 
       throw new BadRequestException('Failed to download export');
     } finally {
-      const duration = Date.now() - startTime;
-      const performance =
-        duration > 2000 ? 'slow' : duration > 1000 ? 'warning' : 'normal';
-
-      this.logger.log(`downloadExport completed in ${duration}ms`, {
-        duration,
-        tenantId,
-        performance,
-      });
+      this.logPerformance('downloadExport', Date.now() - startTime);
     }
   }
 
@@ -790,15 +762,7 @@ export class AnalyticsService {
 
       throw new BadRequestException('Failed to retrieve available exports');
     } finally {
-      const duration = Date.now() - startTime;
-      const performance =
-        duration > 2000 ? 'slow' : duration > 1000 ? 'warning' : 'normal';
-
-      this.logger.log(`getAvailableExports completed in ${duration}ms`, {
-        duration,
-        tenantId,
-        performance,
-      });
+      this.logPerformance('getAvailableExports', Date.now() - startTime);
     }
   }
 
@@ -826,8 +790,6 @@ export class AnalyticsService {
     this.logger.warn(
       'DEPRECATED: queueExportJob called - use createAnalyticsExport instead',
     );
-    // These parameters are intentionally unused in the deprecated method
-    // They are kept for backward compatibility but not used in the implementation
     void organizationId;
     void userId;
 
@@ -855,12 +817,10 @@ export class AnalyticsService {
     this.logger.warn(
       'DEPRECATED: getExportData called - use downloadExport instead',
     );
-    // These parameters are intentionally unused in the deprecated method
-    // They are kept for backward compatibility but not used in the implementation
     void organizationId;
     void userId;
 
-    const jobId = token.replace('token-', '');
+    const jobId = token.replace(EXPORT_CONFIG.TOKEN_PREFIX, '');
     const result = await this.downloadExport(jobId, token);
     return {
       format: result.contentType.includes('csv')

@@ -29,6 +29,19 @@ interface ExportDataResult {
   recordCount: number;
 }
 
+// Mock export configuration
+const MOCK_EXPORT_CONFIG = {
+  CSV_HEADER: 'deal_id,name,amount,status,created_at\n',
+  CSV_ROW_1: '1,Test Deal 1,10000,open,2024-01-01\n',
+  CSV_ROW_2: '2,Test Deal 2,25000,won,2024-01-02',
+  JSON_DATA: JSON.stringify([
+    { deal_id: 1, name: 'Test Deal 1', amount: 10000, status: 'open' },
+    { deal_id: 2, name: 'Test Deal 2', amount: 25000, status: 'won' },
+  ]),
+  MOCK_RECORD_COUNT: 2,
+  EXPORT_PATH_PREFIX: '/tmp/exports/',
+} as const;
+
 // Helper function for safe error message extraction
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error) {
@@ -208,16 +221,15 @@ export class AnalyticsExportProcessor extends WorkerHost {
 
     const mockData =
       format === 'csv'
-        ? 'deal_id,name,amount,status,created_at\n1,Test Deal 1,10000,open,2024-01-01\n2,Test Deal 2,25000,won,2024-01-02'
-        : JSON.stringify([
-            { deal_id: 1, name: 'Test Deal 1', amount: 10000, status: 'open' },
-            { deal_id: 2, name: 'Test Deal 2', amount: 25000, status: 'won' },
-          ]);
+        ? MOCK_EXPORT_CONFIG.CSV_HEADER +
+          MOCK_EXPORT_CONFIG.CSV_ROW_1 +
+          MOCK_EXPORT_CONFIG.CSV_ROW_2
+        : MOCK_EXPORT_CONFIG.JSON_DATA;
 
     return {
       data: mockData,
       fileSize: Buffer.byteLength(mockData, 'utf8'),
-      recordCount: 2,
+      recordCount: MOCK_EXPORT_CONFIG.MOCK_RECORD_COUNT,
     };
   }
 
@@ -230,7 +242,7 @@ export class AnalyticsExportProcessor extends WorkerHost {
     // In Phase 3.6+: Upload to S3 or cloud storage
 
     const fileName = `export_${exportId}.${format}`;
-    const filePath = `/tmp/exports/${fileName}`; // Temporary storage
+    const filePath = `${MOCK_EXPORT_CONFIG.EXPORT_PATH_PREFIX}${fileName}`;
 
     this.logger.debug(`Export stored at: ${filePath}`);
 

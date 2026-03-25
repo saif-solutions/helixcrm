@@ -1,4 +1,7 @@
+// apps/api/src/modules/audit-logs/application/services/audit-log-query.service.ts
+
 import { Injectable, Inject } from '@nestjs/common';
+import { IAuditLogRepositoryToken } from '../../infrastructure/repositories/audit-log.repository.interface';
 import { IAuditLogRepository } from '../../infrastructure/repositories/audit-log.repository.interface';
 import {
   AuditAction,
@@ -15,7 +18,7 @@ import {
 @Injectable()
 export class AuditLogQueryService {
   constructor(
-    @Inject('IAuditLogRepository') // Keep string token for now
+    @Inject(IAuditLogRepositoryToken) // Use Symbol token
     private readonly auditLogRepository: IAuditLogRepository,
   ) {}
 
@@ -34,10 +37,8 @@ export class AuditLogQueryService {
     requestId?: string;
     severity?: AuditSeverity;
   }): Promise<void> {
-    // Business logic for determining severity
     const severity = data.severity || this.getSeverityForAction(data.action);
 
-    // Determine actor type
     const actorType =
       data.actorType ||
       (data.actorEmail === 'system@helixcrm'
@@ -67,7 +68,7 @@ export class AuditLogQueryService {
     return actions.map((action) => ({
       value: action.value,
       label: this.formatActionLabel(action.value),
-      isExtended: !AuditLogTypes.isAuditAction(action.value), // Extended actions are not in base enum
+      isExtended: !AuditLogTypes.isAuditAction(action.value),
       count: action.count,
     }));
   }
@@ -106,7 +107,6 @@ export class AuditLogQueryService {
     return await this.auditLogRepository.cleanupOldLogs(daysToKeep);
   }
 
-  // Business rules for severity mapping
   private getSeverityForAction(action: AuditAction): AuditSeverity {
     const highSeverityActions: AuditAction[] = [
       AuditAction.PERMISSION_DENIED,
@@ -137,7 +137,6 @@ export class AuditLogQueryService {
     return AuditSeverity.LOW;
   }
 
-  // Formatting utilities (presentation logic)
   private formatActionLabel(action: string): string {
     return action
       .toLowerCase()

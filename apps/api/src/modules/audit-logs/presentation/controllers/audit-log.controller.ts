@@ -1,3 +1,5 @@
+// apps/api/src/modules/audit-logs/presentation/controllers/audit-log.controller.ts
+
 import {
   Controller,
   Get,
@@ -25,7 +27,8 @@ import { AuditLogQueryService } from '../../application/services/audit-log-query
 interface RequestWithUser extends Request {
   user?: {
     organizationId?: string;
-    [key: string]: any;
+    id?: string;
+    email?: string;
   };
 }
 
@@ -78,7 +81,6 @@ export class AuditLogController {
       throw new BadRequestException('Start date must be before end date');
     }
 
-    // Build the query object with proper typing
     const query: DomainAuditLogQuery = {
       organizationId,
       page,
@@ -89,7 +91,6 @@ export class AuditLogController {
       search,
     };
 
-    // Add validated filters to the query (no assertions needed since type guard confirms type)
     if (action && AuditLogTypes.isAuditAction(action)) {
       query.action = action;
     }
@@ -145,7 +146,6 @@ export class AuditLogController {
       throw new BadRequestException('Organization ID not found in request');
     }
 
-    // You would typically fetch actual logs here
     const csv =
       'Timestamp,Action,Entity Type,Entity ID,Actor Email,Actor Type,Severity,IP Address,User Agent,Request ID,Correlation ID,Metadata\n';
 

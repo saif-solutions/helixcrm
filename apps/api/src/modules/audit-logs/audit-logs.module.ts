@@ -7,22 +7,19 @@ import { AuditLogService } from '../../shared/audit-log/audit-log.service';
 import { AuditLogRepository } from './infrastructure/repositories/audit-log.repository';
 import { SharedModule } from '../../shared/shared.module';
 import { GuardsModule } from '../../shared/guards/guards.module';
+import { IAuditLogRepositoryToken } from './infrastructure/repositories/audit-log.repository.interface';
 
 @Module({
-  imports: [
-    SharedModule,
-    GuardsModule, // Use GuardsModule instead of AuthModule
-    JwtModule,
-  ],
+  imports: [SharedModule, GuardsModule, JwtModule],
   controllers: [AuditLogController],
   providers: [
     AuditLogService,
     AuditLogQueryService,
     {
-      provide: 'IAuditLogRepository',
+      provide: IAuditLogRepositoryToken, // Use Symbol token
       useClass: AuditLogRepository,
     },
   ],
-  exports: [AuditLogService, AuditLogQueryService, 'IAuditLogRepository'],
+  exports: [AuditLogService, AuditLogQueryService, IAuditLogRepositoryToken],
 })
 export class AuditLogsModule {}

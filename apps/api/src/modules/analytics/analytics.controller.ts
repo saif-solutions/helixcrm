@@ -32,6 +32,15 @@ import {
   AnalyticsExportInclude,
 } from './dto/analytics-query.dto';
 
+// Type for authenticated request
+interface AuthenticatedRequest {
+  user?: {
+    sub: string;
+    email: string;
+    organizationId: string;
+  };
+}
+
 @ApiTags('Analytics')
 @ApiBearerAuth()
 @Controller({ path: 'analytics', version: '1' })
@@ -53,13 +62,10 @@ export class AnalyticsController {
   @RequirePermission('analytics.read')
   async getDealAnalytics(
     @Query() query: DealAnalyticsQueryDto,
-    @Request() req: any,
-  ) {
-    // Request parameter is available for future use (e.g., user context)
-    // Currently unused but kept for consistency with other controllers
-    void req;
+    @Request() req: AuthenticatedRequest,
+  ): Promise<unknown> {
+    void req; // Reserved for future use
 
-    // Apply defaults
     const processedQuery = {
       ...query,
       groupBy: query.groupBy || AnalyticsGroupBy.MONTH,
@@ -86,13 +92,10 @@ export class AnalyticsController {
   @RequirePermission('analytics.read')
   async getRevenueAnalytics(
     @Query() query: RevenueAnalyticsQueryDto,
-    @Request() req: any,
-  ) {
-    // Request parameter is available for future use (e.g., user context)
-    // Currently unused but kept for consistency with other controllers
+    @Request() req: AuthenticatedRequest,
+  ): Promise<unknown> {
     void req;
 
-    // Apply defaults
     const processedQuery = {
       ...query,
       groupBy: query.groupBy || AnalyticsGroupBy.MONTH,
@@ -120,13 +123,10 @@ export class AnalyticsController {
   @RequirePermission('analytics.read')
   async getPipelineAnalytics(
     @Query() query: PipelineAnalyticsQueryDto,
-    @Request() req: any,
-  ) {
-    // Request parameter is available for future use (e.g., user context)
-    // Currently unused but kept for consistency with other controllers
+    @Request() req: AuthenticatedRequest,
+  ): Promise<unknown> {
     void req;
 
-    // Apply defaults
     const processedQuery = {
       ...query,
       includeBottlenecks: query.includeBottlenecks ?? true,
@@ -151,13 +151,10 @@ export class AnalyticsController {
   @RequirePermission('analytics.read')
   async getActivityAnalytics(
     @Query() query: ActivityAnalyticsQueryDto,
-    @Request() req: any,
-  ) {
-    // Request parameter is available for future use (e.g., user context)
-    // Currently unused but kept for consistency with other controllers
+    @Request() req: AuthenticatedRequest,
+  ): Promise<unknown> {
     void req;
 
-    // Apply defaults
     const processedQuery = {
       ...query,
       limit: query.limit || 20,
@@ -181,13 +178,10 @@ export class AnalyticsController {
   @RequirePermission('analytics.read')
   async getAvailableExports(
     @Query() query: AnalyticsExportQueryDto,
-    @Request() req: any,
-  ) {
-    // Request parameter is available for future use (e.g., user context)
-    // Currently unused but kept for consistency with other controllers
+    @Request() req: AuthenticatedRequest,
+  ): Promise<unknown> {
     void req;
 
-    // Apply defaults
     const processedQuery = {
       ...query,
       format: query.format || ExportFormat.CSV,
@@ -206,11 +200,11 @@ export class AnalyticsController {
     description: 'Forbidden - insufficient permissions',
   })
   @RequirePermission('analytics.read')
-  async getExportStatus(@Param('jobId') jobId: string, @Request() req: any) {
-    // Request parameter is available for future use (e.g., user context)
-    // Currently unused but kept for consistency with other controllers
+  async getExportStatus(
+    @Param('jobId') jobId: string,
+    @Request() req: AuthenticatedRequest,
+  ): Promise<unknown> {
     void req;
-
     return this.analyticsService.getExportStatus(jobId);
   }
 
@@ -228,14 +222,11 @@ export class AnalyticsController {
   @RequirePermission('analytics.export')
   async createAnalyticsExport(
     @Query() query: AnalyticsExportQueryDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
     @Res() res: Response,
-  ) {
-    // Request parameter is available for future use (e.g., user context)
-    // Currently unused but kept for consistency with other controllers
+  ): Promise<Response> {
     void req;
 
-    // Apply defaults
     const processedQuery = {
       ...query,
       format: query.format || ExportFormat.CSV,
@@ -269,19 +260,14 @@ export class AnalyticsController {
   @RequirePermission('analytics.export')
   async downloadExport(
     @Param('token') token: string,
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
     @Res() res: Response,
-  ) {
-    // Request parameter is available for future use (e.g., user context)
-    // Currently unused but kept for consistency with other controllers
+  ): Promise<Response> {
     void req;
 
-    // Extract jobId from token (token format: token-{jobId})
     const jobId = token.replace('token-', '');
-
     const exportData = await this.analyticsService.downloadExport(jobId, token);
 
-    // Set appropriate headers based on content type
     res.setHeader('Content-Type', exportData.contentType);
     res.setHeader(
       'Content-Disposition',
