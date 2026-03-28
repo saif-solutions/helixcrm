@@ -11,24 +11,34 @@ import {
 import { Reflector } from '@nestjs/core';
 import { PermissionContextService } from '../permissions/context/permission-context.service';
 import { TenantContextService } from '../tenant/context/tenant-context.service';
-import { PERMISSION_KEY } from '../decorators/require-permission.decorator';
+import {
+  PERMISSION_KEY,
+  PermissionMode,
+} from '../decorators/require-permission.decorator';
 import { getTenantContext } from '../tenant/tenant.context';
 import type { Request } from 'express';
 import type { UserPayload } from '../types/request.types';
 import { randomUUID } from 'crypto';
-
-// ==================== ENUMS ====================
-
-export enum PermissionMode {
-  ALL = 'all',
-  ANY = 'any',
-}
 
 // ==================== INTERFACES ====================
 
 interface AuthenticatedRequest extends Request {
   user?: UserPayload;
   id?: string;
+  headers: {
+    'x-correlation-id'?: string;
+    'x-request-id'?: string;
+    [key: string]: string | string[] | undefined;
+  };
+}
+
+interface PermissionMetadata {
+  permissions: string[];
+  mode: PermissionMode;
+  message?: string;
+  skip?: boolean;
+  resource?: string;
+  level?: number;
 }
 
 interface PermissionContextData {
@@ -37,15 +47,12 @@ interface PermissionContextData {
   jwtPermissions?: string[];
 }
 
-interface PermissionMetadata {
-  permissions: string[];
-  mode: PermissionMode;
-}
-
 interface TenantContext {
   tenantId?: string;
   userId?: string;
   source?: string;
+  organizationId?: string;
+  [key: string]: unknown;
 }
 
 interface LogContext {
@@ -59,94 +66,71 @@ interface LogContext {
 
 // ==================== TYPE GUARDS ====================
 
-function hasUser(req: unknown): req is AuthenticatedRequest {
-  return (
-    typeof req === 'object' &&
-    req !== null &&
-    'user' in req &&
-    req.user !== null &&
-    typeof req.user === 'object'
-  );
-}
-
 function isValidUserPayload(user: unknown): user is UserPayload {
   if (!user || typeof user !== 'object') return false;
-
   const payload = user as Partial<UserPayload>;
-
-  // Check for required fields
-  if (typeof payload.sub !== 'string' || !payload.sub) {
-    return false;
-  }
-
-  // Check for organization ID in either field
+  if (typeof payload.sub !== 'string' || !payload.sub) return false;
   const hasOrgId =
     (typeof payload.organizationId === 'string' &&
       payload.organizationId.length > 0) ||
     (typeof payload.org === 'string' && payload.org.length > 0);
-
   return hasOrgId;
 }
 
 function isValidTenantContext(context: unknown): context is TenantContext {
   if (typeof context !== 'object' || context === null) return false;
-
   const maybe = context as Record<string, unknown>;
-
   if ('tenantId' in maybe && typeof maybe.tenantId !== 'string') return false;
   if ('userId' in maybe && typeof maybe.userId !== 'string') return false;
   if ('source' in maybe && typeof maybe.source !== 'string') return false;
-
   return true;
 }
 
-// ==================== SAFE STRING CONVERSION ====================
-
-function safeStringify(value: unknown): string {
-  if (value === null) return 'null';
-  if (value === undefined) return 'undefined';
-  if (typeof value === 'string') return value;
-  if (typeof value === 'number') return value.toString();
-  if (typeof value === 'boolean') return value.toString();
-  if (value instanceof Error) return value.message;
-
-  if (typeof value === 'object') {
-    try {
-      const seen = new WeakSet();
-      return JSON.stringify(value, (key: string, val: unknown) => {
-        if (typeof val === 'object' && val !== null) {
-          if (seen.has(val)) {
-            return '[Circular]';
-          }
-          seen.add(val);
-        }
-        return val;
-      });
-    } catch {
-      return '[Unserializable Object]';
-    }
-  }
-
-  return `[${typeof value}]`;
+function isPermissionMetadata(
+  metadata: unknown,
+): metadata is PermissionMetadata {
+  if (!metadata || typeof metadata !== 'object') return false;
+  const meta = metadata as Partial<PermissionMetadata>;
+  return (
+    Array.isArray(meta.permissions) &&
+    (meta.mode === PermissionMode.ANY || meta.mode === PermissionMode.ALL)
+  );
 }
 
-// ==================== ERROR HANDLING UTILITIES ====================
+function hasErrorMessage(error: unknown): error is { message: string } {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'message' in error &&
+    typeof (error as { message: unknown }).message === 'string'
+  );
+}
+
+// ==================== HELPER FUNCTIONS ====================
 
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;
-  if (error === null) return 'null';
-  if (error === undefined) return 'undefined';
+  if (hasErrorMessage(error)) return error.message;
   if (typeof error === 'string') return error;
-  if (typeof error === 'number') return String(error);
-  if (typeof error === 'boolean') return String(error);
-  if (typeof error === 'object') {
-    const obj = error as Record<string, unknown>;
-    if (obj && 'message' in obj && typeof obj.message === 'string') {
-      return obj.message;
-    }
-    return safeStringify(error);
-  }
-  return `Unknown error type: ${typeof error}`;
+  return 'Unknown error occurred';
+}
+
+function maskUserId(userId: string | undefined): string {
+  if (!userId) return 'unknown';
+  if (userId.length <= 8) return '****';
+  return `${userId.slice(0, 4)}...${userId.slice(-4)}`;
+}
+
+function getCorrelationId(request: AuthenticatedRequest): string {
+  return (
+    request.headers['x-correlation-id']?.toString() ??
+    request.headers['x-request-id']?.toString() ??
+    randomUUID()
+  );
+}
+
+function getOrganizationId(user: UserPayload): string {
+  return user.organizationId || user.org;
 }
 
 // ==================== PERMISSION GUARD ====================
@@ -164,10 +148,9 @@ export class PermissionGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
-    const startTime = performance.now();
+    const startTime = this.isProduction ? undefined : performance.now();
 
-    // Set correlation ID on request
-    const correlationId = this.getCorrelationId(request);
+    const correlationId = getCorrelationId(request);
     request.id = correlationId;
 
     const logContext: LogContext = {
@@ -177,7 +160,7 @@ export class PermissionGuard implements CanActivate {
     };
 
     if (!this.isProduction) {
-      this.logDebug('PERMISSION GUARD START', logContext);
+      this.logDebug('Permission guard started', logContext);
       this.logDebug(
         `Route: ${logContext.controller}.${logContext.handler}`,
         logContext,
@@ -195,15 +178,24 @@ export class PermissionGuard implements CanActivate {
         return true;
       }
 
-      const { permissions: requiredPermissions, mode } = permissionMetadata;
+      const {
+        permissions: requiredPermissions,
+        mode,
+        skip,
+      } = permissionMetadata;
 
-      // Validate request and user
-      this.validateRequest(request, logContext);
+      if (skip) {
+        if (!this.isProduction) {
+          this.logDebug('Permission check skipped via metadata', logContext);
+        }
+        return true;
+      }
 
-      // Safe to access user now after validation
-      const user = request.user;
+      // Validate and get user
+      const user = this.validateAndGetUser(request, logContext);
+
       const userId = user.sub;
-      const organizationId = this.getOrganizationId(user);
+      const organizationId = getOrganizationId(user);
 
       logContext.userId = userId;
       logContext.organizationId = organizationId;
@@ -211,25 +203,21 @@ export class PermissionGuard implements CanActivate {
       if (!this.isProduction) {
         this.logDebug('User info', {
           ...logContext,
-          userId: this.maskUserId(userId),
+          userId: maskUserId(userId),
           organizationId,
-          permissionsCount: user?.permissions?.length ?? 0,
-          rolesCount: user?.roles?.length ?? 0,
+          permissionsCount: user.permissions?.length ?? 0,
+          rolesCount: user.roles?.length ?? 0,
         });
       }
 
-      // Validate tenant context
       this.validateTenantContext(organizationId, logContext);
-
-      // Build permission context
       await this.buildPermissionContext(
         userId,
         organizationId,
-        user?.permissions,
+        user.permissions,
         logContext,
       );
 
-      // Check permissions
       const hasRequiredPermissions = this.checkPermissions(
         requiredPermissions,
         mode,
@@ -240,94 +228,58 @@ export class PermissionGuard implements CanActivate {
         this.handlePermissionDenied(requiredPermissions, mode, logContext);
       }
 
-      // Log success
       if (!this.isProduction) {
-        this.logDebug('Permission granted', {
-          ...logContext,
-          userId: this.maskUserId(logContext.userId ?? ''),
-          organizationId: logContext.organizationId,
-        });
-
-        const executionTime = performance.now() - startTime;
+        const executionTime = performance.now() - (startTime ?? 0);
         this.logDebug(
-          `Permission guard executed in ${executionTime.toFixed(2)}ms`,
+          `Permission granted in ${executionTime.toFixed(2)}ms`,
           logContext,
         );
       }
 
       return true;
     } catch (error) {
-      // Handle and rethrow errors appropriately
       this.handleError(error, logContext);
     }
-  }
-
-  private getCorrelationId(request: AuthenticatedRequest): string {
-    return (
-      request.headers['x-correlation-id']?.toString() ??
-      request.headers['x-request-id']?.toString() ??
-      randomUUID()
-    );
   }
 
   private getPermissionMetadata(
     context: ExecutionContext,
   ): PermissionMetadata | null {
-    const metadata = this.reflector.getAllAndOverride<PermissionMetadata>(
-      PERMISSION_KEY,
-      [context.getHandler(), context.getClass()],
-    );
-
-    if (
-      !metadata ||
-      !metadata.permissions ||
-      metadata.permissions.length === 0
-    ) {
-      return null;
-    }
-
-    return metadata;
+    const metadata = this.reflector.getAllAndOverride<unknown>(PERMISSION_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    return isPermissionMetadata(metadata) ? metadata : null;
   }
 
-  private validateRequest(
+  private validateAndGetUser(
     request: AuthenticatedRequest,
     logContext: LogContext,
-  ): void {
-    // Check if request has user
-    if (!hasUser(request) || !request.user) {
-      this.logger.warn('No user found in request', JSON.stringify(logContext));
+  ): UserPayload {
+    if (!request.user) {
+      this.logger.warn('No user found in request', { ...logContext });
       throw new UnauthorizedException('Authentication required');
     }
 
-    // Validate user payload structure
     if (!isValidUserPayload(request.user)) {
-      // Create a safe object for logging without unsafe member access
-      const userForLogging = request.user as Record<string, unknown>;
-
       this.logger.warn(
         'Invalid user payload structure',
         JSON.stringify({
           ...logContext,
-          hasSub: typeof userForLogging.sub === 'string',
-          hasId: typeof userForLogging.id === 'string',
-          hasOrgId: typeof userForLogging.organizationId === 'string',
-          hasOrg: typeof userForLogging.org === 'string',
+          hasSub: !!request.user.sub,
+          hasOrgId: !!(request.user.organizationId || request.user.org),
         }),
       );
       throw new UnauthorizedException('Invalid user context');
     }
-  }
 
-  private getOrganizationId(user: UserPayload): string {
-    // Either organizationId or org is guaranteed to exist after validation
-    return user.organizationId || user.org;
+    return request.user;
   }
 
   private validateTenantContext(
     organizationId: string,
     logContext: LogContext,
   ): void {
-    // Check ALS tenant context
     const rawTenantContext = getTenantContext();
     const tenantContext = isValidTenantContext(rawTenantContext)
       ? rawTenantContext
@@ -345,10 +297,8 @@ export class PermissionGuard implements CanActivate {
       throw new ForbiddenException('Tenant context mismatch');
     }
 
-    // Check service tenant context
     try {
       const serviceTenantId = this.tenantContext.getTenantId();
-
       if (serviceTenantId !== organizationId) {
         this.logger.error(
           'Service tenant mismatch',
@@ -368,18 +318,11 @@ export class PermissionGuard implements CanActivate {
         );
       }
     } catch (error) {
-      // If error is already a ForbiddenException, rethrow it
-      if (error instanceof ForbiddenException) {
-        throw error;
-      }
-
+      if (error instanceof ForbiddenException) throw error;
       const errorMessage = getErrorMessage(error);
       this.logger.error(
         'Tenant context unavailable',
-        JSON.stringify({
-          ...logContext,
-          error: errorMessage,
-        }),
+        JSON.stringify({ ...logContext, error: errorMessage }),
       );
       throw new ForbiddenException(
         'System configuration error: Tenant context unavailable',
@@ -400,25 +343,23 @@ export class PermissionGuard implements CanActivate {
     const contextData: PermissionContextData = {
       userId,
       tenantId: organizationId,
-      jwtPermissions: Array.isArray(userPermissions)
-        ? [...userPermissions] // Make a mutable copy
-        : [],
+      jwtPermissions: userPermissions ? [...userPermissions] : [],
     };
 
     try {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
       await this.permissionContext.buildContext(contextData);
     } catch (error) {
       this.logger.error(
         'Failed to build permission context',
-        JSON.stringify({
-          ...logContext,
-          error: getErrorMessage(error),
-        }),
+        JSON.stringify({ ...logContext, error: getErrorMessage(error) }),
       );
       throw new ForbiddenException('Permission check failed');
     }
 
-    if (!this.permissionContext.isInitialized()) {
+    // Check if context is initialized and throw if not
+    const isContextInitialized = this.isPermissionContextInitialized();
+    if (!isContextInitialized) {
       this.logger.error(
         'Permission context initialization failed',
         JSON.stringify(logContext),
@@ -427,9 +368,8 @@ export class PermissionGuard implements CanActivate {
     }
 
     if (!this.isProduction) {
-      const permissions = this.permissionContext.getPermissions();
-      const roles = this.permissionContext.getRoles();
-
+      const permissions = this.getPermissionsSafely();
+      const roles = this.getRolesSafely();
       this.logDebug('Permission context built', {
         ...logContext,
         permissionsCount: permissions.length,
@@ -438,18 +378,56 @@ export class PermissionGuard implements CanActivate {
     }
   }
 
+  private isPermissionContextInitialized(): boolean {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
+      const initialized = this.permissionContext.isInitialized();
+      return typeof initialized === 'boolean' ? initialized : false;
+    } catch {
+      return false;
+    }
+  }
+
+  private getPermissionsSafely(): string[] {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
+      const result = this.permissionContext.getPermissions();
+      if (Array.isArray(result)) {
+        return result.filter(
+          (item): item is string => typeof item === 'string',
+        );
+      }
+      return [];
+    } catch {
+      return [];
+    }
+  }
+
+  private getRolesSafely(): string[] {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
+      const result = this.permissionContext.getRoles();
+      if (Array.isArray(result)) {
+        return result.filter(
+          (item): item is string => typeof item === 'string',
+        );
+      }
+      return [];
+    } catch {
+      return [];
+    }
+  }
+
   private checkPermissions(
     requiredPermissions: string[],
     mode: PermissionMode,
     logContext: LogContext,
   ): boolean {
-    const userPermissions = this.permissionContext.getPermissions();
-    const userRoles = this.permissionContext.getRoles();
-
+    const userPermissions = this.getPermissionsSafely();
+    const userRoles = this.getRolesSafely();
     const permissionSet = new Set<string>(userPermissions);
 
     let hasRequiredPermissions: boolean;
-
     if (mode === PermissionMode.ALL) {
       hasRequiredPermissions = requiredPermissions.every((p) =>
         permissionSet.has(p),
@@ -465,7 +443,7 @@ export class PermissionGuard implements CanActivate {
         'Permission check failed',
         JSON.stringify({
           ...logContext,
-          userId: this.maskUserId(logContext.userId ?? ''),
+          userId: maskUserId(logContext.userId),
           mode,
           requiredPermissions,
           userPermissions,
@@ -487,7 +465,7 @@ export class PermissionGuard implements CanActivate {
         'Permission denied',
         JSON.stringify({
           ...logContext,
-          userId: this.maskUserId(logContext.userId ?? ''),
+          userId: maskUserId(logContext.userId),
           mode,
           requiredCount: requiredPermissions.length,
         }),
@@ -501,7 +479,6 @@ export class PermissionGuard implements CanActivate {
   }
 
   private handleError(error: unknown, logContext: LogContext): never {
-    // Re-throw NestJS HTTP exceptions directly
     if (
       error instanceof UnauthorizedException ||
       error instanceof ForbiddenException
@@ -522,11 +499,8 @@ export class PermissionGuard implements CanActivate {
   }
 
   private logDebug(message: string, context: Record<string, unknown>): void {
-    this.logger.debug(`${message} - ${JSON.stringify(context)}`);
-  }
-
-  private maskUserId(userId: string): string {
-    if (!userId || userId.length < 8) return '****';
-    return `${userId.slice(0, 4)}...${userId.slice(-4)}`;
+    if (!this.isProduction) {
+      this.logger.debug(`${message} - ${JSON.stringify(context)}`);
+    }
   }
 }
