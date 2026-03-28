@@ -1,4 +1,5 @@
-// File: apps/api/src/shared/audit-log/audit-log.service.ts
+// apps/api/src/shared/audit-log/audit-log.service.ts
+
 import {
   Injectable,
   InternalServerErrorException,
@@ -13,110 +14,73 @@ import { AuditQueueService, AuditJobData } from './audit-queue.service';
 import { AuditIntegrityService } from '../audit-integrity/audit-integrity.service';
 import { Prisma } from '@prisma/client';
 
-// Use string literals for type definitions to match Prisma
-export type AuditAction =
-  | 'USER_CREATED'
-  | 'LOGIN_SUCCESS'
-  | 'LOGIN_FAILURE'
-  | 'USER_DELETED'
-  | 'PERMISSION_DENIED'
-  | 'PASSWORD_CHANGE'
-  | 'RATE_LIMIT_TRIGGERED'
-  | 'CSRF_FAILURE'
-  | 'SYSTEM_ERROR'
-  | 'USER_UPDATED'
-  | 'PERMISSION_GRANTED'
-  | 'ROLE_ASSIGNED'
-  | 'ROLE_CREATED'
-  | 'ROLE_UPDATED'
-  | 'ROLE_DELETED'
-  | 'DEAL_CREATED'
-  | 'DEAL_UPDATED'
-  | 'DEAL_DELETED'
-  | 'CONTACT_CREATED'
-  | 'CONTACT_UPDATED'
-  | 'CONTACT_DELETED'
-  | 'ANALYTICS_EXPORT_REQUESTED'
-  | 'ANALYTICS_EXPORT_DOWNLOADED'
-  | 'ANALYTICS_EXPORT_COMPLETED'
-  | 'ANALYTICS_EXPORT_FAILED'
-  | 'WEBHOOK_CREATED'
-  | 'WEBHOOK_UPDATED'
-  | 'WEBHOOK_DELETED'
-  | 'WEBHOOK_TRIGGERED'
-  | 'WEBHOOK_RETRY'
-  | 'WEBHOOK_CLEANUP'
-  | 'WEBHOOK_DELIVERED'
-  | 'WEBHOOK_DELIVERY_FAILED';
+// ==================== ENUMS ====================
+export enum AuditAction {
+  USER_CREATED = 'USER_CREATED',
+  LOGIN_SUCCESS = 'LOGIN_SUCCESS',
+  LOGIN_FAILURE = 'LOGIN_FAILURE',
+  USER_DELETED = 'USER_DELETED',
+  PERMISSION_DENIED = 'PERMISSION_DENIED',
+  PASSWORD_CHANGE = 'PASSWORD_CHANGE',
+  RATE_LIMIT_TRIGGERED = 'RATE_LIMIT_TRIGGERED',
+  CSRF_FAILURE = 'CSRF_FAILURE',
+  SYSTEM_ERROR = 'SYSTEM_ERROR',
+  USER_UPDATED = 'USER_UPDATED',
+  PERMISSION_GRANTED = 'PERMISSION_GRANTED',
+  ROLE_ASSIGNED = 'ROLE_ASSIGNED',
+  ROLE_CREATED = 'ROLE_CREATED',
+  ROLE_UPDATED = 'ROLE_UPDATED',
+  ROLE_DELETED = 'ROLE_DELETED',
+  DEAL_CREATED = 'DEAL_CREATED',
+  DEAL_UPDATED = 'DEAL_UPDATED',
+  DEAL_DELETED = 'DEAL_DELETED',
+  CONTACT_CREATED = 'CONTACT_CREATED',
+  CONTACT_UPDATED = 'CONTACT_UPDATED',
+  CONTACT_DELETED = 'CONTACT_DELETED',
+  ANALYTICS_EXPORT_REQUESTED = 'ANALYTICS_EXPORT_REQUESTED',
+  ANALYTICS_EXPORT_DOWNLOADED = 'ANALYTICS_EXPORT_DOWNLOADED',
+  ANALYTICS_EXPORT_COMPLETED = 'ANALYTICS_EXPORT_COMPLETED',
+  ANALYTICS_EXPORT_FAILED = 'ANALYTICS_EXPORT_FAILED',
+  WEBHOOK_CREATED = 'WEBHOOK_CREATED',
+  WEBHOOK_UPDATED = 'WEBHOOK_UPDATED',
+  WEBHOOK_DELETED = 'WEBHOOK_DELETED',
+  WEBHOOK_TRIGGERED = 'WEBHOOK_TRIGGERED',
+  WEBHOOK_RETRY = 'WEBHOOK_RETRY',
+  WEBHOOK_CLEANUP = 'WEBHOOK_CLEANUP',
+  WEBHOOK_DELIVERED = 'WEBHOOK_DELIVERED',
+  WEBHOOK_DELIVERY_FAILED = 'WEBHOOK_DELIVERY_FAILED',
+  DASHBOARD_VIEWED = 'DASHBOARD_VIEWED',
+  PIPELINE_CREATED = 'PIPELINE_CREATED',
+  PIPELINE_UPDATED = 'PIPELINE_UPDATED',
+  PIPELINE_DELETED = 'PIPELINE_DELETED',
+}
 
-export type AuditEntityType =
-  | 'AUTH'
-  | 'USER'
-  | 'ROLE'
-  | 'PERMISSION'
-  | 'DEAL'
-  | 'CONTACT'
-  | 'ANALYTICS'
-  | 'WEBHOOK'
-  | 'WEBHOOK_DELIVERY';
+export enum AuditEntityType {
+  AUTH = 'AUTH',
+  USER = 'USER',
+  ROLE = 'ROLE',
+  PERMISSION = 'PERMISSION',
+  DEAL = 'DEAL',
+  CONTACT = 'CONTACT',
+  ANALYTICS = 'ANALYTICS',
+  WEBHOOK = 'WEBHOOK',
+  WEBHOOK_DELIVERY = 'WEBHOOK_DELIVERY',
+  SYSTEM = 'SYSTEM',
+  DASHBOARD = 'DASHBOARD',
+  PIPELINE = 'PIPELINE',
+}
 
-export type AuditSeverity = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+export enum AuditSeverity {
+  LOW = 'LOW',
+  MEDIUM = 'MEDIUM',
+  HIGH = 'HIGH',
+  CRITICAL = 'CRITICAL',
+}
 
-// Constants for reference (optional)
-export const AUDIT_ACTIONS: AuditAction[] = [
-  'USER_CREATED',
-  'LOGIN_SUCCESS',
-  'LOGIN_FAILURE',
-  'USER_DELETED',
-  'PERMISSION_DENIED',
-  'PASSWORD_CHANGE',
-  'RATE_LIMIT_TRIGGERED',
-  'CSRF_FAILURE',
-  'SYSTEM_ERROR',
-  'USER_UPDATED',
-  'PERMISSION_GRANTED',
-  'ROLE_ASSIGNED',
-  'ROLE_CREATED',
-  'ROLE_UPDATED',
-  'ROLE_DELETED',
-  'DEAL_CREATED',
-  'DEAL_UPDATED',
-  'DEAL_DELETED',
-  'CONTACT_CREATED',
-  'CONTACT_UPDATED',
-  'CONTACT_DELETED',
-  'ANALYTICS_EXPORT_REQUESTED',
-  'ANALYTICS_EXPORT_DOWNLOADED',
-  'ANALYTICS_EXPORT_COMPLETED',
-  'ANALYTICS_EXPORT_FAILED',
-  'WEBHOOK_CREATED',
-  'WEBHOOK_UPDATED',
-  'WEBHOOK_DELETED',
-  'WEBHOOK_TRIGGERED',
-  'WEBHOOK_RETRY',
-  'WEBHOOK_CLEANUP',
-  'WEBHOOK_DELIVERED',
-  'WEBHOOK_DELIVERY_FAILED',
-];
-
-export const AUDIT_ENTITY_TYPES: AuditEntityType[] = [
-  'AUTH',
-  'USER',
-  'ROLE',
-  'PERMISSION',
-  'DEAL',
-  'CONTACT',
-  'ANALYTICS',
-  'WEBHOOK',
-  'WEBHOOK_DELIVERY',
-];
-
-export const AUDIT_SEVERITIES: AuditSeverity[] = [
-  'LOW',
-  'MEDIUM',
-  'HIGH',
-  'CRITICAL',
-];
+// Constants arrays for validation
+export const AUDIT_ACTIONS = Object.values(AuditAction);
+export const AUDIT_ENTITY_TYPES = Object.values(AuditEntityType);
+export const AUDIT_SEVERITIES = Object.values(AuditSeverity);
 
 interface AuditLogData {
   action: AuditAction;
@@ -141,9 +105,6 @@ interface RequestWithUser extends Request {
   id?: string;
 }
 
-/**
- * LANE 1: Strict request-based logging for controllers
- */
 interface LogWithRequestParams {
   request: Request;
   action: AuditAction;
@@ -156,9 +117,6 @@ interface LogWithRequestParams {
   organizationId?: string | null;
 }
 
-/**
- * LANE 2: Flexible logging for application services
- */
 interface LogEventParams {
   request?: Request;
   action: AuditAction;
@@ -171,9 +129,6 @@ interface LogEventParams {
   organizationId?: string | null;
 }
 
-/**
- * LANE 3: Specialized auth event logging
- */
 interface LogAuthEventParams {
   request?: Request;
   action: AuditAction;
@@ -197,18 +152,18 @@ export class AuditLogService {
   private queueAvailable = false;
 
   private readonly BOOTSTRAP_ALLOWED_ACTIONS = new Set<AuditAction>([
-    'USER_CREATED',
-    'LOGIN_SUCCESS',
+    AuditAction.USER_CREATED,
+    AuditAction.LOGIN_SUCCESS,
   ]);
 
   private readonly CRITICAL_ACTIONS = new Set<AuditAction>([
-    'LOGIN_FAILURE',
-    'USER_DELETED',
-    'PERMISSION_DENIED',
-    'PASSWORD_CHANGE',
-    'RATE_LIMIT_TRIGGERED',
-    'CSRF_FAILURE',
-    'SYSTEM_ERROR',
+    AuditAction.LOGIN_FAILURE,
+    AuditAction.USER_DELETED,
+    AuditAction.PERMISSION_DENIED,
+    AuditAction.PASSWORD_CHANGE,
+    AuditAction.RATE_LIMIT_TRIGGERED,
+    AuditAction.CSRF_FAILURE,
+    AuditAction.SYSTEM_ERROR,
   ]);
 
   constructor(
@@ -245,28 +200,28 @@ export class AuditLogService {
     }
 
     const actionsRequiringOrgContext: AuditAction[] = [
-      'USER_UPDATED',
-      'PERMISSION_GRANTED',
-      'ROLE_ASSIGNED',
-      'ROLE_CREATED',
-      'ROLE_UPDATED',
-      'ROLE_DELETED',
-      'DEAL_CREATED',
-      'DEAL_UPDATED',
-      'DEAL_DELETED',
-      'CONTACT_CREATED',
-      'CONTACT_UPDATED',
-      'CONTACT_DELETED',
-      'ANALYTICS_EXPORT_REQUESTED',
-      'ANALYTICS_EXPORT_DOWNLOADED',
-      'ANALYTICS_EXPORT_COMPLETED',
-      'ANALYTICS_EXPORT_FAILED',
-      'WEBHOOK_CREATED',
-      'WEBHOOK_UPDATED',
-      'WEBHOOK_DELETED',
-      'WEBHOOK_TRIGGERED',
-      'WEBHOOK_RETRY',
-      'WEBHOOK_CLEANUP',
+      AuditAction.USER_UPDATED,
+      AuditAction.PERMISSION_GRANTED,
+      AuditAction.ROLE_ASSIGNED,
+      AuditAction.ROLE_CREATED,
+      AuditAction.ROLE_UPDATED,
+      AuditAction.ROLE_DELETED,
+      AuditAction.DEAL_CREATED,
+      AuditAction.DEAL_UPDATED,
+      AuditAction.DEAL_DELETED,
+      AuditAction.CONTACT_CREATED,
+      AuditAction.CONTACT_UPDATED,
+      AuditAction.CONTACT_DELETED,
+      AuditAction.ANALYTICS_EXPORT_REQUESTED,
+      AuditAction.ANALYTICS_EXPORT_DOWNLOADED,
+      AuditAction.ANALYTICS_EXPORT_COMPLETED,
+      AuditAction.ANALYTICS_EXPORT_FAILED,
+      AuditAction.WEBHOOK_CREATED,
+      AuditAction.WEBHOOK_UPDATED,
+      AuditAction.WEBHOOK_DELETED,
+      AuditAction.WEBHOOK_TRIGGERED,
+      AuditAction.WEBHOOK_RETRY,
+      AuditAction.WEBHOOK_CLEANUP,
     ];
 
     return actionsRequiringOrgContext.includes(action);
@@ -284,7 +239,7 @@ export class AuditLogService {
     actorUserId?: string,
     entityId?: string,
     metadata?: Record<string, any>,
-    severity: AuditSeverity = 'MEDIUM',
+    severity: AuditSeverity = AuditSeverity.MEDIUM,
     organizationId?: string | null,
   ): Promise<any> {
     try {
@@ -320,7 +275,10 @@ export class AuditLogService {
             bootstrapReason: 'organization_context_not_resolved_yet',
           };
         }
-      } else if (!resolvedOrganizationId && action !== 'LOGIN_FAILURE') {
+      } else if (
+        !resolvedOrganizationId &&
+        action !== AuditAction.LOGIN_FAILURE
+      ) {
         this.logger.warn(
           `Audit log missing organization context for action: ${action}. ` +
             `Actor: ${actorEmail}, Entity: ${entityType}.`,
@@ -380,7 +338,7 @@ export class AuditLogService {
       params.actorUserId,
       params.entityId,
       params.metadata,
-      params.severity || 'MEDIUM',
+      params.severity || AuditSeverity.MEDIUM,
       params.organizationId,
     );
   }
@@ -396,7 +354,7 @@ export class AuditLogService {
           params.actorUserId,
           params.entityId,
           params.metadata,
-          params.severity || 'MEDIUM',
+          params.severity || AuditSeverity.MEDIUM,
           params.organizationId,
         );
       } else {
@@ -407,7 +365,7 @@ export class AuditLogService {
           params.actorUserId,
           params.entityId,
           params.metadata,
-          params.severity || 'MEDIUM',
+          params.severity || AuditSeverity.MEDIUM,
           params.organizationId,
         );
       }
@@ -428,23 +386,23 @@ export class AuditLogService {
         return this.logWithRequest(
           params.request,
           params.action,
-          'AUTH',
+          AuditEntityType.AUTH,
           params.actorEmail,
           params.actorUserId,
           undefined,
           params.metadata,
-          params.severity || 'MEDIUM',
+          params.severity || AuditSeverity.MEDIUM,
           params.organizationId,
         );
       } else {
         return this.logDirect(
           params.action,
-          'AUTH',
+          AuditEntityType.AUTH,
           params.actorEmail,
           params.actorUserId,
           undefined,
           params.metadata,
-          params.severity || 'MEDIUM',
+          params.severity || AuditSeverity.MEDIUM,
           params.organizationId,
         );
       }
@@ -452,7 +410,7 @@ export class AuditLogService {
       return this.handleAuditError(
         error,
         params.action,
-        'AUTH',
+        AuditEntityType.AUTH,
         params.actorEmail,
         params.organizationId,
       );
@@ -466,7 +424,7 @@ export class AuditLogService {
     actorUserId?: string,
     entityId?: string,
     metadata?: Record<string, any>,
-    severity: AuditSeverity = 'MEDIUM',
+    severity: AuditSeverity = AuditSeverity.MEDIUM,
     organizationId?: string | null,
     ipAddress?: string,
     userAgent?: string,
@@ -553,16 +511,13 @@ export class AuditLogService {
     }
   }
 
-  // In createAuditLogEntrySync method
   private async createAuditLogEntrySync(auditData: AuditLogData): Promise<any> {
     try {
-      // First, resolve organization ID
       let organizationId = auditData.organizationId;
 
-      // Try to resolve organization from user if this is a login success
       if (
         !organizationId &&
-        auditData.action === 'LOGIN_SUCCESS' &&
+        auditData.action === AuditAction.LOGIN_SUCCESS &&
         auditData.actorUserId
       ) {
         try {
@@ -586,9 +541,8 @@ export class AuditLogService {
         }
       }
 
-      // For bootstrap actions without organization, log and return null
       if (!organizationId) {
-        if (auditData.action === 'LOGIN_SUCCESS') {
+        if (auditData.action === AuditAction.LOGIN_SUCCESS) {
           this.logger.warn(
             `Bootstrap audit action: LOGIN_SUCCESS recorded without organization context. ` +
               `Actor: ${auditData.actorEmail}, Entity: ${auditData.entityType}.`,
@@ -596,13 +550,11 @@ export class AuditLogService {
           return null;
         }
 
-        // For all other actions, throw error (organization is required)
         throw new InternalServerErrorException(
           `Organization ID is required for audit log: ${auditData.action}`,
         );
       }
 
-      // Build the data with both required relations
       const data: Prisma.AuditLogCreateInput = {
         action: auditData.action,
         entityType: auditData.entityType,
@@ -613,8 +565,6 @@ export class AuditLogService {
         userAgent: auditData.userAgent,
         requestId: auditData.requestId,
         metadata: auditData.metadata as Prisma.InputJsonValue,
-
-        // Required relations
         organization: {
           connect: { id: organizationId },
         },
@@ -647,12 +597,10 @@ export class AuditLogService {
 
       return auditLog;
     } catch (error) {
-      // Handle expected errors gracefully with proper type checking
       if (error instanceof InternalServerErrorException) {
         throw error;
       }
 
-      // Safe error logging with type guard
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
       const errorStack = error instanceof Error ? error.stack : undefined;
@@ -787,7 +735,6 @@ export class AuditLogService {
       where.organizationId = filters.organizationId;
     }
 
-    // Use the relation field (actor) for filtering by user
     if (filters.actorUserId !== undefined) {
       where.actor = {
         id: filters.actorUserId,
@@ -837,10 +784,6 @@ export class AuditLogService {
               select: {
                 id: true,
                 email: true,
-                // Check your User model for the correct field names
-                // If your User model has 'firstName' and 'lastName', use those
-                // firstName: true,
-                // lastName: true,
               },
             },
           },
@@ -881,7 +824,7 @@ export class AuditLogService {
             lt: cutoffDate,
           },
           severity: {
-            in: ['LOW', 'MEDIUM'],
+            in: [AuditSeverity.LOW, AuditSeverity.MEDIUM],
           },
         },
       });

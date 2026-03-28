@@ -1,4 +1,4 @@
-// apps/api/src/contracts/_shared/password.policy.ts
+// apps/api/src/contracts/shared/password.policy.ts
 /**
  * Shared password policy for consistent validation across all contracts
  */

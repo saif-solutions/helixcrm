@@ -1,3 +1,4 @@
+// apps/api/src/config/demo.config.ts
 export interface DemoConfig {
   enabled: boolean;
   adminEmail: string;
@@ -6,7 +7,7 @@ export interface DemoConfig {
   userPassword: string;
 }
 
-export const getDemoConfig = (): DemoConfig => {
+export default (): DemoConfig => {
   const isProduction = process.env.NODE_ENV === 'production';
 
   return {

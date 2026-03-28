@@ -7,60 +7,23 @@ import {
   BadRequestException,
   Logger,
   ForbiddenException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
-import { AuditLogService } from '../../shared/audit-log/audit-log.service';
+import {
+  AuditLogService,
+  AuditAction,
+  AuditEntityType,
+  AuditSeverity,
+} from '../../shared/audit-log/audit-log.service';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import SecurityConfig from '../../config/security.config';
 import { AccountLockoutService } from './services/account-lockout.service';
 import { AuthCoreAdapter } from './adapters/AuthCoreAdapter';
-
-// Define audit constants to avoid enum resolution issues
-const AUDIT_ACTIONS = {
-  LOGIN_FAILURE: 'LOGIN_FAILURE',
-  LOGIN_SUCCESS: 'LOGIN_SUCCESS',
-  LOGOUT: 'LOGOUT',
-  TOKEN_REFRESH: 'TOKEN_REFRESH',
-  USER_CREATED: 'USER_CREATED',
-  PASSWORD_CHANGE: 'PASSWORD_CHANGE',
-} as const;
-
-const AUDIT_ENTITY_TYPES = {
-  AUTH: 'AUTH',
-  USER: 'USER',
-} as const;
-
-const AUDIT_SEVERITIES = {
-  LOW: 'LOW',
-  MEDIUM: 'MEDIUM',
-  HIGH: 'HIGH',
-} as const;
-
-type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS];
-type AuditEntityType =
-  (typeof AUDIT_ENTITY_TYPES)[keyof typeof AUDIT_ENTITY_TYPES];
-type AuditSeverity = (typeof AUDIT_SEVERITIES)[keyof typeof AUDIT_SEVERITIES];
+import * as crypto from 'crypto';
+import { toError } from '../../shared/utils/error.utils';
 
 // ==================== TYPE DEFINITIONS ====================
-
-interface UserWithOrganization {
-  id: string;
-  email: string;
-  firstName: string | null;
-  lastName: string | null;
-  passwordHash: string;
-  organizationId: string;
-  organization: {
-    id: string;
-    name: string;
-  } | null;
-  tokenVersion: number;
-  refreshTokenHash: string | null;
-  refreshTokenVersion: string | null;
-  refreshTokenIssuedAt: Date | null;
-  isActive: boolean;
-  lastLoginAt: Date | null;
-}
 
 interface ValidatedUser {
   id: string;
@@ -107,6 +70,8 @@ interface RefreshTokenPayload {
   sub: string;
   jti?: string;
   type?: string;
+  exp?: number;
+  iat?: number;
   [key: string]: unknown;
 }
 
@@ -116,6 +81,95 @@ interface UserSession {
   lastUsed: Date | null;
   isCurrent: boolean;
   deviceInfo: string;
+}
+
+// ==================== TYPE GUARDS ====================
+
+function isRefreshTokenPayload(obj: unknown): obj is RefreshTokenPayload {
+  return (
+    typeof obj === 'object' &&
+    obj !== null &&
+    'sub' in obj &&
+    typeof (obj as Record<string, unknown>).sub === 'string'
+  );
+}
+
+// ==================== DOMAIN-SPECIFIC ERROR TYPES ====================
+
+export class AppError extends Error {
+  constructor(message: string, options?: { cause?: unknown }) {
+    super(message, options);
+    this.name = 'AppError';
+  }
+}
+
+class PasswordHashError extends AppError {
+  constructor(message: string, options?: { cause?: unknown }) {
+    super(message, options);
+    this.name = 'PasswordHashError';
+  }
+}
+
+class PermissionFetchError extends AppError {
+  constructor(
+    message: string,
+    public readonly userId: string,
+    public readonly organizationId: string,
+    options?: { cause?: unknown },
+  ) {
+    super(message, options);
+    this.name = 'PermissionFetchError';
+  }
+}
+
+class TokenGenerationError extends AppError {
+  constructor(
+    message: string,
+    public readonly tokenType: 'access' | 'refresh',
+    options?: { cause?: unknown },
+  ) {
+    super(message, options);
+    this.name = 'TokenGenerationError';
+  }
+}
+
+// ==================== HELPER FUNCTIONS ====================
+
+async function hashPassword(
+  adapter: AuthCoreAdapter,
+  password: string,
+): Promise<string> {
+  try {
+    const hashed = await adapter.password.hash(password);
+    if (typeof hashed !== 'string') {
+      throw new PasswordHashError('Password hash returned non-string value');
+    }
+    return hashed;
+  } catch (error: unknown) {
+    const err: Error = toError(error);
+    throw new PasswordHashError(`Failed to hash password: ${err.message}`, {
+      cause: error,
+    });
+  }
+}
+
+async function verifyPassword(
+  adapter: AuthCoreAdapter,
+  password: string,
+  hash: string,
+): Promise<boolean> {
+  try {
+    const isValid = await adapter.password.verify(password, hash);
+    if (typeof isValid !== 'boolean') {
+      throw new Error('Password verification returned non-boolean value');
+    }
+    return isValid;
+  } catch (error: unknown) {
+    const err: Error = toError(error);
+    throw new Error(`Failed to verify password: ${err.message}`, {
+      cause: error,
+    });
+  }
 }
 
 // ==================== SERVICE IMPLEMENTATION ====================
@@ -131,8 +185,6 @@ export class AuthService {
     private authCoreAdapter: AuthCoreAdapter,
   ) {}
 
-  // ==================== USER VALIDATION ====================
-
   async validateUser(
     email: string,
     password: string,
@@ -140,7 +192,6 @@ export class AuthService {
   ): Promise<ValidatedUser | null> {
     const normalizedEmail = email.toLowerCase().trim();
 
-    // Check if account is locked
     const lockStatus = await this.accountLockoutService.isAccountLocked(email);
 
     if (lockStatus.isLocked) {
@@ -149,17 +200,16 @@ export class AuthService {
         event: 'account_locked_login_attempt',
       });
 
-      // Log failed login attempt due to locked account
       if (request) {
         await this.auditLogService.logAuthEvent({
           request,
-          action: AUDIT_ACTIONS.LOGIN_FAILURE as AuditAction,
+          action: AuditAction.LOGIN_FAILURE,
           actorEmail: normalizedEmail,
           metadata: {
             reason: 'Account locked',
             lockedUntil: lockStatus.lockedUntil?.toISOString(),
           },
-          severity: AUDIT_SEVERITIES.HIGH as AuditSeverity,
+          severity: AuditSeverity.HIGH,
         });
       }
 
@@ -181,51 +231,58 @@ export class AuthService {
     });
 
     if (!user || !user.isActive) {
-      // Record failed attempt even if user doesn't exist (security through obscurity)
       if (user) {
         await this.accountLockoutService.recordFailedAttempt(user.id);
       }
 
-      // Log failed login attempt
       if (request) {
         await this.auditLogService.logAuthEvent({
           request,
-          action: AUDIT_ACTIONS.LOGIN_FAILURE as AuditAction,
+          action: AuditAction.LOGIN_FAILURE,
           actorEmail: normalizedEmail,
           metadata: { reason: 'Invalid credentials or inactive account' },
-          severity: AUDIT_SEVERITIES.MEDIUM as AuditSeverity,
+          severity: AuditSeverity.MEDIUM,
         });
       }
 
       return null;
     }
 
-    const isValid = await this.authCoreAdapter.password.verify(
-      password,
-      user.passwordHash,
-    );
+    try {
+      const isValid = await verifyPassword(
+        this.authCoreAdapter,
+        password,
+        user.passwordHash,
+      );
 
-    if (!isValid) {
-      // Record failed attempt
-      await this.accountLockoutService.recordFailedAttempt(user.id);
+      if (!isValid) {
+        await this.accountLockoutService.recordFailedAttempt(user.id);
 
-      // Log failed login attempt
-      if (request) {
-        await this.auditLogService.logAuthEvent({
-          request,
-          action: AUDIT_ACTIONS.LOGIN_FAILURE as AuditAction,
-          actorEmail: normalizedEmail,
-          actorUserId: user.id,
-          metadata: { reason: 'Invalid password' },
-          organizationId: user.organizationId,
-          severity: AUDIT_SEVERITIES.MEDIUM as AuditSeverity,
-        });
+        if (request) {
+          await this.auditLogService.logAuthEvent({
+            request,
+            action: AuditAction.LOGIN_FAILURE,
+            actorEmail: normalizedEmail,
+            actorUserId: user.id,
+            metadata: { reason: 'Invalid password' },
+            organizationId: user.organizationId,
+            severity: AuditSeverity.MEDIUM,
+          });
+        }
+
+        return null;
       }
-
-      return null;
+    } catch (error: unknown) {
+      const err: Error = toError(error);
+      this.logger.error(
+        `Password verification error: ${err.message}`,
+        err.stack,
+      );
+      throw new InternalServerErrorException('Authentication service error', {
+        cause: error,
+      });
     }
 
-    // Reset failed attempts on successful validation
     await this.accountLockoutService.resetFailedAttempts(user.id);
 
     return {
@@ -241,8 +298,6 @@ export class AuthService {
     };
   }
 
-  // ==================== PERMISSIONS & ROLES ====================
-
   private async getUserPermissions(
     userId: string,
     organizationId: string,
@@ -252,9 +307,7 @@ export class AuthService {
         where: { id: userId },
         include: {
           UserRoles: {
-            where: {
-              organizationId,
-            },
+            where: { organizationId },
             include: {
               role: {
                 include: {
@@ -280,7 +333,6 @@ export class AuthService {
       for (const userRole of userWithRoles.UserRoles) {
         if (userRole.role) {
           roles.add(userRole.role.name);
-
           if (userRole.role.permissions) {
             for (const rolePermission of userRole.role.permissions) {
               if (rolePermission.permission?.code) {
@@ -295,15 +347,20 @@ export class AuthService {
         permissions: Array.from(permissions),
         roles: Array.from(roles),
       };
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error(`Failed to fetch user permissions: ${errorMessage}`);
-      return { permissions: [], roles: [] };
+    } catch (error: unknown) {
+      const err: Error = toError(error);
+      this.logger.error(
+        `Failed to fetch user permissions: ${err.message}`,
+        err.stack,
+      );
+      throw new PermissionFetchError(
+        'Failed to fetch user permissions',
+        userId,
+        organizationId,
+        { cause: error },
+      );
     }
   }
-
-  // ==================== LOGIN FLOW ====================
 
   async login(
     user: ValidatedUser,
@@ -311,39 +368,84 @@ export class AuthService {
     request?: Request,
   ): Promise<LoginResponse> {
     try {
-      // Get user permissions
       const { permissions, roles } = await this.getUserPermissions(
         user.id,
         user.organizationId,
       );
 
-      // Generate access token
-      const accessToken = this.authCoreAdapter.authCore.issueAccessToken({
-        sub: user.id,
-        org: user.organizationId,
-        role: roles.includes('SystemAdmin') ? 'admin' : 'user',
-        version: user.tokenVersion,
-        email: user.email,
-        permissions,
-        roles,
-      });
-
-      // Generate refresh token
-      const refreshToken =
-        await this.authCoreAdapter.tokenManager.issueRefreshToken(
-          user.id,
-          user.organizationId,
+      let accessToken: string;
+      try {
+        accessToken = this.authCoreAdapter.authCore.issueAccessToken({
+          sub: user.id,
+          org: user.organizationId,
+          role: roles.includes('SystemAdmin') ? 'admin' : 'user',
+          version: user.tokenVersion,
+          email: user.email,
+          permissions,
+          roles,
+        });
+        if (typeof accessToken !== 'string') {
+          throw new TokenGenerationError(
+            'Access token generation returned non-string',
+            'access',
+          );
+        }
+      } catch (error: unknown) {
+        const err: Error = toError(error);
+        throw new TokenGenerationError(
+          `Failed to generate access token: ${err.message}`,
+          'access',
+          { cause: error },
         );
+      }
 
-      // Update last login
+      let refreshToken: string;
+      try {
+        refreshToken =
+          await this.authCoreAdapter.tokenManager.issueRefreshToken(
+            user.id,
+            user.organizationId,
+          );
+        if (typeof refreshToken !== 'string') {
+          throw new TokenGenerationError(
+            'Refresh token generation returned non-string',
+            'refresh',
+          );
+        }
+      } catch (error: unknown) {
+        const err: Error = toError(error);
+        throw new TokenGenerationError(
+          `Failed to generate refresh token: ${err.message}`,
+          'refresh',
+          { cause: error },
+        );
+      }
+
+      let refreshTokenHash: string;
+      try {
+        refreshTokenHash = await hashPassword(
+          this.authCoreAdapter,
+          refreshToken,
+        );
+      } catch (error: unknown) {
+        const err: Error = toError(error);
+        throw new InternalServerErrorException(
+          `Failed to hash refresh token: ${err.message}`,
+          { cause: error },
+        );
+      }
+
       await this.prisma.user.update({
         where: { id: user.id },
         data: {
           lastLoginAt: new Date(),
+          refreshTokenHash,
+          refreshTokenVersion: crypto.randomUUID(),
+          refreshTokenIssuedAt: new Date(),
+          tokenVersion: user.tokenVersion,
         },
       });
 
-      // Set cookies
       res.cookie(
         'access_token',
         accessToken,
@@ -363,11 +465,10 @@ export class AuthService {
         event: 'user_login',
       });
 
-      // Log successful login to audit log
       if (request) {
         await this.auditLogService.logAuthEvent({
           request,
-          action: AUDIT_ACTIONS.LOGIN_SUCCESS as AuditAction,
+          action: AuditAction.LOGIN_SUCCESS,
           actorEmail: user.email,
           actorUserId: user.id,
           metadata: {
@@ -376,7 +477,7 @@ export class AuthService {
             tokenVersion: user.tokenVersion,
           },
           organizationId: user.organizationId,
-          severity: AUDIT_SEVERITIES.MEDIUM as AuditSeverity,
+          severity: AuditSeverity.MEDIUM,
         });
       }
 
@@ -392,50 +493,47 @@ export class AuthService {
           roles,
         },
       };
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
-      const errorName = error instanceof Error ? error.name : 'UnknownError';
+    } catch (error: unknown) {
+      const err: Error = toError(error);
+      this.logger.error(`Login failed: ${err.message}`, err.stack);
 
-      this.logger.error(`Login failed: ${errorMessage}`, {
-        error: errorName,
-        event: 'login_error',
-      });
-
-      // Log login failure to audit log
       if (request && user?.email) {
         await this.auditLogService.logAuthEvent({
           request,
-          action: AUDIT_ACTIONS.LOGIN_FAILURE as AuditAction,
+          action: AuditAction.LOGIN_FAILURE,
           actorEmail: user.email,
           actorUserId: user.id,
           metadata: {
-            error: errorMessage,
-            errorType: errorName,
+            error: err.message,
+            errorType: err.name,
           },
           organizationId: user.organizationId,
-          severity: AUDIT_SEVERITIES.HIGH as AuditSeverity,
+          severity: AuditSeverity.HIGH,
         });
       }
 
-      throw error;
+      if (
+        error instanceof UnauthorizedException ||
+        error instanceof ForbiddenException ||
+        error instanceof InternalServerErrorException
+      ) {
+        throw error;
+      }
+
+      throw new InternalServerErrorException(`Login failed: ${err.message}`, {
+        cause: error,
+      });
     }
   }
-
-  // ==================== LOGOUT FLOW ====================
 
   async logout(
     userId: string,
     res: Response,
     request?: Request,
   ): Promise<{ message: string }> {
-    // Get user with organization for audit log
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: {
-        email: true,
-        organizationId: true,
-      },
+      select: { email: true, organizationId: true },
     });
 
     if (!user) {
@@ -443,11 +541,9 @@ export class AuthService {
       throw new BadRequestException('User not found');
     }
 
-    // Clear cookies
     res.clearCookie('access_token', SecurityConfig.cookies.accessToken());
     res.clearCookie('refresh_token', SecurityConfig.cookies.refreshToken());
 
-    // Invalidate refresh token in database
     await this.prisma.user.update({
       where: { id: userId },
       data: {
@@ -464,23 +560,20 @@ export class AuthService {
       event: 'user_logout',
     });
 
-    // Log logout to audit log
     if (request) {
       await this.auditLogService.logAuthEvent({
         request,
-        action: AUDIT_ACTIONS.LOGOUT as AuditAction,
-        actorEmail: user.email,
+        action: AuditAction.LOGOUT,
+        actorEmail: user.email ?? 'unknown',
         actorUserId: userId,
         metadata: {},
         organizationId: user.organizationId,
-        severity: AUDIT_SEVERITIES.MEDIUM as AuditSeverity,
+        severity: AuditSeverity.MEDIUM,
       });
     }
 
     return { message: 'Logged out successfully' };
   }
-
-  // ==================== REFRESH TOKEN FLOW ====================
 
   async refreshToken(
     oldRefreshToken: string,
@@ -490,180 +583,186 @@ export class AuthService {
     this.logger.debug('Refresh token process started');
 
     try {
-      // Verify JWT using auth-core
-      const payload = this.authCoreAdapter.tokenManager.validateRefreshToken(
-        oldRefreshToken,
-      ) as RefreshTokenPayload;
+      const rawPayload: unknown =
+        this.authCoreAdapter.tokenManager.validateRefreshToken(oldRefreshToken);
 
-      // Security validation
-      if (payload.type !== 'refresh') {
-        this.logger.warn(`Invalid token type in refresh flow: ${payload.type}`);
-        throw new UnauthorizedException('Invalid token type');
-      }
-
-      if (!payload.sub) {
+      if (!isRefreshTokenPayload(rawPayload)) {
+        this.logger.warn('Invalid refresh token payload structure');
         throw new UnauthorizedException('Invalid token payload');
       }
 
-      // Use transaction for atomic operation
-      return await this.authCoreAdapter.withTransaction(async () => {
-        const tokenRepository = this.authCoreAdapter.tokenRepository;
-        const userRepository = this.authCoreAdapter.userRepository;
+      const payload = rawPayload;
 
-        // Find user using auth-core repository
-        const authCoreUser = await userRepository.findById(payload.sub);
-        if (!authCoreUser) {
-          throw new UnauthorizedException('User not found');
-        }
+      if (payload.type !== 'refresh') {
+        this.logger.warn(
+          `Invalid token type in refresh flow: ${payload.type ?? 'unknown'}`,
+        );
+        throw new UnauthorizedException('Invalid token type');
+      }
 
-        // Fetch full user from database
-        const fullUser = await this.prisma.user.findUnique({
-          where: { id: payload.sub },
-          include: {
-            organization: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
+      const user = await this.prisma.user.findUnique({
+        where: { id: payload.sub },
+        include: {
+          organization: {
+            select: { id: true, name: true },
           },
-        });
+        },
+      });
 
-        if (!fullUser || !fullUser.isActive) {
-          throw new UnauthorizedException('User not found or inactive');
-        }
+      if (!user || !user.isActive) {
+        throw new UnauthorizedException('User not found or inactive');
+      }
 
-        const userWithOrg: UserWithOrganization = {
-          ...fullUser,
-          organization: fullUser.organization,
-        };
+      if (!user.refreshTokenHash) {
+        throw new UnauthorizedException('No active refresh token');
+      }
 
-        // Validate refresh token hash
-        if (!userWithOrg.refreshTokenHash) {
-          throw new UnauthorizedException('No active refresh token');
-        }
+      const isTokenValid = await verifyPassword(
+        this.authCoreAdapter,
+        oldRefreshToken,
+        user.refreshTokenHash,
+      );
 
-        const tokenJti = payload.jti;
-        if (!tokenJti) {
-          this.logger.error('Refresh token missing jti', {
-            userId: payload.sub,
-          });
-          throw new UnauthorizedException('Invalid refresh token');
-        }
+      if (!isTokenValid) {
+        throw new UnauthorizedException('Invalid refresh token');
+      }
 
-        // Hash the token for comparison
-        const crypto = await import('crypto');
-        const jwtHash = crypto
-          .createHash('sha256')
-          .update(oldRefreshToken)
-          .digest('hex');
+      const { permissions, roles } = await this.getUserPermissions(
+        user.id,
+        user.organizationId,
+      );
 
-        const isTokenValid = await this.authCoreAdapter.password.verify(
-          jwtHash,
-          userWithOrg.refreshTokenHash,
-        );
-
-        if (!isTokenValid) {
-          throw new UnauthorizedException('Invalid refresh token');
-        }
-
-        // Get user permissions for the new token
-        const { permissions, roles } = await this.getUserPermissions(
-          userWithOrg.id,
-          userWithOrg.organizationId,
-        );
-
-        // Generate new refresh token
-        const newRefreshToken =
+      let newRefreshToken: string;
+      try {
+        newRefreshToken =
           await this.authCoreAdapter.tokenManager.issueRefreshToken(
-            userWithOrg.id,
-            userWithOrg.organizationId,
+            user.id,
+            user.organizationId,
           );
+        if (typeof newRefreshToken !== 'string') {
+          throw new TokenGenerationError(
+            'New refresh token generation returned non-string',
+            'refresh',
+          );
+        }
+      } catch (error: unknown) {
+        const err: Error = toError(error);
+        throw new TokenGenerationError(
+          `Failed to generate new refresh token: ${err.message}`,
+          'refresh',
+          { cause: error },
+        );
+      }
 
-        // Generate new access token
-        const newAccessToken = this.authCoreAdapter.authCore.issueAccessToken({
-          sub: userWithOrg.id,
-          org: userWithOrg.organizationId,
+      let newAccessToken: string;
+      try {
+        newAccessToken = this.authCoreAdapter.authCore.issueAccessToken({
+          sub: user.id,
+          org: user.organizationId,
           role: roles.includes('SystemAdmin') ? 'admin' : 'user',
-          version: userWithOrg.tokenVersion + 1,
+          version: user.tokenVersion + 1,
           permissions,
           roles,
         });
-
-        // Hash the new token
-        const newRefreshTokenHash =
-          this.authCoreAdapter.password.hash(newRefreshToken);
-
-        // Invalidate old token and save new one
-        await tokenRepository.invalidateRefreshToken(tokenJti);
-        await tokenRepository.saveRefreshToken({
-          id: crypto.randomUUID(),
-          userId: userWithOrg.id,
-          organizationId: userWithOrg.organizationId,
-          tokenHash: newRefreshTokenHash,
-          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
-          createdAt: new Date(),
-        });
-
-        // Set cookies
-        res.cookie(
-          'access_token',
-          newAccessToken,
-          SecurityConfig.cookies.accessToken(),
-        );
-        res.cookie(
-          'refresh_token',
-          newRefreshToken,
-          SecurityConfig.cookies.refreshToken(),
-        );
-
-        // Log token refresh to audit log
-        if (request) {
-          await this.auditLogService.logAuthEvent({
-            request,
-            action: AUDIT_ACTIONS.TOKEN_REFRESH as AuditAction,
-            actorEmail: userWithOrg.email,
-            actorUserId: userWithOrg.id,
-            metadata: {
-              oldTokenVersion: userWithOrg.tokenVersion,
-              newTokenVersion: userWithOrg.tokenVersion + 1,
-            },
-            organizationId: userWithOrg.organizationId,
-            severity: AUDIT_SEVERITIES.MEDIUM as AuditSeverity,
-          });
+        if (typeof newAccessToken !== 'string') {
+          throw new TokenGenerationError(
+            'New access token generation returned non-string',
+            'access',
+          );
         }
+      } catch (error: unknown) {
+        const err: Error = toError(error);
+        throw new TokenGenerationError(
+          `Failed to generate new access token: ${err.message}`,
+          'access',
+          { cause: error },
+        );
+      }
 
-        return {
-          access_token: newAccessToken,
-          user: {
-            id: userWithOrg.id,
-            email: userWithOrg.email,
-            firstName: userWithOrg.firstName,
-            lastName: userWithOrg.lastName,
-            organizationId: userWithOrg.organizationId,
-            permissions,
-            roles,
-          },
-        };
+      let newRefreshTokenHash: string;
+      try {
+        newRefreshTokenHash = await hashPassword(
+          this.authCoreAdapter,
+          newRefreshToken,
+        );
+      } catch (error: unknown) {
+        const err: Error = toError(error);
+        throw new InternalServerErrorException(
+          `Failed to hash refresh token: ${err.message}`,
+          { cause: error },
+        );
+      }
+
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          refreshTokenHash: newRefreshTokenHash,
+          refreshTokenVersion: crypto.randomUUID(),
+          refreshTokenIssuedAt: new Date(),
+          tokenVersion: { increment: 1 },
+        },
       });
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
-      const errorType = error instanceof Error ? error.name : 'UnknownError';
 
+      res.cookie(
+        'access_token',
+        newAccessToken,
+        SecurityConfig.cookies.accessToken(),
+      );
+      res.cookie(
+        'refresh_token',
+        newRefreshToken,
+        SecurityConfig.cookies.refreshToken(),
+      );
+
+      if (request) {
+        await this.auditLogService.logAuthEvent({
+          request,
+          action: AuditAction.TOKEN_REFRESH,
+          actorEmail: user.email ?? 'unknown',
+          actorUserId: user.id,
+          metadata: {
+            oldTokenVersion: user.tokenVersion,
+            newTokenVersion: user.tokenVersion + 1,
+          },
+          organizationId: user.organizationId,
+          severity: AuditSeverity.MEDIUM,
+        });
+      }
+
+      return {
+        access_token: newAccessToken,
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          organizationId: user.organizationId,
+          permissions,
+          roles,
+        },
+      };
+    } catch (error: unknown) {
+      const err: Error = toError(error);
       this.logger.error('Refresh token error', {
-        error: errorMessage,
-        errorType,
+        error: err.message,
+        errorType: err.name,
+        stack: err.stack,
       });
 
       if (error instanceof UnauthorizedException) {
         throw error;
       }
-      throw new UnauthorizedException('Invalid or expired refresh token');
+
+      if (error instanceof InternalServerErrorException) {
+        throw error;
+      }
+
+      throw new UnauthorizedException(
+        `Invalid or expired refresh token: ${err.message}`,
+        { cause: error },
+      );
     }
   }
-
-  // ==================== REGISTRATION FLOW ====================
 
   async register(
     registerDto: RegisterDto,
@@ -673,27 +772,37 @@ export class AuthService {
     email: string;
     organizationId: string;
     message: string;
-    user?: {
-      id: string;
-      email: string;
-    };
+    user?: { id: string; email: string };
     userId?: string;
   }> {
-    // Check if user exists
+    if (!registerDto.email || !registerDto.password) {
+      throw new BadRequestException('Email and password are required');
+    }
+
     const existingUser = await this.prisma.user.findUnique({
-      where: { email: registerDto.email },
+      where: { email: registerDto.email.toLowerCase() },
     });
 
     if (existingUser) {
       throw new ConflictException('User already exists');
     }
 
-    // Hash password using auth-core
-    const passwordHash = this.authCoreAdapter.password.hash(
-      registerDto.password,
-    );
+    let passwordHash: string;
+    try {
+      passwordHash = await hashPassword(
+        this.authCoreAdapter,
+        registerDto.password,
+      );
+    } catch (error: unknown) {
+      const err: Error = toError(error);
+      this.logger.error(
+        `Password hashing failed during registration: ${err.message}`,
+      );
+      throw new InternalServerErrorException('Failed to process password', {
+        cause: error,
+      });
+    }
 
-    // Create organization
     const organization = await this.prisma.organization.create({
       data: {
         name:
@@ -707,10 +816,9 @@ export class AuthService {
       },
     });
 
-    // Create user
     const user = await this.prisma.user.create({
       data: {
-        email: registerDto.email,
+        email: registerDto.email.toLowerCase(),
         passwordHash,
         firstName: registerDto.firstName,
         lastName: registerDto.lastName,
@@ -723,10 +831,7 @@ export class AuthService {
       },
     });
 
-    // Create default RBAC roles for organization
     await this.createDefaultRolesForOrganization(organization.id);
-
-    // Assign SystemAdmin role to new user
     await this.assignSystemAdminRoleToUser(user.id, organization.id);
 
     this.logger.log(`New user registered: ${user.email}`, {
@@ -735,12 +840,11 @@ export class AuthService {
       event: 'user_registered',
     });
 
-    // Log user creation to audit log
     if (request) {
       await this.auditLogService.logWithRequest(
         request,
-        AUDIT_ACTIONS.USER_CREATED as AuditAction,
-        AUDIT_ENTITY_TYPES.USER as AuditEntityType,
+        AuditAction.USER_CREATED,
+        AuditEntityType.USER,
         user.email,
         user.id,
         user.id,
@@ -750,7 +854,7 @@ export class AuthService {
           organizationName: organization.name,
           roles: ['SystemAdmin'],
         },
-        AUDIT_SEVERITIES.LOW as AuditSeverity,
+        AuditSeverity.LOW,
         user.organizationId,
       );
     }
@@ -761,23 +865,15 @@ export class AuthService {
       organizationId: user.organizationId,
       message:
         'Organization created successfully. Default roles and permissions have been set up.',
-      user: {
-        id: user.id,
-        email: user.email,
-      },
+      user: { id: user.id, email: user.email },
       userId: user.id,
     };
   }
 
-  // ==================== TOKEN MANAGEMENT ====================
-
   async invalidateAllTokens(userId: string, request?: Request): Promise<void> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: {
-        email: true,
-        organizationId: true,
-      },
+      select: { email: true, organizationId: true },
     });
 
     if (!user) {
@@ -800,16 +896,15 @@ export class AuthService {
       event: 'all_tokens_invalidated',
     });
 
-    // Log token invalidation to audit log
     if (request) {
       await this.auditLogService.logAuthEvent({
         request,
-        action: AUDIT_ACTIONS.TOKEN_REFRESH as AuditAction,
-        actorEmail: user.email,
+        action: AuditAction.TOKEN_REFRESH,
+        actorEmail: user.email ?? 'unknown',
         actorUserId: userId,
         metadata: { action: 'invalidate_all_tokens' },
         organizationId: user.organizationId,
-        severity: AUDIT_SEVERITIES.MEDIUM as AuditSeverity,
+        severity: AuditSeverity.MEDIUM,
       });
     }
   }
@@ -838,7 +933,6 @@ export class AuthService {
 
     const sessions: UserSession[] = [];
 
-    // Current session (if exists)
     if (user.refreshTokenIssuedAt) {
       sessions.push({
         id: 'current',
@@ -869,19 +963,14 @@ export class AuthService {
   }> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: {
-        email: true,
-        organizationId: true,
-      },
+      select: { email: true, organizationId: true },
     });
 
     if (!user) {
       throw new BadRequestException('User not found');
     }
 
-    // Get count of other sessions before invalidation (if needed)
-    // This is a placeholder - adjust based on your actual session tracking
-    const invalidatedCount = 1; // Replace with actual count logic
+    const invalidatedCount = 1;
 
     await this.prisma.user.update({
       where: { id: userId },
@@ -903,16 +992,15 @@ export class AuthService {
       event: 'other_sessions_invalidated',
     });
 
-    // Log session invalidation to audit log
     if (request) {
       await this.auditLogService.logAuthEvent({
         request,
-        action: AUDIT_ACTIONS.TOKEN_REFRESH as AuditAction,
-        actorEmail: user.email,
+        action: AuditAction.TOKEN_REFRESH,
+        actorEmail: user.email ?? 'unknown',
         actorUserId: userId,
         metadata: { action: 'invalidate_other_sessions', keepCurrent },
         organizationId: user.organizationId,
-        severity: AUDIT_SEVERITIES.MEDIUM as AuditSeverity,
+        severity: AuditSeverity.MEDIUM,
       });
     }
 
@@ -936,7 +1024,17 @@ export class AuthService {
       return false;
     }
 
-    return this.authCoreAdapter.password.verify(token, user.refreshTokenHash);
+    try {
+      return await verifyPassword(
+        this.authCoreAdapter,
+        token,
+        user.refreshTokenHash,
+      );
+    } catch (error: unknown) {
+      const err: Error = toError(error);
+      this.logger.error(`Refresh token validation error: ${err.message}`);
+      return false;
+    }
   }
 
   async changePassword(
@@ -953,20 +1051,38 @@ export class AuthService {
       throw new BadRequestException('User not found');
     }
 
-    // Verify old password
-    const isValid = await this.authCoreAdapter.password.verify(
-      oldPassword,
-      user.passwordHash,
-    );
+    try {
+      const isValid = await verifyPassword(
+        this.authCoreAdapter,
+        oldPassword,
+        user.passwordHash,
+      );
 
-    if (!isValid) {
-      throw new UnauthorizedException('Invalid current password');
+      if (!isValid) {
+        throw new UnauthorizedException('Invalid current password');
+      }
+    } catch (error: unknown) {
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+      const err: Error = toError(error);
+      throw new InternalServerErrorException(
+        `Password verification failed: ${err.message}`,
+        { cause: error },
+      );
     }
 
-    // Hash new password
-    const newPasswordHash = this.authCoreAdapter.password.hash(newPassword);
+    let newPasswordHash: string;
+    try {
+      newPasswordHash = await hashPassword(this.authCoreAdapter, newPassword);
+    } catch (error: unknown) {
+      const err: Error = toError(error);
+      throw new InternalServerErrorException(
+        `Failed to hash new password: ${err.message}`,
+        { cause: error },
+      );
+    }
 
-    // Update password and invalidate all tokens
     await this.prisma.user.update({
       where: { id: userId },
       data: {
@@ -979,16 +1095,15 @@ export class AuthService {
       },
     });
 
-    // Log password change to audit log
     if (request) {
       await this.auditLogService.logAuthEvent({
         request,
-        action: AUDIT_ACTIONS.PASSWORD_CHANGE as AuditAction,
+        action: AuditAction.PASSWORD_CHANGE,
         actorEmail: user.email,
         actorUserId: userId,
         metadata: {},
         organizationId: user.organizationId,
-        severity: AUDIT_SEVERITIES.MEDIUM as AuditSeverity,
+        severity: AuditSeverity.MEDIUM,
       });
     }
 
@@ -1004,12 +1119,7 @@ export class AuthService {
       `Creating default roles for organization: ${organizationId.substring(0, 8)}...`,
     );
 
-    // Core permissions using colon format
-    const corePermissions: Array<{
-      code: string;
-      module: string;
-      description: string;
-    }> = [
+    const corePermissions = [
       {
         code: 'user:read',
         module: 'user',
@@ -1020,16 +1130,8 @@ export class AuthService {
         module: 'user',
         description: 'Create and update users',
       },
-      {
-        code: 'user:delete',
-        module: 'user',
-        description: 'Delete users',
-      },
-      {
-        code: 'contact:read',
-        module: 'contact',
-        description: 'View contacts',
-      },
+      { code: 'user:delete', module: 'user', description: 'Delete users' },
+      { code: 'contact:read', module: 'contact', description: 'View contacts' },
       {
         code: 'contact:write',
         module: 'contact',
@@ -1040,36 +1142,20 @@ export class AuthService {
         module: 'contact',
         description: 'Delete contacts',
       },
-      {
-        code: 'deal:read',
-        module: 'deal',
-        description: 'View deals',
-      },
+      { code: 'deal:read', module: 'deal', description: 'View deals' },
       {
         code: 'deal:write',
         module: 'deal',
         description: 'Create and update deals',
       },
-      {
-        code: 'deal:delete',
-        module: 'deal',
-        description: 'Delete deals',
-      },
-      {
-        code: 'lead:read',
-        module: 'lead',
-        description: 'View leads',
-      },
+      { code: 'deal:delete', module: 'deal', description: 'Delete deals' },
+      { code: 'lead:read', module: 'lead', description: 'View leads' },
       {
         code: 'lead:write',
         module: 'lead',
         description: 'Create and update leads',
       },
-      {
-        code: 'lead:delete',
-        module: 'lead',
-        description: 'Delete leads',
-      },
+      { code: 'lead:delete', module: 'lead', description: 'Delete leads' },
       {
         code: 'pipeline:read',
         module: 'pipeline',
@@ -1110,36 +1196,24 @@ export class AuthService {
         module: 'dashboard',
         description: 'View dashboard',
       },
-      {
-        code: 'audit:read',
-        module: 'audit',
-        description: 'View audit logs',
-      },
+      { code: 'audit:read', module: 'audit', description: 'View audit logs' },
     ];
 
-    // Create permissions
     for (const perm of corePermissions) {
-      const name = this.formatPermissionName(perm.code);
       await this.prisma.permission.upsert({
         where: { code: perm.code },
         update: {},
         create: {
           code: perm.code,
-          name,
+          name: this.formatPermissionName(perm.code),
           description: perm.description,
           module: perm.module,
         },
       });
     }
 
-    // Create SystemAdmin Role
     const adminRole = await this.prisma.role.upsert({
-      where: {
-        organizationId_name: {
-          organizationId,
-          name: 'SystemAdmin',
-        },
-      },
+      where: { organizationId_name: { organizationId, name: 'SystemAdmin' } },
       update: {
         description: 'Full system administrator with all permissions',
         isSystem: true,
@@ -1152,7 +1226,6 @@ export class AuthService {
       },
     });
 
-    // Assign all permissions to SystemAdmin
     const allPermissions = await this.prisma.permission.findMany();
     for (const permission of allPermissions) {
       await this.prisma.rolePermission.upsert({
@@ -1163,14 +1236,10 @@ export class AuthService {
           },
         },
         update: {},
-        create: {
-          roleId: adminRole.id,
-          permissionId: permission.id,
-        },
+        create: { roleId: adminRole.id, permissionId: permission.id },
       });
     }
 
-    // Create Manager Role
     await this.createRoleWithPermissions(
       organizationId,
       'Manager',
@@ -1189,7 +1258,6 @@ export class AuthService {
       ],
     );
 
-    // Create User Role
     await this.createRoleWithPermissions(
       organizationId,
       'User',
@@ -1205,7 +1273,6 @@ export class AuthService {
       ],
     );
 
-    // Create Viewer Role
     await this.createRoleWithPermissions(
       organizationId,
       'Viewer',
@@ -1230,19 +1297,9 @@ export class AuthService {
     permissionCodes: string[],
   ): Promise<{ id: string }> {
     const role = await this.prisma.role.upsert({
-      where: {
-        organizationId_name: {
-          organizationId,
-          name: roleName,
-        },
-      },
+      where: { organizationId_name: { organizationId, name: roleName } },
       update: { description, isSystem: true },
-      create: {
-        name: roleName,
-        description,
-        isSystem: true,
-        organizationId,
-      },
+      create: { name: roleName, description, isSystem: true, organizationId },
     });
 
     const permissions = await this.prisma.permission.findMany({
@@ -1252,16 +1309,10 @@ export class AuthService {
     for (const permission of permissions) {
       await this.prisma.rolePermission.upsert({
         where: {
-          roleId_permissionId: {
-            roleId: role.id,
-            permissionId: permission.id,
-          },
+          roleId_permissionId: { roleId: role.id, permissionId: permission.id },
         },
         update: {},
-        create: {
-          roleId: role.id,
-          permissionId: permission.id,
-        },
+        create: { roleId: role.id, permissionId: permission.id },
       });
     }
 
@@ -1273,10 +1324,7 @@ export class AuthService {
     organizationId: string,
   ): Promise<void> {
     const adminRole = await this.prisma.role.findFirst({
-      where: {
-        organizationId,
-        name: 'SystemAdmin',
-      },
+      where: { organizationId, name: 'SystemAdmin' },
     });
 
     if (!adminRole) {
@@ -1286,11 +1334,7 @@ export class AuthService {
     }
 
     await this.prisma.userRole.create({
-      data: {
-        userId,
-        roleId: adminRole.id,
-        organizationId,
-      },
+      data: { userId, roleId: adminRole.id, organizationId },
     });
 
     this.logger.log(`Assigned SystemAdmin role to user ${userId}`, {
@@ -1302,8 +1346,6 @@ export class AuthService {
 
   private formatPermissionName(code: string): string {
     const [module, action] = code.split(':');
-    const formattedModule = module.charAt(0).toUpperCase() + module.slice(1);
-    const formattedAction = action.charAt(0).toUpperCase() + action.slice(1);
-    return `${formattedModule} ${formattedAction}`;
+    return `${module.charAt(0).toUpperCase() + module.slice(1)} ${action.charAt(0).toUpperCase() + action.slice(1)}`;
   }
 }

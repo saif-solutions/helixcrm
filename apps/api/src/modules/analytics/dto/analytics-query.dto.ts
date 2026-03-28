@@ -28,24 +28,18 @@ function transformToBoolean(value: unknown): boolean {
 
 // Helper function for safe string transformation (uppercase)
 function transformToUpperCase(value: unknown): string {
-  // Handle string values
   if (typeof value === 'string') {
     return value.toUpperCase();
   }
-  // Handle numbers (convert to string)
   if (typeof value === 'number') {
     return String(value).toUpperCase();
   }
-  // Handle boolean (convert to string)
   if (typeof value === 'boolean') {
     return String(value).toUpperCase();
   }
-  // Handle null/undefined
   if (value === null || value === undefined) {
     return '';
   }
-  // For any other type, return empty string to avoid [object Object]
-  // This prevents unsafe toString() calls on objects
   return '';
 }
 
@@ -54,7 +48,6 @@ function transformToArray(value: unknown): unknown[] {
   if (!value) return [];
   if (typeof value === 'string') return [value];
   if (Array.isArray(value)) return value;
-  // For single value that's not an array, wrap it
   return [value];
 }
 

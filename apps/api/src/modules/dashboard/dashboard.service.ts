@@ -1,31 +1,101 @@
-import {
-  Injectable,
-  ForbiddenException,
-  BadRequestException,
-} from '@nestjs/common';
+// apps/api/src/modules/dashboard/dashboard.service.ts
+import { Injectable, ForbiddenException, Logger } from '@nestjs/common'; // Removed BadRequestException - not used
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { AppLogger } from '../../shared/logging/logger.service';
 import { DashboardRepository } from './repositories/dashboard.repository';
 import { TenantContextService } from '../../shared/tenant/context/tenant-context.service';
 import { PermissionContextService } from '../../shared/permissions/context/permission-context.service';
 import { AuditLogService } from '../../shared/audit-log/audit-log.service';
+import { DealStatus } from '@prisma/client';
+
+// Define interfaces for better type safety
+interface DashboardStats {
+  summary: {
+    leads: number;
+    contacts: number;
+    deals: number;
+    totalWonValue: number;
+    averageDealValue: number;
+  };
+  pipeline: {
+    id: string;
+    name: string;
+    totalDeals: number;
+    stages: Array<{
+      id: string;
+      name: string;
+      order: number;
+      probability: number;
+      dealCount: number;
+    }>;
+  } | null;
+  dealStatus: Record<DealStatus, number>;
+}
+
+interface DashboardStatsResponse {
+  data: DashboardStats;
+}
+
+interface DashboardHealthResponse {
+  success: boolean;
+  data: {
+    status: 'healthy' | 'degraded';
+    components: {
+      database: 'connected' | 'error';
+      statsService: 'operational' | 'error';
+    };
+    lastUpdated: string;
+    error?: string;
+  };
+  timestamp: string;
+  uptime?: number;
+}
+
+// Helper function for safe error message extraction
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === 'string') {
+    return error;
+  }
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return 'Unknown error occurred';
+  }
+}
+
+// Helper function to normalize any thrown value to an Error object with cause
+function normalizeError(error: unknown, message: string): Error {
+  if (error instanceof Error) {
+    return new Error(message, { cause: error });
+  }
+  return new Error(message);
+}
 
 @Injectable()
 export class DashboardService {
+  private readonly logger = new Logger(DashboardService.name);
+
   constructor(
     private prisma: PrismaService,
-    private logger: AppLogger,
-    private readonly dashboardRepository: DashboardRepository, // ✅ ADDED
-    private readonly tenantContext: TenantContextService, // ✅ ADDED
-    private readonly permissionContext: PermissionContextService, // ✅ ADDED
-    private readonly auditLogService: AuditLogService, // ✅ ADDED
+    private appLogger: AppLogger,
+    private readonly dashboardRepository: DashboardRepository,
+    private readonly tenantContext: TenantContextService,
+    private readonly permissionContext: PermissionContextService,
+    private readonly auditLogService: AuditLogService,
   ) {}
 
-  async getStats() {
+  /**
+   * Get dashboard statistics
+   * @returns Promise with dashboard statistics
+   */
+  async getStats(): Promise<DashboardStatsResponse> {
     // 1. PERMISSION CHECK
     if (!this.permissionContext.hasPermission('report:read')) {
       throw new ForbiddenException(
-        'Insufficient permissions: dashboard.read required',
+        'Insufficient permissions: report:read required for dashboard access',
       );
     }
 
@@ -34,26 +104,28 @@ export class DashboardService {
     const userId = this.tenantContext.getUserId();
 
     try {
-      // 2. PARALLEL QUERIES USING REPOSITORY (PRESERVE PERFORMANCE PATTERN)
-      const [leads, contacts, deals, dealValue, defaultPipeline] =
-        await Promise.all([
-          this.dashboardRepository.getLeadCount(),
-          this.dashboardRepository.getContactCount(),
-          this.dashboardRepository.getDealCount(),
-          this.dashboardRepository.getDealValueSum(),
-          this.dashboardRepository.getDefaultPipelineWithStats(),
-        ]);
+      // 2. PARALLEL QUERIES USING REPOSITORY
+      const [
+        leads,
+        contacts,
+        deals,
+        dealValueSum,
+        defaultPipeline,
+        statusStats,
+      ] = await Promise.all([
+        this.dashboardRepository.getLeadCount(),
+        this.dashboardRepository.getContactCount(),
+        this.dashboardRepository.getDealCount(),
+        this.dashboardRepository.getDealValueSum(),
+        this.dashboardRepository.getDefaultPipelineWithStats(),
+        this.dashboardRepository.getDealStatusDistribution(),
+      ]);
 
-      // 3. GET DEAL STATUS DISTRIBUTION
-      const statusStats =
-        await this.dashboardRepository.getDealStatusDistribution();
+      // 3. CALCULATE STATISTICS
+      const totalWonValue = dealValueSum;
+      const averageDealValue = deals > 0 ? totalWonValue / deals : 0;
 
-      // 4. CALCULATE STATISTICS (PRESERVE ORIGINAL BUSINESS LOGIC)
-      const totalWonValue = dealValue._sum.amount
-        ? Number(dealValue._sum.amount)
-        : 0;
-
-      // 5. GET DEAL STAGE DISTRIBUTION
+      // 4. GET DEAL STAGE DISTRIBUTION
       const stageStats = defaultPipeline
         ? defaultPipeline.stages.map((stage) => ({
             id: stage.id,
@@ -64,14 +136,23 @@ export class DashboardService {
           }))
         : [];
 
-      // 6. BUILD STATS RESPONSE (PRESERVE ORIGINAL STRUCTURE)
-      const stats = {
+      // 5. BUILD STATUS DISTRIBUTION
+      const statusDistribution = statusStats.reduce(
+        (acc, curr) => {
+          acc[curr.status] = curr._count.id;
+          return acc;
+        },
+        {} as Record<DealStatus, number>,
+      );
+
+      // 6. BUILD STATS RESPONSE
+      const stats: DashboardStats = {
         summary: {
           leads,
           contacts,
           deals,
           totalWonValue,
-          averageDealValue: deals > 0 ? totalWonValue / deals : 0,
+          averageDealValue: Math.round(averageDealValue * 100) / 100,
         },
         pipeline: defaultPipeline
           ? {
@@ -81,31 +162,51 @@ export class DashboardService {
               stages: stageStats,
             }
           : null,
-        dealStatus: statusStats.reduce(
-          (acc, curr) => {
-            acc[curr.status] = curr._count.id;
-            return acc;
-          },
-          {} as Record<string, number>,
-        ),
+        dealStatus: statusDistribution,
       };
 
-      this.logger.log('Dashboard stats fetched', {
+      // 7. AUDIT LOG (fire and forget)
+      void this.auditLogService
+        .logEvent({
+          organizationId: tenantId,
+          actorUserId: userId,
+          action: 'DASHBOARD_VIEWED',
+          entityType: 'DASHBOARD',
+          entityId: tenantId,
+          metadata: {
+            leads,
+            contacts,
+            deals,
+            totalWonValue,
+          },
+          severity: 'LOW',
+        })
+        .catch((err: unknown) => {
+          this.logger.warn(
+            `Failed to log dashboard view: ${getErrorMessage(err)}`,
+          );
+        });
+
+      // 8. LOG SUCCESS
+      this.appLogger.log('Dashboard stats fetched', {
         organizationId: tenantId,
+        userId,
         leads,
         contacts,
         deals,
+        totalWonValue,
         event: 'dashboard_stats_fetched',
       });
 
       return {
         data: stats,
       };
-    } catch (error: any) {
-      // 7. ENTERPRISE ERROR HANDLING
-      this.logger.error(
-        `Dashboard.getStats failed: ${error.message}`,
-        error.stack,
+    } catch (error: unknown) {
+      // 9. ERROR HANDLING
+      const errorMessage = getErrorMessage(error);
+      this.appLogger.error(
+        `Dashboard.getStats failed: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
         {
           organizationId: tenantId,
           userId,
@@ -113,34 +214,259 @@ export class DashboardService {
         },
       );
 
-      // 8. PRESERVE EXISTING ERROR TYPES
+      // Preserve existing error types
       if (error instanceof ForbiddenException) {
         throw error;
       }
 
-      throw new BadRequestException('Failed to fetch dashboard stats');
+      throw normalizeError(error, 'Failed to fetch dashboard stats');
     } finally {
-      // 9. PERFORMANCE MONITORING
+      // 10. PERFORMANCE MONITORING
       const duration = Date.now() - startTime;
-      this.logger.log(`Dashboard.getStats completed in ${duration}ms`, {
+      const performance =
+        duration > 2000 ? 'slow' : duration > 1000 ? 'warning' : 'normal';
+
+      this.appLogger.log(`Dashboard.getStats completed in ${duration}ms`, {
         duration,
         organizationId: tenantId,
         userId,
-        performance: duration > 2000 ? 'slow' : 'normal',
+        performance,
+        method: 'getStats',
       });
     }
   }
 
+  /**
+   * Get dashboard health status
+   * @returns Promise with health status
+   */
+  async getHealth(): Promise<DashboardHealthResponse> {
+    const startTime = Date.now();
+    const tenantId = this.tenantContext.getTenantId();
+
+    try {
+      // Try to get basic stats as health check
+      await this.getStats(); // We don't need to store the result, just verify it works
+
+      const health = {
+        status: 'healthy' as const,
+        components: {
+          database: 'connected' as const,
+          statsService: 'operational' as const,
+        },
+        lastUpdated: new Date().toISOString(),
+      };
+
+      this.appLogger.debug('Dashboard health check passed', {
+        organizationId: tenantId,
+        event: 'dashboard_health_check',
+      });
+
+      return {
+        success: true,
+        data: health,
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+      };
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
+      this.appLogger.error(`Dashboard health check failed: ${errorMessage}`, {
+        organizationId: tenantId,
+        error: error instanceof Error ? error.name : 'Unknown error',
+        event: 'dashboard_health_error',
+      });
+
+      // Return degraded health status
+      return {
+        success: false,
+        data: {
+          status: 'degraded',
+          components: {
+            database: 'error',
+            statsService: 'error',
+          },
+          lastUpdated: new Date().toISOString(),
+          error: errorMessage,
+        },
+        timestamp: new Date().toISOString(),
+      };
+    } finally {
+      const duration = Date.now() - startTime;
+      if (duration > 1000) {
+        this.appLogger.debug(`Health check completed in ${duration}ms`, {
+          organizationId: tenantId,
+          duration,
+        });
+      }
+    }
+  }
+
+  /**
+   * Get pipeline performance metrics
+   * @returns Promise with pipeline performance data
+   */
+  async getPipelinePerformance(): Promise<{
+    stages: Array<{
+      id: string;
+      name: string;
+      order: number;
+      dealCount: number;
+      conversionRate: number;
+    }>;
+    totalDeals: number;
+    conversionToWon: number;
+  }> {
+    // Permission check
+    if (!this.permissionContext.hasPermission('report:read')) {
+      throw new ForbiddenException(
+        'Insufficient permissions: report:read required for pipeline performance',
+      );
+    }
+
+    const startTime = Date.now();
+    const tenantId = this.tenantContext.getTenantId();
+    const userId = this.tenantContext.getUserId();
+
+    try {
+      const performance =
+        await this.dashboardRepository.getPipelinePerformance();
+
+      this.appLogger.log('Pipeline performance fetched', {
+        organizationId: tenantId,
+        userId,
+        totalDeals: performance.totalDeals,
+        conversionToWon: performance.conversionToWon,
+        event: 'pipeline_performance_fetched',
+      });
+
+      return performance;
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
+      this.appLogger.error(
+        `Failed to get pipeline performance: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
+        {
+          organizationId: tenantId,
+          userId,
+          method: 'getPipelinePerformance',
+        },
+      );
+
+      if (error instanceof ForbiddenException) {
+        throw error;
+      }
+
+      throw normalizeError(error, 'Failed to fetch pipeline performance');
+    } finally {
+      const duration = Date.now() - startTime;
+      const performance = duration > 1000 ? 'slow' : 'normal';
+
+      this.appLogger.log(
+        `Pipeline performance query completed in ${duration}ms`,
+        {
+          duration,
+          organizationId: tenantId,
+          performance,
+          method: 'getPipelinePerformance',
+        },
+      );
+    }
+  }
+
+  /**
+   * Get recent activities across the organization
+   * @param limit Maximum number of activities to return
+   * @returns Promise with recent activities
+   */
+  async getRecentActivities(limit: number = 10): Promise<{
+    deals: Array<{
+      id: string;
+      name: string;
+      createdAt: Date;
+      status: DealStatus;
+    }>;
+    contacts: Array<{
+      id: string;
+      firstName: string;
+      lastName: string;
+      createdAt: Date;
+    }>;
+    leads: Array<{ id: string; name: string; createdAt: Date; status: string }>;
+  }> {
+    // Permission check
+    if (!this.permissionContext.hasPermission('report:read')) {
+      throw new ForbiddenException(
+        'Insufficient permissions: report:read required for recent activities',
+      );
+    }
+
+    const startTime = Date.now();
+    const tenantId = this.tenantContext.getTenantId();
+    const userId = this.tenantContext.getUserId();
+    const sanitizedLimit = Math.min(Math.max(limit, 1), 100);
+
+    try {
+      const activities =
+        await this.dashboardRepository.getRecentActivities(sanitizedLimit);
+
+      this.appLogger.debug('Recent activities fetched', {
+        organizationId: tenantId,
+        userId,
+        dealCount: activities.deals.length,
+        contactCount: activities.contacts.length,
+        leadCount: activities.leads.length,
+        event: 'recent_activities_fetched',
+      });
+
+      return activities;
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
+      this.appLogger.error(
+        `Failed to get recent activities: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
+        {
+          organizationId: tenantId,
+          userId,
+          method: 'getRecentActivities',
+          limit: sanitizedLimit,
+        },
+      );
+
+      if (error instanceof ForbiddenException) {
+        throw error;
+      }
+
+      throw normalizeError(error, 'Failed to fetch recent activities');
+    } finally {
+      const duration = Date.now() - startTime;
+      if (duration > 1000) {
+        this.appLogger.debug(
+          `Recent activities query completed in ${duration}ms`,
+          {
+            organizationId: tenantId,
+            duration,
+          },
+        );
+      }
+    }
+  }
+
+  /**
+   * Get user email by ID (helper method)
+   * @param userId User ID
+   * @returns Promise with user email
+   */
   private async getUserEmail(userId: string): Promise<string> {
     try {
       const user = await this.prisma.user.findUnique({
         where: { id: userId },
         select: { email: true },
       });
-      return user?.email || 'system@unknown';
-    } catch (error) {
+      return user?.email ?? 'system@unknown';
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       this.logger.warn(
-        `Failed to fetch user email for ${userId}: ${error.message}`,
+        `Failed to fetch user email for ${userId}: ${errorMessage}`,
       );
       return 'system@unknown';
     }

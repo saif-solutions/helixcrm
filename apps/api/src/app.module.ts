@@ -14,6 +14,15 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { HealthController } from './health.controller';
 
+// Config imports
+import {
+  appConfig,
+  databaseConfig,
+  authConfig,
+  securityConfig,
+  demoConfig,
+} from './config';
+
 // Feature modules
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -47,24 +56,27 @@ import { RequestContextMiddleware } from './shared/middleware/request-context.mi
 import { CsrfMiddleware } from './shared/security/csrf.middleware';
 
 // Config validation
-import { ConfigValidationService } from './config/config-validation.service';
+import { ConfigValidationService } from './config/validation/config-validation.service';
 
 import { DebugController } from './modules/debug/debug.controller';
-import { ThrottlerModule } from '@nestjs/throttler';
+
+// Create config array with proper typing
+const configModules = [
+  appConfig,
+  databaseConfig,
+  authConfig,
+  securityConfig,
+  demoConfig,
+];
 
 @Module({
   imports: [
-    ThrottlerModule.forRoot([
-      {
-        ttl: 60000, // 1 minute
-        limit: 100, // 100 requests per minute
-      },
-    ]),
     // ================= CONFIG =================
     ConfigModule.forRoot({
       isGlobal: true,
       cache: true,
       expandVariables: true,
+      load: configModules as Parameters<typeof ConfigModule.forRoot>[0]['load'],
       envFilePath: [`.env.${process.env.NODE_ENV || 'development'}`, '.env'],
     }),
 

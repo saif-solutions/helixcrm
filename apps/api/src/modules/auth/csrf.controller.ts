@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { Public } from '../../shared/decorators/require-permission.decorator';
-import SecurityConfig from '../../shared/config/security.config';
+import SecurityConfig from '../../../config/security.config';
 
 // Define the CSRF request interface
 interface CsrfRequest extends Request {

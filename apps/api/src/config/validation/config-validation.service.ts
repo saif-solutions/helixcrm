@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { PrismaService } from '../shared/prisma/prisma.service';
+import { PrismaService } from '../../shared/prisma/prisma.service';
 
 export interface ValidationRule {
   key: string;
@@ -9,7 +9,7 @@ export interface ValidationRule {
   minLength?: number;
   maxLength?: number;
   pattern?: RegExp;
-  defaultValue?: any;
+  defaultValue?: unknown;
   description: string;
 }
 
@@ -17,7 +17,48 @@ export interface ValidationResult {
   isValid: boolean;
   errors: string[];
   warnings: string[];
-  validatedConfig: Record<string, any>;
+  validatedConfig: Record<string, unknown>;
+}
+
+// Helper function for safe error message extraction
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === 'string') {
+    return error;
+  }
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return 'Unknown error occurred';
+  }
+}
+
+// Helper function to normalize any thrown value to an Error object with cause
+function normalizeError(error: unknown, message: string): Error {
+  if (error instanceof Error) {
+    return new Error(message, { cause: error });
+  }
+  return new Error(message);
+}
+
+// Helper function to safely convert unknown to string
+function safeToString(value: unknown): string {
+  if (value === null || value === undefined) {
+    return '';
+  }
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return '[Object]';
+  }
 }
 
 @Injectable()
@@ -32,7 +73,7 @@ export class ConfigValidationService {
     this.initializeValidationRules();
   }
 
-  private initializeValidationRules() {
+  private initializeValidationRules(): void {
     this.validationRules = [
       // Database
       {
@@ -43,7 +84,6 @@ export class ConfigValidationService {
         pattern: /^postgresql:\/\//,
         description: 'PostgreSQL connection URL',
       },
-
       // JWT Secrets (CRITICAL for security)
       {
         key: 'JWT_SECRET',
@@ -60,7 +100,6 @@ export class ConfigValidationService {
         description:
           'JWT refresh token signing secret (min 32 chars, must be different from JWT_SECRET)',
       },
-
       // Application
       {
         key: 'PORT',
@@ -84,7 +123,6 @@ export class ConfigValidationService {
         defaultValue: 'http://localhost:5173',
         description: 'CORS allowed origin',
       },
-
       // Optional but recommended
       {
         key: 'REDIS_HOST',
@@ -100,7 +138,6 @@ export class ConfigValidationService {
         defaultValue: 6379,
         description: 'Redis port',
       },
-
       // CSRF (optional in dev, required in production)
       {
         key: 'CSRF_SECRET',
@@ -109,7 +146,6 @@ export class ConfigValidationService {
         minLength: 32,
         description: 'CSRF token secret',
       },
-
       // Token expiries (optional with defaults)
       {
         key: 'JWT_EXPIRES_IN',
@@ -131,13 +167,16 @@ export class ConfigValidationService {
   async validate(): Promise<ValidationResult> {
     const errors: string[] = [];
     const warnings: string[] = [];
-    const validatedConfig: Record<string, any> = {};
+    const validatedConfig: Record<string, unknown> = {};
 
     this.logger.log('��� Starting configuration validation...');
 
     // Step 1: Validate environment variables
     for (const rule of this.validationRules) {
-      const value = this.configService.get(rule.key);
+      // Use type assertion to tell TypeScript this is safe
+      const value = this.configService.get<
+        string | number | boolean | undefined
+      >(rule.key);
       const validation = this.validateRule(rule, value);
 
       if (validation.isValid) {
@@ -145,16 +184,19 @@ export class ConfigValidationService {
       } else if (rule.required) {
         errors.push(`${rule.key}: ${validation.error}`);
       } else {
+        const defaultValueStr = safeToString(rule.defaultValue);
         warnings.push(
-          `${rule.key}: ${validation.error} - Using default: ${rule.defaultValue}`,
+          `${rule.key}: ${validation.error} - Using default: ${defaultValueStr}`,
         );
         validatedConfig[rule.key] = rule.defaultValue;
       }
     }
 
     // Step 2: Validate JWT secrets are different (security best practice)
-    const jwtSecret = validatedConfig['JWT_SECRET'];
-    const jwtRefreshSecret = validatedConfig['JWT_REFRESH_SECRET'];
+    const jwtSecret = validatedConfig['JWT_SECRET'] as string | undefined;
+    const jwtRefreshSecret = validatedConfig['JWT_REFRESH_SECRET'] as
+      | string
+      | undefined;
 
     if (jwtSecret && jwtRefreshSecret && jwtSecret === jwtRefreshSecret) {
       errors.push(
@@ -167,7 +209,8 @@ export class ConfigValidationService {
       await this.validateDatabaseConnection();
       this.logger.log('✅ Database connection validated');
     } catch (error) {
-      errors.push(`Database connection failed: ${error.message}`);
+      const errorMessage = getErrorMessage(error);
+      errors.push(`Database connection failed: ${errorMessage}`);
     }
 
     // Step 4: Log results
@@ -197,8 +240,8 @@ export class ConfigValidationService {
 
   private validateRule(
     rule: ValidationRule,
-    value: any,
-  ): { isValid: boolean; error?: string; value?: any } {
+    value: string | number | boolean | undefined,
+  ): { isValid: boolean; error?: string; value?: unknown } {
     // Handle undefined values
     if (value === undefined || value === null) {
       if (rule.required) {
@@ -207,73 +250,77 @@ export class ConfigValidationService {
       return { isValid: true, value: rule.defaultValue };
     }
 
+    let processedValue: unknown = value;
+
     // Type validation
     if (rule.type === 'number') {
       const numValue = Number(value);
       if (isNaN(numValue)) {
-        return { isValid: false, error: `Must be a number, got: ${value}` };
+        const valueStr = safeToString(value);
+        return { isValid: false, error: `Must be a number, got: ${valueStr}` };
       }
-      value = numValue;
+      processedValue = numValue;
     } else if (rule.type === 'boolean') {
       if (typeof value !== 'boolean') {
-        const lowerValue = String(value).toLowerCase();
+        const lowerValue = safeToString(value).toLowerCase();
         if (lowerValue === 'true' || lowerValue === '1') {
-          value = true;
+          processedValue = true;
         } else if (lowerValue === 'false' || lowerValue === '0') {
-          value = false;
+          processedValue = false;
         } else {
-          return { isValid: false, error: `Must be a boolean, got: ${value}` };
+          const valueStr = safeToString(value);
+          return {
+            isValid: false,
+            error: `Must be a boolean, got: ${valueStr}`,
+          };
         }
       }
     }
 
     // String validations
-    if (typeof value === 'string') {
-      if (rule.minLength && value.length < rule.minLength) {
+    if (typeof processedValue === 'string') {
+      if (rule.minLength && processedValue.length < rule.minLength) {
         return {
           isValid: false,
-          error: `Minimum length ${rule.minLength}, got: ${value.length}`,
+          error: `Minimum length ${rule.minLength}, got: ${processedValue.length}`,
         };
       }
 
-      if (rule.maxLength && value.length > rule.maxLength) {
+      if (rule.maxLength && processedValue.length > rule.maxLength) {
         return {
           isValid: false,
-          error: `Maximum length ${rule.maxLength}, got: ${value.length}`,
+          error: `Maximum length ${rule.maxLength}, got: ${processedValue.length}`,
         };
       }
 
-      if (rule.pattern && !rule.pattern.test(value)) {
-        return { isValid: false, error: `Must match pattern: ${rule.pattern}` };
+      if (rule.pattern && !rule.pattern.test(processedValue)) {
+        const patternStr = safeToString(rule.pattern);
+        return { isValid: false, error: `Must match pattern: ${patternStr}` };
       }
     }
 
-    return { isValid: true, value };
+    return { isValid: true, value: processedValue };
   }
 
   private async validateDatabaseConnection(): Promise<void> {
     try {
-      // Use Prisma's health check
-      const health = await this.prismaService.healthCheck();
-      if (health.status !== 'healthy') {
-        throw new Error('Database health check failed');
-      }
-
-      // Additional validation: Check if we can query a simple table
-      await this.prismaService.$queryRaw`SELECT 1`;
+      // Simple query to verify database connection
+      await this.prismaService.$queryRaw`SELECT 1 as result`;
     } catch (error) {
-      throw new Error(`Database validation failed: ${error.message}`);
+      throw normalizeError(error, 'Database validation failed');
     }
   }
 
   /**
    * Get validated configuration (safe to use after validation)
    */
-  getValidatedConfig(): Record<string, any> {
-    const config: Record<string, any> = {};
+  getValidatedConfig(): Record<string, unknown> {
+    const config: Record<string, unknown> = {};
 
     for (const rule of this.validationRules) {
-      const value = this.configService.get(rule.key);
+      const value = this.configService.get<
+        string | number | boolean | undefined
+      >(rule.key);
       if (value !== undefined && value !== null) {
         config[rule.key] = value;
       } else if (rule.defaultValue !== undefined) {

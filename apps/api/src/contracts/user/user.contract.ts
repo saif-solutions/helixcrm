@@ -11,7 +11,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { PasswordPolicy } from './_shared/password.policy';
+import { PasswordPolicy } from '../shared/password.policy';
 
 export enum UserRole {
   ADMIN = 'admin',

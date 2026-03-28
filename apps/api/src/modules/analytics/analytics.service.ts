@@ -796,8 +796,8 @@ export class AnalyticsService {
     const exportQuery: AnalyticsExportQueryDto = {
       format: query.format,
       include: query.include,
-      startDate: query.startDate,
-      endDate: query.endDate,
+      startDate: query.startDate ? query.startDate.toISOString() : undefined,
+      endDate: query.endDate ? query.endDate.toISOString() : undefined,
     };
     return this.createAnalyticsExport(exportQuery);
   }
