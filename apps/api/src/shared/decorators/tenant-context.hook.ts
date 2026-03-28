@@ -1,28 +1,71 @@
 // apps/api/src/shared/decorators/tenant-context.hook.ts
 
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
-import { TenantContextService } from '../tenant/context/tenant-context.service';
+import { Request } from 'express';
 import { withTenantContext } from '../tenant/tenant.context';
 
-export const TenantContextHook = createParamDecorator(
-  async (data: unknown, ctx: ExecutionContext) => {
-    const request = ctx.switchToHttp().getRequest();
-    const tenantContextService = ctx
-      .switchToHttp()
-      .getRequest().tenantContextService;
+/**
+ * Extended Request interface with tenant context properties
+ */
+interface TenantContextRequest extends Request {
+  user?: {
+    id?: string;
+    sub?: string;
+    email?: string;
+    organizationId?: string;
+    org?: string;
+    roles?: string[];
+    permissions?: string[];
+  };
+}
 
+/**
+ * Tenant context interface
+ */
+export interface TenantContext {
+  tenantId: string;
+  organizationId: string;
+  isSystemContext: boolean;
+  resolvedAt: Date;
+  source: 'token' | 'header' | 'subdomain';
+  userId?: string;
+  userEmail?: string;
+  roles?: string[];
+  permissions?: string[];
+}
+
+/**
+ * Hook decorator to extract and create tenant context from request
+ * @returns Tenant context object or null if not available
+ *
+ * @example
+ * ```typescript
+ * @Get()
+ * async getData(@TenantContextHook() tenantContext: TenantContext) {
+ *   // Use tenant context for database queries
+ *   return this.service.getData(tenantContext);
+ * }
+ * ```
+ */
+export const TenantContextHook = createParamDecorator(
+  (data: unknown, ctx: ExecutionContext): TenantContext | null => {
+    const request = ctx.switchToHttp().getRequest<TenantContextRequest>();
+
+    // Validate user exists
     if (!request.user) {
       return null;
     }
 
+    // Extract organization ID from user (supports both camelCase and shorthand)
     const organizationId = request.user.organizationId || request.user.org;
 
+    // Return null if no organization context
     if (!organizationId) {
       return null;
     }
 
-    // Create real tenant context
-    const realContext = {
+    // Create tenant context
+    const tenantContext: TenantContext = {
       tenantId: organizationId,
       organizationId: organizationId,
       isSystemContext: false,
@@ -34,9 +77,7 @@ export const TenantContextHook = createParamDecorator(
       permissions: request.user.permissions || [],
     };
 
-    // Re-run the rest of the request with real context
-    return withTenantContext(realContext, () => {
-      return realContext;
-    });
+    // Execute with tenant context and return the context
+    return withTenantContext(tenantContext, () => tenantContext);
   },
 );
