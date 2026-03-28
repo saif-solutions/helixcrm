@@ -3,6 +3,17 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { RLSConfig, TenantContext, RLSError, RLSErrorCode } from './rls.types';
 
+// Helper function for safe error message extraction
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === 'string') {
+    return error;
+  }
+  return 'Unknown error occurred';
+}
+
 @Injectable()
 export class RLSService implements OnModuleInit {
   private readonly logger = new Logger(RLSService.name);
@@ -25,7 +36,7 @@ export class RLSService implements OnModuleInit {
     };
   }
 
-  async onModuleInit() {
+  async onModuleInit(): Promise<void> {
     if (this.config.enabled) {
       await this.initializeRLS();
     } else {
@@ -33,14 +44,10 @@ export class RLSService implements OnModuleInit {
     }
   }
 
-  /**
-   * Initialize RLS by enabling it in the database
-   */
   async initializeRLS(): Promise<void> {
     try {
       this.logger.log('Initializing Row Level Security...');
 
-      // Check if RLS is already enabled
       const result = await this.prisma.$queryRaw<
         Array<{ tablename: string; rowsecurity: boolean }>
       >`
@@ -61,27 +68,21 @@ export class RLSService implements OnModuleInit {
         this.logger.warn(
           `RLS not enabled on tables: ${tablesWithoutRLS.map((t) => t.tablename).join(', ')}`,
         );
-
-        // Enable RLS on all tables
         await this.enableRLS();
         this.logger.log('RLS enabled successfully');
       } else {
         this.logger.log('RLS is already enabled on all tables');
       }
 
-      // Verify policies exist
       await this.verifyPolicies();
-    } catch (error) {
-      this.logger.error('Failed to initialize RLS:', error);
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
+      this.logger.error(`Failed to initialize RLS: ${errorMessage}`);
       throw error;
     }
   }
 
-  /**
-   * Enable RLS by executing the SQL script
-   */
-  // Update src/shared/database/rls.service.ts - enableRLS method
-  async enableRLS() {
+  async enableRLS(): Promise<void> {
     await this.prisma.$transaction(async (tx) => {
       const tables = [
         'organizations',
@@ -104,76 +105,66 @@ export class RLSService implements OnModuleInit {
       ];
 
       for (const table of tables) {
-        // Enable RLS - single statement
         await tx.$executeRawUnsafe(
           `ALTER TABLE "${table}" ENABLE ROW LEVEL SECURITY;`,
         );
 
-        // Drop policy if exists - single statement
         try {
           await tx.$executeRawUnsafe(
             `DROP POLICY IF EXISTS "${table}_bypass_policy" ON "${table}";`,
           );
-        } catch (e) {
+        } catch {
           // Policy might not exist - that's fine
         }
 
-        // Create bypass policy - single statement
         await tx.$executeRawUnsafe(`
-        CREATE POLICY "${table}_bypass_policy" ON "${table}"
-        FOR ALL USING (current_setting('app.current_role', true) = 'super_admin')
-      `);
+          CREATE POLICY "${table}_bypass_policy" ON "${table}"
+          FOR ALL USING (current_setting('app.current_role', true) = 'super_admin')
+        `);
 
-        // Check if table has organizationId column
         const hasOrgId = await this.tableHasColumn(tx, table, 'organizationId');
 
         if (hasOrgId) {
-          // Drop isolation policy if exists
           try {
             await tx.$executeRawUnsafe(
               `DROP POLICY IF EXISTS "${table}_isolation_policy" ON "${table}";`,
             );
-          } catch (e) {
+          } catch {
             // Policy might not exist - that's fine
           }
 
-          // Create isolation policy - single statement
           await tx.$executeRawUnsafe(`
-          CREATE POLICY "${table}_isolation_policy" ON "${table}"
-          FOR ALL USING (
-            current_setting('app.current_role', true) = 'super_admin' OR
-            "organizationId" = current_setting('app.current_organization_id', true)
-          )
-        `);
+            CREATE POLICY "${table}_isolation_policy" ON "${table}"
+            FOR ALL USING (
+              current_setting('app.current_role', true) = 'super_admin' OR
+              "organizationId" = current_setting('app.current_organization_id', true)
+            )
+          `);
         }
       }
     });
   }
 
-  // Add helper method
   private async tableHasColumn(
-    tx: any,
+    tx: PrismaService,
     table: string,
     column: string,
   ): Promise<boolean> {
-    const result = await tx.$queryRawUnsafe(
+    const result = await tx.$queryRawUnsafe<Array<{ exists: boolean }>>(
       `
-    SELECT EXISTS (
-      SELECT 1 FROM information_schema.columns 
-      WHERE table_schema = 'public' 
-      AND table_name = $1
-      AND column_name = $2
-    ) as exists
-  `,
+        SELECT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_schema = 'public' 
+          AND table_name = $1
+          AND column_name = $2
+        ) as exists
+      `,
       table,
       column,
     );
-    return result[0]?.exists || false;
+    return result[0]?.exists ?? false;
   }
 
-  /**
-   * Disable RLS for maintenance
-   */
   async disableRLS(): Promise<void> {
     try {
       const fs = await import('fs');
@@ -186,7 +177,6 @@ export class RLSService implements OnModuleInit {
         'disable-rls.sql',
       );
 
-      // Check if file exists
       if (!fs.existsSync(sqlPath)) {
         throw new Error(`Disable RLS SQL file not found at: ${sqlPath}`);
       }
@@ -204,16 +194,13 @@ export class RLSService implements OnModuleInit {
       });
 
       this.logger.warn('RLS disabled for maintenance');
-    } catch (error) {
-      this.logger.error('Failed to disable RLS:', error);
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
+      this.logger.error(`Failed to disable RLS: ${errorMessage}`);
       throw error;
     }
   }
 
-  /**
-   * Set tenant context for the current database session
-   * IMPORTANT: This must match the setting names in enable-rls.sql
-   */
   async setTenantContext(context: TenantContext): Promise<void> {
     if (!this.config.enabled) {
       return;
@@ -229,7 +216,6 @@ export class RLSService implements OnModuleInit {
     }
 
     try {
-      // Set the organization context - MUST MATCH enable-rls.sql policy conditions
       await this.prisma.$executeRaw`
         SELECT set_config('app.current_organization_id', ${organizationId}, true)
       `;
@@ -249,15 +235,13 @@ export class RLSService implements OnModuleInit {
       this.logger.debug(
         `Tenant context set: organizationId=${organizationId}, userId=${userId}, role=${role}`,
       );
-    } catch (error) {
-      this.logger.error('Failed to set tenant context:', error);
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
+      this.logger.error(`Failed to set tenant context: ${errorMessage}`);
       throw error;
     }
   }
 
-  /**
-   * Clear tenant context
-   */
   async clearTenantContext(): Promise<void> {
     if (!this.config.enabled) {
       return;
@@ -277,15 +261,13 @@ export class RLSService implements OnModuleInit {
       `;
 
       this.logger.debug('Tenant context cleared');
-    } catch (error) {
-      this.logger.error('Failed to clear tenant context:', error);
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
+      this.logger.error(`Failed to clear tenant context: ${errorMessage}`);
       throw error;
     }
   }
 
-  /**
-   * Verify RLS policies are correctly configured
-   */
   async verifyPolicies(): Promise<boolean> {
     try {
       const policies = await this.prisma.$queryRaw<
@@ -320,13 +302,12 @@ export class RLSService implements OnModuleInit {
         'password_reset_tokens',
       ];
 
-      // Group policies by table
       const policiesByTable = new Map<string, string[]>();
       policies.forEach((policy) => {
         if (!policiesByTable.has(policy.tablename)) {
           policiesByTable.set(policy.tablename, []);
         }
-        policiesByTable.get(policy.tablename).push(policy.policyname);
+        policiesByTable.get(policy.tablename)?.push(policy.policyname);
       });
 
       const tablesWithPolicies = Array.from(policiesByTable.keys());
@@ -341,7 +322,6 @@ export class RLSService implements OnModuleInit {
         return false;
       }
 
-      // Log each table's policies for debugging
       policiesByTable.forEach((policyNames, tableName) => {
         this.logger.debug(
           `Table ${tableName} has policies: ${policyNames.join(', ')}`,
@@ -352,46 +332,38 @@ export class RLSService implements OnModuleInit {
         `RLS policies verified: ${policies.length} policies across ${tablesWithPolicies.length} tables`,
       );
       return true;
-    } catch (error) {
-      this.logger.error('Failed to verify RLS policies:', error);
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
+      this.logger.error(`Failed to verify RLS policies: ${errorMessage}`);
       return false;
     }
   }
 
-  /**
-   * Test RLS isolation by checking if data is properly segregated
-   */
   async testRLSIsolation(
     organizationId1: string,
     organizationId2: string,
   ): Promise<boolean> {
     try {
-      // Set context for organization 1
       await this.setTenantContext({ organizationId: organizationId1 });
       const org1Count = await this.prisma.user.count();
 
-      // Set context for organization 2
       await this.setTenantContext({ organizationId: organizationId2 });
       const org2Count = await this.prisma.user.count();
 
-      // Clear context
       await this.clearTenantContext();
 
       this.logger.debug(
         `RLS isolation test: Org1 users=${org1Count}, Org2 users=${org2Count}`,
       );
 
-      // If both organizations see the same count, RLS is not working
       return org1Count !== org2Count;
-    } catch (error) {
-      this.logger.error('RLS isolation test failed:', error);
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
+      this.logger.error(`RLS isolation test failed: ${errorMessage}`);
       return false;
     }
   }
 
-  /**
-   * Quick health check for RLS
-   */
   async healthCheck(): Promise<{
     enabled: boolean;
     policiesConfigured: boolean;
@@ -403,7 +375,6 @@ export class RLSService implements OnModuleInit {
 
       let isolationWorking: boolean | undefined;
       if (policiesConfigured) {
-        // Create a quick test to verify RLS is actually working
         const testResult = await this.prisma.$queryRaw<
           Array<{ rls_enabled: boolean }>
         >`
@@ -414,7 +385,7 @@ export class RLSService implements OnModuleInit {
             AND rowsecurity = true
           ) as rls_enabled
         `;
-        isolationWorking = testResult[0]?.rls_enabled || false;
+        isolationWorking = testResult[0]?.rls_enabled ?? false;
       }
 
       return {
@@ -422,8 +393,9 @@ export class RLSService implements OnModuleInit {
         policiesConfigured,
         isolationWorking,
       };
-    } catch (error) {
-      this.logger.error('RLS health check failed:', error);
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
+      this.logger.error(`RLS health check failed: ${errorMessage}`);
       return {
         enabled: false,
         policiesConfigured: false,
@@ -432,23 +404,14 @@ export class RLSService implements OnModuleInit {
     }
   }
 
-  /**
-   * Get current RLS configuration
-   */
   getConfig(): RLSConfig {
     return { ...this.config };
   }
 
-  /**
-   * Check if RLS is enabled
-   */
   isEnabled(): boolean {
     return this.config.enabled;
   }
 
-  /**
-   * Toggle RLS (for feature flag testing)
-   */
   async toggleRLS(enabled: boolean): Promise<void> {
     this.config.enabled = enabled;
 

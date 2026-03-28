@@ -1,7 +1,7 @@
 // apps/api/src/shared/database/tenant-aware.repository.ts
 
 import { PrismaService } from '../prisma/prisma.service';
-import { getTenantId, requireTenantId } from '../als'; // ✅ Import from als.ts
+import { getTenantId } from '../als';
 
 export class TenantContextMissingError extends Error {
   constructor(message?: string) {
@@ -10,10 +10,19 @@ export class TenantContextMissingError extends Error {
   }
 }
 
+// Helper function for safe error message extraction
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === 'string') {
+    return error;
+  }
+  return 'Unknown error occurred';
+}
+
 export abstract class TenantAwareRepository {
   protected prisma: PrismaService;
-
-  // Cache the tenant ID for the current request
   private cachedTenantId: string | null = null;
 
   constructor(prisma?: PrismaService) {
@@ -33,9 +42,6 @@ export abstract class TenantAwareRepository {
     return this.prisma;
   }
 
-  /**
-   * Initialize tenant context from ALS
-   */
   protected initTenantContext(): void {
     if (!this.cachedTenantId) {
       this.cachedTenantId = getTenantId();
@@ -47,47 +53,33 @@ export abstract class TenantAwareRepository {
     }
   }
 
-  /**
-   * Get current tenant ID (throws if context missing)
-   */
   protected get tenantId(): string {
     if (this.cachedTenantId) {
       return this.cachedTenantId;
     }
-
     this.initTenantContext();
     return this.cachedTenantId;
   }
 
-  /**
-   * Get tenant ID safely (for optional operations)
-   */
   protected get tenantIdOrUndefined(): string | undefined {
     if (this.cachedTenantId) {
       return this.cachedTenantId;
     }
-
     this.cachedTenantId = getTenantId();
     return this.cachedTenantId;
   }
 
-  /**
-   * Add tenant filter to any WHERE clause
-   */
-  protected withTenantFilter<T extends Record<string, any>>(
+  protected withTenantFilter<T extends Record<string, unknown>>(
     where?: T,
   ): T & { organizationId: string } {
     const tenantId = this.tenantId;
     return {
-      ...where,
+      ...(where ?? {}),
       organizationId: tenantId,
     } as T & { organizationId: string };
   }
 
-  /**
-   * Add tenant ID to data being created
-   */
-  protected withTenantData<T extends Record<string, any>>(
+  protected withTenantData<T extends Record<string, unknown>>(
     data: Omit<T, 'organizationId'>,
   ): T & { organizationId: string } {
     const tenantId = this.tenantId;
@@ -97,9 +89,6 @@ export abstract class TenantAwareRepository {
     } as T & { organizationId: string };
   }
 
-  /**
-   * Assert that data belongs to current tenant
-   */
   protected assertTenantOwnership(entity: { organizationId: string }): void {
     const tenantId = this.tenantId;
     if (entity.organizationId !== tenantId) {
@@ -138,14 +127,15 @@ export abstract class TenantAwareRepository {
       }
 
       return result;
-    } catch (error: any) {
+    } catch (error: unknown) {
       const duration = Date.now() - startTime;
+      const errorMessage = getErrorMessage(error);
       console.error(
         `[PERFORMANCE_ERROR] ${this.constructor.name}.${operationName} failed after ${duration}ms`,
         {
           tenantId,
           duration,
-          error: error.message,
+          error: errorMessage,
         },
       );
       throw error;

@@ -1,4 +1,4 @@
-import { CookieOptions } from 'express';
+import { CookieOptions, Response } from 'express';
 import SecurityConfig from '../../config/security.config';
 
 /**
@@ -20,7 +20,7 @@ export const getRefreshCookieOptions = (): CookieOptions => {
 /**
  * Helper to clear cookies with proper options
  */
-export const clearAuthCookies = (res: any): void => {
+export const clearAuthCookies = (res: Response): void => {
   res.clearCookie('access_token', SecurityConfig.cookies.accessToken());
   res.clearCookie('refresh_token', SecurityConfig.cookies.refreshToken());
   res.clearCookie('_csrf', SecurityConfig.cookies.csrfToken());

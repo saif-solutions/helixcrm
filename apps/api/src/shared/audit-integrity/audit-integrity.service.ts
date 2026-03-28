@@ -8,9 +8,9 @@ export interface AuditEvent {
   entityId?: string;
   userId?: string;
   tenantId?: string;
-  details?: any;
+  details?: unknown;
   timestamp?: Date;
-  metadata?: any; // Changed from Record<string, any> to any to handle Prisma JsonValue
+  metadata?: unknown;
 }
 
 export interface VerificationResult {
@@ -21,7 +21,7 @@ export interface VerificationResult {
   brokenAtHash?: string;
   expectedHash?: string;
   actualHash?: string;
-  details?: any;
+  details?: unknown;
 }
 
 export interface IntegrityConfig {
@@ -31,13 +31,49 @@ export interface IntegrityConfig {
   batchSize?: number;
 }
 
+interface VerificationRecord {
+  valid: boolean;
+  verifiedAt: Date;
+  totalEvents: number;
+  brokenAtIndex?: number;
+  brokenAtHash?: string;
+  expectedHash?: string;
+  actualHash?: string;
+  verificationDurationMs?: number;
+  details?: unknown;
+}
+
+// Helper function for safe error message extraction
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === 'string') {
+    return error;
+  }
+  return 'Unknown error occurred';
+}
+
+function getErrorStack(error: unknown): string | undefined {
+  if (error instanceof Error) {
+    return error.stack;
+  }
+  return undefined;
+}
+
+function toErrorWithCause(error: unknown, message: string): Error {
+  if (error instanceof Error) {
+    return new Error(message, { cause: error });
+  }
+  return new Error(message);
+}
+
 @Injectable()
 export class AuditIntegrityService {
   private readonly logger = new Logger(AuditIntegrityService.name);
 
   constructor(private readonly prisma: PrismaService) {}
 
-  // Default configuration
   private readonly defaultConfig: IntegrityConfig = {
     algorithm: 'sha256',
     encoding: 'hex' as crypto.BinaryToTextEncoding,
@@ -46,9 +82,6 @@ export class AuditIntegrityService {
     batchSize: 1000,
   };
 
-  /**
-   * Generate hash for an audit event
-   */
   private generateHash(
     event: AuditEvent,
     previousHash: string,
@@ -56,46 +89,36 @@ export class AuditIntegrityService {
   ): string {
     const { algorithm, encoding } = config;
 
-    // Create a deterministic string representation of the event
-    // IMPORTANT: Order of properties matters for hash consistency
     const eventString = JSON.stringify({
-      a: event.action, // Action
-      e: event.entityType, // Entity Type
-      i: event.entityId, // Entity ID
-      u: event.userId, // User ID
-      t: event.tenantId, // Tenant ID
-      d: event.details, // Details
-      ts: event.timestamp?.toISOString(), // Timestamp
-      ph: previousHash, // Previous Hash (crucial for chaining)
+      a: event.action,
+      e: event.entityType,
+      i: event.entityId,
+      u: event.userId,
+      t: event.tenantId,
+      d: event.details,
+      ts: event.timestamp?.toISOString(),
+      ph: previousHash,
     });
 
-    // Generate hash
-    const hash = crypto.createHash(algorithm);
+    const hash = crypto.createHash(algorithm ?? 'sha256');
     hash.update(eventString);
     return hash.digest(encoding);
   }
 
-  /**
-   * Append an event to the audit chain
-   * This should be called whenever an audit log is created
-   */
   async appendEvent(event: AuditEvent): Promise<string> {
     const config = this.defaultConfig;
 
     try {
-      // Get the last hash from the chain
       const lastBlock = await this.prisma.appendOnlyAuditChain.findFirst({
         orderBy: { blockIndex: 'desc' },
         select: { eventHash: true, blockIndex: true },
       });
 
-      const previousHash = lastBlock?.eventHash || config.genesisHash;
-      const nextIndex = (lastBlock?.blockIndex || 0) + 1;
+      const previousHash = lastBlock?.eventHash ?? config.genesisHash;
+      const nextIndex = (lastBlock?.blockIndex ?? 0) + 1;
 
-      // Generate hash for this event
       const eventHash = this.generateHash(event, previousHash, config);
 
-      // Store in append-only table
       await this.prisma.appendOnlyAuditChain.create({
         data: {
           eventHash,
@@ -108,8 +131,8 @@ export class AuditIntegrityService {
             userId: event.userId,
             tenantId: event.tenantId,
             details: event.details,
-            originalTimestamp: event.timestamp || new Date(),
-            ...(event.metadata || {}),
+            originalTimestamp: event.timestamp ?? new Date(),
+            ...(event.metadata as Record<string, unknown>),
           },
         },
       });
@@ -119,24 +142,24 @@ export class AuditIntegrityService {
       );
 
       return eventHash;
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       this.logger.error(
-        `Failed to append audit event to integrity chain: ${error.message}`,
-        error.stack,
+        `Failed to append audit event to integrity chain: ${errorMessage}`,
+        getErrorStack(error),
       );
-      throw new Error(`Audit integrity append failed: ${error.message}`);
+      throw toErrorWithCause(
+        error,
+        `Audit integrity append failed: ${errorMessage}`,
+      );
     }
   }
 
-  /**
-   * Verify the entire audit chain
-   */
   async verifyChain(): Promise<VerificationResult> {
     const startTime = Date.now();
     const config = this.defaultConfig;
 
     try {
-      // Get all events in order
       const allEvents = await this.prisma.appendOnlyAuditChain.findMany({
         orderBy: { blockIndex: 'asc' },
         select: {
@@ -149,7 +172,7 @@ export class AuditIntegrityService {
       });
 
       if (allEvents.length === 0) {
-        const verification = {
+        const verification: VerificationResult = {
           valid: true,
           verifiedAt: new Date(),
           totalEvents: 0,
@@ -163,7 +186,6 @@ export class AuditIntegrityService {
         return verification;
       }
 
-      // Verify chain integrity
       let previousHash = config.genesisHash;
       let isChainValid = true;
       let brokenAtIndex: number | undefined;
@@ -172,27 +194,26 @@ export class AuditIntegrityService {
       let actualHash: string | undefined;
 
       for (const event of allEvents) {
-        // Recreate the event from metadata
-        const metadata = event.metadata as any;
+        const metadata = event.metadata as Record<string, unknown>;
         const auditEvent: AuditEvent = {
-          action: metadata['action'],
-          entityType: metadata['entityType'],
-          entityId: metadata['entityId'],
-          userId: metadata['userId'],
-          tenantId: metadata['tenantId'],
-          details: metadata['details'],
-          timestamp: new Date(metadata['originalTimestamp']),
-          metadata: metadata,
+          action: metadata.action as string,
+          entityType: metadata.entityType as string,
+          entityId: metadata.entityId as string | undefined,
+          userId: metadata.userId as string | undefined,
+          tenantId: metadata.tenantId as string | undefined,
+          details: metadata.details,
+          timestamp: metadata.originalTimestamp
+            ? new Date(metadata.originalTimestamp as string)
+            : undefined,
+          metadata,
         };
 
-        // Generate expected hash
         const calculatedHash = this.generateHash(
           auditEvent,
           previousHash,
           config,
         );
 
-        // Compare with stored hash
         if (event.eventHash !== calculatedHash) {
           isChainValid = false;
           brokenAtIndex = event.blockIndex;
@@ -238,38 +259,37 @@ export class AuditIntegrityService {
       }
 
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
+      const errorStack = getErrorStack(error);
       this.logger.error(
-        `Audit chain verification error: ${error.message}`,
-        error.stack,
+        `Audit chain verification error: ${errorMessage}`,
+        errorStack,
       );
 
       const result: VerificationResult = {
         valid: false,
         verifiedAt: new Date(),
         totalEvents: 0,
-        details: { error: error.message },
+        details: { error: errorMessage },
       };
 
       await this.recordVerification({
         ...result,
         verificationDurationMs: Date.now() - startTime,
-        details: { error: error.message, stack: error.stack },
+        details: { error: errorMessage, stack: errorStack },
       });
 
       return result;
     }
   }
 
-  /**
-   * Record verification result
-   */
-  private async recordVerification(result: any): Promise<void> {
+  private async recordVerification(result: VerificationRecord): Promise<void> {
     try {
       await this.prisma.auditIntegrityVerification.create({
         data: {
           status: result.valid ? 'SUCCESS' : 'FAILURE',
-          totalEvents: result.totalEvents || 0,
+          totalEvents: result.totalEvents,
           brokenAtIndex: result.brokenAtIndex,
           verificationDurationMs: result.verificationDurationMs,
           details: {
@@ -277,18 +297,16 @@ export class AuditIntegrityService {
             expectedHash: result.expectedHash,
             actualHash: result.actualHash,
             verifiedAt: result.verifiedAt,
-            ...result.details,
+            ...(result.details as Record<string, unknown>),
           },
         },
       });
-    } catch (error) {
-      this.logger.error(`Failed to record verification: ${error.message}`);
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
+      this.logger.error(`Failed to record verification: ${errorMessage}`);
     }
   }
 
-  /**
-   * Get verification history
-   */
   async getVerificationHistory(limit: number = 30) {
     return this.prisma.auditIntegrityVerification.findMany({
       orderBy: { verificationTimestamp: 'desc' },
@@ -296,9 +314,6 @@ export class AuditIntegrityService {
     });
   }
 
-  /**
-   * Get chain statistics
-   */
   async getChainStats() {
     try {
       const [totalEvents, lastVerification, firstBlock, lastBlock] =
@@ -331,15 +346,13 @@ export class AuditIntegrityService {
             : 0,
         verificationSuccessRate: await this.calculateSuccessRate(),
       };
-    } catch (error) {
-      this.logger.error(`Failed to get chain stats: ${error.message}`);
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
+      this.logger.error(`Failed to get chain stats: ${errorMessage}`);
       throw error;
     }
   }
 
-  /**
-   * Calculate verification success rate
-   */
   private async calculateSuccessRate(): Promise<number> {
     try {
       const [successCount, totalCount] = await Promise.all([
@@ -350,15 +363,13 @@ export class AuditIntegrityService {
       ]);
 
       return totalCount > 0 ? (successCount / totalCount) * 100 : 100;
-    } catch (error) {
-      this.logger.error(`Failed to calculate success rate: ${error.message}`);
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
+      this.logger.error(`Failed to calculate success rate: ${errorMessage}`);
       return 0;
     }
   }
 
-  /**
-   * Export chain for external verification
-   */
   async exportChain(limit?: number) {
     const events = await this.prisma.appendOnlyAuditChain.findMany({
       orderBy: { blockIndex: 'asc' },
@@ -381,16 +392,12 @@ export class AuditIntegrityService {
     };
   }
 
-  /**
-   * Manual chain repair (emergency use only)
-   */
   async repairChain(): Promise<{ repaired: boolean; message: string }> {
     this.logger.warn(
       'Manual chain repair initiated - this should only be used in emergencies',
     );
 
     try {
-      // Verify current chain first
       const verification = await this.verifyChain();
 
       if (verification.valid) {
@@ -400,8 +407,6 @@ export class AuditIntegrityService {
         };
       }
 
-      // In a real implementation, this would involve complex repair logic
-      // For now, we'll just log the issue
       this.logger.error(
         `Chain repair needed at block ${verification.brokenAtIndex}`,
       );
@@ -410,11 +415,12 @@ export class AuditIntegrityService {
         repaired: false,
         message: `Chain repair logic not implemented. Broken at block ${verification.brokenAtIndex}`,
       };
-    } catch (error) {
-      this.logger.error(`Chain repair failed: ${error.message}`);
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
+      this.logger.error(`Chain repair failed: ${errorMessage}`);
       return {
         repaired: false,
-        message: `Repair failed: ${error.message}`,
+        message: `Repair failed: ${errorMessage}`,
       };
     }
   }

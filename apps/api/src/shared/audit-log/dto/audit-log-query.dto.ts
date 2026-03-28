@@ -8,7 +8,6 @@ import {
   Min,
   IsIn,
   IsArray,
-  IsEnum,
   Matches,
 } from 'class-validator';
 

@@ -1,4 +1,3 @@
-// apps/api/src/shared/compliance/evidence-storage/evidence-storage.service.ts
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import * as crypto from 'crypto';
@@ -12,13 +11,41 @@ export interface StoredEvidence {
   status: 'PENDING' | 'STORED' | 'VERIFIED' | 'FAILED';
 }
 
+// Helper function for safe error message extraction
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === 'string') {
+    return error;
+  }
+  return 'Unknown error occurred';
+}
+
+function getErrorStack(error: unknown): string | undefined {
+  if (error instanceof Error) {
+    return error.stack;
+  }
+  return undefined;
+}
+
+interface EvidenceInput {
+  collectionId?: string;
+  totalControls?: number;
+  byCriteria?: Record<string, unknown>;
+  evidencePath?: string;
+  [key: string]: unknown;
+}
+
 @Injectable()
 export class EvidenceStorageService {
   private readonly logger = new Logger(EvidenceStorageService.name);
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async storeEvidenceWithIntegrity(evidence: any): Promise<StoredEvidence> {
+  async storeEvidenceWithIntegrity(
+    evidence: EvidenceInput,
+  ): Promise<StoredEvidence> {
     try {
       // Generate evidence hash
       const evidenceHash = this.generateHash(JSON.stringify(evidence));
@@ -28,13 +55,13 @@ export class EvidenceStorageService {
         orderBy: { timestamp: 'desc' },
       });
 
-      const collectionId = evidence.collectionId || `col-${Date.now()}`;
+      const collectionId = evidence.collectionId ?? `col-${Date.now()}`;
 
       // Store in evidence chain
       const chainEntry = await this.prisma.evidenceChain.create({
         data: {
           evidenceHash,
-          previousHash: lastChainEntry?.evidenceHash || 'genesis',
+          previousHash: lastChainEntry?.evidenceHash ?? 'genesis',
           collectionId: collectionId,
           evidenceData: evidence,
         },
@@ -45,9 +72,12 @@ export class EvidenceStorageService {
         data: {
           collectionId: collectionId,
           collectedAt: new Date(),
-          totalControls: evidence.totalControls || 0,
-          criteriaBreakdown: evidence.byCriteria || {},
-          evidencePath: evidence.evidencePath || '',
+          totalControls: evidence.totalControls ?? 0,
+          criteriaBreakdown: (evidence.byCriteria ?? {}) as Record<
+            string,
+            number
+          >,
+          evidencePath: evidence.evidencePath ?? '',
           verificationHash: evidenceHash,
           status: 'COMPLETED',
         },
@@ -62,13 +92,14 @@ export class EvidenceStorageService {
         collectionId: collectionEntry.collectionId,
         collectedAt: collectionEntry.collectedAt,
         evidenceHash,
-        previousHash: lastChainEntry?.evidenceHash || 'genesis',
+        previousHash: lastChainEntry?.evidenceHash ?? 'genesis',
         status: 'STORED',
       };
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       this.logger.error(
-        `Failed to store evidence: ${error.message}`,
-        error.stack,
+        `Failed to store evidence: ${errorMessage}`,
+        getErrorStack(error),
       );
       throw error;
     }
@@ -82,7 +113,6 @@ export class EvidenceStorageService {
     const issues: string[] = [];
 
     try {
-      // Get all chain entries in order
       const chainEntries = await this.prisma.evidenceChain.findMany({
         orderBy: { timestamp: 'asc' },
       });
@@ -92,14 +122,12 @@ export class EvidenceStorageService {
         return { valid: false, issues, chainLength: 0 };
       }
 
-      // Verify chain integrity
       let previousHash = 'genesis';
       let valid = true;
 
       for (let i = 0; i < chainEntries.length; i++) {
         const entry = chainEntries[i];
 
-        // Check previous hash matches
         if (entry.previousHash !== previousHash) {
           issues.push(
             `Hash mismatch at position ${i}: expected ${previousHash}, got ${entry.previousHash}`,
@@ -107,7 +135,6 @@ export class EvidenceStorageService {
           valid = false;
         }
 
-        // Verify current hash
         const calculatedHash = this.generateHash(
           JSON.stringify(entry.evidenceData),
         );
@@ -126,15 +153,17 @@ export class EvidenceStorageService {
         issues,
         chainLength: chainEntries.length,
       };
-    } catch (error) {
-      issues.push(`Verification error: ${error.message}`);
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
+      issues.push(`Verification error: ${errorMessage}`);
       return { valid: false, issues, chainLength: 0 };
     }
   }
 
-  async getEvidenceCollection(collectionId: string): Promise<any> {
+  async getEvidenceCollection(
+    collectionId: string,
+  ): Promise<Record<string, unknown> | null> {
     try {
-      // Get collection
       const collection = await this.prisma.evidenceCollection.findUnique({
         where: { collectionId },
       });
@@ -143,7 +172,6 @@ export class EvidenceStorageService {
         return null;
       }
 
-      // Get associated chain entry
       const chainEntry = await this.prisma.evidenceChain.findFirst({
         where: { collectionId },
         orderBy: { timestamp: 'desc' },
@@ -153,20 +181,22 @@ export class EvidenceStorageService {
         ...collection,
         evidenceChain: chainEntry ? [chainEntry] : [],
       };
-    } catch (error) {
-      this.logger.error(`Failed to get evidence collection: ${error.message}`);
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
+      this.logger.error(`Failed to get evidence collection: ${errorMessage}`);
       throw error;
     }
   }
 
-  async getRecentCollections(limit: number = 10): Promise<any[]> {
+  async getRecentCollections(
+    limit: number = 10,
+  ): Promise<Record<string, unknown>[]> {
     try {
       const collections = await this.prisma.evidenceCollection.findMany({
         orderBy: { collectedAt: 'desc' },
         take: limit,
       });
 
-      // For each collection, get the latest chain entry
       const collectionsWithChain = await Promise.all(
         collections.map(async (collection) => {
           const chainEntry = await this.prisma.evidenceChain.findFirst({
@@ -182,8 +212,9 @@ export class EvidenceStorageService {
       );
 
       return collectionsWithChain;
-    } catch (error) {
-      this.logger.error(`Failed to get recent collections: ${error.message}`);
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
+      this.logger.error(`Failed to get recent collections: ${errorMessage}`);
       throw error;
     }
   }
@@ -195,7 +226,6 @@ export class EvidenceStorageService {
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
 
-      // Delete old evidence collections
       const deletedCollections =
         await this.prisma.evidenceCollection.deleteMany({
           where: {
@@ -208,8 +238,9 @@ export class EvidenceStorageService {
       );
 
       return { deletedCount: deletedCollections.count };
-    } catch (error) {
-      this.logger.error(`Failed to cleanup old evidence: ${error.message}`);
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
+      this.logger.error(`Failed to cleanup old evidence: ${errorMessage}`);
       throw error;
     }
   }

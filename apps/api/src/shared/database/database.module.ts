@@ -13,7 +13,7 @@ export class DatabaseModule implements OnModuleInit {
 
   constructor(private readonly rlsService: RLSService) {}
 
-  async onModuleInit() {
+  onModuleInit(): void {
     this.logger.log('DatabaseModule initialized');
 
     // RLS will initialize automatically via its onModuleInit

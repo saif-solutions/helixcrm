@@ -4,6 +4,24 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../../../app.module';
 import { AuditIntegrityService } from '../audit-integrity.service';
 
+// Helper function for safe error message extraction
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === 'string') {
+    return error;
+  }
+  return 'Unknown error occurred';
+}
+
+function getErrorStack(error: unknown): string | undefined {
+  if (error instanceof Error) {
+    return error.stack;
+  }
+  return undefined;
+}
+
 async function bootstrap() {
   console.log('��� Starting audit chain verification...');
   console.log('========================================');
@@ -31,7 +49,7 @@ async function bootstrap() {
 
     if (!result.valid) {
       console.log('');
-      console.log('��� INTEGRITY VIOLATION DETECTED:');
+      console.log('⚠️ INTEGRITY VIOLATION DETECTED:');
       console.log('────────────────────────────────');
       console.log(`Broken at block: ${result.brokenAtIndex}`);
       console.log(`Broken hash: ${result.brokenAtHash?.substring(0, 32)}...`);
@@ -44,15 +62,16 @@ async function bootstrap() {
       console.log('✅ Audit chain integrity verified successfully!');
       process.exit(0);
     }
-  } catch (error) {
+  } catch (error: unknown) {
+    const errorMessage = getErrorMessage(error);
+    const errorStack = getErrorStack(error);
     console.error('');
-    console.error('��� Verification error:');
+    console.error('❌ Verification error:');
     console.error('─────────────────────');
-    console.error(`Message: ${error.message}`);
-    if (error.stack) {
-      console.error(
-        `Stack: ${error.stack.split('\n').slice(0, 5).join('\n')}...`,
-      );
+    console.error(`Message: ${errorMessage}`);
+    if (errorStack) {
+      const truncatedStack = errorStack.split('\n').slice(0, 5).join('\n');
+      console.error(`Stack: ${truncatedStack}...`);
     }
     process.exit(1);
   } finally {
@@ -61,8 +80,9 @@ async function bootstrap() {
 }
 
 if (require.main === module) {
-  bootstrap().catch((error) => {
-    console.error('��� Fatal error:', error);
+  bootstrap().catch((error: unknown) => {
+    const errorMessage = getErrorMessage(error);
+    console.error('❌ Fatal error:', errorMessage);
     process.exit(1);
   });
 }

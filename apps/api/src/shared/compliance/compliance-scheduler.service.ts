@@ -1,29 +1,46 @@
-// apps/api/src/shared/compliance/compliance-scheduler.service.ts
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleInit,
+  OnModuleDestroy,
+} from '@nestjs/common';
 import { Soc2EvidenceService } from './soc2/soc2-evidence.service';
 
+// Helper function for safe error message extraction
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === 'string') {
+    return error;
+  }
+  return 'Unknown error occurred';
+}
+
 @Injectable()
-export class ComplianceSchedulerService implements OnModuleInit {
+export class ComplianceSchedulerService
+  implements OnModuleInit, OnModuleDestroy
+{
   private readonly logger = new Logger(ComplianceSchedulerService.name);
   private dailyInterval: NodeJS.Timeout | null = null;
   private weeklyInterval: NodeJS.Timeout | null = null;
 
   constructor(private readonly evidenceService: Soc2EvidenceService) {}
 
-  onModuleInit() {
+  onModuleInit(): void {
     this.logger.log('Compliance scheduler initialized');
     this.startScheduledTasks();
   }
 
-  onModuleDestroy() {
+  onModuleDestroy(): void {
     this.stopScheduledTasks();
   }
 
-  private startScheduledTasks() {
+  private startScheduledTasks(): void {
     // Daily evidence collection (24 hours)
     this.dailyInterval = setInterval(
       () => {
-        this.collectDailyEvidence();
+        void this.collectDailyEvidence();
       },
       24 * 60 * 60 * 1000,
     );
@@ -31,18 +48,18 @@ export class ComplianceSchedulerService implements OnModuleInit {
     // Weekly gap analysis (7 days)
     this.weeklyInterval = setInterval(
       () => {
-        this.performWeeklyGapAnalysis();
+        void this.performWeeklyGapAnalysis();
       },
       7 * 24 * 60 * 60 * 1000,
     );
 
     // Run once immediately on startup
     setTimeout(() => {
-      this.collectDailyEvidence();
+      void this.collectDailyEvidence();
     }, 5000); // Wait 5 seconds after startup
   }
 
-  private stopScheduledTasks() {
+  private stopScheduledTasks(): void {
     if (this.dailyInterval) {
       clearInterval(this.dailyInterval);
       this.dailyInterval = null;
@@ -56,7 +73,7 @@ export class ComplianceSchedulerService implements OnModuleInit {
   /**
    * Daily evidence collection
    */
-  private async collectDailyEvidence() {
+  private async collectDailyEvidence(): Promise<void> {
     this.logger.log('Starting daily SOC 2 evidence collection...');
 
     try {
@@ -65,10 +82,11 @@ export class ComplianceSchedulerService implements OnModuleInit {
       this.logger.log(
         `Daily evidence collection completed: ${results.length} controls collected`,
       );
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       this.logger.error(
-        `Daily evidence collection failed: ${error.message}`,
-        error.stack,
+        `Daily evidence collection failed: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
       );
     }
   }
@@ -76,7 +94,7 @@ export class ComplianceSchedulerService implements OnModuleInit {
   /**
    * Weekly gap analysis
    */
-  private async performWeeklyGapAnalysis() {
+  private async performWeeklyGapAnalysis(): Promise<void> {
     this.logger.log('Starting weekly SOC 2 gap analysis...');
 
     try {
@@ -96,10 +114,11 @@ export class ComplianceSchedulerService implements OnModuleInit {
           `LOW COMPLIANCE COMPLETION: ${completionRate}% - Action required`,
         );
       }
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       this.logger.error(
-        `Weekly gap analysis failed: ${error.message}`,
-        error.stack,
+        `Weekly gap analysis failed: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
       );
     }
   }
@@ -110,7 +129,11 @@ export class ComplianceSchedulerService implements OnModuleInit {
   async triggerManualCollection(): Promise<{
     success: boolean;
     message: string;
-    results?: any;
+    results?: {
+      count: number;
+      duration: number;
+      timestamp: string;
+    };
   }> {
     this.logger.log('Manual evidence collection triggered');
 
@@ -128,10 +151,11 @@ export class ComplianceSchedulerService implements OnModuleInit {
           timestamp: new Date().toISOString(),
         },
       };
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       return {
         success: false,
-        message: `Evidence collection failed: ${error.message}`,
+        message: `Evidence collection failed: ${errorMessage}`,
       };
     }
   }
@@ -142,12 +166,21 @@ export class ComplianceSchedulerService implements OnModuleInit {
   async triggerManualGapAnalysis(): Promise<{
     success: boolean;
     message: string;
-    gaps?: any;
+    gaps?: {
+      total: number;
+      completed: number;
+      partial: number;
+      missing: number;
+      overallRisk: 'LOW' | 'MEDIUM' | 'HIGH';
+    };
   }> {
     this.logger.log('Manual gap analysis triggered');
 
     try {
       const gaps = await this.evidenceService.performGapAnalysis();
+
+      const hasHighRisk = gaps.some((g) => g.riskLevel === 'HIGH');
+      const hasMediumRisk = gaps.some((g) => g.riskLevel === 'MEDIUM');
 
       return {
         success: true,
@@ -157,17 +190,14 @@ export class ComplianceSchedulerService implements OnModuleInit {
           completed: gaps.filter((g) => g.status === 'COMPLETE').length,
           partial: gaps.filter((g) => g.status === 'PARTIAL').length,
           missing: gaps.filter((g) => g.status === 'MISSING').length,
-          overallRisk: gaps.some((g) => g.riskLevel === 'HIGH')
-            ? 'HIGH'
-            : gaps.some((g) => g.riskLevel === 'MEDIUM')
-              ? 'MEDIUM'
-              : 'LOW',
+          overallRisk: hasHighRisk ? 'HIGH' : hasMediumRisk ? 'MEDIUM' : 'LOW',
         },
       };
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       return {
         success: false,
-        message: `Gap analysis failed: ${error.message}`,
+        message: `Gap analysis failed: ${errorMessage}`,
       };
     }
   }
@@ -184,10 +214,11 @@ export class ComplianceSchedulerService implements OnModuleInit {
         success: true,
         message: 'Evidence cleanup completed',
       };
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       return {
         success: false,
-        message: `Evidence cleanup failed: ${error.message}`,
+        message: `Evidence cleanup failed: ${errorMessage}`,
       };
     }
   }

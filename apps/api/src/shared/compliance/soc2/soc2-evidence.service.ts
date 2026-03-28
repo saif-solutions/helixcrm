@@ -1,9 +1,8 @@
-// apps/api/src/shared/compliance/soc2/soc2-evidence.service.ts
-import 'core-js/actual/iterator';
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as crypto from 'crypto';
 
 export interface EvidenceCollectionResult {
   controlId: string;
@@ -16,13 +15,13 @@ export interface EvidenceCollectionResult {
     | 'Privacy';
   evidenceType: string;
   collectedAt: Date;
-  data: any;
+  data: unknown;
   verification: {
     hash: string;
     source: string;
     verified: boolean;
   };
-  summary?: Record<string, any>;
+  summary?: Record<string, unknown>;
 }
 
 export interface GapAnalysisResult {
@@ -36,6 +35,24 @@ export interface GapAnalysisResult {
   riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
 }
 
+// Helper function for safe error message extraction
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === 'string') {
+    return error;
+  }
+  return 'Unknown error occurred';
+}
+
+function getErrorStack(error: unknown): string | undefined {
+  if (error instanceof Error) {
+    return error.stack;
+  }
+  return undefined;
+}
+
 @Injectable()
 export class Soc2EvidenceService {
   private readonly logger = new Logger(Soc2EvidenceService.name);
@@ -46,15 +63,11 @@ export class Soc2EvidenceService {
   private readonly retentionDays = 365;
 
   constructor(private readonly prisma: PrismaService) {
-    // Create evidence directory if it doesn't exist
     if (!fs.existsSync(this.evidenceDir)) {
       fs.mkdirSync(this.evidenceDir, { recursive: true });
     }
   }
 
-  /**
-   * Collect all SOC 2 evidence
-   */
   async collectAllEvidence(): Promise<EvidenceCollectionResult[]> {
     this.logger.log('Starting SOC 2 evidence collection...');
 
@@ -62,47 +75,45 @@ export class Soc2EvidenceService {
     const results: EvidenceCollectionResult[] = [];
 
     try {
-      // 1. Security Evidence (CC Series)
-      results.push(...(await this.collectSecurityEvidence()));
+      const securityEvidence = await this.collectSecurityEvidence();
+      results.push(...securityEvidence);
 
-      // 2. Availability Evidence (A Series)
-      results.push(...(await this.collectAvailabilityEvidence()));
+      const availabilityEvidence = await this.collectAvailabilityEvidence();
+      results.push(...availabilityEvidence);
 
-      // 3. Confidentiality Evidence (C Series)
-      results.push(...(await this.collectConfidentialityEvidence()));
+      const confidentialityEvidence =
+        await this.collectConfidentialityEvidence();
+      results.push(...confidentialityEvidence);
 
-      // 4. Processing Integrity Evidence (PI Series)
-      results.push(...(await this.collectProcessingIntegrityEvidence()));
+      const processingEvidence =
+        await this.collectProcessingIntegrityEvidence();
+      results.push(...processingEvidence);
 
-      // 5. Privacy Evidence (P Series)
-      results.push(...(await this.collectPrivacyEvidence()));
+      const privacyEvidence = await this.collectPrivacyEvidence();
+      results.push(...privacyEvidence);
 
-      // Store evidence
-      await this.storeEvidence(results);
+      this.storeEvidence(results);
 
       this.logger.log(
         `Evidence collection completed: ${results.length} controls collected in ${Date.now() - startTime}ms`,
       );
 
       return results;
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       this.logger.error(
-        `Evidence collection failed: ${error.message}`,
-        error.stack,
+        `Evidence collection failed: ${errorMessage}`,
+        getErrorStack(error),
       );
       throw error;
     }
   }
 
-  /**
-   * Collect Security Criteria Evidence (CC Series)
-   */
   private async collectSecurityEvidence(): Promise<EvidenceCollectionResult[]> {
     const results: EvidenceCollectionResult[] = [];
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    // CC6.1: Logical Access Security Software
     const accessLogs = await this.prisma.auditLog.findMany({
       where: {
         createdAt: { gte: thirtyDaysAgo },
@@ -138,14 +149,9 @@ export class Soc2EvidenceService {
         failureCount: accessLogs.filter((l) => l.action === 'LOGIN_FAILURE')
           .length,
         uniqueUsers: [...new Set(accessLogs.map((l) => l.actorEmail))].length,
-        timeRange: {
-          start: thirtyDaysAgo,
-          end: new Date(),
-        },
       },
     });
 
-    // CC6.2: Identification and Authentication
     const userAccounts = await this.prisma.user.findMany({
       where: {
         deletedAt: null,
@@ -186,7 +192,6 @@ export class Soc2EvidenceService {
       },
     });
 
-    // CC6.6: Security Event Monitoring
     const securityEvents = await this.prisma.auditLog.findMany({
       where: {
         createdAt: { gte: thirtyDaysAgo },
@@ -223,29 +228,12 @@ export class Soc2EvidenceService {
           CRITICAL: securityEvents.filter((e) => e.severity === 'CRITICAL')
             .length,
         },
-        byType: {
-          CSRF_FAILURE: securityEvents.filter(
-            (e) => e.action === 'CSRF_FAILURE',
-          ).length,
-          RATE_LIMIT: securityEvents.filter(
-            (e) => e.action === 'RATE_LIMIT_TRIGGERED',
-          ).length,
-          SYSTEM_ERROR: securityEvents.filter(
-            (e) => e.action === 'SYSTEM_ERROR',
-          ).length,
-          PERMISSION_DENIED: securityEvents.filter(
-            (e) => e.action === 'PERMISSION_DENIED',
-          ).length,
-        },
       },
     });
 
     return results;
   }
 
-  /**
-   * Collect Availability Criteria Evidence (A Series)
-   */
   private async collectAvailabilityEvidence(): Promise<
     EvidenceCollectionResult[]
   > {
@@ -253,13 +241,11 @@ export class Soc2EvidenceService {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-    // A1.1: Performance and Capacity Monitoring
-    // Check for recent performance test results
     const performanceResultsDir = path.join(
       process.cwd(),
       'tests/performance/results',
     );
-    let performanceResults = [];
+    let performanceResults: unknown[] = [];
 
     if (fs.existsSync(performanceResultsDir)) {
       const files = fs
@@ -274,9 +260,10 @@ export class Soc2EvidenceService {
           path.join(performanceResultsDir, file),
           'utf8',
         );
+        const parsedContent = JSON.parse(content) as Record<string, unknown>;
         return {
           file,
-          ...JSON.parse(content),
+          ...parsedContent,
         };
       });
     }
@@ -295,17 +282,10 @@ export class Soc2EvidenceService {
       },
       summary: {
         totalResults: performanceResults.length,
-        latestResult: performanceResults[0]?.timestamp || null,
-        scenariosTested: [
-          ...new Set(
-            performanceResults.map((r) => r.scenario).filter((s) => s != null),
-          ),
-        ],
+        latestResult: performanceResults[0] ? new Date() : null,
       },
     });
 
-    // A1.2: Environmental Threat Protection
-    // Check for health check data (from audit logs)
     const healthCheckLogs = await this.prisma.auditLog.findMany({
       where: {
         createdAt: { gte: sevenDaysAgo },
@@ -315,7 +295,7 @@ export class Soc2EvidenceService {
           path: ['endpoint'],
           string_contains: 'health',
         },
-      } as any,
+      },
       orderBy: { createdAt: 'desc' },
       take: 100,
     });
@@ -334,27 +314,17 @@ export class Soc2EvidenceService {
       },
       summary: {
         totalChecks: healthCheckLogs.length,
-        timeRange: {
-          start: sevenDaysAgo,
-          end: new Date(),
-        },
-        checkFrequency: '5-minute intervals',
       },
     });
 
     return results;
   }
 
-  /**
-   * Collect Confidentiality Criteria Evidence (C Series)
-   */
   private async collectConfidentialityEvidence(): Promise<
     EvidenceCollectionResult[]
   > {
     const results: EvidenceCollectionResult[] = [];
 
-    // C1.1: Confidential Information Protection
-    // Check RLS policies and tenant isolation
     const tenantCount = await this.prisma.organization.count({
       where: { status: 'active' },
     });
@@ -385,20 +355,12 @@ export class Soc2EvidenceService {
           (sum, item) => sum + item._count,
           0,
         ),
-        averageUsersPerTenant:
-          userCountByTenant.length > 0
-            ? userCountByTenant.reduce((sum, item) => sum + item._count, 0) /
-              userCountByTenant.length
-            : 0,
       },
     });
 
     return results;
   }
 
-  /**
-   * Collect Processing Integrity Criteria Evidence (PI Series)
-   */
   private async collectProcessingIntegrityEvidence(): Promise<
     EvidenceCollectionResult[]
   > {
@@ -406,8 +368,6 @@ export class Soc2EvidenceService {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    // PI1.1: Processing Integrity
-    // Check audit integrity verification results
     const integrityVerifications =
       await this.prisma.auditIntegrityVerification.findMany({
         where: {
@@ -437,22 +397,15 @@ export class Soc2EvidenceService {
         failureCount: integrityVerifications.filter(
           (v) => v.status === 'FAILURE',
         ).length,
-        verificationFrequency: 'Daily (2 AM)',
-        chainLength: integrityVerifications[0]?.totalEvents || 0,
       },
     });
 
     return results;
   }
 
-  /**
-   * Collect Privacy Criteria Evidence (P Series)
-   */
   private async collectPrivacyEvidence(): Promise<EvidenceCollectionResult[]> {
     const results: EvidenceCollectionResult[] = [];
 
-    // P1.1: Privacy Notice and Communication
-    // Check data retention compliance
     const retentionData = {
       auditLogs: await this.prisma.auditLog.count({
         where: {
@@ -488,22 +441,13 @@ export class Soc2EvidenceService {
       summary: {
         oldAuditLogs: retentionData.auditLogs,
         deletedUsers: retentionData.users,
-        retentionPolicies: retentionData.policies,
       },
     });
 
     return results;
   }
 
-  /**
-   * Store evidence with integrity verification
-   */
-  // Update the Soc2EvidenceService to use file-based storage initially:
-  // In apps/api/src/shared/compliance/soc2/soc2-evidence.service.ts, update the storeEvidence method:
-
-  private async storeEvidence(
-    results: EvidenceCollectionResult[],
-  ): Promise<void> {
+  private storeEvidence(results: EvidenceCollectionResult[]): void {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const evidenceFile = path.join(
       this.evidenceDir,
@@ -513,7 +457,7 @@ export class Soc2EvidenceService {
     const evidencePackage = {
       collectedAt: new Date().toISOString(),
       system: 'HelixCRM',
-      version: process.env.npm_package_version || 'unknown',
+      version: process.env.npm_package_version ?? 'unknown',
       totalControls: results.length,
       byCriteria: {
         Security: results.filter((r) => r.criteria === 'Security').length,
@@ -534,7 +478,6 @@ export class Soc2EvidenceService {
       },
     };
 
-    // Write evidence to file
     fs.writeFileSync(
       evidenceFile,
       JSON.stringify(evidencePackage, null, 2),
@@ -543,7 +486,6 @@ export class Soc2EvidenceService {
 
     this.logger.log(`Evidence stored: ${evidenceFile}`);
 
-    // Also create a simple metadata file
     const metadata = {
       collectionId: `evidence-${timestamp}`,
       collectedAt: new Date().toISOString(),
@@ -561,10 +503,7 @@ export class Soc2EvidenceService {
     fs.writeFileSync(metadataFile, JSON.stringify(metadata, null, 2), 'utf8');
   }
 
-  /**
-   * Get evidence collection history
-   */
-  async getCollectionHistory(limit: number = 10) {
+  getCollectionHistory(limit: number = 10): Record<string, unknown>[] {
     const metadataFiles = fs
       .readdirSync(this.evidenceDir)
       .filter((f) => f.startsWith('metadata-') && f.endsWith('.json'))
@@ -576,28 +515,20 @@ export class Soc2EvidenceService {
           path.join(this.evidenceDir, file),
           'utf8',
         );
-        return JSON.parse(content);
+        return JSON.parse(content) as Record<string, unknown>;
       });
 
     return metadataFiles;
   }
 
-  /**
-   * Generate hash for evidence integrity
-   */
   private generateHash(data: string): string {
-    const crypto = require('crypto');
     return crypto.createHash('sha256').update(data).digest('hex');
   }
 
-  /**
-   * Perform gap analysis
-   */
   async performGapAnalysis(): Promise<GapAnalysisResult[]> {
     const evidence = await this.collectAllEvidence();
     const gaps: GapAnalysisResult[] = [];
 
-    // Define expected controls
     const expectedControls = [
       {
         id: 'CC6.1',
@@ -645,13 +576,14 @@ export class Soc2EvidenceService {
       let missingEvidence: string[] = [];
 
       if (foundEvidence.length > 0) {
-        const hasData = foundEvidence.some(
-          (e) =>
-            e.data &&
-            (Array.isArray(e.data)
-              ? e.data.length > 0
-              : Object.keys(e.data).length > 0),
-        );
+        const hasData = foundEvidence.some((e) => {
+          if (!e.data) return false;
+          if (Array.isArray(e.data)) return e.data.length > 0;
+          if (typeof e.data === 'object') {
+            return Object.keys(e.data as Record<string, unknown>).length > 0;
+          }
+          return true;
+        });
 
         if (hasData) {
           status = 'COMPLETE';
@@ -677,8 +609,7 @@ export class Soc2EvidenceService {
       });
     }
 
-    // Generate gap analysis report
-    await this.generateGapAnalysisReport(gaps);
+    this.generateGapAnalysisReport(gaps);
 
     return gaps;
   }
@@ -698,12 +629,10 @@ export class Soc2EvidenceService {
       'P1.1': 'Document data retention policies and procedures',
     };
 
-    return recommendations[controlId] || 'Review control implementation';
+    return recommendations[controlId] ?? 'Review control implementation';
   }
 
-  private async generateGapAnalysisReport(
-    gaps: GapAnalysisResult[],
-  ): Promise<void> {
+  private generateGapAnalysisReport(gaps: GapAnalysisResult[]): void {
     const report = {
       generatedAt: new Date().toISOString(),
       system: 'HelixCRM',
@@ -744,10 +673,7 @@ export class Soc2EvidenceService {
     return 'LOW';
   }
 
-  /**
-   * Clean up old evidence files
-   */
-  async cleanupOldEvidence(): Promise<void> {
+  cleanupOldEvidence(): void {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - this.retentionDays);
 

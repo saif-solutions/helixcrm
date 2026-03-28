@@ -1,4 +1,3 @@
-// apps/api/src/shared/compliance/soc2/soc2-controls.service.ts
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -12,13 +11,35 @@ export interface ControlVerificationResult {
   notes?: string;
 }
 
+interface ControlInfo {
+  name: string;
+  criteria: string;
+  description: string;
+}
+
+// Helper function for safe error message extraction
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === 'string') {
+    return error;
+  }
+  return 'Unknown error occurred';
+}
+
+function getErrorStack(error: unknown): string | undefined {
+  if (error instanceof Error) {
+    return error.stack;
+  }
+  return undefined;
+}
+
 @Injectable()
 export class Soc2ControlsService {
   private readonly logger = new Logger(Soc2ControlsService.name);
 
-  // SOC 2 Trust Service Criteria mapping
-  private readonly CONTROL_MAPPING = {
-    // Security Criteria (CC Series)
+  private readonly CONTROL_MAPPING: Record<string, ControlInfo> = {
     'CC6.1': {
       name: 'Logical Access Security Software',
       criteria: 'Security',
@@ -35,7 +56,6 @@ export class Soc2ControlsService {
       criteria: 'Security',
       description: 'Implement security event monitoring.',
     },
-    // Availability Criteria (A Series)
     'A1.1': {
       name: 'Performance and Capacity Monitoring',
       criteria: 'Availability',
@@ -46,19 +66,16 @@ export class Soc2ControlsService {
       criteria: 'Availability',
       description: 'Protect against environmental threats.',
     },
-    // Confidentiality Criteria (C Series)
     'C1.1': {
       name: 'Confidential Information Protection',
       criteria: 'Confidentiality',
       description: 'Protect confidential information.',
     },
-    // Processing Integrity Criteria (PI Series)
     'PI1.1': {
       name: 'Processing Integrity',
       criteria: 'ProcessingIntegrity',
       description: 'Ensure processing integrity.',
     },
-    // Privacy Criteria (P Series)
     'P1.1': {
       name: 'Privacy Notice and Communication',
       criteria: 'Privacy',
@@ -70,7 +87,7 @@ export class Soc2ControlsService {
 
   async verifyControl(
     controlId: string,
-    evidence: any,
+    evidence: unknown,
     verifiedBy: string = 'Soc2EvidenceService',
     notes?: string,
   ): Promise<ControlVerificationResult> {
@@ -81,29 +98,32 @@ export class Soc2ControlsService {
         throw new Error(`Unknown control ID: ${controlId}`);
       }
 
-      // Determine status based on evidence
       let status: 'PASS' | 'FAIL' | 'PARTIAL' = 'FAIL';
       let evidenceCount = 0;
 
-      if (evidence) {
-        if (Array.isArray(evidence.data)) {
-          evidenceCount = evidence.data.length;
+      // Type-safe evidence checking
+      if (evidence && typeof evidence === 'object') {
+        const evidenceObj = evidence as Record<string, unknown>;
+
+        if (Array.isArray(evidenceObj.data)) {
+          evidenceCount = evidenceObj.data.length;
           status = evidenceCount > 0 ? 'PASS' : 'FAIL';
         } else if (
-          typeof evidence.data === 'object' &&
-          Object.keys(evidence.data).length > 0
+          evidenceObj.data &&
+          typeof evidenceObj.data === 'object' &&
+          Object.keys(evidenceObj.data).length > 0
         ) {
           evidenceCount = 1;
           status = 'PASS';
-        } else if (evidence.verified === true) {
+        } else if (evidenceObj.verified === true) {
           evidenceCount = 1;
           status = 'PASS';
         }
-      }
 
-      // Check if evidence has any verification failures
-      if (evidence?.verification?.verified === false) {
-        status = 'FAIL';
+        // Check if evidence has any verification failures
+        if (evidenceObj.verification?.verified === false) {
+          status = 'FAIL';
+        }
       }
 
       // Store verification record
@@ -133,10 +153,11 @@ export class Soc2ControlsService {
         verifiedBy,
         notes,
       };
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       this.logger.error(
-        `Failed to verify control ${controlId}: ${error.message}`,
-        error.stack,
+        `Failed to verify control ${controlId}: ${errorMessage}`,
+        getErrorStack(error),
       );
       throw error;
     }
@@ -150,7 +171,7 @@ export class Soc2ControlsService {
     limit: number = 100,
   ): Promise<ControlVerificationResult[]> {
     try {
-      const where: any = {};
+      const where: Record<string, unknown> = {};
 
       if (controlId) {
         where.controlId = controlId;
@@ -163,10 +184,10 @@ export class Soc2ControlsService {
       if (startDate || endDate) {
         where.verificationDate = {};
         if (startDate) {
-          where.verificationDate.gte = startDate;
+          (where.verificationDate as Record<string, Date>).gte = startDate;
         }
         if (endDate) {
-          where.verificationDate.lte = endDate;
+          (where.verificationDate as Record<string, Date>).lte = endDate;
         }
       }
 
@@ -182,12 +203,13 @@ export class Soc2ControlsService {
         criteria: v.criteria,
         status: v.status as 'PASS' | 'FAIL' | 'PARTIAL',
         evidenceCount: v.evidenceCount,
-        verifiedBy: v.verifiedBy || 'unknown',
-        notes: v.notes || undefined,
+        verifiedBy: v.verifiedBy ?? 'unknown',
+        notes: v.notes ?? undefined,
       }));
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       this.logger.error(
-        `Failed to get control verification history: ${error.message}`,
+        `Failed to get control verification history: ${errorMessage}`,
       );
       throw error;
     }
@@ -195,12 +217,11 @@ export class Soc2ControlsService {
 
   async getControlStatusSummary(
     days: number = 30,
-  ): Promise<Record<string, any>> {
+  ): Promise<Record<string, unknown>> {
     try {
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - days);
 
-      // Get recent verifications grouped by criteria
       const verifications = await this.prisma.controlVerification.groupBy({
         by: ['criteria', 'status'],
         where: {
@@ -209,7 +230,6 @@ export class Soc2ControlsService {
         _count: true,
       });
 
-      // Calculate overall status for each control
       const recentControls = await this.prisma.controlVerification.findMany({
         where: {
           verificationDate: { gte: cutoffDate },
@@ -218,19 +238,18 @@ export class Soc2ControlsService {
         orderBy: { verificationDate: 'desc' },
       });
 
-      const summary = {
+      const summary: Record<string, unknown> = {
         totalControls: Object.keys(this.CONTROL_MAPPING).length,
         verifiedControls: recentControls.length,
         byCriteria: {},
         overallStatus: this.calculateOverallStatus(verifications),
-        lastVerification: recentControls[0]?.verificationDate || null,
+        lastVerification: recentControls[0]?.verificationDate ?? null,
       };
 
-      // Organize by criteria
-      for (const [criteria, info] of Object.entries(this.CONTROL_MAPPING)) {
+      for (const [controlId, info] of Object.entries(this.CONTROL_MAPPING)) {
         const criteriaKey = info.criteria;
-        if (!summary.byCriteria[criteriaKey]) {
-          summary.byCriteria[criteriaKey] = {
+        if (!(summary.byCriteria as Record<string, unknown>)[criteriaKey]) {
+          (summary.byCriteria as Record<string, unknown>)[criteriaKey] = {
             total: 0,
             passed: 0,
             failed: 0,
@@ -239,32 +258,46 @@ export class Soc2ControlsService {
           };
         }
 
+        const criteriaObj = (summary.byCriteria as Record<string, unknown>)[
+          criteriaKey
+        ] as Record<string, unknown>;
         const controlStatus = recentControls.find(
-          (v) => v.controlId === criteria,
+          (v) => v.controlId === controlId,
         );
-        summary.byCriteria[criteriaKey].total++;
-        summary.byCriteria[criteriaKey][
-          controlStatus?.status.toLowerCase() || 'unknown'
-        ]++;
-        summary.byCriteria[criteriaKey].controls.push({
-          controlId: criteria,
+
+        criteriaObj.total = (criteriaObj.total as number) + 1;
+
+        const statusKey =
+          controlStatus?.status?.toLowerCase() === 'pass'
+            ? 'passed'
+            : controlStatus?.status?.toLowerCase() === 'fail'
+              ? 'failed'
+              : controlStatus?.status?.toLowerCase() === 'partial'
+                ? 'partial'
+                : 'unknown';
+
+        criteriaObj[statusKey] = (criteriaObj[statusKey] as number) + 1;
+
+        (criteriaObj.controls as unknown[]).push({
+          controlId,
           controlName: info.name,
-          lastStatus: controlStatus?.status || 'NOT_VERIFIED',
-          lastVerified: controlStatus?.verificationDate || null,
+          lastStatus: controlStatus?.status ?? 'NOT_VERIFIED',
+          lastVerified: controlStatus?.verificationDate ?? null,
         });
       }
 
       return summary;
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       this.logger.error(
-        `Failed to get control status summary: ${error.message}`,
+        `Failed to get control status summary: ${errorMessage}`,
       );
       throw error;
     }
   }
 
   private calculateOverallStatus(
-    verifications: any[],
+    verifications: Array<{ status: string; _count: { id: number } }>,
   ): 'HEALTHY' | 'WARNING' | 'CRITICAL' {
     const statusCounts = {
       PASS: 0,
@@ -272,19 +305,21 @@ export class Soc2ControlsService {
       PARTIAL: 0,
     };
 
-    verifications.forEach((v) => {
-      statusCounts[v.status] = (statusCounts[v.status] || 0) + v._count;
-    });
+    for (const v of verifications) {
+      if (v.status === 'PASS') statusCounts.PASS += v._count.id;
+      else if (v.status === 'FAIL') statusCounts.FAIL += v._count.id;
+      else if (v.status === 'PARTIAL') statusCounts.PARTIAL += v._count.id;
+    }
 
     const total = statusCounts.PASS + statusCounts.FAIL + statusCounts.PARTIAL;
 
     if (total === 0) return 'CRITICAL';
     if (statusCounts.FAIL > 0) return 'CRITICAL';
-    if (statusCounts.PARTIAL > statusCounts.PASS / 2) return 'WARNING'; // More than 50% partial
+    if (statusCounts.PARTIAL > statusCounts.PASS / 2) return 'WARNING';
     return 'HEALTHY';
   }
 
-  async getControlDetails(controlId: string): Promise<any> {
+  async getControlDetails(controlId: string): Promise<Record<string, unknown>> {
     const controlInfo = this.CONTROL_MAPPING[controlId];
 
     if (!controlInfo) {
@@ -311,7 +346,7 @@ export class Soc2ControlsService {
   }
 
   private getEvidenceRequirements(controlId: string): string[] {
-    const requirements = {
+    const requirements: Record<string, string[]> = {
       'CC6.1': [
         'Access control configuration',
         'User permission assignments',
@@ -362,13 +397,12 @@ export class Soc2ControlsService {
       ],
     };
 
-    return requirements[controlId] || [];
+    return requirements[controlId] ?? [];
   }
 
   private getImplementationStatus(
     controlId: string,
   ): 'IMPLEMENTED' | 'PARTIAL' | 'PLANNED' {
-    // This should be enhanced to check actual implementation
     const implementedControls = [
       'CC6.1',
       'CC6.2',
@@ -385,15 +419,9 @@ export class Soc2ControlsService {
   private calculateNextVerificationDue(controlId: string): Date {
     const nextDate = new Date();
 
-    // Different verification frequencies based on control criticality
-    if (controlId.startsWith('CC')) {
-      // Security controls: weekly
-      nextDate.setDate(nextDate.getDate() + 7);
-    } else if (controlId.startsWith('A')) {
-      // Availability controls: weekly
+    if (controlId.startsWith('CC') || controlId.startsWith('A')) {
       nextDate.setDate(nextDate.getDate() + 7);
     } else {
-      // Other controls: monthly
       nextDate.setDate(nextDate.getDate() + 30);
     }
 

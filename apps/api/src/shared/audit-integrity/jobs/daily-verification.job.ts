@@ -2,6 +2,34 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { AuditIntegrityService } from '../audit-integrity.service';
 
+// Helper function for safe error message extraction
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === 'string') {
+    return error;
+  }
+  return 'Unknown error occurred';
+}
+
+function getErrorStack(error: unknown): string | undefined {
+  if (error instanceof Error) {
+    return error.stack;
+  }
+  return undefined;
+}
+
+interface VerificationResult {
+  valid: boolean;
+  totalEvents: number;
+  verifiedAt: Date;
+  brokenAtIndex?: number;
+  brokenAtHash?: string;
+  expectedHash?: string;
+  actualHash?: string;
+}
+
 @Injectable()
 export class DailyVerificationJob {
   private readonly logger = new Logger(DailyVerificationJob.name);
@@ -9,8 +37,8 @@ export class DailyVerificationJob {
   constructor(private readonly auditIntegrityService: AuditIntegrityService) {}
 
   @Cron(CronExpression.EVERY_DAY_AT_2AM)
-  async runDailyVerification() {
-    this.logger.log('ÔøΩÔøΩÔøΩ Starting daily audit chain verification...');
+  async runDailyVerification(): Promise<void> {
+    this.logger.log('Ì¥ç Starting daily audit chain verification...');
 
     try {
       const result = await this.auditIntegrityService.verifyChain();
@@ -25,29 +53,31 @@ export class DailyVerificationJob {
         this.logger.error(`   Total events: ${result.totalEvents}`);
 
         // In production, trigger alerts here
-        await this.triggerAlerts(result);
+        this.triggerAlerts(result);
       }
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
+      const errorStack = getErrorStack(error);
       this.logger.error(
-        `ÔøΩÔøΩÔøΩ Daily verification job failed: ${error.message}`,
-        error.stack,
+        `‚ùå Daily verification job failed: ${errorMessage}`,
+        errorStack,
       );
 
       // Even if verification fails, we should alert
-      await this.triggerErrorAlert(error);
+      this.triggerErrorAlert(error);
     }
   }
 
-  private async triggerAlerts(result: any): Promise<void> {
+  private triggerAlerts(result: VerificationResult): void {
     // This is where you would integrate with your alerting system
     // Examples: Slack, PagerDuty, Email, etc.
 
-    const alertMessage = `ÔøΩÔøΩÔøΩ AUDIT CHAIN INTEGRITY VIOLATION
+    const alertMessage = `Ì∫® AUDIT CHAIN INTEGRITY VIOLATION
     Time: ${new Date().toISOString()}
-    Broken at block: ${result.brokenAtIndex}
+    Broken at block: ${result.brokenAtIndex ?? 'unknown'}
     Total events: ${result.totalEvents}
-    Expected hash: ${result.expectedHash?.substring(0, 32)}...
-    Actual hash: ${result.actualHash?.substring(0, 32)}...`;
+    Expected hash: ${result.expectedHash?.substring(0, 32) ?? 'unknown'}...
+    Actual hash: ${result.actualHash?.substring(0, 32) ?? 'unknown'}...`;
 
     this.logger.error(alertMessage);
 
@@ -57,11 +87,14 @@ export class DailyVerificationJob {
     // }
   }
 
-  private async triggerErrorAlert(error: Error): Promise<void> {
-    const alertMessage = `ÔøΩÔøΩÔøΩ AUDIT CHAIN VERIFICATION ERROR
+  private triggerErrorAlert(error: unknown): void {
+    const errorMessage = getErrorMessage(error);
+    const errorStack = getErrorStack(error);
+
+    const alertMessage = `Ì∫® AUDIT CHAIN VERIFICATION ERROR
     Time: ${new Date().toISOString()}
-    Error: ${error.message}
-    Stack: ${error.stack?.substring(0, 500)}...`;
+    Error: ${errorMessage}
+    Stack: ${errorStack?.substring(0, 500) ?? 'N/A'}...`;
 
     this.logger.error(alertMessage);
   }
