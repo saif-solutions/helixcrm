@@ -279,7 +279,8 @@ export class AuthInvariants {
    * Invariant: Login attempt validation (requires service context)
    * Note: Deferred to service layer for proper context
    */
-  static validateLoginAttempt(input: LoginInput): string[] {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  static validateLoginAttempt(_input: LoginInput): string[] {
     // This requires service context (rate limiting, user state, etc.)
     // Implementation deferred to service layer
     return [];
@@ -289,7 +290,8 @@ export class AuthInvariants {
    * Invariant: Rate limiting check (requires external state)
    * This is a placeholder for actual rate limiting implementation
    */
-  static validateRateLimit(context: {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  static validateRateLimit(_context: {
     ipAddress?: string;
     email?: string;
   }): string[] {

@@ -229,6 +229,7 @@ export class UserInvariants {
    * Invariant: Role assignment rules
    * NOTE: Last-admin and permission checks enforced at service layer
    */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   static validateRoleAssignment(_input: {
     role?: UserRole;
     updatedBy?: string;

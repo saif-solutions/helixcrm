@@ -1,4 +1,4 @@
-// apps/api/src/contracts/audit.contract.ts
+// apps/api/src/contracts/audit/audit.contract.ts
 import {
   IsString,
   IsNotEmpty,
@@ -73,6 +73,18 @@ export enum ActorType {
   SYSTEM = 'SYSTEM',
 }
 
+/**
+ * Audit metadata interface with proper typing
+ */
+export interface AuditMetadata {
+  before?: Record<string, unknown>;
+  after?: Record<string, unknown>;
+  reason?: string;
+  source?: string;
+  correlationId?: string;
+  [key: string]: unknown;
+}
+
 // Read-only response DTO — never used as input
 export class AuditLogResponse {
   id: string;
@@ -84,7 +96,7 @@ export class AuditLogResponse {
   entityId?: string;
   organizationId: string;
   severity: AuditSeverity;
-  metadata?: Record<string, any>; // Recommended keys: before, after, reason, source, correlationId
+  metadata?: AuditMetadata;
   requestId?: string;
   ipAddress?: string;
   userAgent?: string;
@@ -133,7 +145,7 @@ export class CreateAuditLogInput {
 
   @IsOptional()
   @IsObject()
-  metadata?: Record<string, any>; // Recommended keys: before, after, reason, source, correlationId
+  metadata?: AuditMetadata;
 
   @IsOptional()
   @IsString()
@@ -358,7 +370,8 @@ export class AuditInvariants {
   /**
    * Invariant: Audit trail integrity (deferred to service layer)
    */
-  static validateAuditTrail(logs: CreateAuditLogInput[]): string[] {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  static validateAuditTrail(_logs: CreateAuditLogInput[]): string[] {
     // This would require timestamps and business context
     // Deferred to service layer
     return [];
