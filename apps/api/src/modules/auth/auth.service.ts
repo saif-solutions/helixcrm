@@ -10,12 +10,9 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
-import {
-  AuditLogService,
-  AuditAction,
-  AuditEntityType,
-  AuditSeverity,
-} from '../../shared/audit-log/audit-log.service';
+import { AuditLogService } from '../../shared/audit-log/audit-log.service';
+import { AuditAction, AuditEntityType, AuditSeverity } from '@prisma/client';
+
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import SecurityConfig from '../../config/security.config';
 import { AccountLockoutService } from './services/account-lockout.service';
@@ -146,7 +143,7 @@ async function hashPassword(
     }
     return hashed;
   } catch (error: unknown) {
-    const err: Error = toError(error);
+    const err = toError(error);
     throw new PasswordHashError(`Failed to hash password: ${err.message}`, {
       cause: error,
     });
@@ -165,7 +162,7 @@ async function verifyPassword(
     }
     return isValid;
   } catch (error: unknown) {
-    const err: Error = toError(error);
+    const err = toError(error);
     throw new Error(`Failed to verify password: ${err.message}`, {
       cause: error,
     });
@@ -273,7 +270,7 @@ export class AuthService {
         return null;
       }
     } catch (error: unknown) {
-      const err: Error = toError(error);
+      const err = toError(error);
       this.logger.error(
         `Password verification error: ${err.message}`,
         err.stack,
@@ -348,7 +345,7 @@ export class AuthService {
         roles: Array.from(roles),
       };
     } catch (error: unknown) {
-      const err: Error = toError(error);
+      const err = toError(error);
       this.logger.error(
         `Failed to fetch user permissions: ${err.message}`,
         err.stack,
@@ -391,7 +388,7 @@ export class AuthService {
           );
         }
       } catch (error: unknown) {
-        const err: Error = toError(error);
+        const err = toError(error);
         throw new TokenGenerationError(
           `Failed to generate access token: ${err.message}`,
           'access',
@@ -413,7 +410,7 @@ export class AuthService {
           );
         }
       } catch (error: unknown) {
-        const err: Error = toError(error);
+        const err = toError(error);
         throw new TokenGenerationError(
           `Failed to generate refresh token: ${err.message}`,
           'refresh',
@@ -428,7 +425,7 @@ export class AuthService {
           refreshToken,
         );
       } catch (error: unknown) {
-        const err: Error = toError(error);
+        const err = toError(error);
         throw new InternalServerErrorException(
           `Failed to hash refresh token: ${err.message}`,
           { cause: error },
@@ -469,7 +466,7 @@ export class AuthService {
         await this.auditLogService.logAuthEvent({
           request,
           action: AuditAction.LOGIN_SUCCESS,
-          actorEmail: user.email,
+          actorEmail: user.email ?? 'unknown',
           actorUserId: user.id,
           metadata: {
             permissionsCount: permissions.length,
@@ -494,14 +491,14 @@ export class AuthService {
         },
       };
     } catch (error: unknown) {
-      const err: Error = toError(error);
+      const err = toError(error);
       this.logger.error(`Login failed: ${err.message}`, err.stack);
 
       if (request && user?.email) {
         await this.auditLogService.logAuthEvent({
           request,
           action: AuditAction.LOGIN_FAILURE,
-          actorEmail: user.email,
+          actorEmail: user.email ?? 'unknown',
           actorUserId: user.id,
           metadata: {
             error: err.message,
@@ -583,7 +580,7 @@ export class AuthService {
     this.logger.debug('Refresh token process started');
 
     try {
-      const rawPayload: unknown =
+      const rawPayload =
         this.authCoreAdapter.tokenManager.validateRefreshToken(oldRefreshToken);
 
       if (!isRefreshTokenPayload(rawPayload)) {
@@ -595,7 +592,7 @@ export class AuthService {
 
       if (payload.type !== 'refresh') {
         this.logger.warn(
-          `Invalid token type in refresh flow: ${payload.type ?? 'unknown'}`,
+          `Invalid token type in refresh flow: ${payload.type ? String(payload.type) : 'unknown'}`,
         );
         throw new UnauthorizedException('Invalid token type');
       }
@@ -646,7 +643,7 @@ export class AuthService {
           );
         }
       } catch (error: unknown) {
-        const err: Error = toError(error);
+        const err = toError(error);
         throw new TokenGenerationError(
           `Failed to generate new refresh token: ${err.message}`,
           'refresh',
@@ -671,7 +668,7 @@ export class AuthService {
           );
         }
       } catch (error: unknown) {
-        const err: Error = toError(error);
+        const err = toError(error);
         throw new TokenGenerationError(
           `Failed to generate new access token: ${err.message}`,
           'access',
@@ -686,7 +683,7 @@ export class AuthService {
           newRefreshToken,
         );
       } catch (error: unknown) {
-        const err: Error = toError(error);
+        const err = toError(error);
         throw new InternalServerErrorException(
           `Failed to hash refresh token: ${err.message}`,
           { cause: error },
@@ -742,7 +739,7 @@ export class AuthService {
         },
       };
     } catch (error: unknown) {
-      const err: Error = toError(error);
+      const err = toError(error);
       this.logger.error('Refresh token error', {
         error: err.message,
         errorType: err.name,
@@ -794,7 +791,7 @@ export class AuthService {
         registerDto.password,
       );
     } catch (error: unknown) {
-      const err: Error = toError(error);
+      const err = toError(error);
       this.logger.error(
         `Password hashing failed during registration: ${err.message}`,
       );
@@ -1031,7 +1028,7 @@ export class AuthService {
         user.refreshTokenHash,
       );
     } catch (error: unknown) {
-      const err: Error = toError(error);
+      const err = toError(error);
       this.logger.error(`Refresh token validation error: ${err.message}`);
       return false;
     }
@@ -1065,7 +1062,7 @@ export class AuthService {
       if (error instanceof UnauthorizedException) {
         throw error;
       }
-      const err: Error = toError(error);
+      const err = toError(error);
       throw new InternalServerErrorException(
         `Password verification failed: ${err.message}`,
         { cause: error },
@@ -1076,7 +1073,7 @@ export class AuthService {
     try {
       newPasswordHash = await hashPassword(this.authCoreAdapter, newPassword);
     } catch (error: unknown) {
-      const err: Error = toError(error);
+      const err = toError(error);
       throw new InternalServerErrorException(
         `Failed to hash new password: ${err.message}`,
         { cause: error },
@@ -1099,7 +1096,7 @@ export class AuthService {
       await this.auditLogService.logAuthEvent({
         request,
         action: AuditAction.PASSWORD_CHANGE,
-        actorEmail: user.email,
+        actorEmail: user.email ?? 'unknown',
         actorUserId: userId,
         metadata: {},
         organizationId: user.organizationId,
@@ -1346,6 +1343,8 @@ export class AuthService {
 
   private formatPermissionName(code: string): string {
     const [module, action] = code.split(':');
-    return `${module.charAt(0).toUpperCase() + module.slice(1)} ${action.charAt(0).toUpperCase() + action.slice(1)}`;
+    const formattedModule = module.charAt(0).toUpperCase() + module.slice(1);
+    const formattedAction = action.charAt(0).toUpperCase() + action.slice(1);
+    return `${formattedModule} ${formattedAction}`;
   }
 }

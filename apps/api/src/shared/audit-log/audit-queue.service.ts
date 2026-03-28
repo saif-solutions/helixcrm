@@ -1,11 +1,7 @@
 import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Job, Queue } from 'bullmq';
-import {
-  AuditAction,
-  AuditEntityType,
-  AuditSeverity,
-} from './audit-log.service';
+import { AuditAction, AuditEntityType, AuditSeverity } from '@prisma/client';
 
 export interface AuditJobData {
   action: AuditAction;
@@ -27,13 +23,13 @@ export class AuditQueueService implements OnModuleInit {
   private readonly logger = new Logger(AuditQueueService.name);
   private readonly MAX_RETRY_ATTEMPTS = 3;
   private readonly CRITICAL_ACTIONS = new Set<AuditAction>([
-    'LOGIN_FAILURE',
-    'USER_DELETED',
-    'PERMISSION_DENIED',
-    'PASSWORD_CHANGE',
-    'RATE_LIMIT_TRIGGERED',
-    'CSRF_FAILURE',
-    'SYSTEM_ERROR',
+    AuditAction.LOGIN_FAILURE,
+    AuditAction.USER_DELETED,
+    AuditAction.PERMISSION_DENIED,
+    AuditAction.PASSWORD_CHANGE,
+    AuditAction.RATE_LIMIT_TRIGGERED,
+    AuditAction.CSRF_FAILURE,
+    AuditAction.SYSTEM_ERROR,
   ]);
 
   constructor(
