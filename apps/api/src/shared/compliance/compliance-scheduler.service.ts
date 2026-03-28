@@ -56,7 +56,7 @@ export class ComplianceSchedulerService
     // Run once immediately on startup
     setTimeout(() => {
       void this.collectDailyEvidence();
-    }, 5000); // Wait 5 seconds after startup
+    }, 5000);
   }
 
   private stopScheduledTasks(): void {
@@ -98,7 +98,16 @@ export class ComplianceSchedulerService
     this.logger.log('Starting weekly SOC 2 gap analysis...');
 
     try {
-      const gaps = await this.evidenceService.performGapAnalysis();
+      // Call without await first to see if it's a Promise
+      const result = this.evidenceService.performGapAnalysis();
+
+      // Handle both Promise and non-Promise results
+      const gaps = result instanceof Promise ? await result : result;
+
+      if (!Array.isArray(gaps)) {
+        this.logger.error('performGapAnalysis did not return an array');
+        return;
+      }
 
       const completed = gaps.filter((g) => g.status === 'COMPLETE').length;
       const total = gaps.length;
@@ -108,7 +117,6 @@ export class ComplianceSchedulerService
         `Weekly gap analysis completed: ${completionRate}% complete (${completed}/${total} controls)`,
       );
 
-      // Alert if completion rate drops below 80%
       if (completionRate < 80) {
         this.logger.warn(
           `LOW COMPLIANCE COMPLETION: ${completionRate}% - Action required`,
@@ -177,7 +185,19 @@ export class ComplianceSchedulerService
     this.logger.log('Manual gap analysis triggered');
 
     try {
-      const gaps = await this.evidenceService.performGapAnalysis();
+      // Call without await first to see if it's a Promise
+      const result = this.evidenceService.performGapAnalysis();
+
+      // Handle both Promise and non-Promise results
+      const gaps = result instanceof Promise ? await result : result;
+
+      if (!Array.isArray(gaps)) {
+        this.logger.error('performGapAnalysis did not return an array');
+        return {
+          success: false,
+          message: 'Gap analysis did not return expected data',
+        };
+      }
 
       const hasHighRisk = gaps.some((g) => g.riskLevel === 'HIGH');
       const hasMediumRisk = gaps.some((g) => g.riskLevel === 'MEDIUM');
@@ -209,7 +229,11 @@ export class ComplianceSchedulerService
     this.logger.log('Manual evidence cleanup triggered');
 
     try {
-      await this.evidenceService.cleanupOldEvidence();
+      const result = this.evidenceService.cleanupOldEvidence();
+      // If it's a Promise, await it
+      if (result instanceof Promise) {
+        await result;
+      }
       return {
         success: true,
         message: 'Evidence cleanup completed',

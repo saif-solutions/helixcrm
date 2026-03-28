@@ -1,28 +1,65 @@
-import { Module, DynamicModule } from '@nestjs/common';
+import { Module, DynamicModule, Logger } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { BullModule } from '@nestjs/bullmq';
 import { AuditQueueService } from './audit-queue.service';
 import { AuditQueueProcessor } from './audit-queue.processor';
 import { PrismaModule } from '../prisma/prisma.module';
 
+/**
+ * Redis connection configuration
+ */
+interface RedisConnectionConfig {
+  host: string;
+  port: number;
+  password?: string;
+  tls?: Record<string, unknown>;
+  maxRetriesPerRequest: number | null;
+  enableReadyCheck: boolean;
+}
+
+/**
+ * BullMQ queue configuration
+ */
+interface BullQueueConfig {
+  connection: RedisConnectionConfig;
+  defaultJobOptions: {
+    removeOnComplete: number;
+    removeOnFail: number;
+    attempts: number;
+    timeout: number;
+    backoff: {
+      type: string;
+      delay: number;
+    };
+  };
+}
+
 @Module({})
 export class AuditQueueModule {
+  private static readonly logger = new Logger(AuditQueueModule.name);
+
   static register(): DynamicModule {
     return {
       module: AuditQueueModule,
       imports: [
         ConfigModule,
         PrismaModule,
-        // Configure BullMQ queue for audit events
         BullModule.registerQueueAsync({
           name: 'audit-queue',
           imports: [ConfigModule],
           inject: [ConfigService],
-          useFactory: async (configService: ConfigService) => {
-            const redisHost = configService.get('REDIS_HOST', 'localhost');
+          useFactory: (configService: ConfigService): BullQueueConfig => {
+            // Type-safe config extraction
+            const redisHost = configService.get<string>(
+              'REDIS_HOST',
+              'localhost',
+            );
             const redisPort = configService.get<number>('REDIS_PORT', 6379);
-            const redisPassword = configService.get('REDIS_PASSWORD');
-            const useTls = configService.get('REDIS_TLS', 'false') === 'true';
+            const redisPassword = configService.get<string | undefined>(
+              'REDIS_PASSWORD',
+            );
+            const useTls =
+              configService.get<string>('REDIS_TLS', 'false') === 'true';
             const jobAttempts = configService.get<number>(
               'AUDIT_JOB_ATTEMPTS',
               3,
@@ -30,30 +67,39 @@ export class AuditQueueModule {
             const jobTimeout = configService.get<number>(
               'AUDIT_JOB_TIMEOUT',
               30000,
-            ); // 30 seconds
+            );
 
-            const redisConfig: any = {
+            // Build Redis configuration with proper typing
+            const connection: RedisConnectionConfig = {
               host: redisHost,
               port: redisPort,
-              maxRetriesPerRequest: null, // Important for BullMQ
+              maxRetriesPerRequest: null,
               enableReadyCheck: false,
             };
 
-            // Add Redis password if configured
-            if (redisPassword) {
-              redisConfig.password = redisPassword;
+            // Add Redis password if configured (type-safe check)
+            if (
+              redisPassword !== undefined &&
+              redisPassword !== null &&
+              redisPassword !== ''
+            ) {
+              connection.password = redisPassword;
             }
 
             // Add TLS configuration if enabled
             if (useTls) {
-              redisConfig.tls = {};
+              connection.tls = {};
             }
 
+            AuditQueueModule.logger.debug(
+              `Configuring audit queue with Redis at ${redisHost}:${redisPort}`,
+            );
+
             return {
-              connection: redisConfig,
+              connection,
               defaultJobOptions: {
-                removeOnComplete: 100, // Keep last 100 completed jobs
-                removeOnFail: 50, // Keep last 50 failed jobs
+                removeOnComplete: 100,
+                removeOnFail: 50,
                 attempts: jobAttempts,
                 timeout: jobTimeout,
                 backoff: {
@@ -66,20 +112,16 @@ export class AuditQueueModule {
         }),
       ],
       providers: [AuditQueueService, AuditQueueProcessor],
-      exports: [
-        AuditQueueService,
-        BullModule, // Export BullModule to make queue injectable
-      ],
+      exports: [AuditQueueService, BullModule],
     };
   }
 
   static registerWithAsync(): DynamicModule {
     const baseModule = this.register();
 
-    // Enable async processing (processor will automatically start)
     return {
       ...baseModule,
-      providers: [...baseModule.providers],
+      providers: [...(baseModule.providers || [])],
     };
   }
 }

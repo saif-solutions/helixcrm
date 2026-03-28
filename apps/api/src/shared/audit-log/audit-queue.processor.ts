@@ -4,6 +4,39 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditJobData } from './audit-queue.service';
 
+/**
+ * Type guard for error with message
+ */
+function hasErrorMessage(
+  error: unknown,
+): error is { message: string; stack?: string } {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'message' in error &&
+    typeof (error as { message: unknown }).message === 'string'
+  );
+}
+
+/**
+ * Get error message safely
+ */
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (hasErrorMessage(error)) return error.message;
+  if (typeof error === 'string') return error;
+  return 'Unknown error occurred';
+}
+
+/**
+ * Get error stack safely
+ */
+function getErrorStack(error: unknown): string | undefined {
+  if (error instanceof Error) return error.stack;
+  if (hasErrorMessage(error)) return (error as { stack?: string }).stack;
+  return undefined;
+}
+
 @Processor('audit-queue')
 @Injectable()
 export class AuditQueueProcessor extends WorkerHost {
@@ -15,7 +48,7 @@ export class AuditQueueProcessor extends WorkerHost {
     super();
   }
 
-  async process(job: Job<AuditJobData>): Promise<any> {
+  async process(job: Job<AuditJobData>): Promise<unknown> {
     const startTime = Date.now();
     const {
       action,
@@ -47,27 +80,37 @@ export class AuditQueueProcessor extends WorkerHost {
         });
       }
 
-      // Build the audit log data
-      const data: any = {
+      // Build the audit log data with proper typing
+      const auditData: {
+        action: string;
+        entityType: string;
+        actorEmail: string;
+        actorUserId: string;
+        entityId?: string;
+        metadata?: Record<string, unknown>;
+        severity: string;
+        ipAddress?: string;
+        userAgent?: string;
+        requestId?: string;
+        organizationId?: string;
+      } = {
         action,
         entityType,
         actorEmail,
         actorUserId,
-        entityId,
-        metadata,
         severity,
-        ipAddress,
-        userAgent,
-        requestId,
       };
 
-      // Only add organizationId if it exists (database constraint)
-      if (organizationId) {
-        data.organizationId = organizationId;
-      }
+      // Add optional fields only if they exist
+      if (entityId) auditData.entityId = entityId;
+      if (metadata) auditData.metadata = metadata;
+      if (ipAddress) auditData.ipAddress = ipAddress;
+      if (userAgent) auditData.userAgent = userAgent;
+      if (requestId) auditData.requestId = requestId;
+      if (organizationId) auditData.organizationId = organizationId;
 
       // Create the audit log entry
-      const auditLog = await this.prisma.auditLog.create({ data });
+      const auditLog = await this.prisma.auditLog.create({ data: auditData });
 
       this.processedCount++;
 
@@ -95,8 +138,10 @@ export class AuditQueueProcessor extends WorkerHost {
         processedAt: Date.now(),
       };
     } catch (error) {
+      const errorMessage = getErrorMessage(error);
+
       // Handle specific database constraint errors
-      if (error.message.includes('organization') && !organizationId) {
+      if (errorMessage.includes('organization') && !organizationId) {
         this.logger.warn(`Audit skipped - missing organization for ${action}`, {
           jobId: job.id,
           action,
@@ -109,12 +154,12 @@ export class AuditQueueProcessor extends WorkerHost {
 
       // Log the error but don't throw - BullMQ will handle retries
       this.logger.error(
-        `Failed to process audit job ${job.id}: ${error.message}`,
+        `Failed to process audit job ${job.id}: ${errorMessage}`,
         {
           jobId: job.id,
           action,
           actorEmail,
-          error: error.stack,
+          error: getErrorStack(error),
         },
       );
 
@@ -134,13 +179,14 @@ export class AuditQueueProcessor extends WorkerHost {
 
   @OnWorkerEvent('failed')
   onFailed(job: Job<AuditJobData>, error: Error) {
+    const errorMessage = getErrorMessage(error);
     this.logger.error(
       `Audit job failed after ${job.attemptsMade} attempts: ${job.id} - ${job.data.action}`,
       {
         jobId: job.id,
         action: job.data.action,
         attemptsMade: job.attemptsMade,
-        error: error.message,
+        error: errorMessage,
         isCritical: job.data.isCritical,
       },
     );

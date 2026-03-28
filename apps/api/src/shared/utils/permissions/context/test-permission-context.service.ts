@@ -4,16 +4,20 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PermissionContextService } from './permission-context.service';
 
+/**
+ * Example service demonstrating permission context usage
+ * This is a test/example file - not used in production
+ */
 @Injectable()
 export class ExampleService {
   private readonly logger = new Logger(ExampleService.name);
 
   constructor(private readonly permissionContext: PermissionContextService) {}
 
-  async doSomethingRequiringPermission(): Promise<string> {
-    // OLD WAY: Would need to recompute permissions or make DB calls
-    // NEW WAY: Just check against the already-built context
-
+  /**
+   * Example method demonstrating permission checking
+   */
+  doSomethingRequiringPermission(): string {
     // Check single permission
     if (!this.permissionContext.hasPermission('user:read')) {
       this.logger.warn(
@@ -45,7 +49,10 @@ export class ExampleService {
     return 'Operation completed successfully';
   }
 
-  async doSomethingWithRoleCheck(): Promise<string> {
+  /**
+   * Example method demonstrating role checking
+   */
+  doSomethingWithRoleCheck(): string {
     // Check if user has specific role
     const roles = this.permissionContext.getRoles();
     this.logger.debug(`User roles: ${roles.join(', ')}`);

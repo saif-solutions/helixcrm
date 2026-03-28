@@ -1,18 +1,48 @@
 // apps/api/src/shared/permissions/permission-cache.service.ts
+
 import { Injectable, Logger } from '@nestjs/common';
 
+/**
+ * Cached permissions structure
+ */
 interface CachedPermissions {
   permissions: string[];
   expiresAt: number;
 }
 
+/**
+ * Permission Cache Service
+ *
+ * Provides in-memory caching for user permissions to reduce database load.
+ * Features:
+ * - TTL-based expiration (5 minutes default)
+ * - Synchronous operations (no async needed)
+ * - Cache invalidation by user or globally
+ * - Cache statistics for monitoring
+ *
+ * @example
+ * ```typescript
+ * // In service
+ * const cached = this.cache.get(userId);
+ * if (cached) {
+ *   return cached;
+ * }
+ * const permissions = await this.fetchFromDB(userId);
+ * this.cache.set(userId, permissions);
+ * ```
+ */
 @Injectable()
 export class PermissionCacheService {
   private readonly logger = new Logger(PermissionCacheService.name);
-  private cache = new Map<string, CachedPermissions>();
+  private readonly cache = new Map<string, CachedPermissions>();
   private readonly TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
+  private readonly isProduction = process.env.NODE_ENV === 'production';
 
-  async get(userId: string): Promise<string[] | null> {
+  /**
+   * Get cached permissions for a user
+   * @returns Permissions array or null if not found or expired
+   */
+  get(userId: string): string[] | null {
     const cached = this.cache.get(userId);
 
     if (!cached) {
@@ -28,33 +58,64 @@ export class PermissionCacheService {
     return cached.permissions;
   }
 
-  async set(userId: string, permissions: string[]): Promise<void> {
+  /**
+   * Set permissions in cache for a user
+   */
+  set(userId: string, permissions: string[]): void {
     const cached: CachedPermissions = {
       permissions,
       expiresAt: Date.now() + this.TTL,
     };
 
     this.cache.set(userId, cached);
-    this.logger.debug(
-      `Cached permissions for user ${userId} (${permissions.length} permissions)`,
-    );
+
+    if (!this.isProduction) {
+      this.logger.debug(
+        `Cached permissions for user ${this.maskUserId(userId)} (${permissions.length} permissions)`,
+      );
+    }
   }
 
-  async invalidate(userId: string): Promise<void> {
+  /**
+   * Invalidate cache for a specific user
+   */
+  invalidate(userId: string): void {
     this.cache.delete(userId);
-    this.logger.debug(`Invalidated cache for user ${userId}`);
+
+    if (!this.isProduction) {
+      this.logger.debug(
+        `Invalidated cache for user ${this.maskUserId(userId)}`,
+      );
+    }
   }
 
-  async invalidateAll(): Promise<void> {
+  /**
+   * Invalidate all cached permissions
+   */
+  invalidateAll(): void {
     const count = this.cache.size;
     this.cache.clear();
-    this.logger.debug(`Invalidated all permission caches (${count} users)`);
+
+    if (!this.isProduction) {
+      this.logger.debug(`Invalidated all permission caches (${count} users)`);
+    }
   }
 
+  /**
+   * Get cache statistics
+   */
   getStats(): { size: number; ttl: number } {
     return {
       size: this.cache.size,
       ttl: this.TTL,
     };
+  }
+
+  /**
+   * Mask user ID for logging
+   */
+  private maskUserId(userId: string): string {
+    if (userId.length <= 8) return '****';
+    return `${userId.slice(0, 4)}...${userId.slice(-4)}`;
   }
 }
