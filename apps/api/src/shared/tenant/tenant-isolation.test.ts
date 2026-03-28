@@ -1,7 +1,13 @@
 // apps/api/src/shared/tenant/tenant-isolation.test.ts
+
 import { Test, TestingModule } from '@nestjs/testing';
 import { TenantContextService } from './context/tenant-context.service';
-import { TenantContextStorage, withTenantContext } from './tenant.context';
+import {
+  TenantContextStorage,
+  withTenantContext,
+  requireTenantContext,
+  getTenantContext,
+} from './tenant.context';
 import { TenantContext } from './tenant.types';
 
 describe('Tenant Isolation - AsyncLocalStorage', () => {
@@ -17,7 +23,6 @@ describe('Tenant Isolation - AsyncLocalStorage', () => {
   });
 
   afterEach(() => {
-    // Clear any stored context after each test
     jest.restoreAllMocks();
   });
 
@@ -90,16 +95,10 @@ describe('Tenant Isolation - AsyncLocalStorage', () => {
     });
 
     it('should throw error when requiring context without one', () => {
-      // Import requireTenantContext
-      const { requireTenantContext } = require('./tenant.context');
-
       expect(() => requireTenantContext()).toThrow('Tenant context is missing');
     });
 
     it('should not throw when getting context without one', () => {
-      // Import getTenantContext
-      const { getTenantContext } = require('./tenant.context');
-
       const context = getTenantContext();
       expect(context).toBeUndefined();
     });
@@ -107,7 +106,6 @@ describe('Tenant Isolation - AsyncLocalStorage', () => {
 
   describe('TenantAwareRepository Pattern', () => {
     it('should demonstrate repository pattern with tenant isolation', () => {
-      // This is a conceptual test showing the pattern
       const mockTenantContext: TenantContext = {
         tenantId: 'repo-test-tenant',
         organizationId: 'repo-test-tenant',
@@ -117,11 +115,14 @@ describe('Tenant Isolation - AsyncLocalStorage', () => {
       };
 
       withTenantContext(mockTenantContext, () => {
-        // In a real test, we would inject and test a TenantAwareRepository
-        // For now, just verify the pattern works
+        // Verify tenant context is properly set
         expect(TenantContextStorage.getStore()?.tenantId).toBe(
           'repo-test-tenant',
         );
+
+        // Verify we can access the service (but we don't need to call methods for this test)
+        // The service is available if needed for future tests
+        expect(tenantContextService).toBeDefined();
 
         // The key insight: Any repository extending TenantAwareRepository
         // would automatically filter by organizationId = 'repo-test-tenant'

@@ -4,8 +4,38 @@ import { Injectable, LoggerService } from '@nestjs/common';
 import * as winston from 'winston';
 import * as fs from 'fs';
 import * as path from 'path';
-import { als, AlsStore } from '../als'; // ✅ Import AlsStore type
+import { als } from '../als';
 
+/**
+ * Extended log info interface for Winston
+ */
+interface LogInfo {
+  level: string;
+  message: string;
+  timestamp?: string;
+  requestId?: string;
+  tenantId?: string;
+  userId?: string;
+  [key: string]: unknown;
+}
+
+/**
+ * Application Logger Service
+ *
+ * Provides structured logging with:
+ * - Request context injection (requestId, tenantId, userId)
+ * - Multiple log transports (console, file)
+ * - Log rotation (5MB max, 5 files)
+ * - Environment-aware log levels
+ *
+ * @example
+ * ```typescript
+ * constructor(private logger: AppLogger) {
+ *   this.logger.log('Application started');
+ *   this.logger.error('Error occurred', error.stack, { context: 'Service' });
+ * }
+ * ```
+ */
 @Injectable()
 export class AppLogger implements LoggerService {
   private logger: winston.Logger;
@@ -19,16 +49,65 @@ export class AppLogger implements LoggerService {
       fs.mkdirSync(logDir, { recursive: true });
     }
 
-    // Custom format to inject request context with proper typing
-    const requestContextFormat = winston.format((info) => {
+    // Custom format to inject request context
+    const requestContextFormat = winston.format((info: LogInfo) => {
       const store = als.getStore();
       if (store) {
-        // ✅ Safely add context with type checking
-        if (store.requestId) info.requestId = store.requestId;
-        if (store.tenantId) info.tenantId = store.tenantId;
-        if (store.userId) info.userId = store.userId;
+        if (store.requestId && typeof store.requestId === 'string') {
+          info.requestId = store.requestId;
+        }
+        if (store.tenantId && typeof store.tenantId === 'string') {
+          info.tenantId = store.tenantId;
+        }
+        if (store.userId && typeof store.userId === 'string') {
+          info.userId = store.userId;
+        }
       }
       return info;
+    });
+
+    // Custom console format with safe string conversion
+    const consoleFormat = winston.format.printf((info: LogInfo) => {
+      const timestamp = info.timestamp ? String(info.timestamp) : '';
+      const level = info.level ? String(info.level) : '';
+      const message = info.message ? String(info.message) : '';
+
+      // Safe request ID extraction
+      const reqStr =
+        info.requestId && typeof info.requestId === 'string'
+          ? ` [Req:${info.requestId.substring(0, 8)}]`
+          : '';
+
+      const tenantStr =
+        info.tenantId && typeof info.tenantId === 'string'
+          ? ` [Tenant:${info.tenantId.substring(0, 8)}]`
+          : '';
+
+      const userStr =
+        info.userId && typeof info.userId === 'string'
+          ? ` [User:${info.userId.substring(0, 8)}]`
+          : '';
+
+      // Extract meta (exclude standard fields by creating a new object)
+      const meta: Record<string, unknown> = {};
+      for (const key of Object.keys(info)) {
+        if (
+          key !== 'level' &&
+          key !== 'message' &&
+          key !== 'timestamp' &&
+          key !== 'requestId' &&
+          key !== 'tenantId' &&
+          key !== 'userId'
+        ) {
+          meta[key] = info[key];
+        }
+      }
+
+      const metaStr = Object.keys(meta).length
+        ? ` ${JSON.stringify(meta)}`
+        : '';
+
+      return `${timestamp}${reqStr}${tenantStr}${userStr} ${level}: ${message}${metaStr}`;
     });
 
     this.logger = winston.createLogger({
@@ -42,38 +121,7 @@ export class AppLogger implements LoggerService {
         new winston.transports.Console({
           format: winston.format.combine(
             winston.format.colorize(),
-            winston.format.printf(
-              ({
-                level,
-                message,
-                timestamp,
-                requestId,
-                tenantId,
-                userId,
-                ...meta
-              }) => {
-                // ✅ Safe string operations with type guards
-                const reqStr =
-                  requestId && typeof requestId === 'string'
-                    ? ` [Req:${requestId.substring(0, 8)}]`
-                    : '';
-
-                const tenantStr =
-                  tenantId && typeof tenantId === 'string'
-                    ? ` [Tenant:${tenantId.substring(0, 8)}]`
-                    : '';
-
-                const userStr =
-                  userId && typeof userId === 'string'
-                    ? ` [User:${userId.substring(0, 8)}]`
-                    : '';
-
-                const metaStr = Object.keys(meta).length
-                  ? ` ${JSON.stringify(meta)}`
-                  : '';
-                return `${timestamp}${reqStr}${tenantStr}${userStr} ${level}: ${message}${metaStr}`;
-              },
-            ),
+            consoleFormat,
           ),
         }),
         new winston.transports.File({
@@ -101,23 +149,42 @@ export class AppLogger implements LoggerService {
     });
   }
 
-  log(message: string, context?: any) {
+  /**
+   * Log an info message
+   */
+  log(message: string, context?: Record<string, unknown>): void {
     this.logger.info(message, context);
   }
 
-  error(message: string, trace?: string, context?: any) {
+  /**
+   * Log an error message
+   */
+  error(
+    message: string,
+    trace?: string,
+    context?: Record<string, unknown>,
+  ): void {
     this.logger.error(message, { trace, ...context });
   }
 
-  warn(message: string, context?: any) {
+  /**
+   * Log a warning message
+   */
+  warn(message: string, context?: Record<string, unknown>): void {
     this.logger.warn(message, context);
   }
 
-  debug(message: string, context?: any) {
+  /**
+   * Log a debug message
+   */
+  debug(message: string, context?: Record<string, unknown>): void {
     this.logger.debug(message, context);
   }
 
-  verbose(message: string, context?: any) {
+  /**
+   * Log a verbose message
+   */
+  verbose(message: string, context?: Record<string, unknown>): void {
     this.logger.verbose(message, context);
   }
 }

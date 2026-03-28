@@ -16,7 +16,7 @@ export interface JwtUser {
   roles: string[];
   iat?: number;
   exp?: number;
-  [key: string]: any; // Allow additional JWT claims
+  [key: string]: string | number | string[] | undefined; // Allow additional JWT claims with proper typing
 }
 
 /**
@@ -41,7 +41,7 @@ export interface TenantContext {
   // Context metadata
   isSystemContext: boolean;
   resolvedAt: Date;
-  source: 'header' | 'token' | 'system';
+  source: 'header' | 'token' | 'system' | 'pending';
 }
 
 /**
@@ -88,7 +88,7 @@ export interface ITenantContextService {
 export interface TenantRequest extends Request {
   organizationId?: string;
   tenantContext?: TenantContext;
-  user?: JwtUser; // Use JwtUser which matches your JWT payload
+  user?: JwtUser;
 }
 
 /**
@@ -105,7 +105,6 @@ export interface TenantUser {
   role?: string;
   permissions?: string[];
   roles?: string[];
-  // Add other user properties as needed
 }
 
 /**
