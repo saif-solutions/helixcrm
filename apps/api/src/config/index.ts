@@ -5,8 +5,16 @@ import databaseConfig from './database.config';
 import authConfig from './auth.config';
 import securityConfig from './security.config';
 import demoConfig from './demo.config';
+import validationConfig from './validation.config';
 
-export { appConfig, databaseConfig, authConfig, securityConfig, demoConfig };
+export {
+  appConfig,
+  databaseConfig,
+  authConfig,
+  securityConfig,
+  demoConfig,
+  validationConfig,
+};
 
 export * from './validation/config-validation.module';
 export * from './validation/config-validation.service';

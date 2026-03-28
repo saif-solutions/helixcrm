@@ -345,4 +345,75 @@ export class ConfigValidationService {
 
     return true;
   }
+
+  private initializeValidationRules(): void {
+    this.validationRules = [
+      // Existing rules...
+
+      // Add Redis validation
+      {
+        key: 'REDIS_HOST',
+        required: false,
+        type: 'string',
+        defaultValue: 'localhost',
+        description: 'Redis host for caching and queues',
+      },
+      {
+        key: 'REDIS_PORT',
+        required: false,
+        type: 'number',
+        defaultValue: 6379,
+        minValue: 1,
+        maxValue: 65535,
+        description: 'Redis port',
+      },
+      {
+        key: 'REDIS_PASSWORD',
+        required: false,
+        type: 'string',
+        description: 'Redis password (optional)',
+      },
+
+      // Add CSRF validation
+      {
+        key: 'CSRF_SECRET',
+        required: process.env.NODE_ENV === 'production',
+        type: 'string',
+        minLength: 32,
+        description: 'CSRF token secret (min 32 chars)',
+      },
+
+      // Add rate limiting
+      {
+        key: 'THROTTLE_TTL',
+        required: false,
+        type: 'number',
+        defaultValue: 60,
+        minValue: 1,
+        description: 'Rate limit time window in seconds',
+      },
+      {
+        key: 'THROTTLE_LIMIT',
+        required: false,
+        type: 'number',
+        defaultValue: 100,
+        minValue: 1,
+        description: 'Maximum requests per time window',
+      },
+
+      // Add monitoring
+      {
+        key: 'SENTRY_DSN',
+        required: false,
+        type: 'string',
+        description: 'Sentry DSN for error tracking',
+      },
+      {
+        key: 'NEW_RELIC_LICENSE_KEY',
+        required: false,
+        type: 'string',
+        description: 'New Relic license key for performance monitoring',
+      },
+    ];
+  }
 }
