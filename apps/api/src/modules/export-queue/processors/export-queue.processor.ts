@@ -1,6 +1,5 @@
-// src/modules/export-queue/processors/export-queue.processor.ts
-// src/modules/export-queue/processors/export-queue.processor.ts
-import { Processor, WorkerHost } from '@nestjs/bullmq'; // CHANGE THIS IMPORT
+// apps/api/src/modules/export-queue/processors/export-queue.processor.ts
+import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { Logger } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
@@ -8,26 +7,98 @@ import { ExportQueueRepository } from '../repositories/export-queue.repository';
 import { AuditLogService } from '../../../shared/audit-log/audit-log.service';
 import { SeverityMapper } from '../../../shared/audit-log/severity-mapper';
 
-interface ExportJobData {
+// ========== Type Definitions ==========
+
+interface DateRange {
+  start: Date;
+  end: Date;
+}
+
+interface ExportOptions {
+  includeArchived?: boolean;
+  includeDeleted?: boolean;
+  dateRange?: DateRange;
+}
+
+interface ExportFilters {
+  status?: string;
+  source?: string;
+  search?: string;
+  stageId?: string;
+  amountMin?: number;
+  amountMax?: number;
+  priority?: string;
+}
+
+export interface ExportJobData {
   jobId: string;
   userId: string;
   tenantId: string;
   exportType: 'contacts' | 'deals' | 'leads' | 'all';
   format: 'csv' | 'excel' | 'pdf';
-  filters?: Record<string, any>;
-  options?: {
-    includeArchived?: boolean;
-    includeDeleted?: boolean;
-    dateRange?: {
-      start: Date;
-      end: Date;
-    };
-  };
+  filters?: ExportFilters;
+  options?: ExportOptions;
+}
+
+// Helper: safe error message extraction
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'string') return error;
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return 'Unknown error occurred';
+  }
+}
+
+// Helper: safe stack trace extraction
+function getErrorStack(error: unknown): string {
+  return error instanceof Error && error.stack ? error.stack : '';
+}
+
+// Helper: type‑safe severity mapping
+function getSeverity(level: 'info' | 'warning' | 'error'): string {
+  return SeverityMapper.forEventType(level) as string;
+}
+
+// Flatten nested objects for CSV (type‑safe version)
+type FlattenedObject = Record<string, unknown>;
+
+function flattenObject(
+  obj: Record<string, unknown>,
+  prefix = '',
+): FlattenedObject {
+  const result: FlattenedObject = {};
+
+  for (const [key, value] of Object.entries(obj)) {
+    const newKey = prefix ? `${prefix}.${key}` : key;
+
+    if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+      Object.assign(
+        result,
+        flattenObject(value as Record<string, unknown>, newKey),
+      );
+    } else {
+      result[newKey] = value;
+    }
+  }
+
+  return result;
+}
+
+// Helper to safely stringify any value for CSV
+function safeStringify(value: unknown): string {
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'string') return `"${value.replace(/"/g, '""')}"`;
+  if (typeof value === 'number' || typeof value === 'boolean')
+    return String(value);
+  if (value instanceof Date) return value.toISOString();
+  // For objects, convert to JSON string (but avoid large nested objects)
+  return JSON.stringify(value);
 }
 
 @Processor('export-queue', { concurrency: 3 })
 export class ExportQueueProcessor extends WorkerHost {
-  // EXTEND WorkerHost
   private readonly logger = new Logger(ExportQueueProcessor.name);
 
   constructor(
@@ -35,11 +106,12 @@ export class ExportQueueProcessor extends WorkerHost {
     private readonly exportQueueRepository: ExportQueueRepository,
     private readonly auditLogService: AuditLogService,
   ) {
-    super(); // CALL super()
+    super();
   }
 
-  // BullMQ requires this method name for processing
-  async process(job: Job<ExportJobData>): Promise<any> {
+  async process(
+    job: Job<ExportJobData>,
+  ): Promise<{ success: boolean; recordCount: number; fileUrl: string }> {
     const { jobId, userId, tenantId, exportType, format, filters, options } =
       job.data;
     const startTime = Date.now();
@@ -54,13 +126,11 @@ export class ExportQueueProcessor extends WorkerHost {
     });
 
     try {
-      // 1. UPDATE JOB STATUS TO PROCESSING
       await this.exportQueueRepository.updateJob(jobId, {
         status: 'processing',
         processingStartedAt: new Date(),
       });
 
-      // 2. FETCH DATA BASED ON EXPORT TYPE
       const exportData = await this.fetchExportData(
         exportType,
         tenantId,
@@ -68,33 +138,29 @@ export class ExportQueueProcessor extends WorkerHost {
         options,
       );
 
-      if (!exportData || exportData.length === 0) {
+      if (!exportData.length) {
         throw new Error(`No data found for export type: ${exportType}`);
       }
 
-      // 3. GENERATE FILE BASED ON FORMAT
-      const fileBuffer = await this.generateExportFile(
+      const fileBuffer = this.generateExportFile(
         exportData,
         format,
         exportType,
-      );
+      ); // removed await
 
-      // 4. CREATE FILE URL (PLACEHOLDER - REPLACE WITH ACTUAL STORAGE)
       const fileName = this.generateFileName(exportType, format);
-      const fileUrl = this.generateFileUrl(fileName, tenantId, userId);
+      const fileUrl = this.generateFileUrl(fileName, tenantId);
 
-      // 5. UPDATE JOB AS COMPLETED
       await this.exportQueueRepository.markJobAsCompleted(
         jobId,
         fileUrl,
         fileBuffer.length,
       );
 
-      // 6. AUDIT LOG SUCCESS
       await this.auditLogService.logEvent({
-        action: 'EXPORT_COMPLETED' as any,
+        action: 'EXPORT_COMPLETED',
         entityId: jobId,
-        entityType: 'EXPORT' as any,
+        entityType: 'EXPORT',
         organizationId: tenantId,
         actorUserId: userId,
         actorEmail: await this.getUserEmail(userId),
@@ -106,7 +172,7 @@ export class ExportQueueProcessor extends WorkerHost {
           fileUrl,
           processingTime: Date.now() - startTime,
         },
-        severity: SeverityMapper.forEventType('info'),
+        severity: getSeverity('info'),
       });
 
       this.logger.log(`Export job ${jobId} completed successfully`, {
@@ -120,18 +186,16 @@ export class ExportQueueProcessor extends WorkerHost {
       });
 
       return { success: true, recordCount: exportData.length, fileUrl };
-    } catch (error: any) {
-      // 7. HANDLE JOB FAILURE
-      const errorMessage =
-        error.message || 'Unknown error during export processing';
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
+      const errorStack = getErrorStack(error);
 
       await this.exportQueueRepository.markJobAsFailed(jobId, errorMessage);
 
-      // 8. AUDIT LOG FAILURE
       await this.auditLogService.logEvent({
-        action: 'EXPORT_FAILED' as any,
+        action: 'EXPORT_FAILED',
         entityId: jobId,
-        entityType: 'EXPORT' as any,
+        entityType: 'EXPORT',
         organizationId: tenantId,
         actorUserId: userId,
         actorEmail: await this.getUserEmail(userId),
@@ -141,12 +205,12 @@ export class ExportQueueProcessor extends WorkerHost {
           error: errorMessage,
           processingTime: Date.now() - startTime,
         },
-        severity: SeverityMapper.forEventType('error'),
+        severity: getSeverity('error'),
       });
 
       this.logger.error(
         `Export job ${jobId} failed: ${errorMessage}`,
-        error.stack,
+        errorStack,
         {
           jobId,
           userId,
@@ -161,15 +225,14 @@ export class ExportQueueProcessor extends WorkerHost {
     }
   }
 
-  /**
-   * Fetch data for export based on type
-   */
+  // ========== Data Fetching ==========
+
   private async fetchExportData(
-    exportType: string,
+    exportType: ExportJobData['exportType'],
     tenantId: string,
-    filters?: Record<string, any>,
-    options?: any,
-  ): Promise<any[]> {
+    filters?: ExportFilters,
+    options?: ExportOptions,
+  ): Promise<unknown[]> {
     switch (exportType) {
       case 'contacts':
         return this.fetchContacts(tenantId, filters, options);
@@ -177,25 +240,27 @@ export class ExportQueueProcessor extends WorkerHost {
         return this.fetchDeals(tenantId, filters, options);
       case 'leads':
         return this.fetchLeads(tenantId, filters, options);
-      case 'all':
+      case 'all': {
         const [contacts, deals, leads] = await Promise.all([
           this.fetchContacts(tenantId, filters, options),
           this.fetchDeals(tenantId, filters, options),
           this.fetchLeads(tenantId, filters, options),
         ]);
         return [...contacts, ...deals, ...leads];
+      }
       default:
-        throw new Error(`Unsupported export type: ${exportType}`);
+        // TypeScript infers exportType as 'never' here, so we convert to string
+        throw new Error(`Unsupported export type: ${String(exportType)}`);
     }
   }
 
-  /**
-   * Fetch contacts with tenant isolation
-   */
-  private async fetchContacts(tenantId: string, filters?: any, options?: any) {
-    const where: any = { organizationId: tenantId };
+  private async fetchContacts(
+    tenantId: string,
+    filters?: ExportFilters,
+    options?: ExportOptions,
+  ): Promise<unknown[]> {
+    const where: Record<string, unknown> = { organizationId: tenantId };
 
-    // Apply filters
     if (filters) {
       if (filters.status) where.status = filters.status;
       if (filters.source) where.source = filters.source;
@@ -208,7 +273,6 @@ export class ExportQueueProcessor extends WorkerHost {
       }
     }
 
-    // Apply options
     if (options) {
       if (!options.includeArchived) where.isArchived = false;
       if (!options.includeDeleted) where.deletedAt = null;
@@ -237,24 +301,25 @@ export class ExportQueueProcessor extends WorkerHost {
     });
   }
 
-  /**
-   * Fetch deals with tenant isolation
-   */
-  private async fetchDeals(tenantId: string, filters?: any, options?: any) {
-    const where: any = { organizationId: tenantId };
+  private async fetchDeals(
+    tenantId: string,
+    filters?: ExportFilters,
+    options?: ExportOptions,
+  ): Promise<unknown[]> {
+    const where: Record<string, unknown> = { organizationId: tenantId };
 
-    // Apply filters
     if (filters) {
       if (filters.stageId) where.stageId = filters.stageId;
       if (filters.status) where.status = filters.status;
-      if (filters.amountMin || filters.amountMax) {
-        where.amount = {};
-        if (filters.amountMin) where.amount.gte = filters.amountMin;
-        if (filters.amountMax) where.amount.lte = filters.amountMax;
+      if (filters.amountMin !== undefined || filters.amountMax !== undefined) {
+        where.amount = {} as Record<string, number>;
+        if (filters.amountMin !== undefined)
+          (where.amount as Record<string, number>).gte = filters.amountMin;
+        if (filters.amountMax !== undefined)
+          (where.amount as Record<string, number>).lte = filters.amountMax;
       }
     }
 
-    // Apply options
     if (options) {
       if (!options.includeArchived) where.isArchived = false;
       if (options.dateRange) {
@@ -278,13 +343,13 @@ export class ExportQueueProcessor extends WorkerHost {
     });
   }
 
-  /**
-   * Fetch leads with tenant isolation
-   */
-  private async fetchLeads(tenantId: string, filters?: any, options?: any) {
-    const where: any = { organizationId: tenantId };
+  private async fetchLeads(
+    tenantId: string,
+    filters?: ExportFilters,
+    options?: ExportOptions,
+  ): Promise<unknown[]> {
+    const where: Record<string, unknown> = { organizationId: tenantId };
 
-    // Apply filters
     if (filters) {
       if (filters.status) where.status = filters.status;
       if (filters.priority) where.priority = filters.priority;
@@ -296,7 +361,6 @@ export class ExportQueueProcessor extends WorkerHost {
       }
     }
 
-    // Apply options
     if (options) {
       if (!options.includeArchived) where.isArchived = false;
       if (options.dateRange) {
@@ -321,19 +385,19 @@ export class ExportQueueProcessor extends WorkerHost {
     });
   }
 
-  /**
-   * Generate export file in specified format
-   */
-  private async generateExportFile(
-    data: any[],
+  // ========== File Generation ==========
+
+  // Removed async because no await inside
+  private generateExportFile(
+    data: unknown[],
     format: string,
     exportType: string,
-  ): Promise<Buffer> {
+  ): Buffer {
     switch (format) {
       case 'csv':
-        return this.generateCsv(data, exportType);
+        return this.generateCsv(data);
       case 'excel':
-        return this.generateExcel(data, exportType);
+        return this.generateExcel(data);
       case 'pdf':
         return this.generatePdf(data, exportType);
       default:
@@ -341,109 +405,61 @@ export class ExportQueueProcessor extends WorkerHost {
     }
   }
 
-  /**
-   * Generate CSV file
-   */
-  private async generateCsv(data: any[], exportType: string): Promise<Buffer> {
-    if (data.length === 0) {
-      return Buffer.from('');
-    }
+  private generateCsv(data: unknown[]): Buffer {
+    if (data.length === 0) return Buffer.from('');
 
-    // Flatten nested objects for CSV
-    const flattenedData = data.map((item) => this.flattenObject(item));
+    const flattenedData: FlattenedObject[] = data.map((item) =>
+      flattenObject(item as Record<string, unknown>),
+    );
 
     const headers = Object.keys(flattenedData[0]).join(',');
-    const rows = flattenedData.map((row) =>
-      Object.values(row)
-        .map((value) =>
-          typeof value === 'string' ? `"${value.replace(/"/g, '""')}"` : value,
-        )
-        .join(','),
-    );
+    const rows = flattenedData.map((row) => {
+      return Object.values(row)
+        .map((value) => safeStringify(value))
+        .join(',');
+    });
 
     const csvContent = [headers, ...rows].join('\n');
     return Buffer.from(csvContent, 'utf-8');
   }
 
-  /**
-   * Generate Excel file (simplified)
-   */
-  private async generateExcel(
-    data: any[],
-    exportType: string,
-  ): Promise<Buffer> {
-    // For now, generate CSV as placeholder
-    // In production, implement with exceljs or similar library
+  private generateExcel(data: unknown[]): Buffer {
+    // Placeholder – implement with exceljs or similar in production
     this.logger.warn(
-      'Excel export using CSV placeholder - implement exceljs for production',
+      'Excel export using CSV placeholder – implement exceljs for production',
     );
-    return this.generateCsv(data, exportType);
+    return this.generateCsv(data);
   }
 
-  /**
-   * Generate PDF file (simplified)
-   */
-  private async generatePdf(data: any[], exportType: string): Promise<Buffer> {
-    // For now, generate simple text representation
+  private generatePdf(data: unknown[], exportType: string): Buffer {
+    // Placeholder – implement PDF generation (e.g., with pdfmake)
     const content = JSON.stringify(data, null, 2);
     return Buffer.from(`Export: ${exportType}\n\n${content}`, 'utf-8');
   }
 
-  /**
-   * Generate file name
-   */
   private generateFileName(exportType: string, format: string): string {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    return `${exportType}_export_${timestamp}.${format}`;
+    // Explicit string conversion to avoid "never" type issues
+    return `${String(exportType)}_export_${timestamp}.${String(format)}`;
   }
 
-  /**
-   * Generate file URL (placeholder)
-   */
-  private generateFileUrl(
-    fileName: string,
-    tenantId: string,
-    userId: string,
-  ): string {
-    // In production, upload to S3/Azure/Google Cloud Storage
-    // For now, return a placeholder URL
-    return `/api/exports/${tenantId}/${fileName}`;
+  private generateFileUrl(fileName: string, tenantId: string): string {
+    // Explicit string conversion for safety
+    return `/api/exports/${String(tenantId)}/${String(fileName)}`;
   }
 
-  /**
-   * Flatten nested objects for CSV export
-   */
-  private flattenObject(obj: any, prefix = ''): any {
-    return Object.keys(obj).reduce((acc, key) => {
-      const pre = prefix.length ? `${prefix}.` : '';
+  // ========== Utilities ==========
 
-      if (
-        typeof obj[key] === 'object' &&
-        obj[key] !== null &&
-        !Array.isArray(obj[key])
-      ) {
-        Object.assign(acc, this.flattenObject(obj[key], pre + key));
-      } else {
-        acc[pre + key] = obj[key];
-      }
-
-      return acc;
-    }, {} as any);
-  }
-
-  /**
-   * Get user email for audit logging
-   */
   private async getUserEmail(userId: string): Promise<string> {
     try {
       const user = await this.prisma.user.findUnique({
         where: { id: userId },
         select: { email: true },
       });
-      return user?.email || `user-${userId}@unknown.example.com`;
+      return user?.email ?? `user-${userId}@unknown.example.com`;
     } catch (error) {
       this.logger.warn(
-        `Failed to fetch email for user ${userId}: ${error.message}`,
+        `Failed to fetch email for user ${userId}: ${getErrorMessage(error)}`,
       );
       return `user-${userId}@error.example.com`;
     }

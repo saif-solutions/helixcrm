@@ -1,6 +1,8 @@
+// apps/api/src/modules/import/repositories/import-job.repository.ts
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
 import { TenantAwareRepository } from '../../../shared/database/tenant-aware.repository';
+import { ImportJob } from '@prisma/client';
 
 interface CreateImportJobData {
   type: string;
@@ -12,7 +14,7 @@ interface CreateImportJobData {
   processedRecords?: number;
   failedRecords?: number;
   errorMessage?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   userId?: string;
 }
 
@@ -22,7 +24,7 @@ interface UpdateImportJobData {
   processedRecords?: number;
   failedRecords?: number;
   errorMessage?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   completedAt?: Date;
   startedAt?: Date;
 }
@@ -36,13 +38,13 @@ export class ImportJobRepository extends TenantAwareRepository {
   /**
    * Create a new import job
    */
-  async create(data: CreateImportJobData) {
+  async create(data: CreateImportJobData): Promise<ImportJob> {
     return this.prisma.importJob.create({
       data: {
         ...data,
         organizationId: this.tenantId,
-        status: data.status || 'pending',
-        metadata: data.metadata || {},
+        status: data.status ?? 'pending',
+        metadata: data.metadata ?? {},
       },
     });
   }
@@ -50,7 +52,7 @@ export class ImportJobRepository extends TenantAwareRepository {
   /**
    * Find import job by ID with tenant isolation
    */
-  async findById(id: string) {
+  async findById(id: string): Promise<ImportJob | null> {
     return this.prisma.importJob.findFirst({
       where: {
         id,
@@ -62,7 +64,7 @@ export class ImportJobRepository extends TenantAwareRepository {
   /**
    * Find all import jobs for current tenant
    */
-  async findAll() {
+  async findAll(): Promise<ImportJob[]> {
     return this.prisma.importJob.findMany({
       where: {
         organizationId: this.tenantId,
@@ -76,7 +78,7 @@ export class ImportJobRepository extends TenantAwareRepository {
   /**
    * Update import job
    */
-  async update(id: string, data: UpdateImportJobData) {
+  async update(id: string, data: UpdateImportJobData): Promise<ImportJob> {
     return this.prisma.importJob.update({
       where: { id },
       data: {
@@ -89,7 +91,7 @@ export class ImportJobRepository extends TenantAwareRepository {
   /**
    * Delete import job
    */
-  async delete(id: string) {
+  async delete(id: string): Promise<ImportJob> {
     return this.prisma.importJob.delete({
       where: { id },
     });
@@ -98,7 +100,7 @@ export class ImportJobRepository extends TenantAwareRepository {
   /**
    * Find import jobs by status
    */
-  async findByStatus(status: string) {
+  async findByStatus(status: string): Promise<ImportJob[]> {
     return this.prisma.importJob.findMany({
       where: {
         organizationId: this.tenantId,
@@ -113,7 +115,7 @@ export class ImportJobRepository extends TenantAwareRepository {
   /**
    * Count import jobs by status
    */
-  async countByStatus(status: string) {
+  async countByStatus(status: string): Promise<number> {
     return this.prisma.importJob.count({
       where: {
         organizationId: this.tenantId,

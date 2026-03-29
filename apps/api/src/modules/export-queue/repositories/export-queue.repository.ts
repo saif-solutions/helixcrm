@@ -1,4 +1,4 @@
-// src/modules/export-queue/repositories/export-queue.repository.ts
+// apps/api/src/modules/export-queue/repositories/export-queue.repository.ts
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
 import { TenantAwareRepository } from '../../../shared/database/tenant-aware.repository';
@@ -8,8 +8,8 @@ interface CreateJobData {
   tenantId: string;
   exportType: string;
   format: string;
-  filters: Record<string, any>;
-  options: Record<string, any>;
+  filters: Record<string, unknown>;
+  options: Record<string, unknown>;
   status: string;
   requestedAt: Date;
 }
@@ -23,15 +23,21 @@ interface UpdateJobData {
   processingStartedAt?: Date;
 }
 
-// TEMPORARY INTERFACE until Prisma model is created
+// Filters for findJobs and countJobs
+interface JobFilters {
+  userId?: string;
+  status?: string;
+}
+
+// Temporary interface until Prisma model is created
 interface ExportJob {
   id: string;
   userId: string;
   organizationId: string;
   exportType: string;
   format: string;
-  filters: Record<string, any>;
-  options: Record<string, any>;
+  filters: Record<string, unknown>;
+  options: Record<string, unknown>;
   status: string;
   fileUrl?: string;
   fileSize?: number;
@@ -45,7 +51,7 @@ interface ExportJob {
 
 @Injectable()
 export class ExportQueueRepository extends TenantAwareRepository {
-  private jobs: Map<string, ExportJob> = new Map(); // In-memory storage for now
+  private jobs: Map<string, ExportJob> = new Map();
   private jobCounter = 0;
 
   constructor(prisma: PrismaService) {
@@ -55,7 +61,7 @@ export class ExportQueueRepository extends TenantAwareRepository {
   /**
    * Create a new export job record
    */
-  async createJob(data: CreateJobData): Promise<ExportJob> {
+  createJob(data: CreateJobData): ExportJob {
     const jobId = `export_${Date.now()}_${++this.jobCounter}`;
     const job: ExportJob = {
       id: jobId,
@@ -78,7 +84,7 @@ export class ExportQueueRepository extends TenantAwareRepository {
   /**
    * Find export job by ID with tenant isolation
    */
-  async findJobById(jobId: string): Promise<ExportJob | null> {
+  findJobById(jobId: string): ExportJob | null {
     const job = this.jobs.get(jobId);
     if (!job || job.organizationId !== this.tenantId) {
       return null;
@@ -89,11 +95,7 @@ export class ExportQueueRepository extends TenantAwareRepository {
   /**
    * Find export jobs with pagination and filtering
    */
-  async findJobs(
-    filters: any,
-    page: number,
-    limit: number,
-  ): Promise<ExportJob[]> {
+  findJobs(filters: JobFilters, page: number, limit: number): ExportJob[] {
     const skip = (page - 1) * limit;
     let jobs = Array.from(this.jobs.values()).filter(
       (job) => job.organizationId === this.tenantId,
@@ -117,7 +119,7 @@ export class ExportQueueRepository extends TenantAwareRepository {
   /**
    * Count export jobs with filtering
    */
-  async countJobs(filters: any): Promise<number> {
+  countJobs(filters: JobFilters): number {
     let jobs = Array.from(this.jobs.values()).filter(
       (job) => job.organizationId === this.tenantId,
     );
@@ -136,7 +138,7 @@ export class ExportQueueRepository extends TenantAwareRepository {
   /**
    * Count recent exports by user (for rate limiting)
    */
-  async countRecentExports(userId: string, hours: number): Promise<number> {
+  countRecentExports(userId: string, hours: number): number {
     const cutoffDate = new Date();
     cutoffDate.setHours(cutoffDate.getHours() - hours);
 
@@ -154,7 +156,7 @@ export class ExportQueueRepository extends TenantAwareRepository {
   /**
    * Update export job
    */
-  async updateJob(jobId: string, data: UpdateJobData): Promise<ExportJob> {
+  updateJob(jobId: string, data: UpdateJobData): ExportJob {
     const job = this.jobs.get(jobId);
     if (!job) {
       throw new Error(`Job ${jobId} not found`);
@@ -173,7 +175,7 @@ export class ExportQueueRepository extends TenantAwareRepository {
   /**
    * Delete old export jobs (cleanup)
    */
-  async deleteOldJobs(cutoffDate: Date): Promise<number> {
+  deleteOldJobs(cutoffDate: Date): number {
     let deleted = 0;
 
     for (const [jobId, job] of this.jobs.entries()) {
@@ -193,7 +195,7 @@ export class ExportQueueRepository extends TenantAwareRepository {
   /**
    * Mark job as failed
    */
-  async markJobAsFailed(jobId: string, error: string): Promise<ExportJob> {
+  markJobAsFailed(jobId: string, error: string): ExportJob {
     return this.updateJob(jobId, {
       status: 'failed',
       error,
@@ -204,11 +206,11 @@ export class ExportQueueRepository extends TenantAwareRepository {
   /**
    * Mark job as completed
    */
-  async markJobAsCompleted(
+  markJobAsCompleted(
     jobId: string,
     fileUrl: string,
     fileSize: number,
-  ): Promise<ExportJob> {
+  ): ExportJob {
     return this.updateJob(jobId, {
       status: 'completed',
       fileUrl,
@@ -220,12 +222,12 @@ export class ExportQueueRepository extends TenantAwareRepository {
   /**
    * Get export job with detailed information
    */
-  async getJobWithDetails(jobId: string): Promise<ExportJob | null> {
+  getJobWithDetails(jobId: string): ExportJob | null {
     return this.findJobById(jobId);
   }
 
-  // TEMPORARY: Simple implementations for other methods
-  async findPendingJobs(limit: number = 10): Promise<ExportJob[]> {
+  // Temporary implementations for other methods
+  findPendingJobs(limit = 10): ExportJob[] {
     const jobs = Array.from(this.jobs.values())
       .filter(
         (job) =>
@@ -237,10 +239,9 @@ export class ExportQueueRepository extends TenantAwareRepository {
     return jobs;
   }
 
-  async getJobStatistics(
+  getJobStatistics(
     timeframe: 'day' | 'week' | 'month' = 'week',
-  ): Promise<any> {
-    // Simple implementation for now
+  ): Record<string, unknown> {
     const jobs = Array.from(this.jobs.values()).filter(
       (job) => job.organizationId === this.tenantId,
     );
@@ -254,7 +255,7 @@ export class ExportQueueRepository extends TenantAwareRepository {
     };
   }
 
-  async hasActiveExports(userId: string): Promise<boolean> {
+  hasActiveExports(userId: string): boolean {
     const jobs = Array.from(this.jobs.values()).filter(
       (job) =>
         job.organizationId === this.tenantId &&
@@ -265,7 +266,7 @@ export class ExportQueueRepository extends TenantAwareRepository {
     return jobs.length > 0;
   }
 
-  async getRetryableJobs(limit: number = 5): Promise<ExportJob[]> {
+  getRetryableJobs(limit = 5): ExportJob[] {
     const cutoffDate = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
     const jobs = Array.from(this.jobs.values())
@@ -273,7 +274,7 @@ export class ExportQueueRepository extends TenantAwareRepository {
         (job) =>
           job.organizationId === this.tenantId &&
           job.status === 'failed' &&
-          job.error &&
+          !!job.error &&
           job.completedAt &&
           job.completedAt >= cutoffDate,
       )
@@ -286,7 +287,7 @@ export class ExportQueueRepository extends TenantAwareRepository {
     return jobs;
   }
 
-  async retryJob(jobId: string): Promise<ExportJob> {
+  retryJob(jobId: string): ExportJob {
     return this.updateJob(jobId, {
       status: 'pending',
       error: undefined,

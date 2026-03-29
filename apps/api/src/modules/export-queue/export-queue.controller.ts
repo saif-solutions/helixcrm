@@ -1,4 +1,4 @@
-// src/modules/export-queue/export-queue.controller.ts
+// apps/api/src/modules/export-queue/export-queue.controller.ts
 import {
   Controller,
   Get,
@@ -9,7 +9,6 @@ import {
   Body,
   HttpCode,
   HttpStatus,
-  ParseUUIDPipe,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -25,7 +24,7 @@ import { RequirePermission } from '../../shared/decorators/require-permission.de
 export class RequestExportDto {
   exportType: 'contacts' | 'deals' | 'leads' | 'all';
   format: 'csv' | 'excel' | 'pdf';
-  filters?: Record<string, any>;
+  filters?: Record<string, unknown>;
   options?: {
     includeArchived?: boolean;
     includeDeleted?: boolean;
@@ -48,7 +47,9 @@ export class ExportQueueController {
   @ApiResponse({ status: 403, description: 'Insufficient permissions' })
   @ApiResponse({ status: 429, description: 'Export limit exceeded' })
   @RequirePermission('export.*')
-  async requestExport(@Body() requestExportDto: RequestExportDto) {
+  async requestExport(
+    @Body() requestExportDto: RequestExportDto,
+  ): Promise<unknown> {
     const { exportType, format, filters, options } = requestExportDto;
 
     return this.exportQueueService.requestExport(
@@ -66,7 +67,7 @@ export class ExportQueueController {
   @ApiResponse({ status: 404, description: 'Job not found' })
   @ApiParam({ name: 'jobId', description: 'Export job ID' })
   @RequirePermission('export.read')
-  async getJobStatus(@Param('jobId') jobId: string) {
+  async getJobStatus(@Param('jobId') jobId: string): Promise<unknown> {
     return this.exportQueueService.getJobStatus(jobId);
   }
 
@@ -81,7 +82,7 @@ export class ExportQueueController {
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 20,
     @Query('status') status?: string,
-  ) {
+  ): Promise<unknown> {
     return this.exportQueueService.listUserJobs(page, limit, status);
   }
 
@@ -94,7 +95,7 @@ export class ExportQueueController {
   @ApiResponse({ status: 409, description: 'Job cannot be cancelled' })
   @ApiParam({ name: 'jobId', description: 'Export job ID' })
   @RequirePermission('export.manage')
-  async cancelJob(@Param('jobId') jobId: string) {
+  async cancelJob(@Param('jobId') jobId: string): Promise<unknown> {
     return this.exportQueueService.cancelJob(jobId);
   }
 
@@ -106,7 +107,7 @@ export class ExportQueueController {
   @ApiResponse({ status: 409, description: 'Export not ready' })
   @ApiParam({ name: 'jobId', description: 'Export job ID' })
   @RequirePermission('export.read')
-  async downloadExport(@Param('jobId') jobId: string) {
+  async downloadExport(@Param('jobId') jobId: string): Promise<unknown> {
     return this.exportQueueService.downloadExport(jobId);
   }
 
@@ -117,7 +118,9 @@ export class ExportQueueController {
   @ApiResponse({ status: 403, description: 'Admin permission required' })
   @ApiQuery({ name: 'daysToKeep', required: false, type: Number })
   @RequirePermission('system.admin')
-  async cleanupOldJobs(@Query('daysToKeep') daysToKeep: number = 30) {
+  async cleanupOldJobs(
+    @Query('daysToKeep') daysToKeep: number = 30,
+  ): Promise<unknown> {
     return this.exportQueueService.cleanupOldJobs(daysToKeep);
   }
 }

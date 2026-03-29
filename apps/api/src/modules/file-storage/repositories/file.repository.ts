@@ -1,6 +1,8 @@
+// apps/api/src/modules/file-storage/repositories/file.repository.ts
 import { Injectable } from '@nestjs/common';
 import { TenantAwareRepository } from '../../../shared/database/tenant-aware.repository';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 
 interface CreateFileData {
   filename: string;
@@ -8,7 +10,7 @@ interface CreateFileData {
   mimeType: string;
   size: number;
   path: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 interface UpdateFileData {
@@ -17,8 +19,25 @@ interface UpdateFileData {
   mimeType?: string;
   size?: number;
   path?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   deletedAt?: Date | null;
+}
+
+interface FindAllFilesOptions {
+  skip?: number;
+  take?: number;
+  where?: Prisma.FileWhereInput;
+  orderBy?: Prisma.FileOrderByWithRelationInput;
+}
+
+interface CountFilesWhereInput extends Prisma.FileWhereInput {
+  organizationId: string;
+  deletedAt: null;
+}
+
+interface PaginationOptions {
+  skip?: number;
+  take?: number;
 }
 
 @Injectable()
@@ -56,13 +75,8 @@ export class FileRepository extends TenantAwareRepository {
   /**
    * Find all files for current tenant
    */
-  async findAllFiles(options?: {
-    skip?: number;
-    take?: number;
-    where?: any;
-    orderBy?: any;
-  }) {
-    const where = {
+  async findAllFiles(options?: FindAllFilesOptions) {
+    const where: Prisma.FileWhereInput = {
       organizationId: this.tenantId,
       deletedAt: null,
       ...options?.where,
@@ -102,27 +116,23 @@ export class FileRepository extends TenantAwareRepository {
   /**
    * Count files for current tenant
    */
-  async countFiles(where?: any) {
-    const baseWhere = {
+  async countFiles(where?: Prisma.FileWhereInput) {
+    const baseWhere: CountFilesWhereInput = {
       organizationId: this.tenantId,
       deletedAt: null,
     };
 
+    const finalWhere = where ? { ...baseWhere, ...where } : baseWhere;
+
     return this.prisma.file.count({
-      where: where ? { ...baseWhere, ...where } : baseWhere,
+      where: finalWhere,
     });
   }
 
   /**
    * Find files by uploader/user ID
    */
-  async findFilesByUserId(
-    userId: string,
-    options?: {
-      skip?: number;
-      take?: number;
-    },
-  ) {
+  async findFilesByUserId(userId: string, options?: PaginationOptions) {
     return this.prisma.file.findMany({
       where: {
         organizationId: this.tenantId,
@@ -138,13 +148,7 @@ export class FileRepository extends TenantAwareRepository {
   /**
    * Find files by mime type
    */
-  async findFilesByMimeType(
-    mimeType: string,
-    options?: {
-      skip?: number;
-      take?: number;
-    },
-  ) {
+  async findFilesByMimeType(mimeType: string, options?: PaginationOptions) {
     return this.prisma.file.findMany({
       where: {
         organizationId: this.tenantId,

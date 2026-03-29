@@ -1,4 +1,4 @@
-// src/modules/import/dto/create-import-job.dto.ts
+// apps/api/src/modules/import/dto/create-import-job.dto.ts
 import {
   IsString,
   IsOptional,
@@ -9,6 +9,7 @@ import {
   Max,
   IsUrl,
   IsArray,
+  IsBoolean,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -60,7 +61,7 @@ export class CreateImportJobDto {
 
   @IsOptional()
   @IsObject()
-  transformations?: Record<string, any>;
+  transformations?: Record<string, unknown>;
 
   @IsOptional()
   @IsUrl()
@@ -68,13 +69,14 @@ export class CreateImportJobDto {
 
   @IsOptional()
   @IsObject()
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 
   @IsOptional()
   @IsObject()
   headers?: Record<string, string>;
 
   @IsOptional()
+  @IsBoolean()
   @Type(() => Boolean)
   dryRun?: boolean;
 
@@ -88,8 +90,8 @@ export class CreateImportJobDto {
   schedule?: string;
 
   constructor(data: Partial<CreateImportJobDto> = {}) {
-    this.type = data.type || ImportType.CONTACTS;
-    this.source = data.source || ImportSource.CSV;
+    this.type = data.type ?? ImportType.CONTACTS;
+    this.source = data.source ?? ImportSource.CSV;
     this.fileName = data.fileName;
     this.fileSize = data.fileSize;
     this.fileUrl = data.fileUrl;
@@ -98,13 +100,13 @@ export class CreateImportJobDto {
     this.callbackUrl = data.callbackUrl;
     this.metadata = data.metadata;
     this.headers = data.headers;
-    this.dryRun = data.dryRun || false;
+    this.dryRun = data.dryRun ?? false;
     this.notifyEmails = data.notifyEmails;
     this.schedule = data.schedule;
   }
 }
 
-// Simple response DTO (without Swagger decorators for now)
+// Simple response DTO
 export class CreateImportJobResponseDto {
   id: string;
   status: string;
@@ -113,10 +115,10 @@ export class CreateImportJobResponseDto {
   createdAt: Date;
 
   constructor(data: Partial<CreateImportJobResponseDto> = {}) {
-    this.id = data.id || '';
-    this.status = data.status || 'pending';
+    this.id = data.id ?? '';
+    this.status = data.status ?? 'pending';
     this.estimatedDuration = data.estimatedDuration;
     this.statusWebhook = data.statusWebhook;
-    this.createdAt = data.createdAt || new Date();
+    this.createdAt = data.createdAt ?? new Date();
   }
 }

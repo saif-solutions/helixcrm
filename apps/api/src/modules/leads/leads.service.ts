@@ -21,14 +21,10 @@ interface FindAllOptions {
   search?: string;
 }
 
-// Helper function for safe error message extraction
+// Helper functions for safe error handling
 function getErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-  if (typeof error === 'string') {
-    return error;
-  }
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'string') return error;
   try {
     return JSON.stringify(error);
   } catch {
@@ -36,7 +32,10 @@ function getErrorMessage(error: unknown): string {
   }
 }
 
-// Helper function to check for Prisma error codes
+function getErrorStack(error: unknown): string | undefined {
+  return error instanceof Error ? error.stack : undefined;
+}
+
 interface PrismaError {
   code?: string;
   message?: string;
@@ -60,20 +59,28 @@ export class LeadsService {
     private logger: AppLogger,
   ) {}
 
+  // Safe tenant ID extraction
+  private getTenantId(): string {
+    const id = this.tenantContext.getTenantId();
+    return typeof id === 'string' ? id : String(id ?? '');
+  }
+
   async create(createLeadDto: CreateLeadDto, userId: string) {
     const startTime = Date.now();
+    const tenantId = this.getTenantId();
+
     try {
       const { source, ...leadData } = createLeadDto;
 
       const lead = await this.leadRepository.create({
         ...leadData,
-        status: leadData.status || PrismaLeadStatus.new,
+        status: leadData.status ?? PrismaLeadStatus.new,
         metadata: source ? { source } : undefined,
       });
 
       this.logger.log('Lead created', {
         leadId: lead.id,
-        tenantId: this.tenantContext.getTenantId(),
+        tenantId,
         userId,
         status: lead.status,
         source,
@@ -94,9 +101,9 @@ export class LeadsService {
       const errorMessage = getErrorMessage(error);
       this.logger.error(
         `Lead creation failed: ${errorMessage}`,
-        error instanceof Error ? error.stack : undefined,
+        getErrorStack(error),
         {
-          tenantId: this.tenantContext.getTenantId(),
+          tenantId,
           userId,
           errorCode: isPrismaError(error) ? error.code : undefined,
         },
@@ -113,15 +120,15 @@ export class LeadsService {
         duration,
         module: 'leads',
         method: 'create',
-        tenantId: this.tenantContext.getTenantId(),
+        tenantId,
       });
     }
   }
 
   async findAll(params: FindAllOptions) {
-    const tenantId = this.tenantContext.getTenantId();
-
+    const tenantId = this.getTenantId();
     const startTime = Date.now();
+
     try {
       const { data: leads, total } = await this.leadRepository.findAll(params);
 
@@ -138,11 +145,8 @@ export class LeadsService {
       const errorMessage = getErrorMessage(error);
       this.logger.error(
         `Failed to fetch leads: ${errorMessage}`,
-        error instanceof Error ? error.stack : undefined,
-        {
-          tenantId,
-          params,
-        },
+        getErrorStack(error),
+        { tenantId, params },
       );
       throw error;
     } finally {
@@ -157,29 +161,30 @@ export class LeadsService {
   }
 
   async findOne(id: string) {
+    const tenantId = this.getTenantId();
     const startTime = Date.now();
+
     try {
       const lead = await this.leadRepository.findByIdOrThrow(id);
 
-      // Belt-and-suspenders tenant verification
-      const tenantId = this.tenantContext.getTenantId();
+      // Extra tenant verification (belt‑and‑suspenders)
       if (lead.organizationId !== tenantId) {
         throw new ForbiddenException('Cross-tenant access attempted');
       }
 
       return lead;
     } catch (error: unknown) {
-      if (error instanceof NotFoundException) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof ForbiddenException
+      ) {
         throw error;
       }
       const errorMessage = getErrorMessage(error);
       this.logger.error(
         `Failed to fetch lead ${id}: ${errorMessage}`,
-        error instanceof Error ? error.stack : undefined,
-        {
-          leadId: id,
-          tenantId: this.tenantContext.getTenantId(),
-        },
+        getErrorStack(error),
+        { leadId: id, tenantId },
       );
       throw error;
     } finally {
@@ -188,16 +193,17 @@ export class LeadsService {
         duration,
         module: 'leads',
         method: 'findOne',
-        tenantId: this.tenantContext.getTenantId(),
+        tenantId,
       });
     }
   }
 
   async update(id: string, updateLeadDto: UpdateLeadDto, userId: string) {
+    const tenantId = this.getTenantId();
     const startTime = Date.now();
+
     try {
-      // First verify lead belongs to tenant
-      await this.findOne(id);
+      await this.findOne(id); // Verify ownership
 
       const lead = await this.leadRepository.update({
         id,
@@ -206,7 +212,7 @@ export class LeadsService {
 
       this.logger.log('Lead updated', {
         leadId: lead.id,
-        tenantId: this.tenantContext.getTenantId(),
+        tenantId,
         userId,
         status: lead.status,
         event: 'lead_updated',
@@ -222,12 +228,8 @@ export class LeadsService {
       const errorMessage = getErrorMessage(error);
       this.logger.error(
         `Failed to update lead ${id}: ${errorMessage}`,
-        error instanceof Error ? error.stack : undefined,
-        {
-          leadId: id,
-          tenantId: this.tenantContext.getTenantId(),
-          userId,
-        },
+        getErrorStack(error),
+        { leadId: id, tenantId, userId },
       );
       throw error;
     } finally {
@@ -236,22 +238,23 @@ export class LeadsService {
         duration,
         module: 'leads',
         method: 'update',
-        tenantId: this.tenantContext.getTenantId(),
+        tenantId,
       });
     }
   }
 
   async remove(id: string, userId: string) {
+    const tenantId = this.getTenantId();
     const startTime = Date.now();
+
     try {
-      // First verify lead belongs to tenant
-      await this.findOne(id);
+      await this.findOne(id); // Verify ownership
 
       const lead = await this.leadRepository.softDelete(id, userId);
 
       this.logger.log('Lead deleted', {
         leadId: lead.id,
-        tenantId: this.tenantContext.getTenantId(),
+        tenantId,
         userId,
         event: 'lead_deleted',
       });
@@ -261,12 +264,8 @@ export class LeadsService {
       const errorMessage = getErrorMessage(error);
       this.logger.error(
         `Failed to delete lead ${id}: ${errorMessage}`,
-        error instanceof Error ? error.stack : undefined,
-        {
-          leadId: id,
-          tenantId: this.tenantContext.getTenantId(),
-          userId,
-        },
+        getErrorStack(error),
+        { leadId: id, tenantId, userId },
       );
       throw error;
     } finally {
@@ -275,24 +274,23 @@ export class LeadsService {
         duration,
         module: 'leads',
         method: 'remove',
-        tenantId: this.tenantContext.getTenantId(),
+        tenantId,
       });
     }
   }
 
   async getStats() {
+    const tenantId = this.getTenantId();
     const startTime = Date.now();
+
     try {
-      const stats = await this.leadRepository.countByStatus();
-      return stats;
+      return await this.leadRepository.countByStatus();
     } catch (error: unknown) {
       const errorMessage = getErrorMessage(error);
       this.logger.error(
         `Failed to fetch lead stats: ${errorMessage}`,
-        error instanceof Error ? error.stack : undefined,
-        {
-          tenantId: this.tenantContext.getTenantId(),
-        },
+        getErrorStack(error),
+        { tenantId },
       );
       throw error;
     } finally {
@@ -301,7 +299,7 @@ export class LeadsService {
         duration,
         module: 'leads',
         method: 'getStats',
-        tenantId: this.tenantContext.getTenantId(),
+        tenantId,
       });
     }
   }

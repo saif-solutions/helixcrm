@@ -1,3 +1,4 @@
+// apps/api/src/modules/file-storage/file-storage.controller.ts
 import {
   Controller,
   Get,
@@ -10,8 +11,6 @@ import {
   HttpStatus,
   ParseUUIDPipe,
   ValidationPipe,
-  UseInterceptors,
-  UploadedFile,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -23,7 +22,6 @@ import {
   ApiBody,
   ApiConsumes,
 } from '@nestjs/swagger';
-import { FileInterceptor } from '@nestjs/platform-express';
 import {
   FileStorageService,
   UploadFileDto,
@@ -57,9 +55,11 @@ class UploadFileRequestDto implements UploadFileDto {
 
   @IsOptional()
   @IsObject()
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
+// Keep for potential future use (e.g., PATCH endpoint), but currently not used.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 class UpdateFileRequestDto implements UpdateFileDto {
   @IsOptional()
   @IsString()
@@ -67,7 +67,7 @@ class UpdateFileRequestDto implements UpdateFileDto {
 
   @IsOptional()
   @IsObject()
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 @ApiTags('File Storage')
@@ -112,7 +112,6 @@ export class FileStorageController {
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 20,
   ) {
-    // Validate and clamp limits
     const validatedPage = Math.max(1, page);
     const validatedLimit = Math.min(Math.max(1, limit), 100);
     const skip = (validatedPage - 1) * validatedLimit;

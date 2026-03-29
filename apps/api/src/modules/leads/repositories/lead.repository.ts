@@ -1,21 +1,10 @@
 // apps/api/src/modules/leads/repositories/lead.repository.ts
-
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
 import { TenantAwareRepository } from '../../../shared/database/tenant-aware.repository';
 import { Lead, Prisma, LeadStatus } from '@prisma/client';
 
-// Define types for better type safety
-interface LeadWhereInput extends Prisma.LeadWhereInput {
-  organizationId?: string;
-  deletedAt?: Date | null;
-  OR?: Array<{
-    name?: { contains: string; mode: 'insensitive' };
-    email?: { contains: string; mode: 'insensitive' };
-    phone?: { contains: string; mode: 'insensitive' };
-  }>;
-}
-
+// Parameters for findAll method
 interface FindAllParams {
   page?: number;
   limit?: number;
@@ -25,12 +14,8 @@ interface FindAllParams {
 
 // Helper function for safe error message extraction
 function getErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-  if (typeof error === 'string') {
-    return error;
-  }
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'string') return error;
   try {
     return JSON.stringify(error);
   } catch {
@@ -46,17 +31,20 @@ export class LeadRepository extends TenantAwareRepository {
     super(prisma);
   }
 
+  /**
+   * Find a lead by ID
+   * @param id - Lead ID
+   * @param includeDeleted - Whether to include soft-deleted leads
+   */
   async findById(id: string, includeDeleted = false): Promise<Lead | null> {
     try {
-      const where: LeadWhereInput = this.withTenantFilter({ id });
+      const where: Prisma.LeadWhereInput = this.withTenantFilter({ id });
 
       if (!includeDeleted) {
         where.deletedAt = null;
       }
 
-      const lead = await this.prisma.lead.findFirst({
-        where,
-      });
+      const lead = await this.prisma.lead.findFirst({ where });
 
       if (!lead) {
         this.logger.warn(`Lead not found: ${id} in tenant: ${this.tenantId}`);
@@ -73,6 +61,9 @@ export class LeadRepository extends TenantAwareRepository {
     }
   }
 
+  /**
+   * Find a lead by ID or throw NotFoundException
+   */
   async findByIdOrThrow(id: string, includeDeleted = false): Promise<Lead> {
     const lead = await this.findById(id, includeDeleted);
     if (!lead) {
@@ -83,21 +74,20 @@ export class LeadRepository extends TenantAwareRepository {
     return lead;
   }
 
+  /**
+   * Create a new lead
+   */
   async create(
     data: Omit<Prisma.LeadCreateInput, 'organization'>,
   ): Promise<Lead> {
     try {
       const tenantId = this.tenantId;
 
-      const tenantData: Prisma.LeadCreateInput = {
-        ...data,
-        organization: {
-          connect: { id: tenantId },
-        },
-      };
-
       const lead = await this.prisma.lead.create({
-        data: tenantData,
+        data: {
+          ...data,
+          organization: { connect: { id: tenantId } },
+        },
       });
 
       this.logger.log(`Lead created: ${lead.id} in tenant: ${tenantId}`);
@@ -112,6 +102,9 @@ export class LeadRepository extends TenantAwareRepository {
     }
   }
 
+  /**
+   * Update an existing lead
+   */
   async update(params: {
     id: string;
     data: Prisma.LeadUpdateInput;
@@ -136,6 +129,9 @@ export class LeadRepository extends TenantAwareRepository {
     }
   }
 
+  /**
+   * Soft delete a lead (sets deletedAt)
+   */
   async softDelete(id: string, deletedBy?: string): Promise<Lead> {
     try {
       await this.findByIdOrThrow(id);
@@ -160,6 +156,9 @@ export class LeadRepository extends TenantAwareRepository {
     }
   }
 
+  /**
+   * Permanently delete a lead (hard delete)
+   */
   async hardDelete(id: string): Promise<Lead> {
     try {
       await this.findByIdOrThrow(id, true);
@@ -180,6 +179,9 @@ export class LeadRepository extends TenantAwareRepository {
     }
   }
 
+  /**
+   * Find all leads with pagination, filtering, and search
+   */
   async findAll(
     params: FindAllParams,
   ): Promise<{ data: Lead[]; total: number }> {
@@ -187,7 +189,9 @@ export class LeadRepository extends TenantAwareRepository {
       const { page = 1, limit = 20, status, search } = params;
       const skip = (page - 1) * limit;
 
-      const where: LeadWhereInput = this.withTenantFilter({ deletedAt: null });
+      const where: Prisma.LeadWhereInput = this.withTenantFilter({
+        deletedAt: null,
+      });
 
       if (status) {
         where.status = status;
@@ -222,23 +226,28 @@ export class LeadRepository extends TenantAwareRepository {
     }
   }
 
+  /**
+   * Count leads grouped by status (ensures all statuses appear with at least 0)
+   */
   async countByStatus(): Promise<Record<LeadStatus, number>> {
     try {
+      // Initialize all statuses to 0
+      const initialCounts: Record<LeadStatus, number> = {
+        [LeadStatus.new]: 0,
+        [LeadStatus.contacted]: 0,
+        [LeadStatus.qualified]: 0,
+      };
+
       const stats = await this.prisma.lead.groupBy({
         by: ['status'],
         where: this.withTenantFilter({ deletedAt: null }),
-        _count: {
-          id: true,
-        },
+        _count: { id: true },
       });
 
-      return stats.reduce(
-        (acc, curr) => {
-          acc[curr.status] = curr._count.id;
-          return acc;
-        },
-        {} as Record<LeadStatus, number>,
-      );
+      return stats.reduce((acc, curr) => {
+        acc[curr.status] = curr._count.id;
+        return acc;
+      }, initialCounts);
     } catch (error: unknown) {
       const errorMessage = getErrorMessage(error);
       this.logger.error(
@@ -249,18 +258,18 @@ export class LeadRepository extends TenantAwareRepository {
     }
   }
 
+  /**
+   * Check if an email already exists for a lead in the current tenant
+   */
   async emailExists(email: string, excludeId?: string): Promise<boolean> {
     try {
-      const where: LeadWhereInput = this.withTenantFilter({ email });
+      const where: Prisma.LeadWhereInput = this.withTenantFilter({ email });
 
       if (excludeId) {
         where.id = { not: excludeId };
       }
 
-      const count = await this.prisma.lead.count({
-        where,
-      });
-
+      const count = await this.prisma.lead.count({ where });
       return count > 0;
     } catch (error: unknown) {
       const errorMessage = getErrorMessage(error);

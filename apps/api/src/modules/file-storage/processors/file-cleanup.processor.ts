@@ -1,7 +1,28 @@
+// apps/api/src/modules/file-storage/processors/file-cleanup.processor.ts
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
+
+// Helper functions
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'string') return error;
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return 'Unknown error occurred';
+  }
+}
+
+function getErrorStack(error: unknown): string {
+  return error instanceof Error && error.stack ? error.stack : '';
+}
+
+interface FileCleanupResult {
+  processedCount: number;
+  message: string;
+}
 
 @Processor('file-cleanup-queue')
 export class FileCleanupProcessor extends WorkerHost {
@@ -11,7 +32,7 @@ export class FileCleanupProcessor extends WorkerHost {
     super();
   }
 
-  async process(job: Job): Promise<any> {
+  async process(job: Job): Promise<FileCleanupResult> {
     this.logger.log(`Processing file cleanup job: ${job.id}`);
 
     try {
@@ -46,11 +67,10 @@ export class FileCleanupProcessor extends WorkerHost {
         processedCount: oldDeletedFiles.length,
         message: 'File cleanup completed',
       };
-    } catch (error: any) {
-      this.logger.error(
-        `File cleanup job failed: ${error.message}`,
-        error.stack,
-      );
+    } catch (error: unknown) {
+      const errMsg = getErrorMessage(error);
+      const errStack = getErrorStack(error);
+      this.logger.error(`File cleanup job failed: ${errMsg}`, errStack);
       throw error;
     }
   }

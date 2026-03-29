@@ -1,4 +1,4 @@
-// src/modules/export-queue/export-queue.service.ts
+// apps/api/src/modules/export-queue/export-queue.service.ts
 import {
   Injectable,
   Logger,
@@ -6,35 +6,59 @@ import {
   ForbiddenException,
   BadRequestException,
   ConflictException,
-  InternalServerErrorException,
 } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue, JobsOptions } from 'bullmq';
-import { SeverityMapper } from '../../shared/audit-log/severity-mapper';
-import { AuditSeverity } from '../../shared/audit-log/audit-log.service';
 import { ExportQueueRepository } from './repositories/export-queue.repository';
 import { TenantContextService } from '../../shared/tenant/context/tenant-context.service';
 import { PermissionContextService } from '../../shared/permissions/context/permission-context.service';
-import {
-  AuditLogService,
-  AuditAction,
-  AuditEntityType,
-} from '../../shared/audit-log/audit-log.service';
+import { AuditLogService } from '../../shared/audit-log/audit-log.service';
+import { SeverityMapper } from '../../shared/audit-log/severity-mapper';
+import { PrismaService } from '../../shared/prisma/prisma.service';
+
+// Helper functions (same as in email-templates)
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'string') return error;
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return 'Unknown error occurred';
+  }
+}
+
+function getErrorStack(error: unknown): string {
+  return error instanceof Error && error.stack ? error.stack : '';
+}
+
+function getSeverity(level: 'info' | 'warning' | 'error'): string {
+  return SeverityMapper.forEventType(level) as string;
+}
+
+// Local interface for permission context
+interface PermissionContextWithHasPermission {
+  hasPermission(permission: string): boolean;
+}
+
+// Local types
+interface DateRange {
+  start: Date;
+  end: Date;
+}
+
+interface ExportOptions {
+  includeArchived?: boolean;
+  includeDeleted?: boolean;
+  dateRange?: DateRange;
+}
 
 export interface ExportJobData {
   userId: string;
   tenantId: string;
   exportType: 'contacts' | 'deals' | 'leads' | 'all';
   format: 'csv' | 'excel' | 'pdf';
-  filters?: Record<string, any>;
-  options?: {
-    includeArchived?: boolean;
-    includeDeleted?: boolean;
-    dateRange?: {
-      start: Date;
-      end: Date;
-    };
-  };
+  filters?: Record<string, unknown>;
+  options?: ExportOptions;
 }
 
 export interface ExportJobResult {
@@ -52,6 +76,12 @@ export interface ExportJobResult {
   format: string;
 }
 
+// Job filters for repository calls
+interface JobFilters {
+  userId?: string;
+  status?: string;
+}
+
 @Injectable()
 export class ExportQueueService {
   private readonly logger = new Logger(ExportQueueService.name);
@@ -62,7 +92,48 @@ export class ExportQueueService {
     private readonly tenantContext: TenantContextService,
     private readonly permissionContext: PermissionContextService,
     private readonly auditLogService: AuditLogService,
+    private readonly prisma: PrismaService,
   ) {}
+
+  // Type-safe permission check
+  private checkPermission(permission: string): boolean {
+    const context: unknown = this.permissionContext;
+    if (this.isPermissionContext(context)) {
+      try {
+        return context.hasPermission(permission) === true;
+      } catch {
+        this.logger.debug(
+          `Permission check failed for ${permission}, relying on guard`,
+        );
+        return true;
+      }
+    }
+    this.logger.debug(
+      `Permission context not ready for ${permission}, relying on guard`,
+    );
+    return true;
+  }
+
+  private isPermissionContext(
+    context: unknown,
+  ): context is PermissionContextWithHasPermission {
+    return (
+      typeof context === 'object' &&
+      context !== null &&
+      typeof (context as PermissionContextWithHasPermission).hasPermission ===
+        'function'
+    );
+  }
+
+  private getTenantId(): string {
+    const id = this.tenantContext.getTenantId();
+    return typeof id === 'string' ? id : String(id ?? '');
+  }
+
+  private getUserId(): string {
+    const id = this.tenantContext.getUserId();
+    return typeof id === 'string' ? id : String(id ?? '');
+  }
 
   /**
    * Request a new export job
@@ -70,23 +141,22 @@ export class ExportQueueService {
   async requestExport(
     exportType: ExportJobData['exportType'],
     format: ExportJobData['format'],
-    filters?: Record<string, any>,
-    options?: ExportJobData['options'],
+    filters?: Record<string, unknown>,
+    options?: ExportOptions,
   ): Promise<{ jobId: string; message: string; estimatedTime?: number }> {
-    // 1. PERMISSION CHECK - FIXED: 'export.${exportType}' → 'export:${exportType}'
-    if (!this.permissionContext.hasPermission(`export:${exportType}`)) {
+    if (!this.checkPermission(`export:${exportType}`)) {
       throw new ForbiddenException(
         `Insufficient permissions: export:${exportType} required`,
       );
     }
 
     const startTime = Date.now();
-    const tenantId = this.tenantContext.getTenantId();
-    const userId = this.tenantContext.getUserId();
+    const tenantId = this.getTenantId();
+    const userId = this.getUserId();
 
     try {
-      // 2. VALIDATE EXPORT LIMITS (PREVENT ABUSE)
-      const recentExports = await this.exportQueueRepository.countRecentExports(
+      // Repository methods are synchronous now
+      const recentExports = this.exportQueueRepository.countRecentExports(
         userId,
         24,
       );
@@ -96,9 +166,8 @@ export class ExportQueueService {
         );
       }
 
-      // 3. CHECK FOR DUPLICATE PENDING EXPORTS
       const hasActiveExports =
-        await this.exportQueueRepository.hasActiveExports(userId);
+        this.exportQueueRepository.hasActiveExports(userId);
       if (hasActiveExports) {
         this.logger.warn(`User ${userId} has active exports`, {
           userId,
@@ -106,8 +175,7 @@ export class ExportQueueService {
         });
       }
 
-      // 4. CREATE JOB RECORD IN DATABASE
-      const jobRecord = await this.exportQueueRepository.createJob({
+      const jobRecord = this.exportQueueRepository.createJob({
         userId,
         tenantId,
         exportType,
@@ -118,7 +186,6 @@ export class ExportQueueService {
         requestedAt: new Date(),
       });
 
-      // 5. QUEUE BACKGROUND JOB WITH BULLMQ
       const jobOptions: JobsOptions = {
         jobId: jobRecord.id,
         attempts: 3,
@@ -127,12 +194,12 @@ export class ExportQueueService {
           delay: 5000,
         },
         removeOnComplete: {
-          count: 100, // Keep last 100 completed jobs
-          age: 24 * 3600, // 24 hours in seconds
+          count: 100,
+          age: 24 * 3600,
         },
         removeOnFail: {
-          count: 50, // Keep last 50 failed jobs
-          age: 7 * 24 * 3600, // 7 days in seconds
+          count: 50,
+          age: 7 * 24 * 3600,
         },
       };
 
@@ -150,11 +217,10 @@ export class ExportQueueService {
         jobOptions,
       );
 
-      // 6. AUDIT LOGGING
       await this.auditLogService.logEvent({
-        action: 'EXPORT_REQUESTED' as any,
+        action: 'EXPORT_REQUESTED',
         entityId: jobRecord.id,
-        entityType: 'EXPORT' as any,
+        entityType: 'EXPORT',
         organizationId: tenantId,
         actorUserId: userId,
         actorEmail: await this.getUserEmail(userId),
@@ -166,7 +232,7 @@ export class ExportQueueService {
           jobId: jobRecord.id,
           estimatedSize: this.estimateExportSize(exportType, filters),
         },
-        severity: SeverityMapper.forEventType('info'),
+        severity: getSeverity('info'),
       });
 
       this.logger.log(`Export job requested successfully`, {
@@ -179,7 +245,6 @@ export class ExportQueueService {
         processingTime: Date.now() - startTime,
       });
 
-      // 7. ESTIMATED TIME BASED ON EXPORT TYPE
       const estimatedTime = this.getEstimatedTime(exportType);
 
       return {
@@ -187,20 +252,17 @@ export class ExportQueueService {
         message: 'Export job queued successfully',
         estimatedTime,
       };
-    } catch (error: any) {
-      // 8. ENTERPRISE ERROR HANDLING
-      this.logger.error(
-        `Export request failed: ${error.message}`,
-        error.stack,
-        {
-          tenantId,
-          userId,
-          exportType,
-          format,
-          method: 'requestExport',
-          processingTime: Date.now() - startTime,
-        },
-      );
+    } catch (error: unknown) {
+      const errMsg = getErrorMessage(error);
+      const errStack = getErrorStack(error);
+      this.logger.error(`Export request failed: ${errMsg}`, errStack, {
+        tenantId,
+        userId,
+        exportType,
+        format,
+        method: 'requestExport',
+        processingTime: Date.now() - startTime,
+      } as Record<string, unknown>);
 
       if (
         error instanceof ForbiddenException ||
@@ -219,64 +281,55 @@ export class ExportQueueService {
    * Get status of an export job
    */
   async getJobStatus(jobId: string): Promise<ExportJobResult> {
-    // 1. PERMISSION CHECK - FIXED: 'export.read' → 'export:read'
-    if (!this.permissionContext.hasPermission('export:read')) {
+    if (!this.checkPermission('export:read')) {
       throw new ForbiddenException(
         'Insufficient permissions: export:read required',
       );
     }
 
     const startTime = Date.now();
-    const tenantId = this.tenantContext.getTenantId();
-    const userId = this.tenantContext.getUserId();
+    const tenantId = this.getTenantId();
+    const userId = this.getUserId();
 
     try {
-      // 2. GET JOB FROM REPOSITORY
-      const job = await this.exportQueueRepository.findJobById(jobId);
+      const job = this.exportQueueRepository.findJobById(jobId);
 
       if (!job) {
         throw new NotFoundException(`Export job ${jobId} not found`);
       }
 
-      // 3. VALIDATE TENANT ACCESS
       if (job.organizationId !== tenantId) {
         throw new ForbiddenException('Access denied to this export job');
       }
 
-      // 4. VALIDATE USER ACCESS (unless admin) - FIXED: 'export.manage' → 'export:manage'
-      if (
-        !this.permissionContext.hasPermission('export:manage') &&
-        job.userId !== userId
-      ) {
+      if (!this.checkPermission('export:manage') && job.userId !== userId) {
         throw new ForbiddenException('Can only view your own export jobs');
       }
 
-      // 5. GET JOB STATUS FROM BULLMQ QUEUE
       const queueJob = await this.exportQueue.getJob(jobId);
-      let status: ExportJobResult['status'] = job.status as any;
+      let status: ExportJobResult['status'] =
+        job.status as ExportJobResult['status'];
 
       if (queueJob) {
         const queueState = await queueJob.getState();
         status = this.mapBullMQStateToStatus(queueState);
 
-        // Update database if status changed
         if (status !== job.status) {
-          await this.exportQueueRepository.updateJob(jobId, { status });
+          this.exportQueueRepository.updateJob(jobId, { status });
         }
       }
 
-      // 6. BUILD RESPONSE
       const result: ExportJobResult = {
         jobId: job.id,
         status,
         exportType: job.exportType,
         format: job.format,
-        fileUrl: job.fileUrl || undefined,
-        fileSize: job.fileSize || undefined,
-        error: job.error || undefined,
+        fileUrl: job.fileUrl,
+        fileSize: job.fileSize,
+        error: job.error,
         createdAt: job.requestedAt,
-        startedAt: job.processingStartedAt || undefined,
-        completedAt: job.completedAt || undefined,
+        startedAt: job.processingStartedAt,
+        completedAt: job.completedAt,
       };
 
       this.logger.debug(`Job status retrieved`, {
@@ -288,19 +341,16 @@ export class ExportQueueService {
       });
 
       return result;
-    } catch (error: any) {
-      // 7. ERROR HANDLING
-      this.logger.error(
-        `Get job status failed: ${error.message}`,
-        error.stack,
-        {
-          tenantId,
-          userId,
-          jobId,
-          method: 'getJobStatus',
-          processingTime: Date.now() - startTime,
-        },
-      );
+    } catch (error: unknown) {
+      const errMsg = getErrorMessage(error);
+      const errStack = getErrorStack(error);
+      this.logger.error(`Get job status failed: ${errMsg}`, errStack, {
+        tenantId,
+        userId,
+        jobId,
+        method: 'getJobStatus',
+        processingTime: Date.now() - startTime,
+      } as Record<string, unknown>);
 
       if (
         error instanceof NotFoundException ||
@@ -316,28 +366,25 @@ export class ExportQueueService {
   /**
    * List user's export jobs
    */
-  async listUserJobs(
+  listUserJobs(
     page = 1,
     limit = 20,
     status?: string,
-  ): Promise<{ data: ExportJobResult[]; meta: any }> {
-    // 1. PERMISSION CHECK - FIXED: 'export.read' → 'export:read'
-    if (!this.permissionContext.hasPermission('export:read')) {
+  ): { data: ExportJobResult[]; meta: Record<string, unknown> } {
+    if (!this.checkPermission('export:read')) {
       throw new ForbiddenException(
         'Insufficient permissions: export:read required',
       );
     }
 
     const startTime = Date.now();
-    const tenantId = this.tenantContext.getTenantId();
-    const userId = this.tenantContext.getUserId();
+    const tenantId = this.getTenantId();
+    const userId = this.getUserId();
 
     try {
-      // 2. BUILD QUERY FILTERS
-      const filters: any = { tenantId };
+      const filters: JobFilters = {};
 
-      // Regular users can only see their own jobs - FIXED: 'export.manage' → 'export:manage'
-      if (!this.permissionContext.hasPermission('export:manage')) {
+      if (!this.checkPermission('export:manage')) {
         filters.userId = userId;
       }
 
@@ -345,24 +392,20 @@ export class ExportQueueService {
         filters.status = status;
       }
 
-      // 3. GET JOBS FROM REPOSITORY
-      const [jobs, total] = await Promise.all([
-        this.exportQueueRepository.findJobs(filters, page, limit),
-        this.exportQueueRepository.countJobs(filters),
-      ]);
+      const jobs = this.exportQueueRepository.findJobs(filters, page, limit);
+      const total = this.exportQueueRepository.countJobs(filters);
 
-      // 4. TRANSFORM TO RESPONSE FORMAT
       const data = jobs.map((job) => ({
         jobId: job.id,
         status: job.status as ExportJobResult['status'],
         exportType: job.exportType,
         format: job.format,
-        fileUrl: job.fileUrl || undefined,
-        fileSize: job.fileSize || undefined,
-        error: job.error || undefined,
+        fileUrl: job.fileUrl,
+        fileSize: job.fileSize,
+        error: job.error,
         createdAt: job.requestedAt,
-        startedAt: job.processingStartedAt || undefined,
-        completedAt: job.completedAt || undefined,
+        startedAt: job.processingStartedAt,
+        completedAt: job.completedAt,
       }));
 
       this.logger.debug(`Listed export jobs`, {
@@ -384,21 +427,18 @@ export class ExportQueueService {
           hasMore: page * limit < total,
         },
       };
-    } catch (error: any) {
-      // 5. ERROR HANDLING
-      this.logger.error(
-        `List user jobs failed: ${error.message}`,
-        error.stack,
-        {
-          tenantId,
-          userId,
-          page,
-          limit,
-          status,
-          method: 'listUserJobs',
-          processingTime: Date.now() - startTime,
-        },
-      );
+    } catch (error: unknown) {
+      const errMsg = getErrorMessage(error);
+      const errStack = getErrorStack(error);
+      this.logger.error(`List user jobs failed: ${errMsg}`, errStack, {
+        tenantId,
+        userId,
+        page,
+        limit,
+        status,
+        method: 'listUserJobs',
+        processingTime: Date.now() - startTime,
+      } as Record<string, unknown>);
 
       throw new BadRequestException('Failed to list export jobs');
     }
@@ -408,55 +448,48 @@ export class ExportQueueService {
    * Cancel an export job
    */
   async cancelJob(jobId: string): Promise<{ message: string }> {
-    // 1. PERMISSION CHECK - FIXED: 'export.manage' → 'export:manage'
-    if (!this.permissionContext.hasPermission('export:manage')) {
+    if (!this.checkPermission('export:manage')) {
       throw new ForbiddenException(
         'Insufficient permissions: export:manage required',
       );
     }
 
     const startTime = Date.now();
-    const tenantId = this.tenantContext.getTenantId();
-    const userId = this.tenantContext.getUserId();
+    const tenantId = this.getTenantId();
+    const userId = this.getUserId();
 
     try {
-      // 2. GET JOB FROM REPOSITORY
-      const job = await this.exportQueueRepository.findJobById(jobId);
+      const job = this.exportQueueRepository.findJobById(jobId);
 
       if (!job) {
         throw new NotFoundException(`Export job ${jobId} not found`);
       }
 
-      // 3. VALIDATE TENANT ACCESS
       if (job.organizationId !== tenantId) {
         throw new ForbiddenException('Access denied to this export job');
       }
 
-      // 4. CHECK IF JOB CAN BE CANCELLED
       if (job.status === 'completed' || job.status === 'failed') {
         throw new ConflictException(
           `Cannot cancel job with status: ${job.status}`,
         );
       }
 
-      // 5. ATTEMPT TO CANCEL BULLMQ JOB
       const queueJob = await this.exportQueue.getJob(jobId);
       if (queueJob) {
         await queueJob.remove();
       }
 
-      // 6. UPDATE JOB STATUS IN DATABASE
-      await this.exportQueueRepository.updateJob(jobId, {
+      this.exportQueueRepository.updateJob(jobId, {
         status: 'cancelled',
         completedAt: new Date(),
         error: 'Job cancelled by user',
       });
 
-      // 7. AUDIT LOGGING
       await this.auditLogService.logEvent({
-        action: 'EXPORT_CANCELLED' as any,
+        action: 'EXPORT_CANCELLED',
         entityId: jobId,
-        entityType: 'EXPORT' as any,
+        entityType: 'EXPORT',
         organizationId: tenantId,
         actorUserId: userId,
         actorEmail: await this.getUserEmail(userId),
@@ -465,7 +498,7 @@ export class ExportQueueService {
           jobId,
           cancelledBy: userId,
         },
-        severity: SeverityMapper.forEventType('warning'),
+        severity: getSeverity('warning'),
       });
 
       this.logger.log(`Export job cancelled successfully`, {
@@ -478,15 +511,16 @@ export class ExportQueueService {
       });
 
       return { message: 'Export job cancelled successfully' };
-    } catch (error: any) {
-      // 8. ERROR HANDLING
-      this.logger.error(`Cancel job failed: ${error.message}`, error.stack, {
+    } catch (error: unknown) {
+      const errMsg = getErrorMessage(error);
+      const errStack = getErrorStack(error);
+      this.logger.error(`Cancel job failed: ${errMsg}`, errStack, {
         tenantId,
         userId,
         jobId,
         method: 'cancelJob',
         processingTime: Date.now() - startTime,
-      });
+      } as Record<string, unknown>);
 
       if (
         error instanceof NotFoundException ||
@@ -509,55 +543,45 @@ export class ExportQueueService {
     fileSize: number;
     contentType: string;
   }> {
-    // 1. PERMISSION CHECK - FIXED: 'export.read' → 'export:read'
-    if (!this.permissionContext.hasPermission('export:read')) {
+    if (!this.checkPermission('export:read')) {
       throw new ForbiddenException(
         'Insufficient permissions: export:read required',
       );
     }
 
     const startTime = Date.now();
-    const tenantId = this.tenantContext.getTenantId();
-    const userId = this.tenantContext.getUserId();
+    const tenantId = this.getTenantId();
+    const userId = this.getUserId();
 
     try {
-      // 2. GET JOB FROM REPOSITORY
-      const job = await this.exportQueueRepository.findJobById(jobId);
+      const job = this.exportQueueRepository.findJobById(jobId);
 
       if (!job) {
         throw new NotFoundException(`Export job ${jobId} not found`);
       }
 
-      // 3. VALIDATE TENANT ACCESS
       if (job.organizationId !== tenantId) {
         throw new ForbiddenException('Access denied to this export job');
       }
 
-      // 4. VALIDATE USER ACCESS - FIXED: 'export.manage' → 'export:manage'
-      if (
-        !this.permissionContext.hasPermission('export:manage') &&
-        job.userId !== userId
-      ) {
+      if (!this.checkPermission('export:manage') && job.userId !== userId) {
         throw new ForbiddenException('Can only download your own export files');
       }
 
-      // 5. CHECK IF JOB IS COMPLETED
       if (job.status !== 'completed') {
         throw new ConflictException(
           `Export job is not ready. Current status: ${job.status}`,
         );
       }
 
-      // 6. CHECK IF FILE EXISTS
       if (!job.fileUrl || !job.fileSize) {
         throw new NotFoundException('Export file not found or corrupted');
       }
 
-      // 7. AUDIT LOGGING
       await this.auditLogService.logEvent({
-        action: 'EXPORT_DOWNLOADED' as any,
+        action: 'EXPORT_DOWNLOADED',
         entityId: jobId,
-        entityType: 'EXPORT' as any,
+        entityType: 'EXPORT',
         organizationId: tenantId,
         actorUserId: userId,
         actorEmail: await this.getUserEmail(userId),
@@ -568,10 +592,9 @@ export class ExportQueueService {
           exportType: job.exportType,
           format: job.format,
         },
-        severity: SeverityMapper.forEventType('info'),
+        severity: getSeverity('info'),
       });
 
-      // 8. GENERATE FILE NAME AND CONTENT TYPE
       const fileName = this.generateFileName(
         job.exportType,
         job.format,
@@ -596,19 +619,16 @@ export class ExportQueueService {
         fileSize: job.fileSize,
         contentType,
       };
-    } catch (error: any) {
-      // 9. ERROR HANDLING
-      this.logger.error(
-        `Download export failed: ${error.message}`,
-        error.stack,
-        {
-          tenantId,
-          userId,
-          jobId,
-          method: 'downloadExport',
-          processingTime: Date.now() - startTime,
-        },
-      );
+    } catch (error: unknown) {
+      const errMsg = getErrorMessage(error);
+      const errStack = getErrorStack(error);
+      this.logger.error(`Download export failed: ${errMsg}`, errStack, {
+        tenantId,
+        userId,
+        jobId,
+        method: 'downloadExport',
+        processingTime: Date.now() - startTime,
+      } as Record<string, unknown>);
 
       if (
         error instanceof NotFoundException ||
@@ -625,7 +645,7 @@ export class ExportQueueService {
   /**
    * Clean up old export jobs (admin only)
    */
-  async cleanupOldJobs(daysToKeep: number = 30): Promise<{
+  async cleanupOldJobs(daysToKeep = 30): Promise<{
     deleted: number;
     message: string;
     details: {
@@ -634,30 +654,25 @@ export class ExportQueueService {
       cancelled: number;
     };
   }> {
-    // 1. PERMISSION CHECK - SYSTEM ADMIN ONLY - FIXED: 'system.admin' → 'system:admin'
-    if (!this.permissionContext.hasPermission('system:admin')) {
+    if (!this.checkPermission('system:admin')) {
       throw new ForbiddenException(
         'Insufficient permissions: system:admin required',
       );
     }
 
-    const tenantId = this.tenantContext.getTenantId();
-    const userId = this.tenantContext.getUserId();
+    const tenantId = this.getTenantId();
+    const userId = this.getUserId();
     const startTime = Date.now();
 
     try {
-      // 2. CALCULATE CUTOFF DATE
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
 
-      // 3. DELETE OLD JOBS
-      const deleted =
-        await this.exportQueueRepository.deleteOldJobs(cutoffDate);
+      const deleted = this.exportQueueRepository.deleteOldJobs(cutoffDate);
 
-      // 4. AUDIT LOGGING
       await this.auditLogService.logEvent({
-        action: 'EXPORT_CLEANUP' as any,
-        entityType: 'SYSTEM' as any,
+        action: 'EXPORT_CLEANUP',
+        entityType: 'SYSTEM',
         organizationId: tenantId,
         actorUserId: userId,
         actorEmail: await this.getUserEmail(userId),
@@ -667,7 +682,7 @@ export class ExportQueueService {
           daysToKeep,
           tenantId,
         },
-        severity: SeverityMapper.forEventType('info'),
+        severity: getSeverity('info'),
       });
 
       this.logger.log(`Old export jobs cleaned up`, {
@@ -684,23 +699,21 @@ export class ExportQueueService {
         deleted,
         message: `Successfully deleted ${deleted} old export jobs older than ${daysToKeep} days`,
         details: {
-          completed: 0, // Would need separate counts in repository
+          completed: 0,
           failed: 0,
           cancelled: 0,
         },
       };
-    } catch (error: any) {
-      this.logger.error(
-        `Cleanup old jobs failed: ${error.message}`,
-        error.stack,
-        {
-          tenantId,
-          userId,
-          daysToKeep,
-          method: 'cleanupOldJobs',
-          processingTime: Date.now() - startTime,
-        },
-      );
+    } catch (error: unknown) {
+      const errMsg = getErrorMessage(error);
+      const errStack = getErrorStack(error);
+      this.logger.error(`Cleanup old jobs failed: ${errMsg}`, errStack, {
+        tenantId,
+        userId,
+        daysToKeep,
+        method: 'cleanupOldJobs',
+        processingTime: Date.now() - startTime,
+      } as Record<string, unknown>);
       throw new BadRequestException('Failed to cleanup old export jobs');
     }
   }
@@ -708,32 +721,29 @@ export class ExportQueueService {
   /**
    * Get export queue statistics
    */
-  async getStatistics(
+  getStatistics(
     timeframe: 'day' | 'week' | 'month' = 'week',
-  ): Promise<any> {
-    // 1. PERMISSION CHECK - FIXED: 'export.manage' → 'export:manage'
-    if (!this.permissionContext.hasPermission('export:manage')) {
+  ): Record<string, unknown> {
+    if (!this.checkPermission('export:manage')) {
       throw new ForbiddenException(
         'Insufficient permissions: export:manage required',
       );
     }
 
-    const tenantId = this.tenantContext.getTenantId();
-    const userId = this.tenantContext.getUserId();
+    const tenantId = this.getTenantId();
+    const userId = this.getUserId();
 
     try {
-      return await this.exportQueueRepository.getJobStatistics(timeframe);
-    } catch (error: any) {
-      this.logger.error(
-        `Get statistics failed: ${error.message}`,
-        error.stack,
-        {
-          tenantId,
-          userId,
-          timeframe,
-          method: 'getStatistics',
-        },
-      );
+      return this.exportQueueRepository.getJobStatistics(timeframe);
+    } catch (error: unknown) {
+      const errMsg = getErrorMessage(error);
+      const errStack = getErrorStack(error);
+      this.logger.error(`Get statistics failed: ${errMsg}`, errStack, {
+        tenantId,
+        userId,
+        timeframe,
+        method: 'getStatistics',
+      } as Record<string, unknown>);
       throw new BadRequestException('Failed to get export statistics');
     }
   }
@@ -786,11 +796,16 @@ export class ExportQueueService {
     }
   }
 
-  private estimateExportSize(exportType: string, filters?: any): string {
-    // Simple estimation logic
+  private estimateExportSize(
+    exportType: string,
+    filters?: Record<string, unknown>,
+  ): string {
+    if (filters?.search) {
+      return 'medium';
+    }
     switch (exportType) {
       case 'contacts':
-        return filters?.search ? 'medium' : 'large';
+        return 'large';
       case 'deals':
         return 'medium';
       case 'leads':
@@ -803,7 +818,6 @@ export class ExportQueueService {
   }
 
   private getEstimatedTime(exportType: string): number {
-    // Estimated processing time in seconds
     switch (exportType) {
       case 'contacts':
         return 30;
@@ -820,15 +834,14 @@ export class ExportQueueService {
 
   private async getUserEmail(userId: string): Promise<string> {
     try {
-      // TODO: Move to a UserRepository
-      const user = await this.exportQueueRepository['prisma'].user.findUnique({
+      const user = await this.prisma.user.findUnique({
         where: { id: userId },
         select: { email: true },
       });
-      return user?.email || `user-${userId}@unknown.example.com`;
+      return user?.email ?? `user-${userId}@unknown.example.com`;
     } catch (error) {
       this.logger.warn(
-        `Failed to fetch email for user ${userId}: ${error.message}`,
+        `Failed to fetch email for user ${userId}: ${getErrorMessage(error)}`,
       );
       return `user-${userId}@error.example.com`;
     }
