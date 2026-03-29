@@ -20,6 +20,28 @@ import axios, {
 import * as crypto from 'crypto';
 
 // ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'string') return error;
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return 'Unknown error occurred';
+  }
+}
+
+function getErrorStack(error: unknown): string | undefined {
+  return error instanceof Error ? error.stack : undefined;
+}
+
+function getSeverity(level: 'info' | 'warning' | 'error'): string {
+  return SeverityMapper.forEventType(level) as string;
+}
+
+// ============================================================================
 // ENUMS & CONSTANTS
 // ============================================================================
 
@@ -27,8 +49,8 @@ const DEFAULT_TIMEOUT_MS = 10000;
 const MAX_RESPONSE_LENGTH = 5000;
 const MAX_RETRY_ATTEMPTS = 3;
 const CONCURRENCY = 5;
-const BASE_RETRY_DELAY_MS = 5000; // 5 seconds
-const MAX_RETRY_DELAY_MS = 3600000; // 1 hour
+const BASE_RETRY_DELAY_MS = 5000;
+const MAX_RETRY_DELAY_MS = 3600000;
 
 // ============================================================================
 // INTERFACES & TYPES
@@ -93,18 +115,14 @@ export class WebhookProcessor extends WorkerHost {
   ) {
     super();
 
-    // Configure axios instance with defaults
     this.axiosInstance = axios.create({
       timeout: DEFAULT_TIMEOUT_MS,
       maxRedirects: 3,
-      maxContentLength: 10 * 1024 * 1024, // 10MB
+      maxContentLength: 10 * 1024 * 1024,
       validateStatus: (status: number) => status >= 200 && status < 300,
     });
   }
 
-  /**
-   * Main job processor for webhook deliveries
-   */
   async process(job: Job<WebhookDeliveryJobData>): Promise<WebhookResponse> {
     const {
       deliveryId,
@@ -139,7 +157,6 @@ export class WebhookProcessor extends WorkerHost {
     });
 
     try {
-      // Update delivery status to processing
       await this.updateDeliveryStatus(deliveryId, {
         status: 'processing' as WebhookDeliveryStatus,
         attempts: attemptNumber,
@@ -147,7 +164,6 @@ export class WebhookProcessor extends WorkerHost {
         lockedBy: `job-${job.id}`,
       });
 
-      // Prepare and send webhook request
       const response = await this.sendWebhookRequest(
         url,
         payload,
@@ -159,10 +175,8 @@ export class WebhookProcessor extends WorkerHost {
         attemptNumber,
       );
 
-      // Validate response
       this.validateWebhookResponse(response);
 
-      // Handle successful delivery
       await this.handleSuccessfulDelivery(
         deliveryId,
         webhookId,
@@ -186,7 +200,6 @@ export class WebhookProcessor extends WorkerHost {
         attemptNumber,
       };
     } catch (error) {
-      // Handle failed delivery
       return await this.handleFailedDelivery(
         error,
         deliveryId,
@@ -198,9 +211,6 @@ export class WebhookProcessor extends WorkerHost {
     }
   }
 
-  /**
-   * Send webhook HTTP request with proper configuration
-   */
   private async sendWebhookRequest(
     url: string,
     payload: unknown,
@@ -240,14 +250,10 @@ export class WebhookProcessor extends WorkerHost {
     return this.axiosInstance.request<unknown>(config);
   }
 
-  /**
-   * Validate webhook response
-   */
   private validateWebhookResponse(response: AxiosResponse): void {
     if (!response) {
       throw new Error('Empty response received from webhook endpoint');
     }
-
     if (response.status < 200 || response.status >= 300) {
       throw new Error(
         `Webhook returned non-success status: ${response.status} ${response.statusText || ''}`,
@@ -255,9 +261,6 @@ export class WebhookProcessor extends WorkerHost {
     }
   }
 
-  /**
-   * Handle successful webhook delivery
-   */
   private async handleSuccessfulDelivery(
     deliveryId: string,
     webhookId: string,
@@ -276,7 +279,6 @@ export class WebhookProcessor extends WorkerHost {
   ): Promise<void> {
     const processingTime = Date.now() - startTime;
 
-    // Update delivery record
     await this.updateDeliveryStatus(deliveryId, {
       status: 'success' as WebhookDeliveryStatus,
       statusCode: response.status,
@@ -286,7 +288,6 @@ export class WebhookProcessor extends WorkerHost {
       lockedBy: null,
     });
 
-    // Log success with properly typed data
     this.logger.log('Webhook delivery succeeded', {
       deliveryId: context.deliveryId,
       webhookId: context.webhookId,
@@ -301,12 +302,10 @@ export class WebhookProcessor extends WorkerHost {
       eventType: 'webhook_delivery_succeeded',
     });
 
-    // Get organization ID first to avoid async issues
     const organizationId = await this.getOrganizationId(webhookId);
 
-    // Create audit log - use string literals directly
     await this.auditLogService.logEvent({
-      action: 'WEBHOOK_DELIVERED', // Direct string literal, no variable needed
+      action: 'WEBHOOK_DELIVERED',
       entityId: deliveryId,
       entityType: 'WEBHOOK_DELIVERY',
       organizationId,
@@ -322,13 +321,10 @@ export class WebhookProcessor extends WorkerHost {
         maxAttempts: context.maxAttempts,
         isRetry: context.isRetry,
       },
-      severity: SeverityMapper.forEventType('info'),
+      severity: getSeverity('info'),
     });
   }
 
-  /**
-   * Handle failed webhook delivery
-   */
   private async handleFailedDelivery(
     error: unknown,
     deliveryId: string,
@@ -350,7 +346,6 @@ export class WebhookProcessor extends WorkerHost {
     const isLastAttempt = context.attemptNumber >= context.maxAttempts;
     const errorMetadata = this.extractErrorMetadata(error);
 
-    // Prepare update data
     const updateData: UpdateDeliveryData = {
       status: 'failed' as WebhookDeliveryStatus,
       statusCode: errorMetadata.statusCode || null,
@@ -360,18 +355,13 @@ export class WebhookProcessor extends WorkerHost {
       lockedBy: null,
     };
 
-    // Set next retry time if not last attempt
     if (!isLastAttempt) {
       updateData.nextAttemptAt = this.calculateNextRetryTime(job);
     }
 
-    // Update delivery record
     await this.updateDeliveryStatus(deliveryId, updateData);
 
-    // Log failure with appropriate level
     const logMessage = `Webhook delivery ${isLastAttempt ? 'failed permanently' : 'failed, will retry'}`;
-
-    // Create a properly typed log object
     const logData = {
       deliveryId: context.deliveryId,
       webhookId: context.webhookId,
@@ -402,12 +392,10 @@ export class WebhookProcessor extends WorkerHost {
       this.logger.warn(logMessage, logData);
     }
 
-    // Get organization ID first
     const organizationId = await this.getOrganizationId(webhookId);
 
-    // Create audit log - use string literals directly
     await this.auditLogService.logEvent({
-      action: 'WEBHOOK_DELIVERY_FAILED', // Direct string literal, no variable needed
+      action: 'WEBHOOK_DELIVERY_FAILED',
       entityId: deliveryId,
       entityType: 'WEBHOOK_DELIVERY',
       organizationId,
@@ -426,41 +414,24 @@ export class WebhookProcessor extends WorkerHost {
         isLastAttempt,
         isRetry: context.isRetry,
       },
-      severity: isLastAttempt
-        ? SeverityMapper.forEventType('error')
-        : SeverityMapper.forEventType('warning'),
+      severity: isLastAttempt ? getSeverity('error') : getSeverity('warning'),
     });
 
-    // Throw error to trigger BullMQ retry mechanism
     throw this.normalizeError(error);
   }
 
-  /**
-   * Normalize any error to an Error instance
-   */
   private normalizeError(error: unknown): Error {
-    if (error instanceof Error) {
-      return error;
-    }
+    if (error instanceof Error) return error;
 
-    // Handle non-Error objects
     if (error && typeof error === 'object') {
       const errorObj = error as Record<string, unknown>;
-
-      // Try to extract message in priority order
       const messageSource =
         (typeof errorObj.message === 'string' && errorObj.message) ||
         (typeof errorObj.error === 'string' && errorObj.error) ||
         (typeof errorObj.detail === 'string' && errorObj.detail);
-
-      if (messageSource) {
-        return new Error(messageSource);
-      }
-
-      // Stringify the object with a limit to prevent huge strings
+      if (messageSource) return new Error(messageSource);
       try {
         const stringified = JSON.stringify(errorObj, null, 2);
-        // Truncate if too long (e.g., for logging systems)
         const truncated =
           stringified.length > 500
             ? stringified.substring(0, 500) + '... [truncated]'
@@ -471,19 +442,14 @@ export class WebhookProcessor extends WorkerHost {
       }
     }
 
-    // Handle primitive types with descriptive messages
     if (typeof error === 'string') return new Error(error);
     if (typeof error === 'number') return new Error(`Error code: ${error}`);
     if (typeof error === 'boolean') return new Error(`Boolean error: ${error}`);
     if (error === null) return new Error('Null error');
     if (error === undefined) return new Error('Undefined error');
-
     return new Error('Unknown error occurred');
   }
 
-  /**
-   * Extract structured error metadata from various error types
-   */
   private extractErrorMetadata(error: unknown): ErrorMetadata {
     const metadata: ErrorMetadata = {
       type: 'UnknownError',
@@ -497,23 +463,20 @@ export class WebhookProcessor extends WorkerHost {
       metadata.type = error.name;
       metadata.message = error.message;
 
-      // Check if it's an Axios error
       if (this.isAxiosError(error)) {
         metadata.type = 'AxiosError';
         metadata.code = error.code;
 
         if (error.response) {
-          const response = error.response;
-          metadata.statusCode = response.status;
+          metadata.statusCode = error.response.status;
           metadata.message = this.extractErrorMessageFromResponse({
-            status: response.status,
-            data: response.data,
-            statusText: response.statusText,
+            status: error.response.status,
+            data: error.response.data,
+            statusText: error.response.statusText,
           });
           metadata.type = 'HttpError';
         } else if (error.request) {
           metadata.type = 'NetworkError';
-
           const errorCode = error.code;
           if (errorCode === 'ECONNABORTED') {
             metadata.isTimeout = true;
@@ -535,16 +498,10 @@ export class WebhookProcessor extends WorkerHost {
     return metadata;
   }
 
-  /**
-   * Type guard for AxiosError
-   */
   private isAxiosError(error: Error): error is AxiosError {
     return (error as AxiosError).isAxiosError === true;
   }
 
-  /**
-   * Extract error message from HTTP response
-   */
   private extractErrorMessageFromResponse(response: {
     status: number;
     data: unknown;
@@ -553,55 +510,31 @@ export class WebhookProcessor extends WorkerHost {
     if (!response?.data) {
       return `HTTP ${response?.status}: ${response?.statusText || 'Unknown error'}`;
     }
-
     const data = response.data;
-
-    if (typeof data === 'string') {
-      return data.substring(0, 200);
-    }
-
+    if (typeof data === 'string') return data.substring(0, 200);
     if (data && typeof data === 'object') {
       const dataObj = data as Record<string, unknown>;
-
-      // Common error response formats
-      if (typeof dataObj.message === 'string') {
-        return dataObj.message;
-      }
-      if (typeof dataObj.error === 'string') {
-        return dataObj.error;
-      }
-      if (typeof dataObj.detail === 'string') {
-        return dataObj.detail;
-      }
-
+      if (typeof dataObj.message === 'string') return dataObj.message;
+      if (typeof dataObj.error === 'string') return dataObj.error;
+      if (typeof dataObj.detail === 'string') return dataObj.detail;
       try {
         return JSON.stringify(data).substring(0, 200);
       } catch {
         return `HTTP ${response.status}`;
       }
     }
-
     return `HTTP ${response.status}`;
   }
 
-  /**
-   * Calculate next retry time using exponential backoff
-   */
   private calculateNextRetryTime(job: Job<WebhookDeliveryJobData>): Date {
     const attempt = job.attemptsMade + 1;
-
-    // Exponential backoff: 5s, 10s, 20s, 40s, 80s, 160s, 320s, 640s, 1280s, 2560s
     const delayMs = Math.min(
       BASE_RETRY_DELAY_MS * Math.pow(2, attempt - 1),
       MAX_RETRY_DELAY_MS,
     );
-
     return new Date(Date.now() + delayMs);
   }
 
-  /**
-   * Update delivery status in repository
-   */
   private async updateDeliveryStatus(
     deliveryId: string,
     data: UpdateDeliveryData,
@@ -609,25 +542,14 @@ export class WebhookProcessor extends WorkerHost {
     try {
       await this.webhookRepository.updateDelivery(deliveryId, data);
     } catch (updateError) {
-      // Safely extract error information
-      const errorMessage =
-        updateError instanceof Error ? updateError.message : 'Unknown error';
-      const errorStack =
-        updateError instanceof Error ? updateError.stack : undefined;
-
       this.logger.error('Failed to update delivery status', {
         deliveryId,
-        error: errorMessage,
-        stack: errorStack,
+        error: getErrorMessage(updateError),
+        stack: getErrorStack(updateError),
       });
-
-      // Don't throw - we don't want to fail the job if status update fails
     }
   }
 
-  /**
-   * Generate HMAC signature for webhook payload
-   */
   private generateSignature(
     payload: string,
     secret: string,
@@ -639,71 +561,46 @@ export class WebhookProcessor extends WorkerHost {
       hmac.update(data);
       return hmac.digest('hex');
     } catch (signatureError) {
-      // Safely extract error message
-      const errorMessage =
-        signatureError instanceof Error
-          ? signatureError.message
-          : 'Unknown signature error';
-
       this.logger.error('Failed to generate webhook signature', {
-        error: errorMessage,
+        error: getErrorMessage(signatureError),
       });
       return 'signature-error';
     }
   }
 
-  /**
-   * Truncate response for storage
-   */
   private truncateResponse(response: unknown): string {
-    if (response === undefined || response === null) {
-      return '';
-    }
-
+    if (response === undefined || response === null) return '';
     try {
       const responseStr =
         typeof response === 'string' ? response : JSON.stringify(response);
-
       if (responseStr.length > MAX_RESPONSE_LENGTH) {
         return `${responseStr.substring(0, MAX_RESPONSE_LENGTH)}... [TRUNCATED]`;
       }
-
       return responseStr;
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
       this.logger.warn('Failed to stringify webhook response', {
-        error: errorMessage,
+        error: getErrorMessage(error),
       });
       return '[Unparseable response]';
     }
   }
 
-  /**
-   * Get organization ID from webhook
-   */
   private async getOrganizationId(webhookId: string): Promise<string> {
     try {
       const webhook = await this.prisma.webhook.findUnique({
         where: { id: webhookId },
         select: { organizationId: true },
       });
-
       return webhook?.organizationId ?? 'unknown';
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
       this.logger.warn('Failed to fetch organization for webhook', {
         webhookId,
-        error: errorMessage,
+        error: getErrorMessage(error),
       });
       return 'unknown';
     }
   }
 
-  /**
-   * Job failure handler (non-async because no await needed)
-   */
   onFailed(job: Job<WebhookDeliveryJobData>, error: Error): void {
     this.logger.error(
       `Job ${job.id} failed after ${job.attemptsMade} attempts`,
@@ -719,9 +616,6 @@ export class WebhookProcessor extends WorkerHost {
     );
   }
 
-  /**
-   * Job completion handler (non-async because no await needed)
-   */
   onCompleted(job: Job<WebhookDeliveryJobData>): void {
     this.logger.log(`Job ${job.id} completed successfully`, {
       jobId: job.id,

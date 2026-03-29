@@ -1,26 +1,22 @@
+// apps/api/src/modules/pipelines/pipelines.module.ts
 import { Module } from '@nestjs/common';
-import { JwtModule } from '@nestjs/jwt'; // ADD THIS IMPORT
 import { PipelinesService } from './pipelines.service';
 import { PipelinesController } from './pipelines.controller';
 import { LoggingModule } from '../../shared/logging/logging.module';
 import { PipelineRepository } from './repositories/pipeline.repository';
-import { TenantContextService } from '../../shared/tenant/context/tenant-context.service';
-import { PermissionContextService } from '../../shared/permissions/context/permission-context.service';
-import { AuditLogService } from '../../shared/audit-log/audit-log.service';
+import { TenantModule } from '../../shared/tenant/tenant.module';
+import { PermissionsModule } from '../../shared/permissions/permissions.module';
+import { AuditLogModule } from '../../shared/audit-log/audit-log.module';
 
 @Module({
   imports: [
     LoggingModule,
-    JwtModule, // ADD THIS TO IMPORTS ARRAY
-  ],
+    TenantModule, // Provides TenantContextService
+    PermissionsModule, // Provides PermissionContextService
+    AuditLogModule, // Provides AuditLogService
+  ] as const, // Type assertion to avoid ESLint unsafe assignment
   controllers: [PipelinesController],
-  providers: [
-    PipelinesService,
-    PipelineRepository,
-    TenantContextService,
-    PermissionContextService,
-    AuditLogService,
-  ],
+  providers: [PipelinesService, PipelineRepository],
   exports: [PipelinesService],
 })
 export class PipelinesModule {}

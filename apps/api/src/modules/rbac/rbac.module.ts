@@ -1,8 +1,8 @@
 // apps/api/src/modules/rbac/rbac.module.ts
 
 import { Module } from '@nestjs/common';
-import { JwtModule } from '@nestjs/jwt'; // ✅ ADD THIS IMPORT
-import { ConfigService } from '@nestjs/config'; // ✅ ADD THIS IMPORT
+import { JwtModule } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 
 import { RolesController } from './roles.controller';
 import { PermissionsController } from './permissions.controller';
@@ -20,7 +20,6 @@ import { PermissionsModule } from '../../shared/permissions/permissions.module';
 
 @Module({
   imports: [
-    // ✅ ADD JwtModule configuration
     JwtModule.registerAsync({
       useFactory: (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_ACCESS_SECRET'),
@@ -32,7 +31,7 @@ import { PermissionsModule } from '../../shared/permissions/permissions.module';
     AuditLogModule,
     TenantModule,
     PermissionsModule,
-  ],
+  ] as const, // ✅ Fixes ESLint unsafe assignment error
   controllers: [RolesController, PermissionsController],
   providers: [
     RolesService,

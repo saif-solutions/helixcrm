@@ -121,7 +121,7 @@ const configModules = [
     FileStorageModule,
     WebhooksModule,
     AuditLogsModule,
-  ],
+  ] as const, // ✅ Fixes ESLint unsafe assignment error
 
   controllers: [AppController, HealthController, DebugController],
 

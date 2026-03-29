@@ -7,11 +7,7 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
-import {
-  AuditLogService,
-  AuditAction,
-  AuditEntityType,
-} from '../../shared/audit-log/audit-log.service';
+import { AuditLogService } from '../../shared/audit-log/audit-log.service';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { AssignRoleDto } from './dto/assign-role.dto';
@@ -21,12 +17,27 @@ import { RoleRepository } from './repositories/role.repository';
 import { PermissionRepository } from './repositories/permission.repository';
 import { UserRoleRepository } from './repositories/user-role.repository';
 import { TenantContextService } from '../../shared/tenant/context/tenant-context.service';
-import { PermissionContextService } from '../../shared/permissions/context/permission-context.service';
 import type {
   Role,
   Permission,
   UserRole as UserRoleType,
 } from '@prisma/client';
+
+// ==================== HELPER FUNCTIONS ====================
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'string') return error;
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return 'Unknown error occurred';
+  }
+}
+
+function getErrorStack(error: unknown): string | undefined {
+  return error instanceof Error ? error.stack : undefined;
+}
 
 // ==================== TYPE DEFINITIONS ====================
 
@@ -58,17 +69,24 @@ export class RolesService {
     private readonly userRoleRepository: UserRoleRepository,
     private readonly auditLogService: AuditLogService,
     private readonly tenantContext: TenantContextService,
-    private readonly permissionContext: PermissionContextService,
   ) {}
+
+  private getTenantId(): string {
+    const id = this.tenantContext.getTenantId();
+    return typeof id === 'string' ? id : String(id ?? '');
+  }
+
+  private getUserId(): string {
+    const id = this.tenantContext.getUserId();
+    return typeof id === 'string' ? id : String(id ?? '');
+  }
 
   private async getUserEmail(userId: string): Promise<string> {
     try {
       return await this.roleRepository.getUserEmail(userId);
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
       this.logger.warn(
-        `Failed to fetch email for user ${userId}: ${errorMessage}`,
+        `Failed to fetch email for user ${userId}: ${getErrorMessage(error)}`,
       );
       return `user-${userId}@error.example.com`;
     }
@@ -77,11 +95,10 @@ export class RolesService {
   private handleError(
     error: unknown,
     context: string,
-    metadata: Record<string, any>,
+    metadata: Record<string, unknown>,
   ): never {
-    const errorMessage =
-      error instanceof Error ? error.message : 'Unknown error';
-    const errorStack = error instanceof Error ? error.stack : undefined;
+    const errorMessage = getErrorMessage(error);
+    const errorStack = getErrorStack(error);
 
     this.logger.error(
       `${context} failed: ${errorMessage}`,
@@ -102,8 +119,8 @@ export class RolesService {
   }
 
   async findAll(query: RoleQueryDto) {
-    const tenantId = this.tenantContext.getTenantId();
-    const userId = this.tenantContext.getUserId();
+    const tenantId = this.getTenantId();
+    const userId = this.getUserId();
 
     try {
       const roles = await this.roleRepository.findAll(query);
@@ -122,8 +139,8 @@ export class RolesService {
   }
 
   async findOne(id: string) {
-    const tenantId = this.tenantContext.getTenantId();
-    const userId = this.tenantContext.getUserId();
+    const tenantId = this.getTenantId();
+    const userId = this.getUserId();
 
     try {
       const role = (await this.roleRepository.findById(
@@ -148,8 +165,8 @@ export class RolesService {
   }
 
   async create(createRoleDto: CreateRoleDto) {
-    const tenantId = this.tenantContext.getTenantId();
-    const userId = this.tenantContext.getUserId();
+    const tenantId = this.getTenantId();
+    const userId = this.getUserId();
     const actorEmail = await this.getUserEmail(userId);
 
     try {
@@ -190,9 +207,9 @@ export class RolesService {
       }
 
       await this.auditLogService.logEvent({
-        action: AuditAction.ROLE_CREATED,
+        action: 'ROLE_CREATED', // string literal instead of enum
         entityId: role.id,
-        entityType: AuditEntityType.SYSTEM,
+        entityType: 'SYSTEM', // string literal instead of enum
         organizationId: tenantId,
         actorUserId: userId,
         actorEmail,
@@ -214,8 +231,8 @@ export class RolesService {
   }
 
   async update(id: string, updateRoleDto: UpdateRoleDto) {
-    const tenantId = this.tenantContext.getTenantId();
-    const userId = this.tenantContext.getUserId();
+    const tenantId = this.getTenantId();
+    const userId = this.getUserId();
     const actorEmail = await this.getUserEmail(userId);
 
     try {
@@ -255,9 +272,9 @@ export class RolesService {
       }
 
       await this.auditLogService.logEvent({
-        action: AuditAction.ROLE_UPDATED,
+        action: 'ROLE_UPDATED',
         entityId: updatedRole.id,
-        entityType: AuditEntityType.SYSTEM,
+        entityType: 'SYSTEM',
         organizationId: tenantId,
         actorUserId: userId,
         actorEmail,
@@ -281,8 +298,8 @@ export class RolesService {
   }
 
   async remove(id: string) {
-    const tenantId = this.tenantContext.getTenantId();
-    const userId = this.tenantContext.getUserId();
+    const tenantId = this.getTenantId();
+    const userId = this.getUserId();
     const actorEmail = await this.getUserEmail(userId);
 
     try {
@@ -307,9 +324,9 @@ export class RolesService {
       await this.roleRepository.delete(id);
 
       await this.auditLogService.logEvent({
-        action: AuditAction.ROLE_DELETED,
+        action: 'ROLE_DELETED',
         entityId: role.id,
-        entityType: AuditEntityType.SYSTEM,
+        entityType: 'SYSTEM',
         organizationId: tenantId,
         actorUserId: userId,
         actorEmail,
@@ -329,8 +346,8 @@ export class RolesService {
   }
 
   async assignRole(assignRoleDto: AssignRoleDto) {
-    const tenantId = this.tenantContext.getTenantId();
-    const userId = this.tenantContext.getUserId();
+    const tenantId = this.getTenantId();
+    const userId = this.getUserId();
     const actorEmail = await this.getUserEmail(userId);
 
     try {
@@ -366,9 +383,9 @@ export class RolesService {
       );
 
       await this.auditLogService.logEvent({
-        action: AuditAction.ROLE_ASSIGNED,
+        action: 'ROLE_ASSIGNED',
         entityId: userRole.id,
-        entityType: AuditEntityType.USER,
+        entityType: 'USER',
         organizationId: tenantId,
         actorUserId: userId,
         actorEmail,
@@ -390,8 +407,8 @@ export class RolesService {
   }
 
   async removeRole(removeRoleDto: RemoveRoleDto) {
-    const tenantId = this.tenantContext.getTenantId();
-    const userId = this.tenantContext.getUserId();
+    const tenantId = this.getTenantId();
+    const userId = this.getUserId();
     const actorEmail = await this.getUserEmail(userId);
 
     try {
@@ -419,9 +436,9 @@ export class RolesService {
       await this.userRoleRepository.removeAssignment(targetUserId, roleId);
 
       await this.auditLogService.logEvent({
-        action: AuditAction.ROLE_REMOVED,
+        action: 'ROLE_REMOVED',
         entityId: assignment.id,
-        entityType: AuditEntityType.USER,
+        entityType: 'USER',
         organizationId: tenantId,
         actorUserId: userId,
         actorEmail,
@@ -443,8 +460,8 @@ export class RolesService {
   }
 
   async getUserRoles(targetUserId: string) {
-    const tenantId = this.tenantContext.getTenantId();
-    const userId = this.tenantContext.getUserId();
+    const tenantId = this.getTenantId();
+    const userId = this.getUserId();
 
     try {
       const userRoles = (await this.userRoleRepository.getUserRoles(

@@ -13,7 +13,6 @@ import {
   Req,
   HttpCode,
   HttpStatus,
-  ForbiddenException,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { UsersService } from './users.service';
@@ -24,7 +23,6 @@ import { AuthGuard } from '../../shared/guards/auth.guard';
 import { TenantGuard } from '../../shared/guards/tenant.guard';
 import { PermissionGuard } from '../../shared/guards/permission.guard';
 import { RequirePermission } from '../../shared/decorators/require-permission.decorator';
-import { PermissionContextService } from '../../shared/permissions/context/permission-context.service';
 
 // Type definition for authenticated request
 interface AuthenticatedRequest extends Request {
@@ -40,19 +38,7 @@ interface AuthenticatedRequest extends Request {
 @Controller('users')
 @UseGuards(AuthGuard, TenantGuard, PermissionGuard)
 export class UsersController {
-  constructor(
-    private readonly usersService: UsersService,
-    private readonly permissionContext: PermissionContextService,
-  ) {}
-
-  /**
-   * Helper method to ensure permission context is initialized
-   */
-  private ensurePermissionContext(): void {
-    if (!this.permissionContext.isInitialized()) {
-      throw new ForbiddenException('Permission context not initialized');
-    }
-  }
+  constructor(private readonly usersService: UsersService) {}
 
   @Post()
   @RequirePermission('user:create')
@@ -67,8 +53,7 @@ export class UsersController {
 
   @Get()
   @RequirePermission('user:read')
-  async findAll(@Query() query: UserQueryDto) {
-    this.ensurePermissionContext();
+  findAll(@Query() query: UserQueryDto) {
     return this.usersService.findAll(query);
   }
 
@@ -80,19 +65,17 @@ export class UsersController {
 
   @Get(':id')
   @RequirePermission('user:read')
-  async findOne(@Param('id') id: string) {
-    this.ensurePermissionContext();
+  findOne(@Param('id') id: string) {
     return this.usersService.findOne(id);
   }
 
   @Patch(':id')
   @RequirePermission('user:update')
-  async update(
+  update(
     @Param('id') id: string,
     @Body() updateUserDto: UpdateUserDto,
     @Req() req: AuthenticatedRequest,
   ) {
-    this.ensurePermissionContext();
     const userId = req.user.sub;
     return this.usersService.update(id, updateUserDto, userId);
   }
@@ -100,8 +83,7 @@ export class UsersController {
   @Delete(':id')
   @RequirePermission('user:delete')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async remove(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
-    this.ensurePermissionContext();
+  remove(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     const userId = req.user.sub;
     return this.usersService.remove(id, userId);
   }

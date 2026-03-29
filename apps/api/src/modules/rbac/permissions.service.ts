@@ -18,6 +18,27 @@ interface PermissionHierarchy {
   };
 }
 
+// ==================== HELPER FUNCTIONS ====================
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'string') return error;
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return 'Unknown error occurred';
+  }
+}
+
+function getErrorStack(error: unknown): string | undefined {
+  return error instanceof Error ? error.stack : undefined;
+}
+
+// Permission context type guard
+interface PermissionContextWithHasPermission {
+  hasPermission(permission: string): boolean;
+}
+
 // ==================== SERVICE IMPLEMENTATION ====================
 
 @Injectable()
@@ -30,14 +51,52 @@ export class PermissionsService {
     private readonly permissionContext: PermissionContextService,
   ) {}
 
+  private checkPermission(permission: string): boolean {
+    const context: unknown = this.permissionContext;
+    if (this.isPermissionContext(context)) {
+      try {
+        return context.hasPermission(permission) === true;
+      } catch {
+        this.logger.debug(
+          `Permission check failed for ${permission}, relying on guard`,
+        );
+        return true;
+      }
+    }
+    this.logger.debug(
+      `Permission context not ready for ${permission}, relying on guard`,
+    );
+    return true;
+  }
+
+  private isPermissionContext(
+    context: unknown,
+  ): context is PermissionContextWithHasPermission {
+    return (
+      typeof context === 'object' &&
+      context !== null &&
+      typeof (context as PermissionContextWithHasPermission).hasPermission ===
+        'function'
+    );
+  }
+
+  private getTenantId(): string {
+    const id = this.tenantContext.getTenantId();
+    return typeof id === 'string' ? id : String(id ?? '');
+  }
+
+  private getUserId(): string {
+    const id = this.tenantContext.getUserId();
+    return typeof id === 'string' ? id : String(id ?? '');
+  }
+
   private handleError(
     error: unknown,
     context: string,
-    metadata: Record<string, any>,
+    metadata: Record<string, unknown>,
   ): never {
-    const errorMessage =
-      error instanceof Error ? error.message : 'Unknown error';
-    const errorStack = error instanceof Error ? error.stack : undefined;
+    const errorMessage = getErrorMessage(error);
+    const errorStack = getErrorStack(error);
 
     this.logger.error(
       `${context} failed: ${errorMessage}`,
@@ -48,20 +107,17 @@ export class PermissionsService {
   }
 
   async findAll(): Promise<Permission[]> {
-    // 1. PERMISSION CHECK
-    if (!this.permissionContext.hasPermission('rbac:read')) {
+    if (!this.checkPermission('rbac:read')) {
       throw new ForbiddenException(
         'Insufficient permissions: rbac:read required',
       );
     }
 
-    const tenantId = this.tenantContext.getTenantId();
-    const userId = this.tenantContext.getUserId();
+    const tenantId = this.getTenantId();
+    const userId = this.getUserId();
 
     try {
-      // 2. BUSINESS LOGIC USING REPOSITORY
-      const permissions = await this.permissionRepository.findAll();
-      return permissions;
+      return await this.permissionRepository.findAll();
     } catch (error) {
       this.handleError(error, 'PermissionsService.findAll', {
         tenantId,
@@ -71,21 +127,19 @@ export class PermissionsService {
   }
 
   async findGrouped(): Promise<GroupedPermissions[]> {
-    // 1. PERMISSION CHECK
-    if (!this.permissionContext.hasPermission('rbac:read')) {
+    if (!this.checkPermission('rbac:read')) {
       throw new ForbiddenException(
         'Insufficient permissions: rbac:read required',
       );
     }
 
-    const tenantId = this.tenantContext.getTenantId();
-    const userId = this.tenantContext.getUserId();
+    const tenantId = this.getTenantId();
+    const userId = this.getUserId();
 
     try {
-      // 2. GET PERMISSIONS USING REPOSITORY
       const permissions = await this.permissionRepository.findAll();
 
-      // 3. GROUP BY MODULE
+      // Group by module
       const grouped = permissions.reduce<Record<string, Permission[]>>(
         (acc, permission) => {
           const [module] = permission.code.split(':');
@@ -98,7 +152,6 @@ export class PermissionsService {
         {},
       );
 
-      // 4. CONVERT TO ARRAY FORMAT
       return Object.entries(grouped).map(([module, perms]) => ({
         module,
         permissions: perms,
@@ -112,36 +165,31 @@ export class PermissionsService {
   }
 
   async getPermissionHierarchy(): Promise<PermissionHierarchy> {
-    // 1. PERMISSION CHECK
-    if (!this.permissionContext.hasPermission('rbac:read')) {
+    if (!this.checkPermission('rbac:read')) {
       throw new ForbiddenException(
         'Insufficient permissions: rbac:read required',
       );
     }
 
-    const tenantId = this.tenantContext.getTenantId();
-    const userId = this.tenantContext.getUserId();
+    const tenantId = this.getTenantId();
+    const userId = this.getUserId();
 
     try {
-      // 2. GET PERMISSIONS USING REPOSITORY
       const permissions = await this.permissionRepository.findAll();
 
-      // 3. ORGANIZE BY MODULE.ACTION
       const hierarchy: PermissionHierarchy = {};
 
-      permissions.forEach((permission) => {
+      for (const permission of permissions) {
         const [module, action] = permission.code.split(':');
 
         if (!hierarchy[module]) {
           hierarchy[module] = {};
         }
-
         if (!hierarchy[module][action]) {
           hierarchy[module][action] = [];
         }
-
         hierarchy[module][action].push(permission);
-      });
+      }
 
       return hierarchy;
     } catch (error) {

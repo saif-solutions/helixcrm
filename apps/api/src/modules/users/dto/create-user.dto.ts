@@ -1,3 +1,4 @@
+// apps/api/src/modules/users/dto/create-user.dto.ts
 import {
   IsEmail,
   IsNotEmpty,
@@ -8,9 +9,17 @@ import {
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 
+// Helper function with return type 'unknown' (string | any other value)
+const normalizeEmail = (value: unknown): unknown => {
+  if (typeof value === 'string') {
+    return value.toLowerCase().trim();
+  }
+  return value;
+};
+
 export class CreateUserDto {
   @IsEmail()
-  @Transform(({ value }) => value.toLowerCase().trim())
+  @Transform(({ value }) => normalizeEmail(value))
   email: string;
 
   @IsString()

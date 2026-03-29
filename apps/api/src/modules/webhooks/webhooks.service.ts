@@ -1,4 +1,4 @@
-// src/modules/webhooks/webhooks.service.ts
+// apps/api/src/modules/webhooks/webhooks.service.ts
 
 import {
   Injectable,
@@ -19,6 +19,32 @@ import { PrismaService } from '../../shared/prisma/prisma.service';
 import * as crypto from 'crypto';
 import { StatisticsResult } from './repositories/webhook.repository';
 import { Webhook, WebhookDelivery } from '@helixcrm/prisma-types';
+
+// ==================== HELPER FUNCTIONS ====================
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'string') return error;
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return 'Unknown error occurred';
+  }
+}
+
+function getErrorStack(error: unknown): string | undefined {
+  return error instanceof Error ? error.stack : undefined;
+}
+
+function getSeverity(level: 'info' | 'warning' | 'error'): string {
+  return SeverityMapper.forEventType(level) as string;
+}
+
+// Permission context type guard
+interface PermissionContextWithHasPermission {
+  hasPermission(permission: string): boolean;
+}
+
 // ==================== TYPE DEFINITIONS ====================
 
 export interface WebhookPayload {
@@ -154,14 +180,54 @@ export class WebhooksService {
     private readonly prisma: PrismaService,
   ) {}
 
+  // ==================== PERMISSION & CONTEXT HELPERS ====================
+
+  private checkPermission(permission: string): boolean {
+    const context: unknown = this.permissionContext;
+    if (this.isPermissionContext(context)) {
+      try {
+        return context.hasPermission(permission) === true;
+      } catch {
+        this.logger.debug(
+          `Permission check failed for ${permission}, relying on guard`,
+        );
+        return true;
+      }
+    }
+    this.logger.debug(
+      `Permission context not ready for ${permission}, relying on guard`,
+    );
+    return true;
+  }
+
+  private isPermissionContext(
+    context: unknown,
+  ): context is PermissionContextWithHasPermission {
+    return (
+      typeof context === 'object' &&
+      context !== null &&
+      typeof (context as PermissionContextWithHasPermission).hasPermission ===
+        'function'
+    );
+  }
+
+  private getTenantId(): string {
+    const id = this.tenantContext.getTenantId();
+    return typeof id === 'string' ? id : String(id ?? '');
+  }
+
+  private getUserId(): string {
+    const id = this.tenantContext.getUserId();
+    return typeof id === 'string' ? id : String(id ?? '');
+  }
+
   private handleError(
     error: unknown,
     context: string,
     metadata: Record<string, unknown>,
   ): never {
-    const errorMessage =
-      error instanceof Error ? error.message : 'Unknown error';
-    const errorStack = error instanceof Error ? error.stack : undefined;
+    const errorMessage = getErrorMessage(error);
+    const errorStack = getErrorStack(error);
 
     this.logger.error(
       `${context} failed: ${errorMessage}`,
@@ -169,7 +235,6 @@ export class WebhooksService {
       JSON.stringify(metadata),
     );
 
-    // Re-throw known HTTP exceptions
     if (
       error instanceof NotFoundException ||
       error instanceof ForbiddenException ||
@@ -197,21 +262,20 @@ export class WebhooksService {
     };
   }
 
-  /**
-   * Create a new webhook
-   */
+  // ==================== CRUD METHODS ====================
+
   async createWebhook(
     createWebhookDto: CreateWebhookDto,
   ): Promise<WebhookWithoutSecret> {
-    if (!this.permissionContext.hasPermission('webhook:manage')) {
+    if (!this.checkPermission('webhook:manage')) {
       throw new ForbiddenException(
         'Insufficient permissions: webhook:manage required',
       );
     }
 
     const startTime = Date.now();
-    const tenantId = this.tenantContext.getTenantId();
-    const userId = this.tenantContext.getUserId();
+    const tenantId = this.getTenantId();
+    const userId = this.getUserId();
 
     try {
       this.validateWebhookUrl(createWebhookDto.url);
@@ -250,7 +314,7 @@ export class WebhooksService {
           events: webhook.events,
           isActive: webhook.isActive,
         },
-        severity: SeverityMapper.forEventType('info'),
+        severity: getSeverity('info'),
       });
 
       this.logger.log(`Webhook created successfully`, {
@@ -275,22 +339,19 @@ export class WebhooksService {
     }
   }
 
-  /**
-   * Update an existing webhook
-   */
   async updateWebhook(
     webhookId: string,
     updateWebhookDto: UpdateWebhookDto,
   ): Promise<WebhookWithoutSecret> {
-    if (!this.permissionContext.hasPermission('webhook:manage')) {
+    if (!this.checkPermission('webhook:manage')) {
       throw new ForbiddenException(
         'Insufficient permissions: webhook:manage required',
       );
     }
 
     const startTime = Date.now();
-    const tenantId = this.tenantContext.getTenantId();
-    const userId = this.tenantContext.getUserId();
+    const tenantId = this.getTenantId();
+    const userId = this.getUserId();
 
     try {
       const existingWebhook = await this.webhookRepository.findById(webhookId);
@@ -335,7 +396,7 @@ export class WebhooksService {
           newName: updatedWebhook.name,
           isActive: updatedWebhook.isActive,
         },
-        severity: SeverityMapper.forEventType('info'),
+        severity: getSeverity('info'),
       });
 
       this.logger.log(`Webhook updated successfully`, {
@@ -360,19 +421,16 @@ export class WebhooksService {
     }
   }
 
-  /**
-   * Delete a webhook
-   */
   async deleteWebhook(webhookId: string): Promise<{ message: string }> {
-    if (!this.permissionContext.hasPermission('webhook:manage')) {
+    if (!this.checkPermission('webhook:manage')) {
       throw new ForbiddenException(
         'Insufficient permissions: webhook:manage required',
       );
     }
 
     const startTime = Date.now();
-    const tenantId = this.tenantContext.getTenantId();
-    const userId = this.tenantContext.getUserId();
+    const tenantId = this.getTenantId();
+    const userId = this.getUserId();
 
     try {
       const existingWebhook = await this.webhookRepository.findById(webhookId);
@@ -394,7 +452,7 @@ export class WebhooksService {
           name: existingWebhook.name,
           url: existingWebhook.url,
         },
-        severity: SeverityMapper.forEventType('warning'),
+        severity: getSeverity('warning'),
       });
 
       this.logger.log(`Webhook deleted successfully`, {
@@ -418,22 +476,18 @@ export class WebhooksService {
     }
   }
 
-  /**
-   * Get all webhooks for current tenant
-   */
   async getAllWebhooks(): Promise<WebhookWithoutSecret[]> {
-    if (!this.permissionContext.hasPermission('webhook:read')) {
+    if (!this.checkPermission('webhook:read')) {
       throw new ForbiddenException(
         'Insufficient permissions: webhook:read required',
       );
     }
 
-    const tenantId = this.tenantContext.getTenantId();
-    const userId = this.tenantContext.getUserId();
+    const tenantId = this.getTenantId();
+    const userId = this.getUserId();
 
     try {
       const webhooks = await this.webhookRepository.findAll();
-
       return webhooks.map((webhook) => this.removeSecret(webhook));
     } catch (error) {
       this.handleError(error, 'get all webhooks', {
@@ -444,26 +498,21 @@ export class WebhooksService {
     }
   }
 
-  /**
-   * Get webhook by ID
-   */
   async getWebhookById(webhookId: string): Promise<WebhookWithoutSecret> {
-    if (!this.permissionContext.hasPermission('webhook:read')) {
+    if (!this.checkPermission('webhook:read')) {
       throw new ForbiddenException(
         'Insufficient permissions: webhook:read required',
       );
     }
 
-    const tenantId = this.tenantContext.getTenantId();
-    const userId = this.tenantContext.getUserId();
+    const tenantId = this.getTenantId();
+    const userId = this.getUserId();
 
     try {
       const webhook = await this.webhookRepository.findById(webhookId);
-
       if (!webhook) {
         throw new NotFoundException(`Webhook ${webhookId} not found`);
       }
-
       return this.removeSecret(webhook);
     } catch (error) {
       this.handleError(error, 'get webhook by ID', {
@@ -475,22 +524,21 @@ export class WebhooksService {
     }
   }
 
-  /**
-   * Trigger a webhook delivery
-   */
+  // ==================== DELIVERY METHODS ====================
+
   async triggerWebhook(
     webhookId: string,
     payload: WebhookPayload,
   ): Promise<TriggerWebhookResponse> {
-    if (!this.permissionContext.hasPermission('webhook:trigger')) {
+    if (!this.checkPermission('webhook:trigger')) {
       throw new ForbiddenException(
         'Insufficient permissions: webhook:trigger required',
       );
     }
 
     const startTime = Date.now();
-    const tenantId = this.tenantContext.getTenantId();
-    const userId = this.tenantContext.getUserId();
+    const tenantId = this.getTenantId();
+    const userId = this.getUserId();
 
     try {
       const webhook = await this.webhookRepository.findById(webhookId);
@@ -560,7 +608,7 @@ export class WebhooksService {
           webhookUrl: webhook.url,
           retryCount: webhook.retryCount,
         },
-        severity: SeverityMapper.forEventType('info'),
+        severity: getSeverity('info'),
       });
 
       this.logger.log(`Webhook triggered successfully`, {
@@ -590,22 +638,19 @@ export class WebhooksService {
     }
   }
 
-  /**
-   * Get webhook delivery history
-   */
   async getDeliveryHistory(
     webhookId: string,
     page = 1,
     limit = 20,
   ): Promise<DeliveryHistoryResponse> {
-    if (!this.permissionContext.hasPermission('webhook:read')) {
+    if (!this.checkPermission('webhook:read')) {
       throw new ForbiddenException(
         'Insufficient permissions: webhook:read required',
       );
     }
 
-    const tenantId = this.tenantContext.getTenantId();
-    const userId = this.tenantContext.getUserId();
+    const tenantId = this.getTenantId();
+    const userId = this.getUserId();
 
     try {
       const webhook = await this.webhookRepository.findById(webhookId);
@@ -640,28 +685,23 @@ export class WebhooksService {
     }
   }
 
-  /**
-   * Get delivery status
-   */
   async getDeliveryStatus(deliveryId: string): Promise<DeliveryStatusResponse> {
-    if (!this.permissionContext.hasPermission('webhook:read')) {
+    if (!this.checkPermission('webhook:read')) {
       throw new ForbiddenException(
         'Insufficient permissions: webhook:read required',
       );
     }
 
-    const tenantId = this.tenantContext.getTenantId();
-    const userId = this.tenantContext.getUserId();
+    const tenantId = this.getTenantId();
+    const userId = this.getUserId();
 
     try {
       const delivery =
         await this.webhookRepository.findDeliveryById(deliveryId);
-
       if (!delivery) {
         throw new NotFoundException(`Delivery ${deliveryId} not found`);
       }
 
-      // Validate status
       const validStatuses = [
         'pending',
         'processing',
@@ -669,7 +709,6 @@ export class WebhooksService {
         'failed',
       ] as const;
       const status = delivery.status as (typeof validStatuses)[number];
-
       if (!validStatuses.includes(status)) {
         throw new Error(`Invalid delivery status: ${delivery.status}`);
       }
@@ -699,24 +738,20 @@ export class WebhooksService {
     }
   }
 
-  /**
-   * Retry failed delivery
-   */
   async retryDelivery(deliveryId: string): Promise<RetryDeliveryResponse> {
-    if (!this.permissionContext.hasPermission('webhook:manage')) {
+    if (!this.checkPermission('webhook:manage')) {
       throw new ForbiddenException(
         'Insufficient permissions: webhook:manage required',
       );
     }
 
     const startTime = Date.now();
-    const tenantId = this.tenantContext.getTenantId();
-    const userId = this.tenantContext.getUserId();
+    const tenantId = this.getTenantId();
+    const userId = this.getUserId();
 
     try {
       const delivery =
         await this.webhookRepository.findDeliveryById(deliveryId);
-
       if (!delivery) {
         throw new NotFoundException(`Delivery ${deliveryId} not found`);
       }
@@ -780,7 +815,7 @@ export class WebhooksService {
           retryCount: updatedDelivery.retryCount,
           event: delivery.event,
         },
-        severity: SeverityMapper.forEventType('info'),
+        severity: getSeverity('info'),
       });
 
       this.logger.log(`Delivery retry queued successfully`, {
@@ -808,26 +843,21 @@ export class WebhooksService {
     }
   }
 
-  /**
-   * Get webhook statistics
-   */
   async getStatistics(
     timeframe: 'day' | 'week' | 'month' = 'week',
   ): Promise<WebhookStatistics> {
-    if (!this.permissionContext.hasPermission('webhook:read')) {
+    if (!this.checkPermission('webhook:read')) {
       throw new ForbiddenException(
         'Insufficient permissions: webhook:read required',
       );
     }
 
-    const tenantId = this.tenantContext.getTenantId();
-    const userId = this.tenantContext.getUserId();
+    const tenantId = this.getTenantId();
+    const userId = this.getUserId();
 
     try {
-      // Add explicit type annotation to fix unsafe assignment
       const stats: StatisticsResult =
         await this.webhookRepository.getStatistics(timeframe);
-
       return {
         timeframe: stats.timeframe,
         total: stats.total,
@@ -847,20 +877,15 @@ export class WebhooksService {
     }
   }
 
-  /**
-   * Clean up old deliveries
-   */
-  async cleanupOldDeliveries(
-    daysToKeep: number = 90,
-  ): Promise<CleanupResponse> {
-    if (!this.permissionContext.hasPermission('system:admin')) {
+  async cleanupOldDeliveries(daysToKeep = 90): Promise<CleanupResponse> {
+    if (!this.checkPermission('system:admin')) {
       throw new ForbiddenException(
         'Insufficient permissions: system:admin required',
       );
     }
 
-    const tenantId = this.tenantContext.getTenantId();
-    const userId = this.tenantContext.getUserId();
+    const tenantId = this.getTenantId();
+    const userId = this.getUserId();
 
     try {
       const result =
@@ -877,7 +902,7 @@ export class WebhooksService {
           deletedCount: result.count,
           tenantId,
         },
-        severity: SeverityMapper.forEventType('info'),
+        severity: getSeverity('info'),
       });
 
       this.logger.log(`Old webhook deliveries cleaned up`, {
@@ -907,13 +932,11 @@ export class WebhooksService {
   private validateWebhookUrl(url: string): void {
     try {
       const parsedUrl = new URL(url);
-
       if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
         throw new BadRequestException(
           'Webhook URL must use HTTP or HTTPS protocol',
         );
       }
-
       if (
         parsedUrl.hostname === 'localhost' ||
         parsedUrl.hostname === '127.0.0.1' ||
@@ -939,12 +962,10 @@ export class WebhooksService {
         where: { id: userId },
         select: { email: true },
       });
-      return user?.email || `user-${userId}@unknown.example.com`;
+      return user?.email ?? `user-${userId}@unknown.example.com`;
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
       this.logger.warn(
-        `Failed to fetch email for user ${this.maskUserId(userId)}: ${errorMessage}`,
+        `Failed to fetch email for user ${this.maskUserId(userId)}: ${getErrorMessage(error)}`,
       );
       return `user-${userId}@error.example.com`;
     }

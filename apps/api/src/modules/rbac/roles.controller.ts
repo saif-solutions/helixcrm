@@ -9,12 +9,10 @@ import {
   Body,
   Param,
   Query,
-  Request,
   HttpCode,
   HttpStatus,
   ParseUUIDPipe,
   UseGuards,
-  ForbiddenException, // ✅ ADD THIS
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -36,28 +34,20 @@ import { RequirePermission } from '../../shared/decorators/require-permission.de
 import { AuthGuard } from '../../shared/guards/auth.guard';
 import { TenantGuard } from '../../shared/guards/tenant.guard';
 import { PermissionGuard } from '../../shared/guards/permission.guard';
-import { PermissionContextService } from '../../shared/permissions/context/permission-context.service'; // ✅ ADD THIS
 
 @ApiTags('RBAC - Roles')
 @ApiBearerAuth()
 @UseGuards(AuthGuard, TenantGuard, PermissionGuard)
 @Controller('rbac/roles')
 export class RolesController {
-  constructor(
-    private readonly rolesService: RolesService,
-    private readonly permissionContext: PermissionContextService, // ✅ ADD THIS
-  ) {}
+  constructor(private readonly rolesService: RolesService) {}
 
   @Get()
   @ApiOperation({ summary: 'Get all roles in organization' })
   @ApiResponse({ status: 200, description: 'List of roles' })
   @ApiQuery({ type: RoleQueryDto })
   @RequirePermission('rbac:read')
-  async findAll(@Request() req: any, @Query() query: RoleQueryDto) {
-    // ✅ Force PermissionGuard to run by checking context
-    if (!this.permissionContext.isInitialized()) {
-      throw new ForbiddenException('Permission context not initialized');
-    }
+  async findAll(@Query() query: RoleQueryDto) {
     return this.rolesService.findAll(query);
   }
 
@@ -67,10 +57,7 @@ export class RolesController {
   @ApiResponse({ status: 404, description: 'Role not found' })
   @ApiParam({ name: 'id', description: 'Role ID' })
   @RequirePermission('rbac:read')
-  async findOne(@Request() req: any, @Param('id', ParseUUIDPipe) id: string) {
-    if (!this.permissionContext.isInitialized()) {
-      throw new ForbiddenException('Permission context not initialized');
-    }
+  async findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.rolesService.findOne(id);
   }
 
@@ -79,10 +66,7 @@ export class RolesController {
   @ApiResponse({ status: 201, description: 'Role created successfully' })
   @ApiResponse({ status: 409, description: 'Role name already exists' })
   @RequirePermission('rbac:manage')
-  async create(@Request() req: any, @Body() createRoleDto: CreateRoleDto) {
-    if (!this.permissionContext.isInitialized()) {
-      throw new ForbiddenException('Permission context not initialized');
-    }
+  async create(@Body() createRoleDto: CreateRoleDto) {
     return this.rolesService.create(createRoleDto);
   }
 
@@ -94,13 +78,9 @@ export class RolesController {
   @ApiParam({ name: 'id', description: 'Role ID' })
   @RequirePermission('rbac:manage')
   async update(
-    @Request() req: any,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateRoleDto: UpdateRoleDto,
   ) {
-    if (!this.permissionContext.isInitialized()) {
-      throw new ForbiddenException('Permission context not initialized');
-    }
     return this.rolesService.update(id, updateRoleDto);
   }
 
@@ -113,10 +93,7 @@ export class RolesController {
   @ApiResponse({ status: 409, description: 'Role has assigned users' })
   @ApiParam({ name: 'id', description: 'Role ID' })
   @RequirePermission('rbac:manage')
-  async remove(@Request() req: any, @Param('id', ParseUUIDPipe) id: string) {
-    if (!this.permissionContext.isInitialized()) {
-      throw new ForbiddenException('Permission context not initialized');
-    }
+  async remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.rolesService.remove(id);
   }
 
@@ -126,10 +103,7 @@ export class RolesController {
   @ApiResponse({ status: 404, description: 'User or role not found' })
   @ApiResponse({ status: 409, description: 'Role already assigned' })
   @RequirePermission('rbac:manage')
-  async assignRole(@Request() req: any, @Body() assignRoleDto: AssignRoleDto) {
-    if (!this.permissionContext.isInitialized()) {
-      throw new ForbiddenException('Permission context not initialized');
-    }
+  async assignRole(@Body() assignRoleDto: AssignRoleDto) {
     return this.rolesService.assignRole(assignRoleDto);
   }
 
@@ -139,10 +113,7 @@ export class RolesController {
   @ApiResponse({ status: 404, description: 'Role assignment not found' })
   @ApiResponse({ status: 403, description: 'Cannot remove last admin' })
   @RequirePermission('rbac:manage')
-  async removeRole(@Request() req: any, @Body() removeRoleDto: RemoveRoleDto) {
-    if (!this.permissionContext.isInitialized()) {
-      throw new ForbiddenException('Permission context not initialized');
-    }
+  async removeRole(@Body() removeRoleDto: RemoveRoleDto) {
     return this.rolesService.removeRole(removeRoleDto);
   }
 
@@ -152,13 +123,7 @@ export class RolesController {
   @ApiResponse({ status: 404, description: 'User not found' })
   @ApiParam({ name: 'userId', description: 'User ID' })
   @RequirePermission('rbac:read')
-  async getUserRoles(
-    @Request() req: any,
-    @Param('userId', ParseUUIDPipe) userId: string,
-  ) {
-    if (!this.permissionContext.isInitialized()) {
-      throw new ForbiddenException('Permission context not initialized');
-    }
+  async getUserRoles(@Param('userId', ParseUUIDPipe) userId: string) {
     return this.rolesService.getUserRoles(userId);
   }
 }
