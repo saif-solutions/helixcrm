@@ -3,8 +3,19 @@ import { AppService } from './app.service';
 import { Request } from 'express';
 import { Public } from './shared/decorators/require-permission.decorator';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ConfigService } from '@nestjs/config';
 
-// Define types for Express router layers
+// Helper to safely extract error message
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'string') return error;
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return 'Unknown error occurred';
+  }
+}
+
 interface RouterLayer {
   route?: {
     path: string;
@@ -17,7 +28,10 @@ interface RouterLayer {
 export class AppController {
   private readonly logger = new Logger(AppController.name);
 
-  constructor(private readonly appService: AppService) {}
+  constructor(
+    private readonly appService: AppService,
+    private readonly configService: ConfigService,
+  ) {}
 
   @Get()
   @Public()
@@ -25,18 +39,6 @@ export class AppController {
   @ApiResponse({ status: 200, description: 'Returns welcome message' })
   getHello(): string {
     return this.appService.getHello();
-  }
-
-  @Get('health')
-  @Public()
-  @ApiOperation({ summary: 'Health check endpoint' })
-  @ApiResponse({ status: 200, description: 'Service is healthy' })
-  health(): { status: string; timestamp: string; service: string } {
-    return {
-      status: 'ok',
-      timestamp: new Date().toISOString(),
-      service: 'HelixCRM API',
-    };
   }
 
   @Get('debug-routes')
@@ -56,8 +58,12 @@ export class AppController {
     originalUrl: string;
     environment: string;
   } {
-    // Only allow in development environment
-    if (process.env.NODE_ENV === 'production') {
+    const environment = this.configService.get<string>(
+      'app.environment',
+      'development',
+    );
+
+    if (environment === 'production') {
       this.logger.warn('Debug routes endpoint accessed in production');
       return {
         message: 'Debug endpoint not available in production',
@@ -65,50 +71,61 @@ export class AppController {
         routes: [],
         baseUrl: req.baseUrl,
         originalUrl: req.originalUrl,
-        environment: process.env.NODE_ENV,
+        environment,
       };
     }
 
-    // Type-safe access to Express router - removed unnecessary assertions
-    const app = req.app as { _router?: { stack: RouterLayer[] } };
-    const router = app._router;
+    try {
+      const app = req.app as { _router?: { stack: RouterLayer[] } };
+      const router = app._router;
+      if (!router?.stack) {
+        this.logger.warn('Router stack not available');
+        return {
+          message: 'Router stack not available',
+          totalRoutes: 0,
+          routes: [],
+          baseUrl: req.baseUrl,
+          originalUrl: req.originalUrl,
+          environment,
+        };
+      }
 
-    if (!router || !router.stack) {
-      this.logger.warn('Router stack not available');
+      const routes = router.stack
+        .filter(
+          (
+            layer,
+          ): layer is RouterLayer & {
+            route: NonNullable<RouterLayer['route']>;
+          } => !!layer.route,
+        )
+        .map((layer) => ({
+          path: layer.route.path,
+          methods: Object.keys(layer.route.methods)
+            .filter((method) => layer.route.methods[method])
+            .map((method) => method.toUpperCase()),
+        }));
+
+      this.logger.debug(
+        `Debug routes endpoint accessed, found ${routes.length} routes`,
+      );
       return {
-        message: 'Router stack not available',
+        message: 'Registered Routes',
+        totalRoutes: routes.length,
+        routes,
+        baseUrl: req.baseUrl,
+        originalUrl: req.originalUrl,
+        environment,
+      };
+    } catch (error) {
+      this.logger.error(`Failed to extract routes: ${getErrorMessage(error)}`);
+      return {
+        message: 'Failed to extract routes',
         totalRoutes: 0,
         routes: [],
         baseUrl: req.baseUrl,
         originalUrl: req.originalUrl,
-        environment: process.env.NODE_ENV,
+        environment,
       };
     }
-
-    const routes = router.stack
-      .filter((layer: RouterLayer) => layer.route)
-      .map((layer: RouterLayer) => {
-        const route = layer.route;
-        // Removed unnecessary non-null assertions
-        const path = route.path;
-        const methods = Object.keys(route.methods)
-          .filter((method) => route.methods[method])
-          .map((method) => method.toUpperCase());
-
-        return { path, methods };
-      });
-
-    this.logger.debug(
-      `Debug routes endpoint accessed, found ${routes.length} routes`,
-    );
-
-    return {
-      message: 'Registered Routes',
-      totalRoutes: routes.length,
-      routes,
-      baseUrl: req.baseUrl,
-      originalUrl: req.originalUrl,
-      environment: process.env.NODE_ENV,
-    };
   }
 }

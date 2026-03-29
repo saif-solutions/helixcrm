@@ -10,7 +10,6 @@ async function bootstrap() {
   const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule);
 
-  // Get configuration
   const configService = app.get(ConfigService);
   const port = configService.get<number>('app.port', 3001);
   const environment = configService.get<string>(
@@ -23,7 +22,7 @@ async function bootstrap() {
   app.use(helmet());
   app.use(cookieParser());
 
-  // Enable CORS
+  // CORS
   const corsOrigin = configService.get<string[]>('app.cors.origin', [
     'http://localhost:5173',
   ]);
@@ -39,17 +38,16 @@ async function bootstrap() {
     ],
   });
 
-  // Global prefix
   app.setGlobalPrefix(apiPrefix);
 
-  // Global validation pipe
+  // Global validation pipe – disable implicit conversion to avoid unexpected type coercion
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
       transformOptions: {
-        enableImplicitConversion: true,
+        enableImplicitConversion: false, // Changed from true
       },
     }),
   );
@@ -79,13 +77,15 @@ async function bootstrap() {
     logger.log('Swagger documentation available at /docs');
   }
 
-  // Start server
+  // Graceful shutdown
+  app.enableShutdownHooks();
+
   await app.listen(port);
   logger.log(
-    `��� Application is running on: http://localhost:${port}/${apiPrefix}`,
+    `🚀 Application is running on: http://localhost:${port}/${apiPrefix}`,
   );
-  logger.log(`��� Environment: ${environment}`);
-  logger.log(`��� CORS enabled for: ${corsOrigin.join(', ')}`);
+  logger.log(`🌍 Environment: ${environment}`);
+  logger.log(`🔗 CORS enabled for: ${corsOrigin.join(', ')}`);
 }
 
 bootstrap().catch((error) => {

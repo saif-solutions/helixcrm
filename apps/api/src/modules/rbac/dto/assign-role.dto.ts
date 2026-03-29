@@ -10,10 +10,7 @@ export class AssignRoleDto {
   @IsNotEmpty()
   userId: string;
 
-  @ApiProperty({
-    description: 'Role ID to assign',
-    example: 'role_456',
-  })
+  @ApiProperty({ description: 'Role ID to assign', example: 'role_456' })
   @IsString()
   @IsNotEmpty()
   roleId: string;
@@ -26,5 +23,5 @@ export class AssignRoleDto {
   })
   @IsOptional()
   @IsObject()
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>; // ✅ changed from any to unknown
 }

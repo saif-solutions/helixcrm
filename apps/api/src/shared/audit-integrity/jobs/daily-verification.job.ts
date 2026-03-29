@@ -38,7 +38,7 @@ export class DailyVerificationJob {
 
   @Cron(CronExpression.EVERY_DAY_AT_2AM)
   async runDailyVerification(): Promise<void> {
-    this.logger.log('Ì¥ç Starting daily audit chain verification...');
+    this.logger.log('ÔøΩÔøΩÔøΩ Starting daily audit chain verification...');
 
     try {
       const result = await this.auditIntegrityService.verifyChain();
@@ -72,7 +72,7 @@ export class DailyVerificationJob {
     // This is where you would integrate with your alerting system
     // Examples: Slack, PagerDuty, Email, etc.
 
-    const alertMessage = `Ì∫® AUDIT CHAIN INTEGRITY VIOLATION
+    const alertMessage = `ÔøΩÔøΩÔøΩ AUDIT CHAIN INTEGRITY VIOLATION
     Time: ${new Date().toISOString()}
     Broken at block: ${result.brokenAtIndex ?? 'unknown'}
     Total events: ${result.totalEvents}
@@ -91,7 +91,7 @@ export class DailyVerificationJob {
     const errorMessage = getErrorMessage(error);
     const errorStack = getErrorStack(error);
 
-    const alertMessage = `Ì∫® AUDIT CHAIN VERIFICATION ERROR
+    const alertMessage = `ÔøΩÔøΩÔøΩ AUDIT CHAIN VERIFICATION ERROR
     Time: ${new Date().toISOString()}
     Error: ${errorMessage}
     Stack: ${errorStack?.substring(0, 500) ?? 'N/A'}...`;
