@@ -126,7 +126,7 @@ export class ExportQueueProcessor extends WorkerHost {
     });
 
     try {
-      await this.exportQueueRepository.updateJob(jobId, {
+      this.exportQueueRepository.updateJob(jobId, {
         status: 'processing',
         processingStartedAt: new Date(),
       });
@@ -151,7 +151,7 @@ export class ExportQueueProcessor extends WorkerHost {
       const fileName = this.generateFileName(exportType, format);
       const fileUrl = this.generateFileUrl(fileName, tenantId);
 
-      await this.exportQueueRepository.markJobAsCompleted(
+      this.exportQueueRepository.markJobAsCompleted(
         jobId,
         fileUrl,
         fileBuffer.length,
@@ -190,7 +190,7 @@ export class ExportQueueProcessor extends WorkerHost {
       const errorMessage = getErrorMessage(error);
       const errorStack = getErrorStack(error);
 
-      await this.exportQueueRepository.markJobAsFailed(jobId, errorMessage);
+      this.exportQueueRepository.markJobAsFailed(jobId, errorMessage);
 
       await this.auditLogService.logEvent({
         action: 'EXPORT_FAILED',

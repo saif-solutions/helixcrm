@@ -78,7 +78,8 @@ export class ExportQueueController {
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({ name: 'status', required: false, type: String })
   @RequirePermission('export.read')
-  async listUserJobs(
+  listUserJobs(
+    // ✅ Remove 'async'
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 20,
     @Query('status') status?: string,
