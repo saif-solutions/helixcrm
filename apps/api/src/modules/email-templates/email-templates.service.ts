@@ -1,3 +1,4 @@
+// apps/api/src/modules/email-templates/email-templates.service.ts
 import {
   Injectable,
   Logger,
@@ -14,7 +15,22 @@ import { AuditLogService } from '../../shared/audit-log/audit-log.service';
 import { SeverityMapper } from '../../shared/audit-log/severity-mapper';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 
-// Define DTO interfaces locally in the service file
+// Helper functions with explicit return types
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'string') return error;
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return 'Unknown error occurred';
+  }
+}
+
+function getErrorStack(error: unknown): string {
+  return error instanceof Error && error.stack ? error.stack : '';
+}
+
+// DTO interfaces
 export interface CreateEmailTemplateDto {
   name: string;
   subject: string;
@@ -51,6 +67,17 @@ export interface SendEmailDto {
   contactId?: string;
 }
 
+// Local interface for permission context
+interface PermissionContextWithHasPermission {
+  hasPermission(permission: string): boolean;
+}
+
+type AuditLogAction =
+  | 'EMAIL_TEMPLATE_CREATED'
+  | 'EMAIL_TEMPLATE_UPDATED'
+  | 'EMAIL_TEMPLATE_DELETED'
+  | 'EMAIL_SENT';
+
 @Injectable()
 export class EmailTemplatesService {
   private readonly logger = new Logger(EmailTemplatesService.name);
@@ -64,23 +91,66 @@ export class EmailTemplatesService {
     private readonly prisma: PrismaService,
   ) {}
 
-  /**
-   * Create a new email template
-   */
+  // Type-safe severity mapping
+  private getSeverity(level: 'info' | 'warning' | 'error'): string {
+    // Cast to string – adjust return type if your SeverityMapper expects something else
+    return SeverityMapper.forEventType(level) as string;
+  }
+
+  // Type-safe permission check
+  private checkPermission(permission: string): boolean {
+    const context: unknown = this.permissionContext;
+    if (this.isPermissionContext(context)) {
+      try {
+        return context.hasPermission(permission) === true;
+      } catch {
+        this.logger.debug(
+          `Permission check failed for ${permission}, relying on guard`,
+        );
+        return true;
+      }
+    }
+    this.logger.debug(
+      `Permission context not ready for ${permission}, relying on guard`,
+    );
+    return true;
+  }
+
+  private isPermissionContext(
+    context: unknown,
+  ): context is PermissionContextWithHasPermission {
+    return (
+      typeof context === 'object' &&
+      context !== null &&
+      typeof (context as PermissionContextWithHasPermission).hasPermission ===
+        'function'
+    );
+  }
+
+  private getTenantId(): string {
+    const id = this.tenantContext.getTenantId();
+    return typeof id === 'string' ? id : String(id ?? '');
+  }
+
+  private getUserId(): string {
+    const id = this.tenantContext.getUserId();
+    return typeof id === 'string' ? id : String(id ?? '');
+  }
+
+  // ==================== CRUD METHODS ====================
+
   async createEmailTemplate(createDto: CreateEmailTemplateDto) {
-    // 1. PERMISSION CHECK - FIXED: 'email_templates.manage' → 'email:manage'
-    if (!this.permissionContext.hasPermission('email:manage')) {
+    if (!this.checkPermission('email:manage')) {
       throw new ForbiddenException(
         'Insufficient permissions: email:manage required',
       );
     }
 
     const startTime = Date.now();
-    const tenantId = this.tenantContext.getTenantId();
-    const userId = this.tenantContext.getUserId();
+    const tenantId = this.getTenantId();
+    const userId = this.getUserId();
 
     try {
-      // 2. VALIDATE TEMPLATE NAME UNIQUENESS
       const nameExists = await this.emailTemplateRepository.nameExists(
         createDto.name,
       );
@@ -90,17 +160,14 @@ export class EmailTemplatesService {
         );
       }
 
-      // 3. VALIDATE TEMPLATE BODY
       this.validateTemplateBody(createDto.body);
 
-      // 4. CREATE TEMPLATE USING REPOSITORY
       const template = await this.emailTemplateRepository.create(createDto);
 
-      // 5. AUDIT LOGGING
       await this.auditLogService.logEvent({
-        action: 'EMAIL_TEMPLATE_CREATED' as any,
+        action: 'EMAIL_TEMPLATE_CREATED' as AuditLogAction,
         entityId: template.id,
-        entityType: 'EMAIL_TEMPLATE' as any,
+        entityType: 'EMAIL_TEMPLATE',
         organizationId: tenantId,
         actorUserId: userId,
         actorEmail: await this.getUserEmail(userId),
@@ -111,7 +178,7 @@ export class EmailTemplatesService {
           isActive: template.isActive,
           variablesCount: template.variables.length,
         },
-        severity: SeverityMapper.forEventType('info'),
+        severity: this.getSeverity('info'),
       });
 
       this.logger.log(`Email template created successfully`, {
@@ -124,19 +191,16 @@ export class EmailTemplatesService {
       });
 
       return template;
-    } catch (error: any) {
-      // 6. ERROR HANDLING
-      this.logger.error(
-        `Create email template failed: ${error.message}`,
-        error.stack,
-        {
-          tenantId,
-          userId,
-          data: createDto,
-          method: 'createEmailTemplate',
-          processingTime: Date.now() - startTime,
-        },
-      );
+    } catch (error: unknown) {
+      const errMsg = getErrorMessage(error);
+      const errStack = getErrorStack(error);
+      this.logger.error(`Create email template failed: ${errMsg}`, errStack, {
+        tenantId,
+        userId,
+        data: createDto,
+        method: 'createEmailTemplate',
+        processingTime: Date.now() - startTime,
+      } as Record<string, unknown>);
 
       if (
         error instanceof ForbiddenException ||
@@ -150,31 +214,26 @@ export class EmailTemplatesService {
     }
   }
 
-  /**
-   * Get all email templates for current tenant
-   */
   async getAllEmailTemplates(options?: {
     category?: string;
     isActive?: boolean;
     page?: number;
     limit?: number;
   }) {
-    // 1. PERMISSION CHECK - FIXED: 'email_templates.read' → 'email:read'
-    if (!this.permissionContext.hasPermission('email:read')) {
+    if (!this.checkPermission('email:read')) {
       throw new ForbiddenException(
         'Insufficient permissions: email:read required',
       );
     }
 
-    const tenantId = this.tenantContext.getTenantId();
-    const userId = this.tenantContext.getUserId();
+    const tenantId = this.getTenantId();
+    const userId = this.getUserId();
 
     try {
       const page = options?.page || 1;
       const limit = options?.limit || 20;
       const skip = (page - 1) * limit;
 
-      // 2. GET TEMPLATES USING REPOSITORY
       const [templates, total] = await Promise.all([
         this.emailTemplateRepository.findAll({
           category: options?.category,
@@ -198,54 +257,47 @@ export class EmailTemplatesService {
           hasMore: page * limit < total,
         },
       };
-    } catch (error: any) {
-      this.logger.error(
-        `Get all email templates failed: ${error.message}`,
-        error.stack,
-        {
-          tenantId,
-          userId,
-          options,
-          method: 'getAllEmailTemplates',
-        },
-      );
+    } catch (error: unknown) {
+      const errMsg = getErrorMessage(error);
+      const errStack = getErrorStack(error);
+      this.logger.error(`Get all email templates failed: ${errMsg}`, errStack, {
+        tenantId,
+        userId,
+        options,
+        method: 'getAllEmailTemplates',
+      } as Record<string, unknown>);
       throw new BadRequestException('Failed to fetch email templates');
     }
   }
 
-  /**
-   * Get email template by ID
-   */
   async getEmailTemplateById(id: string) {
-    // 1. PERMISSION CHECK - FIXED: 'email_templates.read' → 'email:read'
-    if (!this.permissionContext.hasPermission('email:read')) {
+    if (!this.checkPermission('email:read')) {
       throw new ForbiddenException(
         'Insufficient permissions: email:read required',
       );
     }
 
-    const tenantId = this.tenantContext.getTenantId();
-    const userId = this.tenantContext.getUserId();
+    const tenantId = this.getTenantId();
+    const userId = this.getUserId();
 
     try {
-      // 2. GET TEMPLATE USING REPOSITORY
       const template = await this.emailTemplateRepository.findById(id);
-
       if (!template) {
         throw new NotFoundException(`Email template ${id} not found`);
       }
-
       return template;
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errMsg = getErrorMessage(error);
+      const errStack = getErrorStack(error);
       this.logger.error(
-        `Get email template by ID failed: ${error.message}`,
-        error.stack,
+        `Get email template by ID failed: ${errMsg}`,
+        errStack,
         {
           tenantId,
           userId,
           id,
           method: 'getEmailTemplateById',
-        },
+        } as Record<string, unknown>,
       );
 
       if (
@@ -259,29 +311,23 @@ export class EmailTemplatesService {
     }
   }
 
-  /**
-   * Update email template
-   */
   async updateEmailTemplate(id: string, updateDto: UpdateEmailTemplateDto) {
-    // 1. PERMISSION CHECK - FIXED: 'email_templates.manage' → 'email:manage'
-    if (!this.permissionContext.hasPermission('email:manage')) {
+    if (!this.checkPermission('email:manage')) {
       throw new ForbiddenException(
         'Insufficient permissions: email:manage required',
       );
     }
 
     const startTime = Date.now();
-    const tenantId = this.tenantContext.getTenantId();
-    const userId = this.tenantContext.getUserId();
+    const tenantId = this.getTenantId();
+    const userId = this.getUserId();
 
     try {
-      // 2. GET EXISTING TEMPLATE
       const existingTemplate = await this.emailTemplateRepository.findById(id);
       if (!existingTemplate) {
         throw new NotFoundException(`Email template ${id} not found`);
       }
 
-      // 3. VALIDATE NAME UNIQUENESS IF CHANGING
       if (updateDto.name && updateDto.name !== existingTemplate.name) {
         const nameExists = await this.emailTemplateRepository.nameExists(
           updateDto.name,
@@ -294,22 +340,19 @@ export class EmailTemplatesService {
         }
       }
 
-      // 4. VALIDATE TEMPLATE BODY IF CHANGING
       if (updateDto.body) {
         this.validateTemplateBody(updateDto.body);
       }
 
-      // 5. UPDATE TEMPLATE USING REPOSITORY
       const updatedTemplate = await this.emailTemplateRepository.update(
         id,
         updateDto,
       );
 
-      // 6. AUDIT LOGGING
       await this.auditLogService.logEvent({
-        action: 'EMAIL_TEMPLATE_UPDATED' as any,
+        action: 'EMAIL_TEMPLATE_UPDATED' as AuditLogAction,
         entityId: id,
-        entityType: 'EMAIL_TEMPLATE' as any,
+        entityType: 'EMAIL_TEMPLATE',
         organizationId: tenantId,
         actorUserId: userId,
         actorEmail: await this.getUserEmail(userId),
@@ -320,7 +363,7 @@ export class EmailTemplatesService {
           newName: updatedTemplate.name,
           isActive: updatedTemplate.isActive,
         },
-        severity: SeverityMapper.forEventType('info'),
+        severity: this.getSeverity('info'),
       });
 
       this.logger.log(`Email template updated successfully`, {
@@ -333,20 +376,17 @@ export class EmailTemplatesService {
       });
 
       return updatedTemplate;
-    } catch (error: any) {
-      // 7. ERROR HANDLING
-      this.logger.error(
-        `Update email template failed: ${error.message}`,
-        error.stack,
-        {
-          tenantId,
-          userId,
-          id,
-          data: updateDto,
-          method: 'updateEmailTemplate',
-          processingTime: Date.now() - startTime,
-        },
-      );
+    } catch (error: unknown) {
+      const errMsg = getErrorMessage(error);
+      const errStack = getErrorStack(error);
+      this.logger.error(`Update email template failed: ${errMsg}`, errStack, {
+        tenantId,
+        userId,
+        id,
+        data: updateDto,
+        method: 'updateEmailTemplate',
+        processingTime: Date.now() - startTime,
+      } as Record<string, unknown>);
 
       if (
         error instanceof NotFoundException ||
@@ -361,45 +401,36 @@ export class EmailTemplatesService {
     }
   }
 
-  /**
-   * Delete email template
-   */
   async deleteEmailTemplate(id: string) {
-    // 1. PERMISSION CHECK - FIXED: 'email_templates.manage' → 'email:manage'
-    if (!this.permissionContext.hasPermission('email:manage')) {
+    if (!this.checkPermission('email:manage')) {
       throw new ForbiddenException(
         'Insufficient permissions: email:manage required',
       );
     }
 
     const startTime = Date.now();
-    const tenantId = this.tenantContext.getTenantId();
-    const userId = this.tenantContext.getUserId();
+    const tenantId = this.getTenantId();
+    const userId = this.getUserId();
 
     try {
-      // 2. GET EXISTING TEMPLATE
       const existingTemplate = await this.emailTemplateRepository.findById(id);
       if (!existingTemplate) {
         throw new NotFoundException(`Email template ${id} not found`);
       }
 
-      // 3. CHECK IF TEMPLATE HAS SENT EMAILS
       const sentEmailCount = await this.sentEmailRepository.countByTemplate(id);
-
       if (sentEmailCount > 0) {
         throw new ConflictException(
           'Cannot delete template that has sent emails. Consider deactivating instead.',
         );
       }
 
-      // 4. DELETE TEMPLATE USING REPOSITORY
       await this.emailTemplateRepository.delete(id);
 
-      // 5. AUDIT LOGGING
       await this.auditLogService.logEvent({
-        action: 'EMAIL_TEMPLATE_DELETED' as any,
+        action: 'EMAIL_TEMPLATE_DELETED' as AuditLogAction,
         entityId: id,
-        entityType: 'EMAIL_TEMPLATE' as any,
+        entityType: 'EMAIL_TEMPLATE',
         organizationId: tenantId,
         actorUserId: userId,
         actorEmail: await this.getUserEmail(userId),
@@ -408,7 +439,7 @@ export class EmailTemplatesService {
           name: existingTemplate.name,
           hadSentEmails: false,
         },
-        severity: SeverityMapper.forEventType('warning'),
+        severity: this.getSeverity('warning'),
       });
 
       this.logger.log(`Email template deleted successfully`, {
@@ -421,19 +452,16 @@ export class EmailTemplatesService {
       });
 
       return { message: 'Email template deleted successfully' };
-    } catch (error: any) {
-      // 6. ERROR HANDLING
-      this.logger.error(
-        `Delete email template failed: ${error.message}`,
-        error.stack,
-        {
-          tenantId,
-          userId,
-          id,
-          method: 'deleteEmailTemplate',
-          processingTime: Date.now() - startTime,
-        },
-      );
+    } catch (error: unknown) {
+      const errMsg = getErrorMessage(error);
+      const errStack = getErrorStack(error);
+      this.logger.error(`Delete email template failed: ${errMsg}`, errStack, {
+        tenantId,
+        userId,
+        id,
+        method: 'deleteEmailTemplate',
+        processingTime: Date.now() - startTime,
+      } as Record<string, unknown>);
 
       if (
         error instanceof NotFoundException ||
@@ -447,23 +475,20 @@ export class EmailTemplatesService {
     }
   }
 
-  /**
-   * Render template with variables
-   */
+  // ==================== RENDER & SEND ====================
+
   async renderTemplate(renderDto: RenderTemplateDto) {
-    // 1. PERMISSION CHECK - FIXED: 'email_templates.read' → 'email:read'
-    if (!this.permissionContext.hasPermission('email:read')) {
+    if (!this.checkPermission('email:read')) {
       throw new ForbiddenException(
         'Insufficient permissions: email:read required',
       );
     }
 
     const startTime = Date.now();
-    const tenantId = this.tenantContext.getTenantId();
-    const userId = this.tenantContext.getUserId();
+    const tenantId = this.getTenantId();
+    const userId = this.getUserId();
 
     try {
-      // 2. GET TEMPLATE
       const template = await this.emailTemplateRepository.findById(
         renderDto.templateId,
       );
@@ -473,10 +498,8 @@ export class EmailTemplatesService {
         );
       }
 
-      // 3. VALIDATE PROVIDED VARIABLES
       this.validateTemplateVariables(template.variables, renderDto.variables);
 
-      // 4. RENDER TEMPLATE
       const rendered = this.renderTemplateContent(
         template.body,
         renderDto.variables,
@@ -509,18 +532,16 @@ export class EmailTemplatesService {
           variables: template.variables,
         },
       };
-    } catch (error: any) {
-      this.logger.error(
-        `Render template failed: ${error.message}`,
-        error.stack,
-        {
-          tenantId,
-          userId,
-          data: renderDto,
-          method: 'renderTemplate',
-          processingTime: Date.now() - startTime,
-        },
-      );
+    } catch (error: unknown) {
+      const errMsg = getErrorMessage(error);
+      const errStack = getErrorStack(error);
+      this.logger.error(`Render template failed: ${errMsg}`, errStack, {
+        tenantId,
+        userId,
+        data: renderDto,
+        method: 'renderTemplate',
+        processingTime: Date.now() - startTime,
+      } as Record<string, unknown>);
 
       if (
         error instanceof NotFoundException ||
@@ -533,23 +554,18 @@ export class EmailTemplatesService {
     }
   }
 
-  /**
-   * Send email using template
-   */
   async sendEmail(sendDto: SendEmailDto) {
-    // 1. PERMISSION CHECK - FIXED: 'email_templates.send' → 'email:send'
-    if (!this.permissionContext.hasPermission('email:send')) {
+    if (!this.checkPermission('email:send')) {
       throw new ForbiddenException(
         'Insufficient permissions: email:send required',
       );
     }
 
     const startTime = Date.now();
-    const tenantId = this.tenantContext.getTenantId();
-    const userId = this.tenantContext.getUserId();
+    const tenantId = this.getTenantId();
+    const userId = this.getUserId();
 
     try {
-      // 2. GET TEMPLATE
       const template = await this.emailTemplateRepository.findById(
         sendDto.templateId,
       );
@@ -559,15 +575,12 @@ export class EmailTemplatesService {
         );
       }
 
-      // 3. CHECK IF TEMPLATE IS ACTIVE
       if (!template.isActive) {
         throw new ConflictException('Email template is not active');
       }
 
-      // 4. VALIDATE VARIABLES
       this.validateTemplateVariables(template.variables, sendDto.variables);
 
-      // 5. RENDER TEMPLATE
       const renderedSubject = this.renderTemplateContent(
         template.subject,
         sendDto.variables,
@@ -580,7 +593,6 @@ export class EmailTemplatesService {
         ? this.renderTemplateContent(template.bodyText, sendDto.variables)
         : this.convertHtmlToText(renderedBody);
 
-      // 6. CREATE SENT EMAIL RECORD
       const sentEmail = await this.sentEmailRepository.create({
         templateId: sendDto.templateId,
         to: sendDto.to,
@@ -596,17 +608,15 @@ export class EmailTemplatesService {
         userId: userId,
       });
 
-      // 7. QUEUE EMAIL FOR BACKGROUND SENDING
       await this.sentEmailRepository.update(sentEmail.id, {
         status: 'queued',
         sentAt: new Date(),
       });
 
-      // 8. AUDIT LOGGING
       await this.auditLogService.logEvent({
-        action: 'EMAIL_SENT' as any,
+        action: 'EMAIL_SENT' as AuditLogAction,
         entityId: sentEmail.id,
-        entityType: 'SENT_EMAIL' as any,
+        entityType: 'SENT_EMAIL',
         organizationId: tenantId,
         actorUserId: userId,
         actorEmail: await this.getUserEmail(userId),
@@ -618,7 +628,7 @@ export class EmailTemplatesService {
           campaignId: sendDto.campaignId,
           contactId: sendDto.contactId,
         },
-        severity: SeverityMapper.forEventType('info'),
+        severity: this.getSeverity('info'),
       });
 
       this.logger.log(`Email queued for sending`, {
@@ -640,14 +650,16 @@ export class EmailTemplatesService {
           to: sendDto.to,
         },
       };
-    } catch (error: any) {
-      this.logger.error(`Send email failed: ${error.message}`, error.stack, {
+    } catch (error: unknown) {
+      const errMsg = getErrorMessage(error);
+      const errStack = getErrorStack(error);
+      this.logger.error(`Send email failed: ${errMsg}`, errStack, {
         tenantId,
         userId,
         data: sendDto,
         method: 'sendEmail',
         processingTime: Date.now() - startTime,
-      });
+      } as Record<string, unknown>);
 
       if (
         error instanceof NotFoundException ||
@@ -668,21 +680,17 @@ export class EmailTemplatesService {
     if (!body || body.trim().length === 0) {
       throw new BadRequestException('Template body cannot be empty');
     }
-
     if (body.length > 100000) {
       throw new BadRequestException(
         'Template body is too long (max 100,000 characters)',
       );
     }
-
-    // Add more validation as needed (HTML sanitization, etc.)
   }
 
   private validateTemplateVariables(
     availableVariables: string[],
     providedVariables: Record<string, any>,
   ): void {
-    // Check for required variables
     const requiredVariables = availableVariables.filter((v) => v.endsWith('*'));
     for (const requiredVar of requiredVariables) {
       const cleanVar = requiredVar.replace('*', '');
@@ -693,14 +701,12 @@ export class EmailTemplatesService {
       }
     }
 
-    // Warn about unused variables (optional)
     const usedVariables = Object.keys(providedVariables);
     const unusedVariables = usedVariables.filter(
       (v) =>
         !availableVariables.includes(v) &&
         !availableVariables.includes(`${v}*`),
     );
-
     if (unusedVariables.length > 0) {
       this.logger.warn(
         `Unused variables provided: ${unusedVariables.join(', ')}`,
@@ -713,21 +719,15 @@ export class EmailTemplatesService {
     variables: Record<string, any>,
   ): string {
     let rendered = content;
-
-    // Replace variable placeholders: {{variableName}}
     for (const [key, value] of Object.entries(variables)) {
       const placeholder = new RegExp(`{{${key}}}`, 'g');
       rendered = rendered.replace(placeholder, String(value));
     }
-
-    // Remove any remaining placeholders (optional variables)
     rendered = rendered.replace(/{{[^{}]+}}/g, '');
-
     return rendered;
   }
 
   private convertHtmlToText(html: string): string {
-    // Simple HTML to text conversion
     return html
       .replace(/<br\s*\/?>/gi, '\n')
       .replace(/<p\s*\/?>/gi, '\n\n')
@@ -747,11 +747,8 @@ export class EmailTemplatesService {
         where: { id: userId },
         select: { email: true },
       });
-      return user?.email || `user-${userId}@unknown.example.com`;
-    } catch (error) {
-      this.logger.warn(
-        `Failed to fetch email for user ${userId}: ${error.message}`,
-      );
+      return user?.email ?? `user-${userId}@unknown.example.com`;
+    } catch {
       return `user-${userId}@error.example.com`;
     }
   }

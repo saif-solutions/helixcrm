@@ -1,3 +1,4 @@
+// apps/api/src/modules/demo/demo.controller.ts
 import {
   Controller,
   Get,
@@ -9,7 +10,8 @@ import {
 } from '@nestjs/common';
 import { Public } from '../../shared/decorators/require-permission.decorator';
 import { Throttle } from '@nestjs/throttler';
-import { getDemoConfig } from '../../config/demo.config';
+import getDemoConfig from '../../config/demo.config'; // default import
+import type { DemoConfig } from '../../config/demo.config'; // type import
 import { AuthService } from '../auth/auth.service';
 import { Res, Req } from '@nestjs/common';
 import type { Response, Request } from 'express';
@@ -23,7 +25,7 @@ export class DemoController {
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   getDemoCredentials() {
-    const config = getDemoConfig();
+    const config: DemoConfig = getDemoConfig();
 
     if (!config.enabled) {
       return {
@@ -32,7 +34,6 @@ export class DemoController {
       };
     }
 
-    // Return only emails, never passwords
     return {
       enabled: true,
       accounts: [
@@ -54,10 +55,10 @@ export class DemoController {
   @HttpCode(HttpStatus.OK)
   async loginWithDemo(
     @Param('role') role: string,
-    @Res({ passthrough: true }) res: Response, // Add this
-    @Req() req: Request, // Add this
+    @Res({ passthrough: true }) res: Response,
+    @Req() req: Request,
   ) {
-    const config = getDemoConfig();
+    const config: DemoConfig = getDemoConfig();
 
     if (!config.enabled) {
       throw new UnauthorizedException('Demo mode is disabled');
@@ -68,7 +69,6 @@ export class DemoController {
         ? { email: config.adminEmail, password: config.adminPassword }
         : { email: config.userEmail, password: config.userPassword };
 
-    // Pass all required parameters
     return this.authService.login(credentials, res, req);
   }
 }

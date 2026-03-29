@@ -10,16 +10,14 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
-import { Request, Response } from 'express';
+import { Request, Response, CookieOptions } from 'express';
 import { Public } from '../../shared/decorators/require-permission.decorator';
 import SecurityConfig from '../../../config/security.config';
 
-// Define the CSRF request interface
 interface CsrfRequest extends Request {
   csrfToken?: () => string;
 }
 
-// Define error response interface
 interface ErrorResponse {
   message: string;
   details?: string;
@@ -29,14 +27,9 @@ interface ErrorResponse {
   error?: string;
 }
 
-// Helper function for safe error message extraction
 function getErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-  if (typeof error === 'string') {
-    return error;
-  }
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'string') return error;
   try {
     return JSON.stringify(error);
   } catch {
@@ -55,10 +48,8 @@ export class CsrfController {
     try {
       this.logger.log('Generating CSRF token');
 
-      // Cast request to our extended interface
       const csrfReq = req as CsrfRequest;
 
-      // Check if CSRF middleware ran and attached the function
       if (typeof csrfReq.csrfToken !== 'function') {
         throw new BadRequestException({
           message: 'CSRF middleware not properly configured',
@@ -69,10 +60,8 @@ export class CsrfController {
         } as ErrorResponse);
       }
 
-      // Generate the CSRF token
       const csrfToken = csrfReq.csrfToken();
 
-      // Validate the token
       if (
         !csrfToken ||
         typeof csrfToken !== 'string' ||
@@ -87,7 +76,6 @@ export class CsrfController {
         } as ErrorResponse);
       }
 
-      // CRITICAL: Ensure we never return 'development-mode'
       if (csrfToken === 'development-mode') {
         throw new BadRequestException({
           message: 'CSRF configuration error',
@@ -99,8 +87,9 @@ export class CsrfController {
         } as ErrorResponse);
       }
 
-      // Set cookie
-      res.cookie('XSRF-TOKEN', csrfToken, SecurityConfig.cookies.csrfToken());
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+      const cookieOptions = SecurityConfig.cookies.csrfToken() as CookieOptions;
+      res.cookie('XSRF-TOKEN', csrfToken, cookieOptions);
 
       return {
         csrfToken,
@@ -112,12 +101,8 @@ export class CsrfController {
       const errorMessage = getErrorMessage(error);
       this.logger.error(`CSRF token generation failed: ${errorMessage}`);
 
-      // If it's already a BadRequestException, re-throw it
-      if (error instanceof BadRequestException) {
-        throw error;
-      }
+      if (error instanceof BadRequestException) throw error;
 
-      // Otherwise, wrap in a BadRequestException with proper structure
       throw new BadRequestException({
         message: 'CSRF token generation failed',
         error: errorMessage,

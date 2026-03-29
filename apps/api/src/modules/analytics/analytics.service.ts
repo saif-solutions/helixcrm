@@ -23,11 +23,6 @@ import { AnalyticsRepository } from './repositories/analytics.repository';
 import { AnalyticsSummaryRepository } from './repositories/analytics-summary.repository';
 import { AnalyticsSummaryService } from './services/analytics-summary.service';
 import {
-  AuditAction,
-  AuditEntityType,
-  AuditSeverity,
-} from '../../shared/audit-log/audit-log.service';
-import {
   DealAnalyticsQueryDto,
   RevenueAnalyticsQueryDto,
   PipelineAnalyticsQueryDto,
@@ -134,6 +129,25 @@ export class AnalyticsService {
     );
   }
 
+  // Helper method for permission checking – type‑safe wrapper
+  private async checkPermission(permission: string): Promise<boolean> {
+    // Cast to unknown first to avoid any, then check for the method
+    const ctx = this.permissionContext as unknown as Record<string, unknown>;
+    const hasPermissionFn = ctx.hasPermission;
+    if (typeof hasPermissionFn === 'function') {
+      try {
+        // Safely cast the function to its expected signature
+        const result = await (
+          hasPermissionFn as (perm: string) => Promise<boolean>
+        )(permission);
+        return result === true;
+      } catch {
+        return false;
+      }
+    }
+    return false;
+  }
+
   private async getUserEmail(userId: string): Promise<string> {
     // Check cache first
     const cached = this.userEmailCache.get(userId);
@@ -189,7 +203,8 @@ export class AnalyticsService {
   async getDealAnalytics(
     query: DealAnalyticsQueryDto,
   ): Promise<AnalyticsResult> {
-    if (!this.permissionContext.hasPermission('report:read')) {
+    const hasPermission = await this.checkPermission('report:read');
+    if (!hasPermission) {
       throw new ForbiddenException(
         'Insufficient permissions: report:read required',
       );
@@ -269,7 +284,8 @@ export class AnalyticsService {
   async getRevenueAnalytics(
     query: RevenueAnalyticsQueryDto,
   ): Promise<AnalyticsResult> {
-    if (!this.permissionContext.hasPermission('report:read')) {
+    const hasPermission = await this.checkPermission('report:read');
+    if (!hasPermission) {
       throw new ForbiddenException(
         'Insufficient permissions: report:read required',
       );
@@ -348,7 +364,8 @@ export class AnalyticsService {
   async getPipelineAnalytics(
     query: PipelineAnalyticsQueryDto,
   ): Promise<AnalyticsResult> {
-    if (!this.permissionContext.hasPermission('report:read')) {
+    const hasPermission = await this.checkPermission('report:read');
+    if (!hasPermission) {
       throw new ForbiddenException(
         'Insufficient permissions: report:read required',
       );
@@ -427,7 +444,8 @@ export class AnalyticsService {
   async getActivityAnalytics(
     query: ActivityAnalyticsQueryDto,
   ): Promise<AnalyticsResult> {
-    if (!this.permissionContext.hasPermission('report:read')) {
+    const hasPermission = await this.checkPermission('report:read');
+    if (!hasPermission) {
       throw new ForbiddenException(
         'Insufficient permissions: report:read required',
       );
@@ -511,7 +529,8 @@ export class AnalyticsService {
     estimatedCompletion: string;
     downloadToken: string;
   }> {
-    if (!this.permissionContext.hasPermission('report:export')) {
+    const hasPermission = await this.checkPermission('report:export');
+    if (!hasPermission) {
       throw new ForbiddenException(
         'Insufficient permissions: report:export required',
       );
@@ -543,8 +562,8 @@ export class AnalyticsService {
       };
 
       await this.auditLogService.logEvent({
-        action: 'ANALYTICS_EXPORT_REQUESTED' as AuditAction,
-        entityType: 'ExportJob' as AuditEntityType,
+        action: 'ANALYTICS_EXPORT_REQUESTED' as const,
+        entityType: 'ExportJob' as const,
         actorEmail: await this.getUserEmail(userId),
         actorUserId: userId,
         entityId: exportJob.id,
@@ -553,7 +572,7 @@ export class AnalyticsService {
           format: exportJob.format,
           query,
         },
-        severity: 'INFO' as AuditSeverity,
+        severity: 'INFO' as const,
         organizationId: tenantId,
       });
 
@@ -592,7 +611,8 @@ export class AnalyticsService {
   }
 
   async getExportStatus(jobId: string): Promise<JobStatus> {
-    if (!this.permissionContext.hasPermission('report:read')) {
+    const hasPermission = await this.checkPermission('report:read');
+    if (!hasPermission) {
       throw new ForbiddenException(
         'Insufficient permissions: report:read required',
       );
@@ -650,7 +670,8 @@ export class AnalyticsService {
   }
 
   async downloadExport(jobId: string, token: string): Promise<ExportData> {
-    if (!this.permissionContext.hasPermission('report:export')) {
+    const hasPermission = await this.checkPermission('report:export');
+    if (!hasPermission) {
       throw new ForbiddenException(
         'Insufficient permissions: report:export required',
       );
@@ -677,8 +698,8 @@ export class AnalyticsService {
       };
 
       await this.auditLogService.logEvent({
-        action: 'ANALYTICS_EXPORT_DOWNLOADED' as AuditAction,
-        entityType: 'ExportJob' as AuditEntityType,
+        action: 'ANALYTICS_EXPORT_DOWNLOADED' as const,
+        entityType: 'ExportJob' as const,
         actorEmail: await this.getUserEmail(userId),
         actorUserId: userId,
         entityId: jobId,
@@ -686,7 +707,7 @@ export class AnalyticsService {
           format: exportData.format,
           filename: exportData.filename,
         },
-        severity: 'INFO' as AuditSeverity,
+        severity: 'INFO' as const,
         organizationId: tenantId,
       });
 
@@ -719,7 +740,8 @@ export class AnalyticsService {
   }
 
   async getAvailableExports(query: AnalyticsExportQueryDto): Promise<unknown> {
-    if (!this.permissionContext.hasPermission('report:read')) {
+    const hasPermission = await this.checkPermission('report:read');
+    if (!hasPermission) {
       throw new ForbiddenException(
         'Insufficient permissions: report:read required',
       );

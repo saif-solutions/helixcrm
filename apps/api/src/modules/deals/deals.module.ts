@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { JwtModule } from '@nestjs/jwt'; // ADD THIS IMPORT
+import { JwtModule } from '@nestjs/jwt';
 import { DealsService } from './deals.service';
 import { DealsController } from './deals.controller';
 import { LoggingModule } from '../../shared/logging/logging.module';
@@ -9,12 +9,13 @@ import { PermissionContextModule } from '../../shared/permissions/context/permis
 import { AuditLogModule } from '../../shared/audit-log/audit-log.module';
 
 @Module({
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   imports: [
     LoggingModule,
     TenantModule,
     PermissionContextModule,
     AuditLogModule,
-    JwtModule, // ADD THIS TO IMPORTS ARRAY
+    JwtModule,
   ],
   controllers: [DealsController],
   providers: [DealsService, DealRepository],

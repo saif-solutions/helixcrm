@@ -1,7 +1,7 @@
-// src/modules/email-templates/repositories/email-template.repository.ts
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
 import { TenantAwareRepository } from '../../../shared/database/tenant-aware.repository';
+import { Prisma } from '@prisma/client';
 
 interface CreateEmailTemplateData {
   name: string;
@@ -23,15 +23,19 @@ interface UpdateEmailTemplateData {
   isActive?: boolean;
 }
 
+interface FindAllOptions {
+  category?: string;
+  isActive?: boolean;
+  skip?: number;
+  take?: number;
+}
+
 @Injectable()
 export class EmailTemplateRepository extends TenantAwareRepository {
   constructor(prisma: PrismaService) {
     super(prisma);
   }
 
-  /**
-   * Create a new email template
-   */
   async create(data: CreateEmailTemplateData) {
     return this.prisma.emailTemplate.create({
       data: {
@@ -43,9 +47,6 @@ export class EmailTemplateRepository extends TenantAwareRepository {
     });
   }
 
-  /**
-   * Find template by ID with tenant isolation
-   */
   async findById(id: string) {
     return this.prisma.emailTemplate.findFirst({
       where: {
@@ -55,9 +56,6 @@ export class EmailTemplateRepository extends TenantAwareRepository {
     });
   }
 
-  /**
-   * Find template by name with tenant isolation
-   */
   async findByName(name: string) {
     return this.prisma.emailTemplate.findFirst({
       where: {
@@ -67,49 +65,34 @@ export class EmailTemplateRepository extends TenantAwareRepository {
     });
   }
 
-  /**
-   * Find all templates for current tenant
-   */
-  async findAll(options?: {
-    category?: string;
-    isActive?: boolean;
-    skip?: number;
-    take?: number;
-  }) {
-    const where: any = {
+  async findAll(options?: FindAllOptions) {
+    const where: Prisma.EmailTemplateWhereInput = {
       organizationId: this.tenantId,
     };
 
-    if (options?.category) {
+    if (options?.category !== undefined) {
       where.category = options.category;
     }
-
     if (options?.isActive !== undefined) {
       where.isActive = options.isActive;
     }
 
     return this.prisma.emailTemplate.findMany({
       where,
-      orderBy: {
-        createdAt: 'desc',
-      },
+      orderBy: { createdAt: 'desc' },
       skip: options?.skip,
       take: options?.take,
     });
   }
 
-  /**
-   * Count templates for current tenant
-   */
-  async count(options?: { category?: string; isActive?: boolean }) {
-    const where: any = {
+  async count(options?: FindAllOptions) {
+    const where: Prisma.EmailTemplateWhereInput = {
       organizationId: this.tenantId,
     };
 
-    if (options?.category) {
+    if (options?.category !== undefined) {
       where.category = options.category;
     }
-
     if (options?.isActive !== undefined) {
       where.isActive = options.isActive;
     }
@@ -117,9 +100,6 @@ export class EmailTemplateRepository extends TenantAwareRepository {
     return this.prisma.emailTemplate.count({ where });
   }
 
-  /**
-   * Update template
-   */
   async update(id: string, data: UpdateEmailTemplateData) {
     return this.prisma.emailTemplate.update({
       where: { id },
@@ -130,41 +110,30 @@ export class EmailTemplateRepository extends TenantAwareRepository {
     });
   }
 
-  /**
-   * Delete template
-   */
   async delete(id: string) {
     return this.prisma.emailTemplate.delete({
       where: { id },
     });
   }
 
-  /**
-   * Find active templates by category
-   */
   async findActiveByCategory(category?: string) {
-    const where: any = {
+    const where: Prisma.EmailTemplateWhereInput = {
       organizationId: this.tenantId,
       isActive: true,
     };
 
-    if (category) {
+    if (category !== undefined) {
       where.category = category;
     }
 
     return this.prisma.emailTemplate.findMany({
       where,
-      orderBy: {
-        name: 'asc',
-      },
+      orderBy: { name: 'asc' },
     });
   }
 
-  /**
-   * Check if template name exists (excluding current template)
-   */
   async nameExists(name: string, excludeId?: string) {
-    const where: any = {
+    const where: Prisma.EmailTemplateWhereInput = {
       name: { equals: name, mode: 'insensitive' },
       organizationId: this.tenantId,
     };

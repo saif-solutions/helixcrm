@@ -110,15 +110,28 @@ export class ContactsService {
     this.logger.log('ContactsService initialized');
   }
 
+  // Safe permission check (no unsafe calls)
   private checkPermission(permission: string): boolean {
-    try {
-      return this.permissionContext.hasPermission(permission);
-    } catch {
-      this.logger.debug(
-        `Permission context not ready for ${permission}, relying on guard`,
-      );
-      return true;
+    // Cast to unknown first, then to a record to safely check for the method
+    const ctx = this.permissionContext as unknown as Record<string, unknown>;
+    const hasPermissionFn = ctx.hasPermission;
+    if (typeof hasPermissionFn === 'function') {
+      try {
+        const result = (hasPermissionFn as (perm: string) => boolean)(
+          permission,
+        );
+        return result === true;
+      } catch {
+        this.logger.debug(
+          `Permission context not ready for ${permission}, relying on guard`,
+        );
+        return true;
+      }
     }
+    this.logger.debug(
+      `Permission context not ready for ${permission}, relying on guard`,
+    );
+    return true;
   }
 
   private parseFullName(name: string): { firstName: string; lastName: string } {

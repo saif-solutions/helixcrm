@@ -1,6 +1,6 @@
 // apps/api/src/modules/analytics/analytics.module.ts
 
-import { Module, DynamicModule } from '@nestjs/common';
+import { Module, DynamicModule, ModuleMetadata } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { CacheModule } from '@nestjs/cache-manager';
@@ -43,6 +43,7 @@ export class AnalyticsModule {
   static register(): DynamicModule {
     return {
       module: AnalyticsModule,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       imports: [
         ConfigModule,
         PrismaModule,
@@ -86,6 +87,12 @@ export class AnalyticsModule {
 
   static registerWithExports(): DynamicModule {
     const baseModule = this.register();
+    const baseMetadata: ModuleMetadata = {
+      imports: baseModule.imports,
+      controllers: baseModule.controllers,
+      providers: baseModule.providers,
+      exports: baseModule.exports,
+    };
 
     const exportsEnabled = process.env.ANALYTICS_EXPORT_ENABLED !== 'false';
     const redisHost = process.env.REDIS_HOST || 'localhost';
@@ -99,79 +106,79 @@ export class AnalyticsModule {
 
     console.log(`✅ Analytics exports enabled, Redis host: ${redisHost}`);
 
-    const bullImports = [
-      BullModule.registerQueueAsync({
-        name: 'analytics-export',
-        imports: [ConfigModule],
-        inject: [ConfigService],
-        useFactory: (configService: ConfigService): BullMQConnection => {
-          // Type-safe config extraction
-          const redisHost = configService.get<string>(
-            'REDIS_HOST',
-            'localhost',
-          );
-          const redisPort = configService.get<number>('REDIS_PORT', 6379);
-          const redisPassword = configService.get<string>('REDIS_PASSWORD');
-          const useTls =
-            configService.get<string>('REDIS_TLS', 'false') === 'true';
-          const jobAttempts = configService.get<number>(
-            'EXPORT_JOB_ATTEMPTS',
-            3,
-          );
-          const jobTimeout = configService.get<number>(
-            'EXPORT_JOB_TIMEOUT',
-            300000,
-          );
+    const bullQueueAsync = BullModule.registerQueueAsync({
+      name: 'analytics-export',
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService): BullMQConnection => {
+        // Type-safe config extraction
+        const redisHost = configService.get<string>('REDIS_HOST', 'localhost');
+        const redisPort = configService.get<number>('REDIS_PORT', 6379);
+        const redisPassword = configService.get<string>('REDIS_PASSWORD');
+        const useTls =
+          configService.get<string>('REDIS_TLS', 'false') === 'true';
+        const jobAttempts = configService.get<number>('EXPORT_JOB_ATTEMPTS', 3);
+        const jobTimeout = configService.get<number>(
+          'EXPORT_JOB_TIMEOUT',
+          300000,
+        );
 
-          // Build Redis config with proper typing
-          const redisConfig: RedisConfig = {
-            host: redisHost,
-            port: redisPort,
-          };
+        // Build Redis config with proper typing
+        const redisConfig: RedisConfig = {
+          host: redisHost,
+          port: redisPort,
+        };
 
-          // Add Redis password if configured (type-safe)
-          if (redisPassword !== undefined && redisPassword !== null) {
-            redisConfig.password = redisPassword;
-            console.log(
-              '✅ Redis password configured (TLS:',
-              useTls ? 'enabled' : 'disabled',
-              ')',
-            );
-          }
-
-          // Add TLS configuration if enabled
-          if (useTls) {
-            redisConfig.tls = {};
-            console.log('✅ Redis TLS enabled');
-          }
-
+        // Add Redis password if configured (type-safe)
+        if (redisPassword !== undefined && redisPassword !== null) {
+          redisConfig.password = redisPassword;
           console.log(
-            `✅ BullMQ queue configured: host=${redisHost}:${redisPort}, attempts=${jobAttempts}, timeout=${jobTimeout}ms`,
+            '✅ Redis password configured (TLS:',
+            useTls ? 'enabled' : 'disabled',
+            ')',
           );
+        }
 
-          return {
-            connection: redisConfig,
-            defaultJobOptions: {
-              removeOnComplete: true,
-              removeOnFail: false,
-              attempts: jobAttempts,
-              timeout: jobTimeout,
-            },
-          };
-        },
-      }),
-    ];
+        // Add TLS configuration if enabled
+        if (useTls) {
+          redisConfig.tls = {};
+          console.log('✅ Redis TLS enabled');
+        }
+
+        console.log(
+          `✅ BullMQ queue configured: host=${redisHost}:${redisPort}, attempts=${jobAttempts}, timeout=${jobTimeout}ms`,
+        );
+
+        return {
+          connection: redisConfig,
+          defaultJobOptions: {
+            removeOnComplete: true,
+            removeOnFail: false,
+            attempts: jobAttempts,
+            timeout: jobTimeout,
+          },
+        };
+      },
+    });
+
+    /**
+     * Safe helpers - explicit typing to avoid any[] inference
+     */
+    const baseImports = baseMetadata.imports || [];
+    const baseProviders = baseMetadata.providers || [];
 
     return {
-      ...baseModule,
-      imports: [...(baseModule.imports || []), ...bullImports],
-      providers: [...(baseModule.providers || []), AnalyticsExportProcessor],
+      module: AnalyticsModule,
+      imports: [...baseImports, bullQueueAsync],
+      controllers: baseMetadata.controllers,
+      providers: [...baseProviders, AnalyticsExportProcessor],
+      exports: baseMetadata.exports,
     };
   }
 }
 
 // Export factory function for easier app.module integration
-export function getAnalyticsModule() {
+export function getAnalyticsModule(): DynamicModule {
   const redisHost = process.env.REDIS_HOST;
   const exportsEnabled = process.env.ANALYTICS_EXPORT_ENABLED !== 'false';
 

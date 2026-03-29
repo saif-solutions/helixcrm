@@ -1,4 +1,4 @@
-// src/modules/email-templates/email-templates.controller.ts
+// apps/api/src/modules/email-templates/email-templates.controller.ts
 import {
   Controller,
   Get,
@@ -24,7 +24,6 @@ import {
 } from '@nestjs/swagger';
 import { EmailTemplatesService } from './email-templates.service';
 import { RequirePermission } from '../../shared/decorators/require-permission.decorator';
-
 import {
   IsString,
   IsNotEmpty,
@@ -35,7 +34,7 @@ import {
   IsObject,
 } from 'class-validator';
 
-// Define DTOs inline (matching service interface)
+// DTOs
 export class CreateEmailTemplateDto {
   @IsString()
   @IsNotEmpty()
@@ -143,7 +142,7 @@ export class SendEmailDto {
   contactId?: string;
 }
 
-// Alias types for backward compatibility
+// Aliases for Swagger
 class CreateEmailTemplateRequestDto extends CreateEmailTemplateDto {}
 class UpdateEmailTemplateRequestDto extends UpdateEmailTemplateDto {}
 class RenderTemplateRequestDto extends RenderTemplateDto {}
@@ -211,7 +210,6 @@ export class EmailTemplatesController {
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 20,
   ) {
-    // Validate and clamp limits
     const validatedPage = Math.max(1, page);
     const validatedLimit = Math.min(Math.max(1, limit), 100);
 
@@ -324,7 +322,7 @@ export class EmailTemplatesController {
   @ApiResponse({ status: 200, description: 'List of categories' })
   @ApiResponse({ status: 403, description: 'Insufficient permissions' })
   @RequirePermission('email_templates.read')
-  async getCategories() {
+  getCategories() {
     return {
       categories: [
         'marketing',
@@ -344,7 +342,7 @@ export class EmailTemplatesController {
   @ApiResponse({ status: 200, description: 'List of predefined variables' })
   @ApiResponse({ status: 403, description: 'Insufficient permissions' })
   @RequirePermission('email_templates.read')
-  async getPredefinedVariables() {
+  getPredefinedVariables() {
     return {
       variables: [
         {

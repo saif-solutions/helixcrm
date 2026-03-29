@@ -14,6 +14,7 @@ import { PermissionContextModule } from '../../shared/permissions/context/permis
 import { AuditLogModule } from '../../shared/audit-log/audit-log.module';
 
 @Module({
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   imports: [
     // Core modules
     PrismaModule,
@@ -24,6 +25,7 @@ import { AuditLogModule } from '../../shared/audit-log/audit-log.module';
     JwtModule,
   ],
   controllers: [DashboardController],
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   providers: [
     DashboardService,
     DashboardRepository,

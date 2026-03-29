@@ -30,7 +30,6 @@ import { DealQueryDto } from './dto/deal-query.dto';
 import { CreateDealSimpleDto } from './dto/create-deal-simple.dto';
 import { PermissionContextService } from '../../shared/permissions/context/permission-context.service';
 
-// Define interface for authenticated request user
 interface AuthenticatedUser {
   sub: string;
   organizationId?: string;
@@ -40,7 +39,6 @@ interface AuthenticatedUser {
   permissions?: string[];
 }
 
-// Define extended Request type with user property
 interface AuthenticatedRequest extends Request {
   user: AuthenticatedUser;
 }
@@ -53,8 +51,22 @@ export class DealsController {
     private readonly permissionContext: PermissionContextService,
   ) {}
 
+  private isPermissionContextInitialized(): boolean {
+    const ctx = this.permissionContext as unknown as Record<string, unknown>;
+    const isInitializedFn = ctx.isInitialized;
+    if (typeof isInitializedFn === 'function') {
+      try {
+        const result = (isInitializedFn as () => boolean)();
+        return result === true;
+      } catch {
+        return false;
+      }
+    }
+    return false;
+  }
+
   private validatePermissionContext(): void {
-    if (!this.permissionContext.isInitialized()) {
+    if (!this.isPermissionContextInitialized()) {
       throw new ForbiddenException('Permission context not initialized');
     }
   }

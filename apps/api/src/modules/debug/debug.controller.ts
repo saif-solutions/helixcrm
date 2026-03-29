@@ -5,13 +5,37 @@ import { Controller, Get, UseGuards, Req } from '@nestjs/common';
 import { AuthGuard } from '../../shared/guards/auth.guard';
 import { TenantGuard } from '../../shared/guards/tenant.guard';
 import { PermissionGuard } from '../../shared/guards/permission.guard';
-import { Public } from '../../shared/decorators/require-permission.decorator';
+import type { Request } from 'express';
+
+// Define the user structure from the JWT
+interface AuthenticatedUser {
+  id: string;
+  sub: string;
+  email: string;
+  organizationId: string;
+  tokenVersion: number;
+  permissions?: string[];
+  roles?: string[];
+}
+
+// Extend Express Request with our authenticated user and tenant context
+interface AuthenticatedRequest extends Request {
+  user: AuthenticatedUser;
+  organizationId?: string;
+  tenantContext?: {
+    tenantId: string;
+    organizationId: string;
+    isSystemContext: boolean;
+    source: string;
+    [key: string]: unknown;
+  };
+}
 
 @Controller('debug')
 @UseGuards(AuthGuard, TenantGuard, PermissionGuard)
 export class DebugController {
   @Get('context')
-  getContext(@Req() req: any) {
+  getContext(@Req() req: AuthenticatedRequest) {
     return {
       user: {
         id: req.user.id,

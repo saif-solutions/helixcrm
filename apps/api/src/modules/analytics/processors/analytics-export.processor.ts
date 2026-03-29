@@ -4,12 +4,7 @@ import { Processor, WorkerHost, OnWorkerEvent } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
-import {
-  AuditLogService,
-  AuditAction,
-  AuditSeverity,
-  AuditEntityType,
-} from '../../../shared/audit-log/audit-log.service';
+import { AuditLogService } from '../../../shared/audit-log/audit-log.service';
 
 // Define types for export job data
 export interface AnalyticsExportJobData {
@@ -80,19 +75,19 @@ export class AnalyticsExportProcessor extends WorkerHost {
 
     try {
       // 1. Get user email for audit logging
-      const actorEmail = await this.getUserEmail(userId);
+      const userEmail = await this.getUserEmail(userId);
 
       // 2. Update export status to processing
       await this.updateExportStatus(exportId, 'processing');
 
-      // 3. Fetch analytics data based on queryParams (synchronous)
+      // 3. Fetch analytics data based on queryParams
       const exportData = this.generateExportData(
         organizationId,
         queryParams,
         format,
       );
 
-      // 4. Store export result (in Phase 3.4 - in-memory; Phase 3.6+ - S3/filesystem)
+      // 4. Store export result
       const filePath = await this.storeExport(
         exportId,
         exportData.data,
@@ -102,21 +97,21 @@ export class AnalyticsExportProcessor extends WorkerHost {
       // 5. Update export record with completion details
       await this.completeExport(exportId, filePath, exportData.recordCount);
 
-      // 6. Log completion - use enum values directly
+      // 6. Log completion - use string literals with type assertion
       await this.auditLogService.logEvent({
-        action: 'ANALYTICS_EXPORT_COMPLETED' as AuditAction,
+        action: 'ANALYTICS_EXPORT_COMPLETED' as const,
         entityId: exportId,
-        entityType: 'SYSTEM' as AuditEntityType,
+        entityType: 'SYSTEM' as const,
         organizationId,
         actorUserId: userId,
-        actorEmail,
+        actorEmail: userEmail,
         metadata: {
           jobId: job.id,
           format,
           fileSize: exportData.fileSize,
           recordCount: exportData.recordCount,
         },
-        severity: 'LOW' as AuditSeverity,
+        severity: 'LOW' as const,
       });
 
       this.logger.log(
@@ -129,7 +124,7 @@ export class AnalyticsExportProcessor extends WorkerHost {
         fileSize: exportData.fileSize,
         recordCount: exportData.recordCount,
       };
-    } catch (error: unknown) {
+    } catch (error) {
       const errorMessage = getErrorMessage(error);
       const errorStack = error instanceof Error ? error.stack : undefined;
 
@@ -139,23 +134,24 @@ export class AnalyticsExportProcessor extends WorkerHost {
       );
 
       // Get user email for error logging
-      const actorEmail = await this.getUserEmail(userId);
+      const userEmail = await this.getUserEmail(userId);
 
       // Update export status to failed
       await this.updateExportStatus(exportId, 'failed', errorMessage);
 
+      // Log failure - use string literals with type assertion
       await this.auditLogService.logEvent({
-        action: 'ANALYTICS_EXPORT_FAILED' as AuditAction,
+        action: 'ANALYTICS_EXPORT_FAILED' as const,
         entityId: exportId,
-        entityType: 'SYSTEM' as AuditEntityType,
+        entityType: 'SYSTEM' as const,
         organizationId,
         actorUserId: userId,
-        actorEmail,
+        actorEmail: userEmail,
         metadata: {
           jobId: job.id,
           error: errorMessage,
         },
-        severity: 'HIGH' as AuditSeverity,
+        severity: 'HIGH' as const,
       });
 
       throw error; // Will trigger retry based on job configuration
@@ -180,12 +176,8 @@ export class AnalyticsExportProcessor extends WorkerHost {
         where: { id: userId },
         select: { email: true },
       });
-      return user?.email || `user-${userId}@unknown.example.com`;
-    } catch (error: unknown) {
-      const errorMessage = getErrorMessage(error);
-      this.logger.warn(
-        `Failed to fetch email for user ${userId}: ${errorMessage}`,
-      );
+      return user?.email ?? `user-${userId}@unknown.example.com`;
+    } catch {
       return `user-${userId}@error.example.com`;
     }
   }
@@ -197,7 +189,7 @@ export class AnalyticsExportProcessor extends WorkerHost {
   ): Promise<void> {
     // In Phase 3.4: In-memory tracking
     // In Phase 3.6+: Database update
-    // Mark errorMessage as intentionally unused for now
+    // errorMessage intentionally unused for now
     void errorMessage;
 
     this.logger.debug(`Export ${exportId} status updated to: ${status}`);
